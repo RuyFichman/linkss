@@ -16,7 +16,12 @@
     "lint": "npm run lint --workspace=@lnk/web",
     "typecheck": "npm run typecheck --workspace=@lnk/web",
     "test": "npm run test --workspace=@lnk/web",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript --local --schema public > apps/web/src/lib/database.types.ts",
+    "test:db": "supabase test db"
   },
   "devDependencies": {
     "supabase": "2.118.0"
