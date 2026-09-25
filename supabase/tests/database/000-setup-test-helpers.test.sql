@@ -39,6 +39,7 @@ $$;
 create or replace function tests.authenticate_as(p_user_id uuid)
 returns void
 language plpgsql
+set search_path = ''
 as $$
 begin
   perform set_config('request.jwt.claims',
@@ -50,6 +51,7 @@ $$;
 create or replace function tests.authenticate_anon()
 returns void
 language plpgsql
+set search_path = ''
 as $$
 begin
   perform set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
@@ -60,6 +62,7 @@ $$;
 create or replace function tests.authenticate_service()
 returns void
 language plpgsql
+set search_path = ''
 as $$
 begin
   perform set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
@@ -71,6 +74,7 @@ $$;
 create or replace function tests.clear_authentication()
 returns void
 language plpgsql
+set search_path = ''
 as $$
 begin
   perform set_config('request.jwt.claims', '', true);
@@ -82,12 +86,14 @@ $$;
 create or replace function tests.remember(p_name text, p_id uuid)
 returns uuid
 language sql
+set search_path = ''
 as $$ select set_config('tests.' || p_name, p_id::text, true)::uuid $$;
 
 create or replace function tests.id(p_name text)
 returns uuid
 language sql
 stable
+set search_path = ''
 as $$ select current_setting('tests.' || p_name)::uuid $$;
 
 grant execute on all functions in schema tests to anon, authenticated, service_role;
