@@ -1,0 +1,5 @@
+<!-- Local/hosted confirmation template. Uses the token_hash flow handled by /auth/confirm. -->
+<h2>Confirme seu e-mail</h2>
+<p>Recebemos um pedido para criar uma conta com este e-mail no Projeto LNK.</p>
+<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email&amp;next=/app">Confirmar meu e-mail</a></p>
+<p>O link expira em 1 hora e só pode ser usado uma vez. Se você não pediu este cadastro, ignore esta mensagem.</p>
