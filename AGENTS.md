@@ -312,7 +312,27 @@ Before finishing:
 3. Report what changed, what was verified, and what remains blocked or intentionally deferred.
 4. Link to the most relevant files instead of pasting large documents.
 
-## 20. Definition of done
+## 20. Mandatory sprint reports
+
+Every completed sprint must include a versioned report at `docs/SPRINT_<N>_REPORT.md`. The report is part of the sprint deliverable and must be created or updated before the sprint is declared complete.
+
+Use the previous sprint report as the structural baseline and include, at minimum:
+
+- sprint objective and the actual outcome;
+- important product, UX, and technical decisions, including provisional decisions awaiting founder confirmation;
+- an acceptance-criteria table with honest status and direct evidence;
+- deliverables and the files or routes where they can be reviewed;
+- verification performed, including the exact final result of lint, typecheck, tests, and build when applicable;
+- security, privacy, accessibility, performance, data, and operational implications relevant to the sprint;
+- known gaps, deferred work, blockers, risks, and items deliberately cut from scope;
+- implications and dependencies for the next sprint;
+- corresponding backlog updates, checking off only work that was actually completed.
+
+Never mark a criterion as complete based only on implementation intent. Distinguish implemented, verified, prepared, partial, blocked, and not started where that distinction matters. Do not claim user research, usability testing, deployment, provisioning, migration execution, or external integration unless it actually occurred and the report identifies the evidence.
+
+If a sprint ends with incomplete work, still produce the report and state the exact completion level and recommended continuation point. A sprint is not complete until its report and relevant source-of-truth documents are synchronized.
+
+## 21. Definition of done
 
 A change is done only when:
 
@@ -323,11 +343,12 @@ A change is done only when:
 - security, privacy, accessibility, and observability implications were considered;
 - migrations and operational steps are documented and safe;
 - documentation and ADRs reflect changed decisions;
+- the sprint report exists and accurately reflects evidence, gaps, and next steps when the change completes a sprint;
 - no critical/high known defect is hidden;
 - the final handoff is accurate about limitations and pending external setup.
 
-## 21. Current project state
+## 22. Current project state
 
-Sprint 0 is complete at the repository-content level. The application builds, lint/typecheck/tests pass, and the foundational architecture and backlog are documented. External provisioning remains pending for Git hosting settings, Vercel, Supabase environments, Sentry/uptime, public branding, and production contacts. See `docs/SPRINT_0_REPORT.md` for the exact status.
+Sprint 1 is complete at the repository-content and technical-QA level. The individual and agency journeys, responsive clickable prototype, product language, design tokens, templates, waitlist landing pages, research kit, and Sprint report exist. Lint/typecheck/tests/build pass. See `docs/SPRINT_1_REPORT.md` for exact evidence and limitations.
 
-The next planned phase is Sprint 1: prototype the critical individual and agency workflows before implementing the multi-tenant schema.
+The five-person usability gate has not been run. The next operational step is to execute `docs/research/USABILITY_TEST_PLAN.md`, resolve structural findings, and confirm the provisional decisions in `docs/ux/UX_DECISIONS.md`. Do not begin the Sprint 2 multi-tenant schema until that gate is reviewed. External provisioning for staging, Supabase, observability, public branding, and production contacts also remains pending.

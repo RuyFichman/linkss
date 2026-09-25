@@ -4,12 +4,12 @@ Convenção: `P0` bloqueia o MVP; `P1` pode ter versão simples; `P2` fica após
 
 ## Sprint 1 — protótipo
 
-- [ ] P0 Mapear cadastro → publicar → analytics.
-- [ ] P0 Mapear agência → perfil → duplicar → relatório.
-- [ ] P0 Criar wireframes mobile/desktop e protótipo clicável.
-- [ ] P0 Definir tokens visuais e estados de interface.
-- [ ] P1 Criar cinco templates conceituais.
-- [ ] P1 Publicar landing page de lista de espera.
+- [x] P0 Mapear cadastro → publicar → analytics.
+- [x] P0 Mapear agência → perfil → duplicar → relatório.
+- [x] P0 Criar wireframes mobile/desktop e protótipo clicável.
+- [x] P0 Definir tokens visuais e estados de interface.
+- [x] P1 Criar cinco templates conceituais.
+- [x] P1 Implementar landing page e lista de espera (deploy externo permanece pendente).
 - [ ] P1 Testar o protótipo com cinco pessoas.
 
 ## Sprint 2 — identidade e tenancy
