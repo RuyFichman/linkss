@@ -215,3 +215,12 @@ describe("workspace authorization guard", () => {
     await expect(requireWorkspaceAccess(identity("u1", { [WS_A]: "editor" }), WS_A, "profile.change_slug")).rejects.toMatchObject({ reason: "forbidden" });
   });
 });
+
+describe("agency workspace name", () => {
+  it("mirrors create_agency_workspace (2–80 characters after trimming)", async () => {
+    const { validateAgencyName } = await import("./workspace-validation");
+    expect(validateAgencyName("  Agência   Aurora ")).toEqual({ ok: true, value: "Agência Aurora" });
+    expect(validateAgencyName(" A ").ok).toBe(false);
+    expect(validateAgencyName("x".repeat(81)).ok).toBe(false);
+  });
+});

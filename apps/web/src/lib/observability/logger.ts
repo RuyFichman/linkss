@@ -4,7 +4,8 @@ export type LogLevel = "info" | "warn" | "error";
 export type LogFields = Record<string, string | number | boolean | null | undefined>;
 
 export const CORRELATION_HEADER = "x-correlation-id";
-const SENSITIVE_KEY = /pass(word)?|token|secret|cookie|authorization|email|key|session|otp|code/i;
+// `code` alone is the PKCE auth code; `errorCode` (a Postgres/Auth error code) must survive.
+const SENSITIVE_KEY = /pass(word)?|token|secret|cookie|authorization|email|api_?key|session|otp|^code$/i;
 const EMAIL_LIKE = /[^\s@]+@[^\s@]+/g;
 
 export function sanitizeLogFields(fields: LogFields): LogFields {

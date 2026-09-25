@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { logEvent } from "@/lib/observability/logger";
 import { createSupabaseServerClient, type SupabaseServerClient } from "@/lib/supabase/server";
 import type { IdentityPort } from "./guard";
 import type { WorkspaceKind, WorkspaceRole } from "./permissions";
@@ -43,7 +44,7 @@ export interface WorkspaceMembership {
 }
 
 /** Active memberships in live workspaces (RLS hides everything else). Personal first. */
-export const listMyWorkspaces = cache(async (userId: string): Promise<WorkspaceMembership[]> => {
+export async function fetchMyWorkspaces(userId: string): Promise<WorkspaceMembership[]> {
   const supabase = await getSupabase();
   const { data, error } = await supabase
     .from("workspace_memberships")
@@ -56,6 +57,33 @@ export const listMyWorkspaces = cache(async (userId: string): Promise<WorkspaceM
   return data
     .map(({ role, workspaces }) => ({ workspaceId: workspaces.id, name: workspaces.name, kind: workspaces.kind, status: workspaces.status, planId: workspaces.plan_id, role }))
     .sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name, "pt-BR") : a.kind === "personal" ? -1 : 1));
+}
+
+export type AccountResolution =
+  | { status: "anonymous" }
+  | { status: "ready"; userId: string; workspaces: WorkspaceMembership[]; personal: WorkspaceMembership }
+  | { status: "provisioning-failed"; userId: string };
+
+/**
+ * Resolves the signed-in person and their workspaces once per request (layouts and pages render
+ * in parallel and share this result). Provisions the personal workspace if it is missing.
+ */
+export const resolveAccount = cache(async (): Promise<AccountResolution> => {
+  const userId = await getCurrentUserId();
+  if (!userId) return { status: "anonymous" };
+  let workspaces = await fetchMyWorkspaces(userId);
+  let personal = workspaces.find((workspace) => workspace.kind === "personal");
+  if (!personal) {
+    const ensured = await ensurePersonalWorkspace(await getSupabase());
+    if (!ensured) {
+      logEvent("error", "identity.personal_workspace_failed", { stage: "layout" });
+      return { status: "provisioning-failed", userId };
+    }
+    workspaces = await fetchMyWorkspaces(userId);
+    personal = workspaces.find((workspace) => workspace.kind === "personal");
+    if (!personal) return { status: "provisioning-failed", userId };
+  }
+  return { status: "ready", userId, workspaces, personal };
 });
 
 /** Idempotent; see ensure_personal_workspace() in ADR 0004. */

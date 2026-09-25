@@ -23,6 +23,10 @@ describe("structured log sanitization", () => {
       .toEqual({ event: "x", path: "/app", note: "falha para [redacted-email]" });
   });
 
+  it("keeps error codes but drops auth codes (regression)", () => {
+    expect(sanitizeLogFields({ errorCode: "LK010", code: "pkce-auth-code", apikey: "sb_publishable_x" })).toEqual({ errorCode: "LK010" });
+  });
+
   it("accepts well-formed correlation ids and replaces anything else", () => {
     expect(correlationIdFrom("abcd-1234-efgh")).toBe("abcd-1234-efgh");
     expect(correlationIdFrom("<script>")).toMatch(/^[0-9a-f-]{36}$/);

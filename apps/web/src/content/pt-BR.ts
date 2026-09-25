@@ -99,7 +99,7 @@ export const APP_COPY = {
     create: "Nova página",
     emptyTitle: "Você ainda não criou nenhuma página.",
     emptyDescription: "Crie sua primeira página para escolher o endereço e começar a montar o conteúdo.",
-    limitReached: (limit: number) => `Esta conta já usa ${limit === 1 ? "sua página disponível" : `as ${limit} páginas disponíveis`} no plano atual. Exclua uma página ou aguarde os planos pagos para criar outra.`,
+    limitReached: (limit: number) => `Esta conta já usa ${limit === 1 ? "sua página disponível" : `as ${limit} páginas disponíveis`} no plano atual. Para criar outra, exclua uma página existente.`,
     createForbidden: "Somente proprietários e administradores criam páginas nesta conta.",
     status: { draft: "Rascunho", published: "Publicada", archived: "Arquivada" },
     settings: "Configurações",
