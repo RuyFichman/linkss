@@ -1,0 +1,21 @@
+{
+  "name": "lnk-platform",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=11"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace=@lnk/web",
+    "build": "npm run build --workspace=@lnk/web",
+    "lint": "npm run lint --workspace=@lnk/web",
+    "typecheck": "npm run typecheck --workspace=@lnk/web",
+    "test": "npm run test --workspace=@lnk/web",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build"
+  }
+}

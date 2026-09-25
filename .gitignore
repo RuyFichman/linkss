@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+.npm-cache/
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+
+# testing
+coverage/
+playwright-report/
+test-results/
+
+# environment and local tooling
+.env
+.env.local
+.env.*.local
+!.env.example
+.vercel/
+.supabase/
+
+# logs and OS/editor files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
