@@ -43,6 +43,31 @@
 
 O módulo `src/content/pt-BR.ts` é a fonte compartilhada desses textos. Textos específicos de uma tela podem ficar próximos à tela.
 
+## Autenticação e onboarding (Sprint 2)
+
+Fonte: `AUTH_COPY` e `APP_COPY` em `apps/web/src/content/pt-BR.ts`. O schema usa termos neutros (`workspace`, `profile`, `membership`); trocar termos da interface após o teste de usabilidade não exige migração.
+
+| Momento | Texto |
+|---|---|
+| Cadastro — título | “Crie seu acesso” |
+| Cadastro concluído (e-mail novo **ou** já existente) | “Se este e-mail puder ser usado, enviamos um link de confirmação. Ele expira em 1 hora. Confira também a caixa de spam.” |
+| Login inválido (e-mail inexistente **ou** senha errada) | “E-mail ou senha incorretos.” |
+| E-mail não confirmado (só com senha correta) | “Confirme seu e-mail para entrar. Se o link expirou, peça um novo abaixo.” |
+| Recuperação (conta existente **ou** não) | “Se existir uma conta com este e-mail, enviamos um link para redefinir a senha. Ele expira em 1 hora.” |
+| Link expirado/reusado | “Link expirado ou inválido” + “Este link expirou ou já foi usado. Peça um novo para continuar.” |
+| Senha — dica | “Pelo menos 8 caracteres, com letras e números.” |
+| Muitas tentativas | “Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.” |
+| Serviço indisponível | “Não foi possível falar com o serviço de acesso agora. Tente novamente em instantes.” |
+| Onboarding | “Crie sua primeira página” / “Comece pelo básico. Você poderá editar tudo depois.” |
+| Endereço disponível | “Ótimo — {endereço} está disponível.” |
+| Endereço protegido (retenção) | “Este endereço foi usado recentemente e ainda está protegido. Tente outra variação.” |
+| Limite do plano | “Esta conta já usa sua página disponível no plano atual. Para criar outra, exclua uma página existente.” |
+| Troca de endereço — aviso | “O endereço atual deixará de funcionar. Quem tiver o link antigo não encontrará sua página. O endereço antigo fica protegido para esta conta por 90 dias.” |
+| Exclusão — aviso | “A página sai da sua lista e o endereço deixa de funcionar. Os dados ficam guardados por 30 dias para recuperação pelo suporte e depois são apagados.” |
+| Sem acesso / inexistente | “Não encontramos este item ou você não tem acesso a ele.” (mesma resposta para ambos) |
+
+Papéis na interface: **Proprietário** (owner), **Administrador** (admin), **Editor** (editor). O workspace pessoal aparece sempre como **Pessoal**, independentemente do nome salvo.
+
 ## Padrões de erro
 
 1. **O que ocorreu:** “Este endereço já está em uso.”

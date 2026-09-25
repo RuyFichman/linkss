@@ -14,5 +14,20 @@
 | UX-010 | Protótipo persiste só em `lnk-proto:v1` no navegador | backend descartável; sem persistência | Teste realista sem antecipar schema da Sprint 2 | QA de reinício/retomada | Aceita para Sprint 1 |
 | UX-011 | `Projeto LNK` vem de `PRODUCT.codename` e aparece como provisório | inventar marca; esconder identidade | Evita consolidar marca sem pesquisa | Revisão de conteúdo | Aceita para Sprint 1 |
 | UX-012 | Landing neutra e variantes de agência/profissional | somente agência; somente individual | ICP permanece hipótese e viabiliza Experimento B | Conversão e qualidade por variante | Provisória — founder confirmar |
+| UX-013 | Cadastro pede nome, e-mail e senha; confirmação por e-mail antes de qualquer página | login social; magic link; confirmar depois | Segurança da conta e anti-abuso; social login adiado (ADR 0005) | Funil cadastro → confirmação → primeira página | Provisória — founder confirmar |
+| UX-014 | Onboarding real cria a página em rascunho com nome, endereço sugerido a partir do nome, bio opcional e iniciais no lugar do avatar; objetivo/template do protótipo ficam para o editor | reproduzir o onboarding completo do protótipo | Sem editor/templates persistidos nesta sprint; evita coletar escolhas sem uso | Tempo até a primeira página e abandono | Provisória — revisar após o teste de usabilidade |
+| UX-015 | Endereço liberado fica protegido por 90 dias; só a mesma conta pode retomá-lo | liberar imediatamente; 30 dias; 1 ano | Evita sequestro/impersonação de links ainda divulgados | Tickets de suporte sobre endereço | Provisória — founder confirmar prazo |
+| UX-016 | Páginas excluídas ficam 30 dias recuperáveis pelo suporte antes do purge | exclusão imediata; lixeira self-service | Protege contra erro sem criar fluxo novo | Pedidos de recuperação | Provisória — founder confirmar prazo |
+| UX-017 | Editor não cria páginas nem troca endereço; edita conteúdo e (Sprint 3) publica | editor com criação; papel único | Página consome entitlement pago; troca de endereço quebra links públicos | Entrevistas com agências (T2) | Provisória — founder confirmar |
+| UX-018 | Uma pessoa pode ter até 3 contas de agência ativas | ilimitado; 1 | Sem limite, contas Free multiplicariam páginas gratuitas | Revisar com a cobrança (Sprint 8) | Provisória — founder confirmar |
+| UX-019 | Páginas arquivadas contam no limite do plano | não contar arquivadas | Impede burlar o limite arquivando/desarquivando | Revisar com o fluxo de arquivamento (Sprint 7) | Provisória — founder confirmar |
+
+## Gate de usabilidade da Sprint 1 → Sprint 2
+
+- **Decisão:** (b) *founder override* — iniciar a Sprint 2 antes do teste com cinco pessoas.
+- **Data e autor:** 25/09/2026, founder.
+- **Motivo:** construir a fundação de identidade/tenancy agora e executar as sessões de usabilidade depois.
+- **Risco aceito:** achados estruturais do teste podem exigir retrabalho em onboarding e vocabulário. Mitigação aplicada: textos e ordem do onboarding isolados em `apps/web/src/content/pt-BR.ts` e componentes de apresentação; banco com vocabulário neutro (`workspace`, `profile`, `membership`), independente de UX-001 a UX-003.
+- **UX_DECISIONS confirmadas/alteradas pelo founder:** nenhuma até o momento.
 
 Depois dos cinco testes, atualizar o status e anexar evidência resumida; preferência interna nunca vira decisão “validada” sem dados.

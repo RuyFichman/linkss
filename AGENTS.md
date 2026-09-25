@@ -106,16 +106,18 @@ Requirements:
 
 - Node.js 24
 - npm 11+
+- Docker (only for the local Supabase stack and database tests)
 
 Setup:
 
 ```bash
 npm install
-copy .env.example .env.local
+npm run db:start
+copy .env.example apps\web\.env.local
 npm run dev
 ```
 
-On Unix-like shells, replace `copy` with `cp`.
+On Unix-like shells, replace `copy` with `cp` and use forward slashes. Fill the Supabase URL and publishable key from `npx supabase status`. Local auth emails are in Mailpit at `http://127.0.0.1:54324`.
 
 Primary commands:
 
@@ -126,7 +128,12 @@ npm run typecheck  # TypeScript without emitting files
 npm run test       # run unit tests once
 npm run build      # production build
 npm run check      # lint + typecheck + test + build
+npm run test:db    # pgTAP tests against the local Supabase stack (needs Docker)
+npm run db:reset   # re-apply migrations and seed locally
+npm run db:types   # regenerate apps/web/src/lib/database.types.ts
 ```
+
+Database changes must ship with pgTAP tests (positive and negative, cross-workspace, anon) and regenerated types. If Docker is unavailable, say so in the handoff; the CI `database` job remains the gate.
 
 Run `npm run check` before handing off any code change. Use the narrowest relevant command during iteration, then run the complete check before completion.
 
@@ -349,6 +356,8 @@ A change is done only when:
 
 ## 22. Current project state
 
-Sprint 1 is complete at the repository-content and technical-QA level. The individual and agency journeys, responsive clickable prototype, product language, design tokens, templates, waitlist landing pages, research kit, and Sprint report exist. Lint/typecheck/tests/build pass. See `docs/SPRINT_1_REPORT.md` for exact evidence and limitations.
+Sprint 2 (identity, workspaces and multi-tenant model) is complete at the local-verification level on branch `feat/sprint-2-identity-tenancy` (branched from the unmerged `feat/sprint-1-prototype`). Migrations, RLS, RPCs, auth flows, onboarding and the authenticated workspace area exist; lint, typecheck, 92 Vitest tests, 163 pgTAP assertions, advisors and build pass; the full journey and a manual cross-workspace attack were verified in a browser against the local Supabase stack. See `docs/SPRINT_2_REPORT.md` for evidence and limitations.
 
-The five-person usability gate has not been run. The next operational step is to execute `docs/research/USABILITY_TEST_PLAN.md`, resolve structural findings, and confirm the provisional decisions in `docs/ux/UX_DECISIONS.md`. Do not begin the Sprint 2 multi-tenant schema until that gate is reviewed. External provisioning for staging, Supabase, observability, public branding, and production contacts also remains pending.
+The Sprint 1 five-person usability gate was **overridden by the founder on 2026-09-25** (decision (b): build the identity/tenancy foundation now, run the sessions afterwards). The sessions from `docs/research/USABILITY_TEST_PLAN.md` are still pending and may change onboarding and vocabulary; keep that copy in `apps/web/src/content/pt-BR.ts` and presentation components, and keep the schema vocabulary neutral. Provisional decisions UX-001 to UX-019 await founder confirmation.
+
+Nothing has been provisioned or applied on hosted Supabase/Vercel. Before external users: approve and provision staging, choose custom SMTP for auth emails, apply the hosted Auth checklist in `docs/ENVIRONMENTS.md`, and enable Auth CAPTCHA (the raw Auth recover endpoint can reveal account existence through its per-email rate limit). The recommended next step is Sprint 3 (published snapshots and public renderer) after merging Sprints 1 and 2.
