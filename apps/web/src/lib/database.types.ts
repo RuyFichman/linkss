@@ -50,18 +50,49 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"profiles": {
+                },"profile_publications": {
                   Row: {
-                    "avatar_path": string | null,"bio": string,"created_at": string,"created_by": string | null,"deleted_at": string | null,"id": string,"published_at": string | null,"purge_after": string | null,"slug": string,"status": Database["public"]['Enums']["profile_status"],"title": string,"updated_at": string,"workspace_id": string
+                    "created_at": string,"document": NonNullable<Json>,"id": string,"profile_id": string,"published_by": string | null,"schema_version": number,"source_revision": number,"version": number,"workspace_id": string
                   }
                   Insert: {
-                    "avatar_path"?: string | null,"bio"?: string,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"id"?: string,"published_at"?: string | null,"purge_after"?: string | null,"slug": string,"status"?: Database["public"]['Enums']["profile_status"],"title": string,"updated_at"?: string,"workspace_id": string
+                    "created_at"?: string,"document": NonNullable<Json>,"id"?: string,"profile_id": string,"published_by"?: string | null,"schema_version"?: number,"source_revision": number,"version": number,"workspace_id": string
                   }
                   Update: {
-                    "avatar_path"?: string | null,"bio"?: string,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"id"?: string,"published_at"?: string | null,"purge_after"?: string | null,"slug"?: string,"status"?: Database["public"]['Enums']["profile_status"],"title"?: string,"updated_at"?: string,"workspace_id"?: string
+                    "created_at"?: string,"document"?: NonNullable<Json>,"id"?: string,"profile_id"?: string,"published_by"?: string | null,"schema_version"?: number,"source_revision"?: number,"version"?: number,"workspace_id"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "profile_publications_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "profile_publications_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
+                  Row: {
+                    "avatar_path": string | null,"bio": string,"blocks": NonNullable<Json>,"created_at": string,"created_by": string | null,"deleted_at": string | null,"draft_revision": number,"id": string,"live_publication_id": string | null,"published_at": string | null,"purge_after": string | null,"slug": string,"social_links": NonNullable<Json>,"status": Database["public"]['Enums']["profile_status"],"title": string,"updated_at": string,"workspace_id": string
+                  }
+                  Insert: {
+                    "avatar_path"?: string | null,"bio"?: string,"blocks"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"draft_revision"?: number,"id"?: string,"live_publication_id"?: string | null,"published_at"?: string | null,"purge_after"?: string | null,"slug": string,"social_links"?: NonNullable<Json>,"status"?: Database["public"]['Enums']["profile_status"],"title": string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "avatar_path"?: string | null,"bio"?: string,"blocks"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"draft_revision"?: number,"id"?: string,"live_publication_id"?: string | null,"published_at"?: string | null,"purge_after"?: string | null,"slug"?: string,"social_links"?: NonNullable<Json>,"status"?: Database["public"]['Enums']["profile_status"],"title"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profiles_live_publication_fkey"
+      columns: ["id","live_publication_id"]
+isOneToOne: false
+      referencedRelation: "profile_publications"
+      referencedColumns: ["profile_id","id"]
+    },{
       foreignKeyName: "profiles_workspace_id_fkey"
       columns: ["workspace_id"]
 isOneToOne: false
@@ -188,21 +219,37 @@ isOneToOne: false
 "ensure_personal_workspace":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
+"get_public_page":
+{ Args: { "p_slug": string }; Returns: {
+              "canonical_slug": string,"document": Json,"published_at": string,"show_badge": boolean,"state": string,"version": number
+            }[]
+                           },
+"publish_profile":
+{ Args: { "p_expected_revision"?: number,"p_profile_id": string }; Returns: {
+              "created": boolean,"publication_id": string,"version": number
+            }[]
+                           },
 "record_auth_event":
 { Args: { "p_action": Database["public"]['Enums']["audit_action"],"p_metadata"?: Json }; Returns: undefined
                            },
 "remove_workspace_member":
 { Args: { "p_membership_id": string }; Returns: undefined
                            },
+"restore_profile_publication":
+{ Args: { "p_profile_id": string,"p_publication_id": string }; Returns: number
+                           },
 "soft_delete_profile":
 { Args: { "p_profile_id": string }; Returns: undefined
                            },
 "soft_delete_workspace":
 { Args: { "p_workspace_id": string }; Returns: undefined
+                           },
+"unpublish_profile":
+{ Args: { "p_profile_id": string }; Returns: undefined
                            }
           }
           Enums: {
-            "audit_action": "auth.sign_in"|"auth.sign_out"|"auth.password_reset_completed"|"workspace.created"|"workspace.deleted"|"membership.role_changed"|"membership.removed"|"profile.slug_changed"|"profile.deleted"|"profile.published","entitlement_key": "max_profiles"|"analytics_days"|"team_members"|"custom_domain"|"remove_badge"|"shareable_reports","membership_status": "invited"|"active"|"revoked","profile_status": "draft"|"published"|"archived","slug_release_reason": "changed"|"deleted","workspace_kind": "personal"|"agency","workspace_role": "owner"|"admin"|"editor","workspace_status": "active"|"suspended"
+            "audit_action": "auth.sign_in"|"auth.sign_out"|"auth.password_reset_completed"|"workspace.created"|"workspace.deleted"|"membership.role_changed"|"membership.removed"|"profile.slug_changed"|"profile.deleted"|"profile.published"|"profile.unpublished"|"profile.publication_restored","entitlement_key": "max_profiles"|"analytics_days"|"team_members"|"custom_domain"|"remove_badge"|"shareable_reports","membership_status": "invited"|"active"|"revoked","profile_status": "draft"|"published"|"archived","slug_release_reason": "changed"|"deleted","workspace_kind": "personal"|"agency","workspace_role": "owner"|"admin"|"editor","workspace_status": "active"|"suspended"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -318,7 +365,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "audit_action": ["auth.sign_in", "auth.sign_out", "auth.password_reset_completed", "workspace.created", "workspace.deleted", "membership.role_changed", "membership.removed", "profile.slug_changed", "profile.deleted", "profile.published"],"entitlement_key": ["max_profiles", "analytics_days", "team_members", "custom_domain", "remove_badge", "shareable_reports"],"membership_status": ["invited", "active", "revoked"],"profile_status": ["draft", "published", "archived"],"slug_release_reason": ["changed", "deleted"],"workspace_kind": ["personal", "agency"],"workspace_role": ["owner", "admin", "editor"],"workspace_status": ["active", "suspended"]
+            "audit_action": ["auth.sign_in", "auth.sign_out", "auth.password_reset_completed", "workspace.created", "workspace.deleted", "membership.role_changed", "membership.removed", "profile.slug_changed", "profile.deleted", "profile.published", "profile.unpublished", "profile.publication_restored"],"entitlement_key": ["max_profiles", "analytics_days", "team_members", "custom_domain", "remove_badge", "shareable_reports"],"membership_status": ["invited", "active", "revoked"],"profile_status": ["draft", "published", "archived"],"slug_release_reason": ["changed", "deleted"],"workspace_kind": ["personal", "agency"],"workspace_role": ["owner", "admin", "editor"],"workspace_status": ["active", "suspended"]
           }
         }
 } as const

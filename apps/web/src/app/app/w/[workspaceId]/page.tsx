@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { APP_COPY } from "@/content/pt-BR";
+import { publicAddressLabel } from "@/lib/app-url";
 import { limitUsage } from "@/modules/entitlements";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { can } from "@/modules/identity/permissions";
@@ -48,7 +49,7 @@ export default async function WorkspaceHomePage({ params, searchParams }: { para
                 <ProfileAvatar title={profile.title} />
                 <div className="min-w-0">
                   <h2 className="truncate text-lg font-bold">{profile.title}</h2>
-                  <p className="m-0 truncate text-sm text-app-muted">{APP_COPY.pages.publicAddressPrefix}{profile.slug}</p>
+                  <p className="m-0 truncate text-sm text-app-muted">{publicAddressLabel(profile.slug)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -59,7 +60,7 @@ export default async function WorkspaceHomePage({ params, searchParams }: { para
           ))}
         </ul>
       )}
-      <p className="m-0 text-sm text-app-muted">Páginas em rascunho ainda não ficam visíveis para visitantes. A publicação chega na próxima etapa do produto.</p>
+      <p className="m-0 text-sm text-app-muted">{APP_COPY.pages.publishHint}</p>
     </div>
   );
 }

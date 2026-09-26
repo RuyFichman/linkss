@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { APP_COPY } from "@/content/pt-BR";
+import { publicAddressLabel } from "@/lib/app-url";
 import { checkSlugAction } from "../actions";
 import { normalizeSlug, validateSlug, type SlugValidation } from "../slug";
 
@@ -54,7 +55,7 @@ export function SlugField({ id, workspaceId, currentSlug, suggestFrom, defaultVa
     <div className="ui-field">
       <label htmlFor={id}>{APP_COPY.profileForm.slug}</label>
       <div className="ui-input-group">
-        <span className="shrink-0 pl-3 text-sm text-app-muted" aria-hidden="true">{APP_COPY.pages.publicAddressPrefix}</span>
+        <span className="shrink-0 pl-3 text-sm text-app-muted" aria-hidden="true">{publicAddressLabel("")}</span>
         <input
           id={id}
           name="slug"

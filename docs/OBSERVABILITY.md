@@ -28,6 +28,19 @@ Logs JSON (`lib/observability/logger.ts`) com `event`, `outcome`, `errorCode` e 
 
 Métrica de funil (produto): cadastro → e-mail confirmado → primeira página criada. A instrumentação de produto (Sprint 6) deve reutilizar esses eventos sem dados pessoais.
 
+## Sinais do renderer público e da publicação (Sprint 3)
+
+| Evento | Significado | Sinal / limiar proposto antes do piloto |
+|---|---|---|
+| `web_vital` (`name`, `value`, `rating`, `navigationType`, `route=public_page`) | Web Vitals reais dos visitantes (TTFB, FCP, LCP, CLS, INP) via `/api/vitals` | LCP p75 > 2,5 s ou CLS p75 > 0,1 em 24 h → P2 (investigar deploy/regressão) |
+| `public_page.resolved` (`state`, `version`, `durationMs`) | regeneração ISR de uma página (não é por visita) | `durationMs` p95 > 1 s → banco lento |
+| `public_page.lookup_failed` (`errorCode`, `durationMs`) | RPC pública falhou ou passou do timeout de 4 s | qualquer sequência > 5 em 5 min → P1 (páginas novas com erro; as em cache seguem no ar) |
+| `public_page.invalid_document` | snapshot não passou na validação do renderer | qualquer ocorrência → P1 (bug de contrato do documento) |
+| `request.error` (`routePath`, `routeType`, `digest`) | erro capturado pelo Next (`instrumentation.ts`); o Next pode chamar o hook mais de uma vez por erro — deduplicar por `digest` | aumento sustentado → P2; em `/[slug]` junto com `lookup_failed` → P1 |
+| `publishing.publish` / `.restore` / `.unpublish` (`outcome`, `version`, `durationMs`) | comandos de publicação | `unavailable` > 2% em 15 min → P1; `not_found`/`forbidden` em rajada para a mesma sessão → tentativa entre tenants |
+
+Cabeçalho `x-nextjs-cache` (`HIT`/`STALE`/`MISS`) mostra o comportamento do cache em produção. Runbook: `docs/runbooks/PUBLIC_PAGE.md`.
+
 ## Regras
 
 - Logs estruturados incluem request/correlation ID, módulo, ambiente e resultado.

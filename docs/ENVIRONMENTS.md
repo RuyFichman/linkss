@@ -60,3 +60,28 @@ Configurar em staging e produção **antes** de convidar usuários externos, esp
 | API | Data API expondo apenas `public`; conferir que novas tabelas não são auto-expostas |
 | Migrações | Aplicar `supabase/migrations/` em ordem via pipeline, nunca pelo dashboard |
 | Segredos | `SUPABASE_SECRET_KEY` apenas no runtime servidor; publishable key em `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` |
+
+## Endereço público e domínio (Sprint 3)
+
+`NEXT_PUBLIC_APP_URL` é a única origem pública: canonical, `og:url`, `metadataBase`, `robots.txt`, endereços exibidos no app e links de e-mail. Como é `NEXT_PUBLIC_*`, o valor entra no build; trocar de domínio exige novo deploy.
+
+| Ambiente | Valor |
+|---|---|
+| local | `http://localhost:3000` (ou a porta usada) |
+| preview/staging | URL `*.vercel.app` estável do ambiente até existir domínio |
+| produção | domínio comprado (previsto para o próximo mês) |
+
+Checklist ao comprar o domínio:
+
+1. Apontar DNS para a Vercel e aguardar o certificado.
+2. Atualizar `NEXT_PUBLIC_APP_URL` em produção e fazer novo deploy.
+3. Atualizar Site URL e Redirect URLs do Auth (`<APP_URL>/auth/confirm`).
+4. Conferir `view-source` de uma página publicada (canonical e `og:url` com o domínio novo) e `robots.txt`.
+5. Prévias antigas no WhatsApp/Instagram ficam no cache deles; não há como forçar atualização.
+
+## Cache das páginas públicas
+
+- `/[slug]` e `/[slug]/opengraph-image` usam ISR sob demanda (`revalidate = 60`). A publicação invalida os caminhos na hora; os 60 s são só o fallback.
+- Na Vercel o cache é compartilhado entre instâncias. Self-hosting com várias instâncias exige `cacheHandler` compartilhado.
+- O cache de arquivos do `next start` local não diferencia maiúsculas no Windows/macOS; o proxy redireciona grafias não canônicas antes do cache.
+- Para verificar localmente: `npm run build && npx next start` e observar `x-nextjs-cache`; `NEXT_PRIVATE_DEBUG_CACHE=1` detalha hits/misses.
