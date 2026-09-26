@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { refreshSession } from "@/lib/supabase/proxy";
 import { safeNextPath } from "@/modules/identity/redirects";
+import { resolveRouteSlug } from "@/modules/publishing/route-slug";
 
 const SIGN_IN_PATH = "/entrar";
 const GUEST_ONLY_PATHS = new Set(["/entrar", "/cadastro"]);
@@ -26,6 +27,17 @@ export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(CORRELATION_HEADER, correlationId);
   const { pathname, search } = request.nextUrl;
+
+  // Non-canonical public addresses ("/Ana-Lima", "/Caf%C3%A9") redirect before any rendering, so
+  // spelling variants never become ISR cache entries (cache pollution, and collisions on
+  // case-insensitive file systems). No auth work happens for these requests.
+  // Canonical single segments only get here through the auth matchers and continue below.
+  const singleSegment = /^\/([^/]+)$/.exec(pathname);
+  if (singleSegment) {
+    const route = resolveRouteSlug(singleSegment[1] ?? "");
+    if (route.kind === "redirect") return NextResponse.redirect(new URL(`/${route.slug}${search}`, request.url), 308);
+    if (route.kind === "invalid") return NextResponse.next({ request: { headers: requestHeaders } });
+  }
 
   let session: Awaited<ReturnType<typeof refreshSession>>;
   try {
@@ -54,7 +66,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Only routes that need a session. Marketing, prototype, health and future public pages stay
-  // free of auth work so they remain fast and cacheable.
-  matcher: ["/app/:path*", "/entrar", "/cadastro", "/confirmar-email", "/recuperar-acesso", "/redefinir-senha", "/auth/:path*"],
+  // Routes that need a session, plus (last entry) single path segments containing an uppercase
+  // letter or a percent-encoded character: those are non-canonical public addresses to redirect.
+  // Canonical public pages, marketing, health and assets never run the proxy, so they stay cacheable.
+  matcher: ["/app/:path*", "/entrar", "/cadastro", "/confirmar-email", "/recuperar-acesso", "/redefinir-senha", "/auth/:path*", "/:segment([^/.]*[A-Z%][^/.]*)"],
 };

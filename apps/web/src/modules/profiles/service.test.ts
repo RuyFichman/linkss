@@ -12,7 +12,10 @@ const PAGE_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const PAGE_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
 function page(id: string, workspaceId: string, slug: string): ProfileSummary {
-  return { id, workspaceId, title: "Página", bio: "", slug, status: "draft", avatarPath: null, createdAt: "2026-09-25T00:00:00Z", updatedAt: "2026-09-25T00:00:00Z" };
+  return {
+    id, workspaceId, title: "Página", bio: "", slug, status: "draft", avatarPath: null, socialLinks: [], blocks: [], draftRevision: 1,
+    livePublicationId: null, publishedAt: null, createdAt: "2026-09-25T00:00:00Z", updatedAt: "2026-09-25T00:00:00Z",
+  };
 }
 
 /** Fake repository that behaves like RLS: only pages in `visible` workspaces can be read. */
@@ -25,6 +28,7 @@ function fakeRepository(visibleWorkspaces: string[], live = 0, plan: "free" | "a
     entitlements: vi.fn(async () => planEntitlementsFromProduct(plan)),
     insert: vi.fn(async (input) => ({ ok: true as const, value: page("cccccccc-cccc-4ccc-8ccc-cccccccccccc", input.workspaceId, input.slug) })),
     updateContent: vi.fn(async (id: string) => ({ ok: true as const, value: page(id, WS_A, "pagina-a") })),
+    updateDraft: vi.fn(async (id: string, _revision: number, patch) => ({ ok: true as const, value: { ...page(id, WS_A, "pagina-a"), ...patch } })),
     changeSlug: vi.fn(async (_id: string, slug: string) => ({ ok: true as const, value: slug })),
     softDelete: vi.fn(async () => ({ ok: true as const, value: null })),
     checkSlug: vi.fn(async (slug: string) => ({ ok: true as const, value: { normalized: slug, status: "available" } })),

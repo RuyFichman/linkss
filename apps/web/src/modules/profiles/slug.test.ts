@@ -12,7 +12,8 @@ const MIGRATIONS_DIR = fileURLToPath(new URL("../../../../../supabase/migrations
 function topLevelSegments(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const full = join(dir, entry);
-    if (!statSync(full).isDirectory() || entry.startsWith("_")) return [];
+    // Dynamic segments ([slug] is the public renderer itself) and private folders are not fixed words.
+    if (!statSync(full).isDirectory() || entry.startsWith("_") || entry.startsWith("[")) return [];
     if (entry.startsWith("(") && entry.endsWith(")")) return topLevelSegments(full);
     return [entry];
   });
