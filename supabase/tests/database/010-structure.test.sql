@@ -1,6 +1,6 @@
 -- Structural guarantees: RLS everywhere, no anon privileges, hardened functions, seeded catalogue.
 begin;
-select plan(17);
+select plan(20);
 
 select has_table('public', 'user_accounts', 'user_accounts exists');
 select has_table('public', 'workspaces', 'workspaces exists');
@@ -11,6 +11,7 @@ select has_table('public', 'plan_entitlements', 'plan_entitlements exists');
 select has_table('public', 'reserved_slugs', 'reserved_slugs exists');
 select has_table('public', 'slug_history', 'slug_history exists');
 select has_table('public', 'audit_events', 'audit_events exists');
+select has_table('public', 'profile_publications', 'profile_publications exists');
 
 select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -46,7 +47,8 @@ select is(
    where n.nspname = 'public' and p.proname in (
      'ensure_personal_workspace', 'create_agency_workspace', 'soft_delete_workspace',
      'change_member_role', 'remove_workspace_member', 'record_auth_event',
-     'check_slug_availability', 'change_profile_slug', 'soft_delete_profile')
+     'check_slug_availability', 'change_profile_slug', 'soft_delete_profile',
+     'publish_profile', 'restore_profile_publication', 'unpublish_profile')
      and has_function_privilege('anon', p.oid, 'execute')),
   0,
   'anon cannot execute any tenancy RPC'
@@ -59,6 +61,20 @@ select is(
      and has_function_privilege('authenticated', p.oid, 'execute')),
   0,
   'authenticated can execute only the three RLS helper functions in private'
+);
+
+select is(
+  (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname in ('public', 'private') and has_function_privilege('anon', p.oid, 'execute')),
+  array['get_public_page'],
+  'get_public_page is the only function anon can execute'
+);
+
+select is(
+  (select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and p.proname = 'get_public_page' and p.prosecdef and p.provolatile = 's'),
+  1,
+  'get_public_page is a stable security definer function (read-only)'
 );
 
 select is(
