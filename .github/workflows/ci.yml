@@ -24,3 +24,29 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+
+  # Database gate (ADR 0006): migrations, RLS and pgTAP tests against the local Supabase stack.
+  # Kept separate so `npm run check` never needs Docker.
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Start local Supabase (database, Auth, PostgREST only)
+        run: npx supabase start -x realtime,storage-api,imgproxy,mailpit,studio,edge-runtime,logflare,vector,supavisor
+      - name: pgTAP tests
+        run: npm run test:db
+      - name: Security and performance advisors (fail on warnings)
+        run: npx supabase db advisors --local --level warn --fail-on warn
+      - name: Generated database types are up to date
+        run: |
+          npm run db:types
+          git diff --exit-code -- apps/web/src/lib/database.types.ts
+      - name: Stop local Supabase
+        if: always()
+        run: npx supabase stop --no-backup

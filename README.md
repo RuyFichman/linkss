@@ -6,14 +6,45 @@ Codinome da plataforma brasileira de conversão mobile orientada a páginas prof
 
 - Node.js 24
 - npm 11+
+- Docker (somente para o Supabase local e os testes de banco)
 
 ```bash
 npm install
-copy .env.example .env.local
+npm run db:start                 # Supabase local: Postgres, Auth, PostgREST, Studio, Mailpit
+copy .env.example apps\web\.env.local
 npm run dev
 ```
 
+Em shells Unix use `cp .env.example apps/web/.env.local`. Preencha `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` com `API_URL` e `PUBLISHABLE_KEY` de `npx supabase status`.
+
 A aplicação fica em `http://localhost:3000`; health check em `/api/health`.
+
+### E-mail local
+
+Os e-mails de confirmação e recuperação não saem da máquina: abra o Mailpit em `http://127.0.0.1:54324`. Os links apontam para `http://localhost:3000/auth/confirm` e expiram em 1 hora. Use endereços `@example.test` para contas de teste.
+
+### Banco de dados
+
+```bash
+npm run db:reset    # reaplica supabase/migrations e supabase/seed.sql
+npm run test:db     # testes pgTAP (isolamento entre tenants, papéis, slugs, entitlements, auditoria)
+npm run db:types    # regenera apps/web/src/lib/database.types.ts
+npm run db:stop
+```
+
+Migrações nunca são aplicadas em projetos hospedados por este fluxo; veja `docs/ENVIRONMENTS.md`.
+
+## Rotas da Sprint 2
+
+- `/cadastro`, `/entrar`, `/confirmar-email`, `/recuperar-acesso`, `/redefinir-senha` — autenticação em pt-BR.
+- `/auth/confirm` — valida links de e-mail (`token_hash`).
+- `/app` — área autenticada: redireciona para o onboarding ou para a conta pessoal.
+- `/app/comecar` — criação da primeira página.
+- `/app/w/[workspaceId]` — páginas da conta, uso do plano e criação.
+- `/app/w/[workspaceId]/paginas/nova` e `/app/w/[workspaceId]/paginas/[profileId]` — nova página e configurações (conteúdo, endereço, exclusão).
+- `/app/contas/nova` — criar conta da agência.
+
+Todas as rotas de nível superior são reservadas como slugs (teste automatizado).
 
 ## Rotas da Sprint 1
 
@@ -59,10 +90,11 @@ Em desenvolvimento/teste, `WAITLIST_STORE=memory`. Para uso real, configure `WAI
 ## Qualidade
 
 ```bash
-npm run check
+npm run check     # lint (0 warnings) + typecheck + Vitest + build — não precisa de Docker
+npm run test:db   # pgTAP no Supabase local — precisa de Docker
 ```
 
-Executa lint com zero warnings, typecheck, testes Vitest e build de produção — a mesma sequência do CI.
+O CI roda os dois em jobs separados (`quality` e `database`).
 
 ## Estrutura
 
@@ -71,10 +103,14 @@ apps/web/src/app/(marketing)/  landing e privacidade
 apps/web/src/app/proto/        rotas descartáveis do protótipo
 apps/web/src/prototype/        store local, cenários e instrumentação
 apps/web/src/ui/               componentes acessíveis que graduam
-apps/web/src/modules/          modelo, renderer e waitlist
+apps/web/src/app/(auth)/       autenticação
+apps/web/src/app/app/          área autenticada
+apps/web/src/modules/          identity, profiles, entitlements, audit, editor, waitlist
+apps/web/src/lib/supabase/     clientes Supabase (server, browser, proxy)
 docs/ux/                       jornadas, wireframes, tokens e decisões
 docs/research/                 entrevistas e teste de usabilidade
-supabase/migrations/           migrações versionadas não executadas
+supabase/migrations/           migrações versionadas (aplicadas só no stack local)
+supabase/tests/database/       testes pgTAP
 ```
 
 ## Documentos principais
@@ -85,3 +121,4 @@ supabase/migrations/           migrações versionadas não executadas
 - `docs/ARCHITECTURE.md`
 - `docs/SPRINT_0_REPORT.md`
 - `docs/SPRINT_1_REPORT.md`
+- `docs/SPRINT_2_REPORT.md`

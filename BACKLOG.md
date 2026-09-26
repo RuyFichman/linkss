@@ -14,12 +14,17 @@ Convenção: `P0` bloqueia o MVP; `P1` pode ter versão simples; `P2` fica após
 
 ## Sprint 2 — identidade e tenancy
 
-- [ ] P0 Criar migrações de users/workspaces/memberships/profiles.
-- [ ] P0 Implementar RLS e testes de isolamento.
-- [ ] P0 Implementar auth, verificação e recuperação.
-- [ ] P0 Criar workspace individual no onboarding.
-- [ ] P0 Reservar, normalizar e validar slugs.
-- [ ] P1 Registrar auditoria de ações sensíveis.
+Verificado no stack Supabase local (pgTAP + navegador); nada foi aplicado em projeto hospedado.
+
+- [x] P0 Criar migrações de users/workspaces/memberships/profiles.
+- [x] P0 Implementar RLS e testes de isolamento.
+- [x] P0 Implementar auth, verificação e recuperação.
+- [x] P0 Criar workspace individual no onboarding.
+- [x] P0 Reservar, normalizar e validar slugs.
+- [x] P1 Registrar auditoria de ações sensíveis (`profile.published` preparado para a Sprint 3).
+- [ ] P0 Provisionar staging (Supabase + Vercel), aplicar migrações e configurar Auth conforme `docs/ENVIRONMENTS.md` — depende de aprovação do founder.
+- [ ] P0 Escolher e contratar SMTP para e-mails de Auth (ADR `MailAdapter`) e atualizar o mapa de dados.
+- [ ] P1 Ativar CAPTCHA (Turnstile) no Auth antes do piloto externo.
 
 ## Sprint 3 — página pública
 
@@ -77,6 +82,9 @@ Convenção: `P0` bloqueia o MVP; `P1` pode ter versão simples; `P2` fica após
 - [ ] P0 QA mobile/cross-browser e acessibilidade prioritária.
 
 ## Débito/decisões abertas
+
+- [ ] Rate limit próprio para Server Actions sensíveis (além dos limites do Supabase Auth) — Sprint 9.
+- [ ] Confirmar decisões provisórias UX-013 a UX-019 (retenção de slug, papéis, limites).
 
 - [ ] Selecionar nome público após busca de marca, domínio e redes.
 - [ ] Comparar gateway por recorrência, Pix, cartão, webhooks, split, chargeback e conciliação.
