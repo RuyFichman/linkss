@@ -74,7 +74,28 @@ Navegador ── proxy.ts (renova sessão, correlation id, /app exige sessão)
 - **Entitlements:** `max_profiles` é garantido por trigger com lock do workspace; a aplicação usa `assertEntitlement` e nunca compara nome de plano.
 - **Slugs:** normalização idêntica em TypeScript e SQL, unicidade global entre páginas vivas, lista reservada e retenção de 90 dias após troca/exclusão.
 - **Módulos:** `identity` (sessão, guard, permissões, ações de auth e workspace), `profiles` (slug, serviço de páginas com portas, repositório Supabase), `entitlements`, `audit` (redação + gravação de eventos de autenticação). Clientes Supabase ficam em `src/lib/supabase/` (`server`, `browser`, `proxy`).
-- **Fora desta sprint:** snapshots/publicação (Sprint 3), convites (Sprint 7), cobrança (Sprint 8), purge e exclusão de conta (Sprint 9).
+- **Fora da Sprint 2:** snapshots/publicação (entregues na Sprint 3), convites (Sprint 7), cobrança (Sprint 8), purge e exclusão de conta (Sprint 9).
+
+## Publicação e renderer público — implementado na Sprint 3
+
+Decisão: `docs/adr/0007-publishing-and-public-renderer.md`.
+
+```text
+Editor (app autenticado) ── Server Actions ── modules/publishing/service.ts (profile.publish)
+        │                                        └─ RPCs publish/restore/unpublish (security definer, auditadas)
+        │                                               └─ profile_publications (imutável) + profiles.live_publication_id
+        └─ revalidatePath(/{slug}, /{slug}/opengraph-image)
+
+Visitante ── CDN/ISR (/[slug], revalidate 60 s) ── get_public_page(slug) [anon, só por slug]
+   └─ proxy.ts só para grafias não canônicas (308) ── nunca para páginas canônicas
+```
+
+- **Rascunho:** `profiles.title`, `bio`, `avatar_path`, `social_links`, `blocks` (só links nesta sprint) e `draft_revision` (controle otimista). O banco valida formato, esquemas de URL e hosts das redes (`LK040`).
+- **Snapshot:** `profile_publications` imutável, versão por página, 10 versões retidas; ponteiro `live_publication_id` com FK composta para a própria página.
+- **Estados públicos:** publicada; endereço trocado (307 durante a retenção); suspensa ("indisponível", `noindex`); não publicada e inexistente respondem o mesmo 404.
+- **Metadados:** canonical/OG a partir de `NEXT_PUBLIC_APP_URL`; imagem OG gerada por endereço; `robots.txt` sem sitemap.
+- **Observabilidade:** `onRequestError`, eventos `public_page.*` e `publishing.*`, Web Vitals em `/api/vitals`.
+- **Módulos:** `publishing` (documento, serviço, repositório, cache, renderer, metadados, rota pública); `profiles` ganhou o rascunho de links/redes (`draft-content.ts`). O editor de blocos completo é da Sprint 4.
 
 ## Regras de escala
 

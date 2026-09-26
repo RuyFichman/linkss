@@ -34,6 +34,16 @@ npm run db:stop
 
 Migrações nunca são aplicadas em projetos hospedados por este fluxo; veja `docs/ENVIRONMENTS.md`.
 
+## Rotas da Sprint 3
+
+- `/<endereço>` — página pública publicada (ISR). Grafias não canônicas redirecionam (308); endereço trocado redireciona (307) durante a retenção; não publicada ou inexistente → 404; workspace suspenso → "Página indisponível".
+- `/<endereço>/opengraph-image` — imagem de prévia (1200×630).
+- `/app/w/[workspaceId]/paginas/[profileId]` — agora com publicação, versões, redes sociais e links; `/previa` mostra o rascunho com o renderer público.
+- `/api/vitals` — recebe Web Vitals das páginas públicas.
+- `/robots.txt`.
+
+A origem pública (canonical/OG) vem de `NEXT_PUBLIC_APP_URL`. Para testar o cache como em produção: `npm run build` e `npx next start` em `apps/web`.
+
 ## Rotas da Sprint 2
 
 - `/cadastro`, `/entrar`, `/confirmar-email`, `/recuperar-acesso`, `/redefinir-senha` — autenticação em pt-BR.
@@ -122,3 +132,4 @@ supabase/tests/database/       testes pgTAP
 - `docs/SPRINT_0_REPORT.md`
 - `docs/SPRINT_1_REPORT.md`
 - `docs/SPRINT_2_REPORT.md`
+- `docs/SPRINT_3_REPORT.md`

@@ -22,10 +22,23 @@ Todos no Postgres do Supabase (mesmo projeto por ambiente). Nenhum novo operador
 | `public.user_accounts` | nome de exibição, locale | personalizar a interface | execução do contrato | vida da conta; `deleted_at` + `purge_after` (30 dias) antes da remoção definitiva |
 | `public.workspaces` | nome da conta (pode identificar a agência), `created_by` | tenancy e colaboração | execução do contrato | soft delete com `purge_after = deleted_at + 30 dias`; workspace pessoal termina junto com a conta |
 | `public.workspace_memberships` | vínculo pessoa ↔ workspace, papel, quem convidou, datas | autorização | execução do contrato | registro revogado mantido enquanto o workspace existir (histórico de acesso); removido com o workspace ou a conta |
-| `public.profiles` | título, bio e, futuramente, avatar (chave de storage) — conteúdo que o cliente decide publicar | página do cliente | execução do contrato | soft delete com `purge_after = deleted_at + 30 dias`; publicação pública só a partir da Sprint 3 |
+| `public.profiles` | rascunho: título, bio, avatar (chave de storage), redes sociais e links (URLs escolhidas pelo cliente, podem conter telefone/e-mail em `tel:`/`mailto:`) | página do cliente | execução do contrato | soft delete com `purge_after = deleted_at + 30 dias` |
 | `public.slug_history` | endereço liberado, página e workspace de origem, quem liberou | impedir sequestro/impersonação de endereços recém-usados; suporte | legítimo interesse (segurança) | manter ao menos até `hold_until` (90 dias) + 1 ano; purge na Sprint 9 |
 | `public.audit_events` | id do ator, ação, alvo, metadados mínimos (método, correlation id, slug antigo/novo, papéis) — **nunca** e-mail completo, token, senha, cookie ou IP | trilha de segurança e investigação | legítimo interesse / obrigação de segurança | 1 ano (provisório); purge pelo job da Sprint 9 executado como `postgres`; append-only para todos os papéis de cliente |
 | Logs estruturados da aplicação | correlation id, evento, resultado, código de erro; e-mails mascarados e chaves sensíveis descartadas | operação e diagnóstico | legítimo interesse | conforme retenção do provedor de logs (Vercel/Sentry, a definir antes do piloto) |
+
+## Stores adicionados na Sprint 3
+
+Nenhum novo operador/subprocessador. A página pública é conteúdo que o cliente escolheu publicar; ela passa a ficar em cache (ISR/CDN da Vercel quando provisionada).
+
+| Store | Dados pessoais | Finalidade | Base / owner | Retenção e exclusão |
+|---|---|---|---|---|
+| `public.profile_publications` | cópia imutável do conteúdo publicado (título, bio, avatar, redes, links visíveis) e `published_by` | servir a página pública e permitir rollback | execução do contrato | últimas 10 versões por página; apagadas junto com a página no purge (cascata); despublicar não apaga versões |
+| Cache ISR/CDN da página e da imagem OG | o mesmo conteúdo público | desempenho | execução do contrato | invalidado ao publicar, restaurar, tirar do ar, trocar endereço ou excluir; senão expira em 60 s |
+| Logs `web_vital` (`/api/vitals`) | nenhum: nome da métrica, valor, classificação, tipo de navegação, rota fixa `public_page` (sem URL, slug, id, user agent ou IP) | desempenho do renderer | legítimo interesse | retenção do provedor de logs |
+| Logs `request.error`, `public_page.*`, `publishing.*` | template da rota, resultado, versão, duração, correlation id — nunca caminho concreto, cabeçalhos ou cookies | operação | legítimo interesse | retenção do provedor de logs |
+
+Exclusão da página remove o conteúdo público imediatamente (404 após a invalidação); o conteúdo continua nas tabelas até o purge, como na Sprint 2. Links de terceiros e caches externos (prévias já geradas pelo WhatsApp/Instagram) estão fora do nosso controle e devem ser mencionados na política de privacidade.
 
 ### Purge planejado (documentado, não agendado)
 

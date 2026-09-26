@@ -28,11 +28,16 @@ Verificado no stack Supabase local (pgTAP + navegador); nada foi aplicado em pro
 
 ## Sprint 3 — página pública
 
-- [ ] P0 Criar modelo de snapshot publicado.
-- [ ] P0 Implementar renderer público por slug.
-- [ ] P0 Publicar, invalidar cache e restaurar snapshot anterior.
-- [ ] P0 Adicionar metadados/OG/canonical e estados 404/suspenso.
-- [ ] P1 Instrumentar Web Vitals e erros.
+Verificado localmente (pgTAP + `next start` de produção + Lighthouse); nada provisionado. Relatório: `docs/SPRINT_3_REPORT.md`.
+
+- [x] P0 Criar modelo de snapshot publicado.
+- [x] P0 Implementar renderer público por slug.
+- [x] P0 Publicar, invalidar cache e restaurar snapshot anterior.
+- [x] P0 Adicionar metadados/OG/canonical e estados 404/suspenso.
+- [x] P1 Instrumentar Web Vitals e erros (logs estruturados; Sentry/dashboards dependem de provisionamento).
+- [ ] P0 Medir em staging (CDN real): publicação visível em ≤ 30 s, LCP/CLS de campo e prévia OG no WhatsApp/Instagram — depende de staging (URL `*.vercel.app` basta).
+- [ ] P0 Trocar `NEXT_PUBLIC_APP_URL` e o Auth para o domínio comprado (checklist em `docs/ENVIRONMENTS.md`).
+- [ ] P1 Rate limit/firewall para `/api/vitals` e para flood de endereços inexistentes no renderer (Sprint 9).
 
 ## Sprint 4 — editor
 
