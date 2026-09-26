@@ -1,0 +1,2 @@
+-- Local development seed. Reference data (plans, entitlements, reserved slugs) lives in migrations
+-- because every environment needs it. Keep this file free of personal data.

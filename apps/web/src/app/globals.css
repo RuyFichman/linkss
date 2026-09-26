@@ -94,6 +94,10 @@ button, a, input, select, textarea, summary { outline: none; }
 .ui-field label, .ui-label { color: var(--app-text); font-size: 0.875rem; font-weight: 700; }
 .ui-input, .ui-select, .ui-textarea { width: 100%; min-height: 44px; border: 1px solid var(--app-border); border-radius: var(--radius-control); color: var(--app-text); background: var(--app-surface); padding: 0.7rem 0.8rem; transition: border-color var(--duration-fast) var(--ease-product), box-shadow var(--duration-fast) var(--ease-product); }
 .ui-textarea { min-height: 96px; resize: vertical; }
+.ui-input.ui-input-bare, .ui-input.ui-input-bare:hover, .ui-input.ui-input-bare:focus, .ui-input.ui-input-bare[aria-invalid="true"] { border-color: transparent; box-shadow: none; }
+.ui-input-group { display: flex; min-height: 44px; align-items: center; overflow: hidden; border: 1px solid var(--app-border); border-radius: var(--radius-control); background: var(--app-surface); }
+.ui-input-group:focus-within { border-color: var(--app-focus); }
+.ui-input-group:has([aria-invalid="true"]) { border-color: var(--app-danger); }
 .ui-input:hover, .ui-select:hover, .ui-textarea:hover { border-color: #9aa3b2; }
 .ui-input:focus, .ui-select:focus, .ui-textarea:focus { border-color: var(--app-focus); box-shadow: 0 0 0 3px rgb(112 71 235 / 0.18); }
 .ui-input[aria-invalid="true"], .ui-select[aria-invalid="true"], .ui-textarea[aria-invalid="true"] { border-color: var(--app-danger); }
@@ -113,7 +117,7 @@ button, a, input, select, textarea, summary { outline: none; }
 .ui-badge-danger { color: var(--app-danger); background: var(--app-danger-soft); }
 .ui-badge-accent { color: var(--app-accent-hover); background: var(--app-accent-soft); }
 
-.ui-dialog { width: min(560px, calc(100% - 2rem)); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid var(--app-border); border-radius: var(--radius-panel); color: var(--app-text); background: var(--app-surface); padding: 1.5rem; box-shadow: var(--shadow-raised); }
+.ui-dialog { margin: auto; width: min(560px, calc(100% - 2rem)); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid var(--app-border); border-radius: var(--radius-panel); color: var(--app-text); background: var(--app-surface); padding: 1.5rem; box-shadow: var(--shadow-raised); }
 .ui-dialog::backdrop { background: rgb(16 20 30 / 0.62); backdrop-filter: blur(3px); }
 .ui-toast { position: fixed; z-index: 70; right: 1rem; bottom: 1rem; display: flex; max-width: min(420px, calc(100% - 2rem)); align-items: center; gap: 1rem; border: 1px solid var(--app-border); border-radius: var(--radius-control); color: var(--app-text); background: var(--app-surface); padding: 0.8rem 1rem; box-shadow: var(--shadow-raised); }
 .ui-empty { display: grid; justify-items: center; gap: 0.75rem; border: 1px dashed var(--app-border); border-radius: var(--radius-card); color: var(--app-muted); padding: 2rem 1rem; text-align: center; }

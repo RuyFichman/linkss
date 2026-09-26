@@ -51,6 +51,31 @@ Eventos brutos ── retenção curta ── agregados diários ── dashboar
 
 Módulos podem compartilhar o mesmo deploy e banco, mas não devem editar as tabelas uns dos outros sem uma interface de domínio.
 
+## Identidade e tenancy — implementado na Sprint 2
+
+Decisões: `docs/adr/0004-tenancy-and-authorization.md`, `0005-authentication.md`, `0006-database-testing.md`.
+
+```text
+Navegador ── proxy.ts (renova sessão, correlation id, /app exige sessão)
+   │
+   ├─ Server Components / Server Actions / Route Handlers
+   │     └─ modules/identity/guard.ts  → requireWorkspaceAccess(identidade, workspaceId, ação)
+   │           (membership relida a cada requisição; não membro = 404)
+   │
+   └─ Supabase (publishable key + cookie do usuário) ── PostgREST ── Postgres
+                                                        ├─ RLS por comando + helpers em `private`
+                                                        ├─ RPCs estreitas para mutações sensíveis
+                                                        └─ triggers: limite de páginas, último owner, slug
+```
+
+- **Tabelas:** `user_accounts`, `workspaces` (`personal|agency`), `workspace_memberships` (`owner|admin|editor`), `profiles` (página, draft/published/archived), `plans` + `plan_entitlements`, `reserved_slugs`, `slug_history`, `audit_events`.
+- **Autorização em duas camadas:** o servidor decide com a matriz tipada (`modules/identity/permissions.ts`); o banco repete a regra com RLS, grants por coluna e RPCs `security definer` que conferem `auth.uid()` e o papel.
+- **Workspace pessoal:** `ensure_personal_workspace()` idempotente, chamado após a verificação de e-mail e pelo layout autenticado (não há trigger em `auth.users`).
+- **Entitlements:** `max_profiles` é garantido por trigger com lock do workspace; a aplicação usa `assertEntitlement` e nunca compara nome de plano.
+- **Slugs:** normalização idêntica em TypeScript e SQL, unicidade global entre páginas vivas, lista reservada e retenção de 90 dias após troca/exclusão.
+- **Módulos:** `identity` (sessão, guard, permissões, ações de auth e workspace), `profiles` (slug, serviço de páginas com portas, repositório Supabase), `entitlements`, `audit` (redação + gravação de eventos de autenticação). Clientes Supabase ficam em `src/lib/supabase/` (`server`, `browser`, `proxy`).
+- **Fora desta sprint:** snapshots/publicação (Sprint 3), convites (Sprint 7), cobrança (Sprint 8), purge e exclusão de conta (Sprint 9).
+
 ## Regras de escala
 
 1. Não consultar blocos editáveis para cada page view; servir snapshot publicado.
