@@ -16,10 +16,15 @@ interface PublishPanelProps {
   publications: PublicationSummary[];
   previewHref: string;
   canPublish: boolean;
+  /**
+   * The block editor shows the publication state and the publish button next to its save status
+   * (it knows the confirmed draft revision); the panel then keeps links, unpublish and versions.
+   */
+  editorManaged?: boolean;
 }
 
 /** Publication status, publish/unpublish controls and version history for one page. */
-export function PublishPanel({ target, publications, previewHref, canPublish }: PublishPanelProps) {
+export function PublishPanel({ target, publications, previewHref, canPublish, editorManaged = false }: PublishPanelProps) {
   const state = publicationState(target, publications);
   const live = target.livePublicationId !== null;
 
@@ -27,9 +32,13 @@ export function PublishPanel({ target, publications, previewHref, canPublish }: 
     <section className="surface-card grid gap-5 p-5 sm:p-8" aria-labelledby="publishing-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="publishing-title" className="text-xl font-bold">{PUBLISHING_COPY.title}</h2>
-        <Badge tone={STATE_TONE[state]}>{PUBLISHING_COPY.badge[state]}</Badge>
+        {editorManaged ? null : <Badge tone={STATE_TONE[state]}>{PUBLISHING_COPY.badge[state]}</Badge>}
       </div>
-      <p className="m-0">{PUBLISHING_COPY.state[state]}{live && target.publishedAt ? ` ${PUBLISHING_COPY.liveSince(formatDateTime(target.publishedAt))}` : ""}</p>
+      {editorManaged ? (
+        live && target.publishedAt ? <p className="m-0">{PUBLISHING_COPY.liveSince(formatDateTime(target.publishedAt))}</p> : null
+      ) : (
+        <p className="m-0">{PUBLISHING_COPY.state[state]}{live && target.publishedAt ? ` ${PUBLISHING_COPY.liveSince(formatDateTime(target.publishedAt))}` : ""}</p>
+      )}
 
       <div className="flex flex-wrap gap-3">
         <Link className="ui-button ui-button-secondary" href={previewHref}>{PUBLISHING_COPY.preview}</Link>
@@ -43,7 +52,7 @@ export function PublishPanel({ target, publications, previewHref, canPublish }: 
 
       {canPublish ? (
         <div className="flex flex-wrap items-start gap-3">
-          <PublishForm action={publishProfileAction.bind(null, target.id)} draftRevision={target.draftRevision} upToDate={state === "live_current"} hasPublished={publications.length > 0} />
+          {editorManaged ? null : <PublishForm action={publishProfileAction.bind(null, target.id)} draftRevision={target.draftRevision} upToDate={state === "live_current"} hasPublished={publications.length > 0} />}
           {live ? <UnpublishDialog action={unpublishProfileAction.bind(null, target.id)} /> : null}
         </div>
       ) : (

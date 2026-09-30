@@ -2,11 +2,11 @@ import "server-only";
 import type { SupabaseServerClient } from "@/lib/supabase/server";
 import { resolveEntitlements } from "@/modules/entitlements";
 import type { Json } from "@/lib/database.types";
-import { parseDraftBlocks, parseSocialLinks } from "./draft-content";
+import { readDraftBlocks } from "@/modules/blocks";
 import { profileErrorFromDatabase } from "./errors";
 import type { ProfileRepository, ProfileSummary } from "./service";
 
-const PROFILE_COLUMNS = "id, workspace_id, title, bio, slug, status, avatar_path, social_links, blocks, draft_revision, live_publication_id, published_at, created_at, updated_at";
+const PROFILE_COLUMNS = "id, workspace_id, title, bio, slug, status, avatar_path, blocks, draft_revision, live_publication_id, published_at, created_at, updated_at";
 // Bounded even though Free/Pro/Agency allow at most 10 live pages per workspace.
 const PROFILE_LIST_LIMIT = 200;
 
@@ -18,7 +18,6 @@ interface ProfileRow {
   slug: string;
   status: ProfileSummary["status"];
   avatar_path: string | null;
-  social_links: Json;
   blocks: Json;
   draft_revision: number;
   live_publication_id: string | null;
@@ -30,7 +29,7 @@ interface ProfileRow {
 function toSummary(row: ProfileRow): ProfileSummary {
   return {
     id: row.id, workspaceId: row.workspace_id, title: row.title, bio: row.bio, slug: row.slug, status: row.status, avatarPath: row.avatar_path,
-    socialLinks: parseSocialLinks(row.social_links), blocks: parseDraftBlocks(row.blocks), draftRevision: row.draft_revision,
+    blocks: readDraftBlocks(row.blocks), draftRevision: row.draft_revision,
     livePublicationId: row.live_publication_id, publishedAt: row.published_at, createdAt: row.created_at, updatedAt: row.updated_at,
   };
 }
@@ -73,19 +72,11 @@ export function createSupabaseProfileRepository(supabase: SupabaseServerClient):
       return error ? { ok: false, error: profileErrorFromDatabase(error) } : { ok: true, value: toSummary(data) };
     },
 
-    async updateContent(profileId, input) {
-      const { data, error } = await supabase.from("profiles").update({ title: input.title, bio: input.bio }).eq("id", profileId).select(PROFILE_COLUMNS).maybeSingle();
-      if (error) return { ok: false, error: profileErrorFromDatabase(error) };
-      // Zero rows means RLS filtered the update (deleted page, suspended workspace, lost access).
-      return data ? { ok: true, value: toSummary(data) } : { ok: false, error: "not_found" };
-    },
-
-    async updateDraft(profileId, expectedRevision, patch) {
-      // Plain JSON arrays; the database validates their shape again (private.validate_profile_draft).
-      const update: { social_links?: Json[]; blocks?: Json[] } = {};
-      if (patch.socialLinks) update.social_links = patch.socialLinks.map((link) => ({ network: link.network, url: link.url }));
-      if (patch.blocks) update.blocks = patch.blocks.map((block) => ({ id: block.id, type: block.type, title: block.title, url: block.url, visible: block.visible }));
-      // Optimistic concurrency: the write only lands on the revision the person was looking at.
+    async updateDraft(profileId, expectedRevision, draft) {
+      // Plain JSON; the database validates the blocks again (private.validate_profile_draft).
+      const update = { title: draft.title, bio: draft.bio, blocks: draft.blocks as unknown as Json[] };
+      // Optimistic concurrency: one conditional UPDATE, so the write only lands on the revision the
+      // person was looking at and title, bio and block order change atomically.
       const { data, error } = await supabase.from("profiles").update(update).eq("id", profileId).eq("draft_revision", expectedRevision).select(PROFILE_COLUMNS).maybeSingle();
       if (error) return { ok: false, error: profileErrorFromDatabase(error) };
       if (data) return { ok: true, value: toSummary(data) };

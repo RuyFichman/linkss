@@ -7,9 +7,8 @@ import { APP_COPY } from "@/content/pt-BR";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { revalidatePublicPage } from "@/modules/publishing/cache";
-import { SOCIAL_NETWORK_IDS, type SocialNetwork } from "@/modules/publishing/social";
 import { getProfileService } from "./server";
-import type { CommandResult, ProfileField } from "./service";
+import type { CommandResult, DraftSnapshot, ProfileField } from "./service";
 import type { SlugValidation } from "./slug";
 
 function stringField(formData: FormData, name: string): string {
@@ -40,48 +39,57 @@ export async function createProfileAction(workspaceId: string, _previous: FormSt
   redirect(`/app/w/${result.value.workspaceId}?criada=1`);
 }
 
-export async function updateProfileContentAction(profileId: string, _previous: FormState, formData: FormData): Promise<FormState<ProfileField>> {
-  const values = { title: stringField(formData, "title"), bio: stringField(formData, "bio") };
-  const result = await (await getProfileService()).updateContent(profileId, values);
-  await logCommand("profile.update_content", result);
-  if (!result.ok) return toFormState(result, values);
-  refresh();
-  return { status: "success", message: APP_COPY.profileForm.saved };
+export type SaveDraftResult =
+  | { ok: true; revision: number }
+  | { ok: false; error: "conflict" | "validation" | "forbidden" | "not_found" | "unauthenticated" | "unavailable" };
+
+function saveError(result: Extract<CommandResult<unknown>, { ok: false }>): Extract<SaveDraftResult, { ok: false }>["error"] {
+  switch (result.error) {
+    case "conflict":
+    case "forbidden":
+    case "not_found":
+    case "unauthenticated":
+    case "validation":
+      return result.error;
+    case "content_invalid":
+      return "validation";
+    default:
+      return "unavailable";
+  }
 }
 
-export async function updateSocialLinksAction(profileId: string, _previous: FormState, formData: FormData): Promise<FormState<ProfileField>> {
-  const values = Object.fromEntries(SOCIAL_NETWORK_IDS.map((network) => [network, stringField(formData, network)])) as Record<SocialNetwork, string>;
-  const result = await (await getProfileService()).updateSocialLinks(profileId, values);
-  await logCommand("profile.update_social_links", result);
-  if (!result.ok) return toFormState(result, values);
-  refresh();
-  return { status: "success", message: APP_COPY.social.saved };
+/**
+ * Editor autosave. The payload is client-controlled: the service re-authorizes the page and
+ * validates every block like the database. No refresh(): the editor keeps its own state, and
+ * re-rendering the page on every keystroke would be wasteful. Logs carry the outcome only, never
+ * block content or phone numbers.
+ */
+export async function saveDraftAction(profileId: string, payload: unknown): Promise<SaveDraftResult> {
+  const startedAt = performance.now();
+  const correlationId = correlationIdFrom((await headers()).get(CORRELATION_HEADER));
+  let result: CommandResult<{ revision: number }>;
+  try {
+    result = await (await getProfileService()).saveDraft(profileId, payload);
+  } catch {
+    result = { ok: false, error: "unavailable", message: APP_COPY.errors.unavailable };
+  }
+  const outcome = result.ok ? "ok" : saveError(result);
+  logEvent(outcome === "ok" ? "info" : outcome === "unavailable" ? "error" : "warn", "editor.save", { correlationId, outcome, durationMs: Math.round(performance.now() - startedAt) });
+  return result.ok ? { ok: true, revision: result.value.revision } : { ok: false, error: saveError(result) };
 }
 
-/** Adds a link when `linkId` is null, otherwise edits it. */
-export async function saveLinkAction(profileId: string, linkId: string | null, _previous: FormState, formData: FormData): Promise<FormState<ProfileField>> {
-  const values = { title: stringField(formData, "title"), url: stringField(formData, "url") };
-  const result = await (await getProfileService()).saveLink(profileId, linkId, values);
-  await logCommand(linkId ? "profile.update_link" : "profile.add_link", result);
-  if (!result.ok) return toFormState(result, values);
-  refresh();
-  return { status: "success", message: linkId ? APP_COPY.links.saved : APP_COPY.links.added };
-}
+export type LoadDraftResult = { ok: true; draft: DraftSnapshot } | { ok: false };
 
-export async function removeLinkAction(profileId: string, linkId: string): Promise<FormState<ProfileField>> {
-  const result = await (await getProfileService()).removeLink(profileId, linkId);
-  await logCommand("profile.remove_link", result);
-  if (!result.ok) return toFormState(result, {});
-  refresh();
-  return { status: "success", message: APP_COPY.links.removed };
-}
-
-export async function moveLinkAction(profileId: string, linkId: string, direction: "up" | "down"): Promise<FormState<ProfileField>> {
-  const result = await (await getProfileService()).moveLink(profileId, linkId, direction);
-  await logCommand("profile.move_link", result);
-  if (!result.ok) return toFormState(result, {});
-  refresh();
-  return { status: "success" };
+/** Latest saved draft, for "Carregar a versão mais recente" and "Manter as minhas alterações". */
+export async function loadDraftAction(profileId: string): Promise<LoadDraftResult> {
+  let result: CommandResult<DraftSnapshot>;
+  try {
+    result = await (await getProfileService()).loadDraft(profileId);
+  } catch {
+    result = { ok: false, error: "unavailable", message: APP_COPY.errors.unavailable };
+  }
+  await logCommand("editor.load_latest", result);
+  return result.ok ? { ok: true, draft: result.value } : { ok: false };
 }
 
 export async function changeProfileSlugAction(profileId: string, _previous: FormState, formData: FormData): Promise<FormState<ProfileField>> {

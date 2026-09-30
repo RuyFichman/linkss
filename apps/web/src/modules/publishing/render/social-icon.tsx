@@ -1,4 +1,4 @@
-import type { SocialNetwork } from "../social";
+import type { SocialNetwork } from "@/modules/blocks";
 
 /**
  * Simplified monochrome glyphs (not official logos) so the renderer ships no icon library or
@@ -24,4 +24,14 @@ export function SocialIcon({ network }: { network: SocialNetwork }) {
     case "pinterest":
       return <svg {...common}><circle cx="12" cy="12" r="9" /><path d="M11 21l2-9M10 11.5a3 3 0 1 1 3.5 3c-1 .1-2-.3-2.3-1" /></svg>;
   }
+}
+
+/** Simplified speech-bubble glyph for the WhatsApp button (decorative; the label names the action). */
+export function WhatsAppIcon() {
+  return (
+    <svg width={22} height={22} viewBox="0 0 24 24" aria-hidden focusable={false} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20l1.3-3.9A8 8 0 1 1 8 18.8z" />
+      <path d="M9 9.5c.3 2 2.2 4.2 4.5 5l1.2-1.2 1.8.8-.4 1.4c-3.5.3-7.5-3.3-7.6-7l1.3-.5.9 1.7z" />
+    </svg>
+  );
 }
