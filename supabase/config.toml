@@ -115,10 +115,11 @@ port = 54324
 # sender_name = "Admin"
 
 [storage]
-# LNK: media upload arrives with the StorageAdapter in Sprint 5.
-enabled = false
+# LNK: public media (Sprint 5, ADR 0009). The `media` bucket and its policies are created by a
+# migration, never here; the bucket has its own, smaller limit.
+enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
-file_size_limit = "50MiB"
+file_size_limit = "5MiB"
 
 # Uncomment to configure local storage buckets
 # [storage.buckets.images]
