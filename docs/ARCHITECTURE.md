@@ -112,7 +112,33 @@ Editor (client) ── estado + reducer (modules/editor/draft) ── autosave (
 - **Blocos:** `link`, `text`, `social`, `whatsapp`, `divider` em `profiles.blocks`, chaves exatas por tipo; política de URL e regras de campo em `modules/blocks` (fonte TypeScript) espelhadas no SQL e cobertas pela mesma tabela de casos.
 - **Rascunho:** título, bio e blocos salvos juntos numa única escrita condicional; conflito tipado; sem evento de auditoria por salvamento (publicação continua auditada). `social_links` deixou de ser gravada (mantida).
 - **Snapshot versão 2:** só `blocks` (sem `visible`, sem blocos ocultos nem redes vazias); o renderer lê as versões 1 e 2. `data-block-id`/`data-block-type` ficam no HTML para os cliques da Sprint 6.
-- **Módulos:** `blocks` (modelo, validação, URL, WhatsApp, redes), `editor/draft` (reducer, verificação do rascunho, autosave), `editor/components` (UI cliente). `editor/model` segue sendo só do protótipo da Sprint 1.
+- **Módulos:** `blocks` (modelo, validação, URL, WhatsApp, redes), `editor/draft` (reducer, verificação do rascunho, autosave), `editor/components` (UI cliente). `editor/model` e `editor/templates` seguem sendo só do protótipo da Sprint 1.
+
+## Mídia, tema e novos blocos — implementado na Sprint 5
+
+Decisões: `docs/adr/0009-media-and-storage-adapter.md` e `docs/adr/0010-themes-templates-and-new-blocks.md`.
+
+```text
+Editor ── recorte e redução no navegador ── POST /api/media (sessão do usuário, mesma origem)
+   │         └─ modules/media: política por bytes → sharp (decodifica, remove metadados, variantes WebP)
+   │               ├─ register_media_asset (assinatura HMAC do servidor, cota, limite por hora)  → media_assets (pending)
+   │               ├─ StorageAdapter.put (Storage como o usuário; policy: só variantes de um asset pending do próprio usuário)
+   │               └─ activate_media_asset (assinatura; objetos conferidos)                       → ready
+   └─ rascunho: avatar_path, theme e blocos no mesmo UPDATE condicional (draft_revision)
+
+Visitante ── /[slug] (HTML estático do snapshot) ── <img srcset> direto do bucket público
+   └─ formulário: Server Action → submit_form_lead (anon, security definer) → form_leads
+
+Job administrativo ── POST /api/jobs/media-cleanup (CRON_SECRET) ── claim_media_cleanup → StorageAdapter.remove → finish_media_cleanup
+```
+
+- **Mídia:** `media_assets` (uma linha por imagem; o id é o prefixo da chave no bucket `media`). O banco só registra o que o servidor assinou; upload direto ao Storage com sessão válida é recusado pela policy. Rascunho e snapshot guardam só o id e as dimensões; a URL é montada na renderização (`modules/media/url.ts`).
+- **Ciclo de vida:** uma imagem vive enquanto o rascunho ou uma publicação retida da página a referencia (`private.media_is_referenced`, calculado dos documentos). Órfãos saem pelo job de limpeza; a cota (`storage_mb`) conta só o que está em uso ou tem menos de 24 h.
+- **Blocos:** `image`, `embed` (provedor + id; YouTube sem cookies, Vimeo, Spotify; iframe só depois do clique), `pix` (chave validada + botão copiar, link de pagamento opcional) e `form` (campos fixos).
+- **Tema:** tokens fechados em `profiles.theme` (`null` = aparência clássica); cores de texto derivadas por contraste em `modules/themes/resolve.ts`; cinco templates em `modules/themes/templates.ts`.
+- **Snapshot:** continua na versão 2, só com acréscimos (tema opcional, tipos novos, avatar). Snapshots anteriores renderizam como antes.
+- **Leads:** `form_leads` e `form_submission_hits`; envio anônimo validado contra a publicação no ar; leitura por membros, exclusão e exportação auditadas.
+- **Módulos:** `media` (política, processamento, atestação, adapter, serviço, limpeza), `themes`, `leads`; `blocks`, `publishing` e `editor` estendidos.
 
 ## Regras de escala
 

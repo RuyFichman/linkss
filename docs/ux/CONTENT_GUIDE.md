@@ -88,6 +88,24 @@ Fonte: `BLOCKS_COPY` e `EDITOR_COPY` em `apps/web/src/content/pt-BR.ts`. Decisõ
 
 Regra: erro de campo diz o que corrigir; status nunca diz "Salvo" antes da confirmação do servidor.
 
+## Mídia, aparência e novos blocos (Sprint 5)
+
+Textos em `apps/web/src/content/pt-BR.ts`; o que o **visitante** lê fica em `apps/web/src/content/public-page.ts` (é o único arquivo de texto enviado ao navegador de quem visita).
+
+| Elemento | Texto |
+|---|---|
+| Tipos de bloco novos | Imagem · Vídeo ou música · Pix · Formulário, cada um com uma frase dizendo o que faz |
+| Recusa de imagem | sempre o motivo + a saída: "Esse tipo de arquivo não é aceito. Use uma imagem JPG, PNG ou WebP." · "Imagens animadas não são aceitas. Envie uma imagem estática." · "Esse arquivo é maior que 15 MB. Escolha uma imagem menor." · "Essa imagem é pequena demais. Use uma com pelo menos 200 pixels de largura e 100 de altura." · "Essa imagem é estreita ou larga demais. Recorte para uma proporção menos extrema." |
+| Cota | "Sua conta chegou ao limite de espaço para imagens. Tire imagens que você não usa mais e tente de novo." |
+| Aparência → Leitura | explica a cor derivada em vez de pedir uma: "O texto usa branco, escolhido automaticamente para dar contraste de 12,6:1 com o fundo." Aviso (não bloqueia) quando o botão se confunde com o fundo |
+| Modelos | "Um modelo muda só a aparência. Nome, apresentação, foto e blocos continuam como estão." A confirmação lista "O que muda" e "O que não muda"; depois: "Modelo <nome> aplicado." + "Desfazer" |
+| Vídeo ou música (visitante) | botão "Tocar para carregar no YouTube" + "Ao carregar, o YouTube recebe dados da sua visita." |
+| Pix (visitante) | "Chave Pix (celular)" + a chave em texto · "Copiar chave" → "Chave copiada." · falha: "Não foi possível copiar. Selecione a chave e copie manualmente." · aviso fixo: "O pagamento acontece no app do seu banco. Confira o nome de quem recebe antes de confirmar." |
+| Formulário (visitante) | rótulos "Nome", "E-mail", "Telefone com DDD", "Mensagem (opcional)" · sucesso: "Recebemos seus dados. Obrigado!" · erro de campo diz o que corrigir · falha: "Não foi possível enviar agora. Seus dados não foram guardados. Tente novamente." · limite: "Recebemos muitos envios em pouco tempo. Aguarde alguns minutos e tente de novo." |
+| Contatos recebidos | "Dados enviados pelos formulários desta página. Cada contato fica disponível por 90 dias e depois é apagado." · vazio: "Nenhum contato recebido ainda." |
+
+Regras: nunca prometer que o Pix foi pago ou confirmado (o produto só mostra a chave); nunca dizer "seus dados estão seguros" no formulário — dizer quem recebe e por quanto tempo; a falha de envio diz explicitamente que nada foi guardado.
+
 ## Padrões de erro
 
 1. **O que ocorreu:** “Este endereço já está em uso.”
@@ -110,4 +128,5 @@ Autenticação e lista de espera usam respostas neutras: nunca confirmar se dete
 - Depoimentos, clientes, logos ou métricas fictícias.
 - Preços como compromisso antes da validação.
 - Checkout próprio, custódia de Pix, CRM, IA central, app nativo ou outras funções fora do MVP.
+- "Pagamento confirmado", "Pix recebido" ou QR code de Pix: o bloco só mostra a chave e um link.
 - Chamar `Projeto LNK` de marca definitiva.

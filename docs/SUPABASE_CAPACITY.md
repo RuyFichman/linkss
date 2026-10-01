@@ -61,6 +61,22 @@ Com 70% do 1 GB reservado para conteúdo de clientes:
 
 Sem compressão e limites, mídia vira o primeiro gargalo. O MVP deve gerar variantes otimizadas, rejeitar arquivos grandes, apagar órfãos e manter uma interface que permita mover objetos para R2.
 
+#### Medido na Sprint 5 (variantes WebP, qualidade 80)
+
+Cada imagem de bloco guarda até três variantes (448, 896 e 1344 px de largura) e cada avatar três (96, 192 e 288 px). Medido no ambiente local com imagens sintéticas; fotos reais devem ficar entre os dois extremos.
+
+| Imagem | 448 px | 896 px | 1344 px | Total guardado |
+|---|---:|---:|---:|---:|
+| Foto 16:9 (peso típico) | 22 KB | 61 KB | 108 KB | 191 KB |
+| Foto 4:3 (peso típico) | 28 KB | 80 KB | 140 KB | 249 KB |
+| Foto 1:1 (peso típico) | 39 KB | 110 KB | 197 KB | 347 KB |
+| Pior caso (ruído puro, 4:5) | 117 KB | 292 KB | 462 KB | 871 KB |
+| Avatar, pior caso (ruído) | 5 KB (96) | 18 KB (192) | 33 KB (288) | 57 KB |
+
+- **Por página:** avatar + 3 fotos típicas ≈ 0,8 MB guardados. A cota Free de 20 MB por workspace comporta cerca de 60 a 100 fotos típicas (ou 23 no pior caso); 700 MB úteis do projeto Free comportam cerca de 850 páginas com esse perfil, **desde que a limpeza de órfãos rode** (cada troca de imagem deixa a anterior ocupando espaço enquanto alguma das 10 versões publicadas a usar).
+- **Por visita (celular, tela 2x):** avatar 192 px + três fotos de 896 px ≈ 270 KB de egress de mídia (medido: 264,7 KB). 5 GB de cached egress ≈ 18 mil visitas por mês a páginas assim; páginas só com avatar custam ≈ 18 KB.
+- As cotas por plano (`storage_mb`: Free 20, Pro 100, Agência 500) são hipóteses e somam mais que 1 GB com poucas dezenas de contas cheias: o gatilho de upgrade (60% do storage) continua sendo o controle real.
+
 ### Egress
 
 Se a mídia vier do Supabase Storage:

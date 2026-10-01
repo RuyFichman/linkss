@@ -5,7 +5,7 @@
 | Conta | e-mail, nome, identificadores de auth | acesso e comunicação operacional | vida da conta + prazo legal/segurança definido |
 | Workspace | membros, papéis, convites | colaboração e autorização | vida do workspace |
 | Perfil público | nome, avatar, bio, links | publicação solicitada pelo cliente | até remoção/despublicação e cache expirar |
-| Leads | campos escolhidos pelo cliente | encaminhar contato ao controlador do perfil | configurável; padrão curto e exportável |
+| Leads | campos escolhidos pelo cliente | encaminhar contato ao controlador do perfil | 90 dias (provisório), exportável; ver Sprint 5 abaixo |
 | Analytics | URL/referrer, UTM, dispositivo, região aproximada | medir desempenho | bruto 7 dias; agregados conforme plano/política |
 | Cobrança | IDs do provedor, status, faturas | assinatura e obrigações legais | prazo fiscal/contratual aplicável |
 | Segurança | IP truncado/hash quando necessário, logs e auditoria | fraude, abuso e incidentes | janela curta baseada em risco |
@@ -51,11 +51,27 @@ Nenhum novo operador/subprocessador nem novo store: os blocos vivem em `profiles
 | Coluna legada `profiles.social_links` | rascunho | não é mais gravada pela aplicação (as redes viraram bloco `social`) | — | mantida até limpeza aprovada pelo founder; apagada no purge da página |
 | Logs `editor.save` / `editor.load_latest` | logs | operação do autosave | legítimo interesse | só resultado, duração e correlation id — **nunca** conteúdo de bloco, números ou e-mails |
 
+## Dados adicionados na Sprint 5 (mídia, Pix, formulário)
+
+Nenhum novo operador/subprocessador: as imagens ficam no Supabase Storage do mesmo projeto. Vídeo e música são incorporados de YouTube, Vimeo e Spotify **só depois do clique do visitante**; nesse momento o provedor recebe dados da visita (IP, cabeçalhos e a origem do site), o que deve constar na política de privacidade.
+
+| Dado | Onde | Finalidade | Base / owner | Retenção e exclusão |
+|---|---|---|---|---|
+| Imagens enviadas (avatar e blocos de imagem): podem mostrar rostos, lugares e marcas | bucket público `media` (variantes WebP) + `public.media_assets` (dimensões, tamanho, quem enviou) | conteúdo da página do cliente | execução do contrato; owner: o workspace | enquanto o rascunho ou uma das 10 versões publicadas usar; depois vira órfã e é apagada pelo job de limpeza (24 h de carência). Página excluída: apagadas depois do `purge_after`. **Metadados EXIF/GPS são removidos antes de guardar; o arquivo original não é guardado** |
+| Chave Pix (CPF, CNPJ, celular, e-mail ou chave aleatória) e link de pagamento | rascunho e snapshots | o cliente escolhe publicar um meio de pagamento | execução do contrato | ciclo do rascunho e das versões publicadas. CPF, celular e e-mail são dados pessoais do próprio cliente, publicados por escolha dele (o editor avisa e sugere chave aleatória) |
+| Leads: nome, e-mail, telefone e mensagem digitados por **visitantes** | `public.form_leads` | encaminhar o contato ao dono da página | consentimento registrado por envio (texto exato, versão e horário), quando o dono o exige; **o dono da página é o controlador, o produto é o operador** | 90 dias (provisório): depois disso o lead some da leitura na hora e é apagado no próximo envio à página ou pelo purge. O dono exclui um a um e exporta em CSV (ambos auditados). Apagados em cascata com a página ou o workspace |
+| Hash do visitante para o limite de envios | `public.form_submission_hits` | impedir spam | legítimo interesse (segurança) | HMAC diário do IP com segredo do servidor; nunca o IP; apagado em até 24 h |
+| Eventos de auditoria `lead.deleted` / `lead.exported` | `public.audit_events` | trilha de quem apagou ou levou dados | legítimo interesse | só a contagem e a página, nunca o conteúdo do lead; 1 ano (provisório) |
+| Logs `media.upload`, `media.cleanup`, `lead.submit`, `lead.delete`, `lead.export` | logs | operação | legítimo interesse | resultado, tamanhos, duração e correlation id — **nunca** nome de arquivo, conteúdo, chave Pix ou dados de lead |
+
+Exportação e exclusão de conta (Sprint 9) precisam alcançar: `media_assets` + objetos do bucket (pelo job de limpeza, antes de apagar a página: a FK é `restrict`), `form_leads`, `form_submission_hits`. O segredo de assinatura de uploads fica no Supabase Vault (`media_signing_secret`) e não é dado pessoal.
+
 ### Purge planejado (documentado, não agendado)
 
 O job da Sprint 9 deverá, em transação e com trilha própria:
 
-1. apagar `profiles` com `purge_after < now()`;
+0. rodar a limpeza de mídia (`POST /api/jobs/media-cleanup`) até não restar asset das páginas vencidas, e apagar `form_leads` com `purge_after < now()`;
+1. apagar `profiles` com `purge_after < now()` (falha enquanto a página ainda tiver `media_assets`);
 2. apagar `workspaces` com `purge_after < now()` (cascateia memberships e páginas remanescentes);
 3. apagar `user_accounts` com `purge_after < now()` e a respectiva linha em `auth.users` via Admin API;
 4. apagar `audit_events` com mais de 1 ano e `slug_history` com `hold_until` há mais de 1 ano.

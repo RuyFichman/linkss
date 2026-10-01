@@ -52,11 +52,21 @@ Verificado localmente (pgTAP + `next start` de produção + Lighthouse); nada pr
 
 ## Sprint 5 — visual e mídia
 
-- [ ] P0 Implementar `StorageAdapter` e quota.
-- [ ] P0 Upload/otimização/remoção de imagens.
-- [ ] P0 Blocos imagem, embed, Pix e formulário.
-- [ ] P0 Temas e aplicação de template sem perda de conteúdo.
-- [ ] P1 Sanitização/allowlist de provedores de embed.
+Verificado no stack local (pgTAP + Vitest + navegador + Lighthouse em `next start`); nada aplicado em staging. Relatório: `docs/SPRINT_5_REPORT.md`.
+
+- [x] P0 Implementar `StorageAdapter` e quota.
+- [x] P0 Upload/otimização/remoção de imagens.
+- [x] P0 Blocos imagem, embed, Pix e formulário.
+- [x] P0 Temas e aplicação de template sem perda de conteúdo.
+- [x] P1 Sanitização/allowlist de provedores de embed.
+- [ ] P0 Aplicar a Sprint 5 em staging: `supabase db push`, segredo no Vault, variáveis na Vercel (passos em `docs/ENVIRONMENTS.md`) e medir LCP/CLS de campo numa página com imagens.
+- [ ] P0 Agendar a limpeza de mídia órfã (`POST /api/jobs/media-cleanup`); hoje só roda à mão.
+- [ ] P1 Pix "copia e cola" (BR Code) e QR code — cortados nesta sprint (ADR 0010).
+- [ ] P1 Imagem de fundo no tema — cortada nesta sprint.
+- [ ] P1 Aviso ao dono da página quando chega um contato (depende do SMTP).
+- [ ] P1 Imagem Open Graph com o tema e a foto da página.
+- [ ] P2 CAPTCHA no formulário público e limite global por IP (Sprint 9).
+- [ ] P2 Purge agendado de leads vencidos e de `form_submission_hits` (Sprint 9; hoje acontece no envio seguinte à página).
 
 ## Sprint 6 — analytics
 
@@ -96,6 +106,7 @@ Verificado localmente (pgTAP + `next start` de produção + Lighthouse); nada pr
 
 - [ ] Selecionar nome público após busca de marca, domínio e redes.
 - [ ] Comparar gateway por recorrência, Pix, cartão, webhooks, split, chargeback e conciliação.
-- [ ] Definir momento de mover mídia para R2 com base em custo real.
+- [ ] Definir momento de mover mídia para R2 com base em custo real (o `StorageAdapter` e a URL base configurável já existem; ADR 0009).
+- [ ] Confirmar decisões provisórias UX-033 a UX-042 (limites de imagem, cotas, tema, modelos, Pix sem QR, retenção de leads).
 - [ ] Definir datastore analítico após medir eventos/dia e custo no Postgres.
 - [ ] Contratar revisão jurídica/contábil antes do beta pago.
