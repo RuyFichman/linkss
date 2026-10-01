@@ -9,8 +9,9 @@ SPRINT 4: merged into main, verified locally only.
 USABILITY_GATE: FOUNDER OVERRIDE (2026-09-25) still in force — the five-person sessions are pending.
 UX_DECISIONS confirmed by the founder: UX-020, UX-021, UX-023, UX-025 (2026-09-30).
 Other UX decisions (including UX-026 to UX-032): provisional, and they are the implementation default (do not wait for confirmation).
-Staging database: the hosted Supabase project (Free) has the seven migrations up to 202609300001_block_editor, applied on 2026-10-01 with `supabase db push`. Hosted Auth is on defaults. Check AGENTS.md §22 for whether the Vercel project exists yet.
-This sprint is developed and verified on the local stack. Do not apply Sprint 5 migrations, create buckets or change settings on the hosted project; list them in the report as a deploy step for the founder to run (`supabase db push`).
+Staging database: the hosted Supabase project (Free) has the seven migrations up to 202609300001_block_editor, applied on 2026-10-01 with `supabase db push`. Hosted Auth is on defaults.
+Staging application: deployed on Vercel at https://linkss-black.vercel.app (main deploys automatically). Sign-up and publishing have not been exercised there.
+This sprint is developed and verified on the local stack. Do not apply Sprint 5 migrations, create buckets or change settings on the hosted project or on Vercel; list them in the report as deploy steps for the founder (`supabase db push`, new environment variables, Storage bucket). Remember that merging to main deploys to staging: code that needs a Sprint 5 migration must not reach main before that migration is applied to the hosted database.
 ```
 
 This sprint adds the first user-uploaded files and the first visitor-submitted personal data (form leads). Those two things carry most of the risk. The visual work (themes, templates) is the most exposed to usability findings, so keep copy in `apps/web/src/content/pt-BR.ts` and keep theme options, template definitions, provider allowlists and limits in typed catalogs that can change without touching the schema or the snapshot format.

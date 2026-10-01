@@ -22,7 +22,7 @@ Verificado no stack Supabase local (pgTAP + navegador); nada foi aplicado em pro
 - [x] P0 Criar workspace individual no onboarding.
 - [x] P0 Reservar, normalizar e validar slugs.
 - [x] P1 Registrar auditoria de ações sensíveis (`profile.published` preparado para a Sprint 3).
-- [ ] P0 Provisionar staging (Supabase + Vercel), aplicar migrações e configurar Auth conforme `docs/ENVIRONMENTS.md` — parcial: projeto Supabase criado e migrações aplicadas em 2026-10-01; faltam o projeto na Vercel, as variáveis de ambiente e o checklist de Auth.
+- [ ] P0 Provisionar staging (Supabase + Vercel), aplicar migrações e configurar Auth conforme `docs/ENVIRONMENTS.md` — parcial: projeto Supabase criado, migrações aplicadas e deploy na Vercel no ar (`https://linkss-black.vercel.app`) em 2026-10-01; faltam o checklist de Auth e um teste de cadastro → publicação no ambiente hospedado.
 - [ ] P0 Escolher e contratar SMTP para e-mails de Auth (ADR `MailAdapter`) e atualizar o mapa de dados.
 - [ ] P1 Ativar CAPTCHA (Turnstile) no Auth antes do piloto externo.
 
@@ -35,7 +35,7 @@ Verificado localmente (pgTAP + `next start` de produção + Lighthouse); nada pr
 - [x] P0 Publicar, invalidar cache e restaurar snapshot anterior.
 - [x] P0 Adicionar metadados/OG/canonical e estados 404/suspenso.
 - [x] P1 Instrumentar Web Vitals e erros (logs estruturados; Sentry/dashboards dependem de provisionamento).
-- [ ] P0 Medir em staging (CDN real): publicação visível em ≤ 30 s, LCP/CLS de campo e prévia OG no WhatsApp/Instagram — depende de staging (URL `*.vercel.app` basta).
+- [ ] P0 Medir em staging (CDN real): publicação visível em ≤ 30 s, LCP/CLS de campo e prévia OG no WhatsApp/Instagram — staging já existe (`https://linkss-black.vercel.app`); a medição ainda não foi feita.
 - [ ] P0 Trocar `NEXT_PUBLIC_APP_URL` e o Auth para o domínio comprado (checklist em `docs/ENVIRONMENTS.md`).
 - [ ] P1 Rate limit/firewall para `/api/vitals` e para flood de endereços inexistentes no renderer (Sprint 9).
 
