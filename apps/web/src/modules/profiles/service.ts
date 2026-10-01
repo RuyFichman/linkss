@@ -3,6 +3,8 @@ import type { Database } from "@/lib/database.types";
 import { assertEntitlement, EntitlementError, type Entitlements } from "@/modules/entitlements";
 import { AuthorizationError, isUuid, requireUser, requireWorkspaceAccess, type IdentityPort } from "@/modules/identity/guard";
 import { validateStoredBlocks, type DraftBlock } from "@/modules/blocks";
+import { isMediaId } from "@/modules/media/policy";
+import { cloneTheme, isValidTheme, type ThemeTokens } from "@/modules/themes/tokens";
 import { validateProfileContent, type ProfileContentField } from "./content";
 import { isSlugError, profileErrorMessage, type ProfileErrorKind } from "./errors";
 import { fromAvailabilityStatus, validateSlug, type SlugValidation } from "./slug";
@@ -16,7 +18,10 @@ export interface ProfileSummary {
   bio: string;
   slug: string;
   status: ProfileStatus;
+  /** Media id of the draft avatar, or null for the initials. */
   avatarPath: string | null;
+  /** Draft theme tokens; null is the classic look. */
+  theme: ThemeTokens | null;
   /** Draft blocks as stored (tolerant read: outdated content is kept for the editor to flag). */
   blocks: DraftBlock[];
   /** Bumped by the database on every draft content change. */
@@ -45,10 +50,12 @@ export interface ProfileRepository {
 
 export type ProfileField = ProfileContentField | "slug";
 
-/** The editable draft: header fields plus the ordered blocks (ADR 0008: saved as one unit). */
+/** The editable draft: header, avatar, theme and the ordered blocks (ADR 0008/0010: saved as one unit). */
 export interface DraftContent {
   title: string;
   bio: string;
+  avatarPath: string | null;
+  theme: ThemeTokens | null;
   blocks: DraftBlock[];
 }
 
@@ -121,7 +128,7 @@ export function createProfileService(identity: IdentityPort, repository: Profile
     },
 
     /**
-     * Autosave: replaces title, bio and the ordered blocks in one conditional write against the
+     * Autosave: replaces title, bio, avatar, theme and the ordered blocks in one conditional write against the
      * revision the editor last confirmed. The payload is untrusted and validated exactly like the
      * database (values must already be normalized); nothing is repaired here.
      */
@@ -140,8 +147,14 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       if (!content.ok) return { ok: false, error: "validation", message: VALIDATION_SUMMARY, fieldErrors: content.errors };
       const blocks = validateStoredBlocks(input.blocks);
       if (!blocks.ok) return { ok: false, error: "validation", message: profileErrorMessage("content_invalid") };
+      // Theme and avatar are required keys: null means "classic look" / "initials", never "keep what is stored".
+      const { theme, avatarPath } = input;
+      if (theme !== null && !isValidTheme(theme)) return { ok: false, error: "validation", message: profileErrorMessage("content_invalid") };
+      if (avatarPath !== null && !isMediaId(avatarPath)) return { ok: false, error: "validation", message: profileErrorMessage("content_invalid") };
 
-      const updated = await repository.updateDraft(profileId as string, expectedRevision, { title: content.value.title, bio: content.value.bio, blocks: blocks.blocks });
+      const updated = await repository.updateDraft(profileId as string, expectedRevision, {
+        title: content.value.title, bio: content.value.bio, avatarPath, theme: theme === null ? null : cloneTheme(theme), blocks: blocks.blocks,
+      });
       return updated.ok ? { ok: true, value: { revision: updated.value.draftRevision } } : failure(updated.error);
     },
 
@@ -153,7 +166,7 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       } catch (error) {
         return authorizationFailure(error);
       }
-      return { ok: true, value: { title: profile.title, bio: profile.bio, blocks: profile.blocks, revision: profile.draftRevision } };
+      return { ok: true, value: { title: profile.title, bio: profile.bio, avatarPath: profile.avatarPath, theme: profile.theme, blocks: profile.blocks, revision: profile.draftRevision } };
     },
 
     async changeSlug(profileId: unknown, rawSlug: unknown): Promise<CommandResult<string>> {

@@ -36,7 +36,7 @@ export default async function PublicPage({ params }: Props) {
     case "published":
       return (
         <>
-          <PublicPageView document={result.document} showBadge={result.showBadge} />
+          <PublicPageView document={result.document} showBadge={result.showBadge} slug={result.slug} />
           <PublicPageWebVitals />
         </>
       );

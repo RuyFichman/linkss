@@ -35,7 +35,7 @@ select tests.clear_authentication();
 
 -- Assets as the upload pipeline leaves them (120-media.test.sql covers how they get there).
 insert into public.media_assets (id, workspace_id, profile_id, kind, status, width, height, bytes, variants, created_by, activated_at) values
-  ('9c000000-0000-4000-8000-000000000001', tests.id('ws'), tests.id('page'), 'image', 'ready', 832, 624, 3333, '[{"w": 416, "h": 312, "bytes": 1111}, {"w": 832, "h": 624, "bytes": 2222}]', tests.id('owner'), now()),
+  ('9c000000-0000-4000-8000-000000000001', tests.id('ws'), tests.id('page'), 'image', 'ready', 896, 672, 3333, '[{"w": 448, "h": 336, "bytes": 1111}, {"w": 896, "h": 672, "bytes": 2222}]', tests.id('owner'), now()),
   ('9c000000-0000-4000-8000-000000000002', tests.id('ws'), tests.id('page'), 'avatar', 'ready', 288, 288, 2900, '[{"w": 96, "h": 96, "bytes": 500}, {"w": 192, "h": 192, "bytes": 900}, {"w": 288, "h": 288, "bytes": 1500}]', tests.id('owner'), now()),
   ('9c000000-0000-4000-8000-000000000003', tests.id('ws'), tests.id('page'), 'image', 'pending', 300, 200, 100, '[{"w": 300, "h": 200, "bytes": 100}]', tests.id('owner'), null),
   ('9c000000-0000-4000-8000-000000000004', tests.id('ws'), tests.id('page2'), 'image', 'ready', 300, 200, 100, '[{"w": 300, "h": 200, "bytes": 100}]', tests.id('owner'), now()),
@@ -49,7 +49,7 @@ select lives_ok(
     avatar_path = '9c000000-0000-4000-8000-000000000002',
     theme = '{"background": "#f5efe5", "button": "#1f5b49", "buttonStyle": "filled", "corners": "rounded", "spacing": "regular", "font": "serif"}',
     blocks = '[
-      {"id":"7d000000-0000-4000-8000-000000000001","type":"image","visible":true,"mediaId":"9c000000-0000-4000-8000-000000000001","width":832,"height":624,"alt":"Vitrine da loja","decorative":false},
+      {"id":"7d000000-0000-4000-8000-000000000001","type":"image","visible":true,"mediaId":"9c000000-0000-4000-8000-000000000001","width":896,"height":672,"alt":"Vitrine da loja","decorative":false},
       {"id":"7d000000-0000-4000-8000-000000000002","type":"embed","visible":true,"provider":"youtube","ref":"dQw4w9WgXcQ","title":"Conheça o estúdio"},
       {"id":"7d000000-0000-4000-8000-000000000003","type":"embed","visible":true,"provider":"vimeo","ref":"123456789","title":"Bastidores"},
       {"id":"7d000000-0000-4000-8000-000000000004","type":"embed","visible":false,"provider":"spotify","ref":"playlist/4uLU6hMCjMI75M1A2tKUQC","title":"Playlist"},
@@ -59,7 +59,7 @@ select lives_ok(
       {"id":"7d000000-0000-4000-8000-000000000008","type":"pix","visible":true,"label":"E-mail","keyType":"email","key":"ana@exemplo.com.br","paymentUrl":""},
       {"id":"7d000000-0000-4000-8000-000000000009","type":"pix","visible":true,"label":"Aleatória","keyType":"random","key":"123e4567-e89b-42d3-a456-426614174000","paymentUrl":""},
       {"id":"7d000000-0000-4000-8000-00000000000a","type":"form","visible":true,"title":"Peça um orçamento","fields":["name","email","message"],"buttonLabel":"Enviar","consentText":"Aceito ser contatado.","consentRequired":true},
-      {"id":"7d000000-0000-4000-8000-00000000000b","type":"image","visible":true,"mediaId":"9c000000-0000-4000-8000-000000000001","width":832,"height":624,"alt":"","decorative":true},
+      {"id":"7d000000-0000-4000-8000-00000000000b","type":"image","visible":true,"mediaId":"9c000000-0000-4000-8000-000000000001","width":896,"height":672,"alt":"","decorative":true},
       {"id":"7d000000-0000-4000-8000-00000000000c","type":"link","visible":true,"title":"Site","url":"https://exemplo.com.br/"}
     ]' where id = %L$f$, tests.id('page')),
   'an editor saves image, embed, pix and form blocks together with a theme and an avatar');
@@ -226,16 +226,16 @@ from (values
   ('dimensions that are not the asset''s', '9c000000-0000-4000-8000-000000000001', 4000, 10)
 ) v(label, media, width, height);
 select throws_ok(
-  format($f$update public.profiles set blocks = '[{"id":"7d000000-0000-4000-8000-0000000000e2","type":"image","visible":true,"mediaId":"https://evil.example/x.png","width":832,"height":624,"alt":"x","decorative":false}]' where id = %L$f$, tests.id('page')),
+  format($f$update public.profiles set blocks = '[{"id":"7d000000-0000-4000-8000-0000000000e2","type":"image","visible":true,"mediaId":"https://evil.example/x.png","width":896,"height":672,"alt":"x","decorative":false}]' where id = %L$f$, tests.id('page')),
   'LK040', null, 'an image block cannot point at a URL');
 select throws_ok(
-  format($f$update public.profiles set blocks = '[{"id":"7d000000-0000-4000-8000-0000000000e3","type":"image","visible":true,"mediaId":"9c000000-0000-4000-8000-000000000001","width":832,"height":624,"alt":"x","decorative":false,"src":"data:image/png;base64,AAAA"}]' where id = %L$f$, tests.id('page')),
+  format($f$update public.profiles set blocks = '[{"id":"7d000000-0000-4000-8000-0000000000e3","type":"image","visible":true,"mediaId":"9c000000-0000-4000-8000-000000000001","width":896,"height":672,"alt":"x","decorative":false,"src":"data:image/png;base64,AAAA"}]' where id = %L$f$, tests.id('page')),
   'LK040', null, 'an image block cannot carry inline data');
 select throws_ok(
-  format($f$update public.profiles set blocks = '[{"id":"7d000000-0000-4000-8000-0000000000e4","type":"image","visible":true,"mediaId":"9c000000-0000-4000-8000-000000000001","width":832,"height":624,"alt":"","decorative":false}]' where id = %L$f$, tests.id('page')),
+  format($f$update public.profiles set blocks = '[{"id":"7d000000-0000-4000-8000-0000000000e4","type":"image","visible":true,"mediaId":"9c000000-0000-4000-8000-000000000001","width":896,"height":672,"alt":"","decorative":false}]' where id = %L$f$, tests.id('page')),
   'LK040', null, 'an image needs a description unless it is decorative');
 select throws_ok(
-  format($f$update public.profiles set blocks = '[{"id":"7d000000-0000-4000-8000-0000000000e5","type":"image","visible":true,"mediaId":"9c000000-0000-4000-8000-000000000001","width":832,"height":624,"alt":"descrição","decorative":true}]' where id = %L$f$, tests.id('page')),
+  format($f$update public.profiles set blocks = '[{"id":"7d000000-0000-4000-8000-0000000000e5","type":"image","visible":true,"mediaId":"9c000000-0000-4000-8000-000000000001","width":896,"height":672,"alt":"descrição","decorative":true}]' where id = %L$f$, tests.id('page')),
   'LK040', null, 'a decorative image has no description');
 select throws_ok(
   format($f$update public.profiles set avatar_path = %L where id = %L$f$, v.media, tests.id('page')),
@@ -282,7 +282,7 @@ select is(
   'the snapshot keeps draft order and drops the hidden block');
 select is(
   (select pp.document -> 'blocks' -> 0 from public.profile_publications pp where pp.id = tests.id('pub')),
-  '{"id": "7d000000-0000-4000-8000-000000000001", "type": "image", "mediaId": "9c000000-0000-4000-8000-000000000001", "width": 832, "height": 624, "alt": "Vitrine da loja"}'::jsonb,
+  '{"id": "7d000000-0000-4000-8000-000000000001", "type": "image", "mediaId": "9c000000-0000-4000-8000-000000000001", "width": 896, "height": 672, "alt": "Vitrine da loja"}'::jsonb,
   'a published image carries the media id and its dimensions, and no visible or decorative flag');
 select is(
   (select pp.document -> 'blocks' -> 1 from public.profile_publications pp where pp.id = tests.id('pub')),

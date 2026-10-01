@@ -3,10 +3,12 @@ import type { SupabaseServerClient } from "@/lib/supabase/server";
 import { resolveEntitlements } from "@/modules/entitlements";
 import type { Json } from "@/lib/database.types";
 import { readDraftBlocks } from "@/modules/blocks";
+import { isMediaId } from "@/modules/media/policy";
+import { readTheme } from "@/modules/themes/tokens";
 import { profileErrorFromDatabase } from "./errors";
 import type { ProfileRepository, ProfileSummary } from "./service";
 
-const PROFILE_COLUMNS = "id, workspace_id, title, bio, slug, status, avatar_path, blocks, draft_revision, live_publication_id, published_at, created_at, updated_at";
+const PROFILE_COLUMNS = "id, workspace_id, title, bio, slug, status, avatar_path, theme, blocks, draft_revision, live_publication_id, published_at, created_at, updated_at";
 // Bounded even though Free/Pro/Agency allow at most 10 live pages per workspace.
 const PROFILE_LIST_LIMIT = 200;
 
@@ -18,6 +20,7 @@ interface ProfileRow {
   slug: string;
   status: ProfileSummary["status"];
   avatar_path: string | null;
+  theme: Json | null;
   blocks: Json;
   draft_revision: number;
   live_publication_id: string | null;
@@ -28,7 +31,9 @@ interface ProfileRow {
 
 function toSummary(row: ProfileRow): ProfileSummary {
   return {
-    id: row.id, workspaceId: row.workspace_id, title: row.title, bio: row.bio, slug: row.slug, status: row.status, avatarPath: row.avatar_path,
+    id: row.id, workspaceId: row.workspace_id, title: row.title, bio: row.bio, slug: row.slug, status: row.status,
+    // Tolerant reads: anything that is not a media id or a valid theme shows the initials / the classic look.
+    avatarPath: isMediaId(row.avatar_path) ? row.avatar_path : null, theme: readTheme(row.theme),
     blocks: readDraftBlocks(row.blocks), draftRevision: row.draft_revision,
     livePublicationId: row.live_publication_id, publishedAt: row.published_at, createdAt: row.created_at, updatedAt: row.updated_at,
   };
@@ -73,8 +78,8 @@ export function createSupabaseProfileRepository(supabase: SupabaseServerClient):
     },
 
     async updateDraft(profileId, expectedRevision, draft) {
-      // Plain JSON; the database validates the blocks again (private.validate_profile_draft).
-      const update = { title: draft.title, bio: draft.bio, blocks: draft.blocks as unknown as Json[] };
+      // Plain JSON; the database validates blocks, theme and media references again (private.validate_profile_draft).
+      const update = { title: draft.title, bio: draft.bio, avatar_path: draft.avatarPath, theme: draft.theme as unknown as Json, blocks: draft.blocks as unknown as Json[] };
       // Optimistic concurrency: one conditional UPDATE, so the write only lands on the revision the
       // person was looking at and title, bio and block order change atomically.
       const { data, error } = await supabase.from("profiles").update(update).eq("id", profileId).eq("draft_revision", expectedRevision).select(PROFILE_COLUMNS).maybeSingle();

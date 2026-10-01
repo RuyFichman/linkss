@@ -13,7 +13,7 @@ export function useAutosave(profileId: string, initialRevision: number): { autos
   const [autosave] = useState(() => createAutosave<DraftContent>({
     revision: initialRevision,
     save: async (draft, expectedRevision) => {
-      const result = await saveDraftAction(profileId, { expectedRevision, title: draft.title, bio: draft.bio, blocks: draft.blocks });
+      const result = await saveDraftAction(profileId, { expectedRevision, title: draft.title, bio: draft.bio, avatarPath: draft.avatarPath, theme: draft.theme, blocks: draft.blocks });
       return result.ok ? { ok: true, revision: result.revision } : { ok: false, error: result.error };
     },
   }));

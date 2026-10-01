@@ -1,14 +1,19 @@
-import { codePointLength, LINK_TITLE_MAX_LENGTH, MAX_BLOCKS, MAX_BLOCKS_BYTES, SOCIAL_ITEMS_MAX, TEXT_MAX_LENGTH, WHATSAPP_LABEL_MAX_LENGTH, WHATSAPP_MESSAGE_MAX_LENGTH } from "./limits";
+import { isEmbedProvider, isValidEmbedRef, type EmbedProvider } from "./embed";
+import { isFormField, isValidFormFields, type FormField } from "./form";
+import { codePointLength, EMBED_TITLE_MAX_LENGTH, FORM_BUTTON_MAX_LENGTH, FORM_CONSENT_MAX_LENGTH, FORM_TITLE_MAX_LENGTH, IMAGE_ALT_MAX_LENGTH, IMAGE_MAX_DIMENSION, LINK_TITLE_MAX_LENGTH, MAX_BLOCKS, MAX_BLOCKS_BYTES, PIX_LABEL_MAX_LENGTH, SOCIAL_ITEMS_MAX, TEXT_MAX_LENGTH, WHATSAPP_LABEL_MAX_LENGTH, WHATSAPP_MESSAGE_MAX_LENGTH } from "./limits";
+import { isPixKeyType, isValidPixKey, type PixKeyType } from "./pix";
 import { isAllowedSocialUrl, isSocialNetwork, type SocialLink } from "./social";
 import { isAllowedStoredUrl } from "./url-policy";
 import { isValidWhatsAppPhone } from "./whatsapp";
 
 /**
- * Draft block model (ADR 0008), stored in profiles.blocks. Mirror of private.validate_profile_draft:
- * the database rejects anything `validateStoredBlocks` would reject. Adding a type means changing
- * this file, the SQL validator, modules/publishing/document.ts, the renderer and both test suites.
+ * Draft block model (ADR 0008, extended by ADR 0010), stored in profiles.blocks. Mirror of
+ * private.validate_profile_draft: the database rejects anything `validateStoredBlocks` would
+ * reject, and additionally checks that an image block points to a ready asset of the same page.
+ * Adding a type means changing this file, the SQL validator, modules/publishing/document.ts, the
+ * renderer and both test suites.
  */
-export const BLOCK_TYPES = ["link", "text", "social", "whatsapp", "divider"] as const;
+export const BLOCK_TYPES = ["link", "text", "social", "whatsapp", "divider", "image", "embed", "pix", "form"] as const;
 export type BlockType = (typeof BLOCK_TYPES)[number];
 
 interface BlockBase {
@@ -21,8 +26,14 @@ export interface TextBlock extends BlockBase { type: "text"; text: string }
 export interface SocialBlock extends BlockBase { type: "social"; items: SocialLink[] }
 export interface WhatsAppBlock extends BlockBase { type: "whatsapp"; label: string; phone: string; message: string }
 export interface DividerBlock extends BlockBase { type: "divider" }
+/** `mediaId` is a ready image asset of the same page (checked by the database); the dimensions are its master's. */
+export interface ImageBlock extends BlockBase { type: "image"; mediaId: string; width: number; height: number; alt: string; decorative: boolean }
+export interface EmbedBlock extends BlockBase { type: "embed"; provider: EmbedProvider; ref: string; title: string }
+/** `paymentUrl` is "" or an https destination; the payment itself always happens elsewhere. */
+export interface PixBlock extends BlockBase { type: "pix"; label: string; keyType: PixKeyType; key: string; paymentUrl: string }
+export interface FormBlock extends BlockBase { type: "form"; title: string; fields: FormField[]; buttonLabel: string; consentText: string; consentRequired: boolean }
 
-export type DraftBlock = LinkBlock | TextBlock | SocialBlock | WhatsAppBlock | DividerBlock;
+export type DraftBlock = LinkBlock | TextBlock | SocialBlock | WhatsAppBlock | DividerBlock | ImageBlock | EmbedBlock | PixBlock | FormBlock;
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 // C0 controls except line feed, DEL and C1 controls. The SQL side rejects [[:cntrl:]] except line feed.
@@ -36,6 +47,10 @@ const KEYS: Record<BlockType, readonly string[]> = {
   social: ["id", "items", "type", "visible"],
   whatsapp: ["id", "label", "message", "phone", "type", "visible"],
   divider: ["id", "type", "visible"],
+  image: ["alt", "decorative", "height", "id", "mediaId", "type", "visible", "width"],
+  embed: ["id", "provider", "ref", "title", "type", "visible"],
+  pix: ["id", "key", "keyType", "label", "paymentUrl", "type", "visible"],
+  form: ["buttonLabel", "consentRequired", "consentText", "fields", "id", "title", "type", "visible"],
 };
 
 export function isBlockType(value: unknown): value is BlockType {
@@ -78,6 +93,15 @@ function hasExactKeys(value: Record<string, unknown>, type: BlockType): boolean 
   return keys.length === expected.length && keys.every((key, index) => key === expected[index]);
 }
 
+function isDimension(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= IMAGE_MAX_DIMENSION;
+}
+
+/** Empty, or an https web destination (a payment page is never plain http, mail or phone). */
+export function isAllowedPaymentUrl(value: unknown): value is string {
+  return value === "" || (isAllowedStoredUrl(value) && value.startsWith("https://"));
+}
+
 function isValidSocialItems(value: unknown): value is SocialLink[] {
   if (!Array.isArray(value) || value.length > SOCIAL_ITEMS_MAX) return false;
   const networks = new Set<string>();
@@ -104,6 +128,14 @@ export function isValidStoredBlock(value: unknown): value is DraftBlock {
     case "social": return isValidSocialItems(block.items);
     case "whatsapp": return isValidLabel(block.label, WHATSAPP_LABEL_MAX_LENGTH) && isValidWhatsAppPhone(block.phone) && isValidMultiline(block.message, 0, WHATSAPP_MESSAGE_MAX_LENGTH);
     case "divider": return true;
+    case "image":
+      return isBlockId(block.mediaId) && isDimension(block.width) && isDimension(block.height) && typeof block.decorative === "boolean"
+        && (block.decorative ? block.alt === "" : isValidLabel(block.alt, IMAGE_ALT_MAX_LENGTH));
+    case "embed": return isValidEmbedRef(block.provider, block.ref) && isValidLabel(block.title, EMBED_TITLE_MAX_LENGTH);
+    case "pix": return isValidLabel(block.label, PIX_LABEL_MAX_LENGTH) && isValidPixKey(block.keyType, block.key) && isAllowedPaymentUrl(block.paymentUrl);
+    case "form":
+      return isValidLabel(block.title, FORM_TITLE_MAX_LENGTH) && isValidFormFields(block.fields) && isValidLabel(block.buttonLabel, FORM_BUTTON_MAX_LENGTH)
+        && isValidLabel(block.consentText, FORM_CONSENT_MAX_LENGTH) && typeof block.consentRequired === "boolean";
   }
 }
 
@@ -153,12 +185,21 @@ export function cloneBlock(block: DraftBlock): DraftBlock {
     case "social": return { id: block.id, type: "social", visible: block.visible, items: block.items.map((item) => ({ network: item.network, url: item.url })) };
     case "whatsapp": return { id: block.id, type: "whatsapp", visible: block.visible, label: block.label, phone: block.phone, message: block.message };
     case "divider": return { id: block.id, type: "divider", visible: block.visible };
+    case "image": return { id: block.id, type: "image", visible: block.visible, mediaId: block.mediaId, width: block.width, height: block.height, alt: block.alt, decorative: block.decorative };
+    case "embed": return { id: block.id, type: "embed", visible: block.visible, provider: block.provider, ref: block.ref, title: block.title };
+    case "pix": return { id: block.id, type: "pix", visible: block.visible, label: block.label, keyType: block.keyType, key: block.key, paymentUrl: block.paymentUrl };
+    case "form": return { id: block.id, type: "form", visible: block.visible, title: block.title, fields: [...block.fields], buttonLabel: block.buttonLabel, consentText: block.consentText, consentRequired: block.consentRequired };
   }
 }
 
 function stringField(record: Record<string, unknown>, key: string): string {
   const value = record[key];
   return typeof value === "string" ? value : "";
+}
+
+function numberField(record: Record<string, unknown>, key: string): number {
+  const value = record[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
 /**
@@ -191,6 +232,13 @@ export function readDraftBlocks(value: unknown): DraftBlock[] {
       }
       case "whatsapp": return [{ ...base, type: "whatsapp", label: stringField(record, "label"), phone: stringField(record, "phone"), message: stringField(record, "message") }];
       case "divider": return [{ ...base, type: "divider" }];
+      case "image": return [{ ...base, type: "image", mediaId: stringField(record, "mediaId"), width: numberField(record, "width"), height: numberField(record, "height"), alt: stringField(record, "alt"), decorative: record.decorative === true }];
+      case "embed":
+        // A provider outside the allowlist cannot be shown or repaired in the form: dropped.
+        return isEmbedProvider(record.provider) ? [{ ...base, type: "embed", provider: record.provider, ref: stringField(record, "ref"), title: stringField(record, "title") }] : [];
+      case "pix": return [{ ...base, type: "pix", label: stringField(record, "label"), keyType: isPixKeyType(record.keyType) ? record.keyType : "random", key: stringField(record, "key"), paymentUrl: stringField(record, "paymentUrl") }];
+      case "form":
+        return [{ ...base, type: "form", title: stringField(record, "title"), fields: Array.isArray(record.fields) ? record.fields.filter(isFormField) : [], buttonLabel: stringField(record, "buttonLabel"), consentText: stringField(record, "consentText"), consentRequired: record.consentRequired !== false }];
     }
   });
 }

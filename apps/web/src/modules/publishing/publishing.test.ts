@@ -101,7 +101,7 @@ describe("published document", () => {
 
   it("builds the document like private.build_publication_document: order kept, hidden and empty social rows dropped", () => {
     const draft = {
-      title: "Studio", bio: "", avatarPath: null,
+      title: "Studio", bio: "", avatarPath: null, theme: null,
       blocks: [
         { id: "a", type: "social" as const, visible: true, items: [{ network: "instagram" as const, url: "https://www.instagram.com/studio" }] },
         { id: "b", type: "link" as const, visible: false, title: "Oculto", url: "https://b.example.com/" },
@@ -157,7 +157,7 @@ describe("public page metadata", () => {
 
   it("uses the configured public origin for canonical and Open Graph URLs", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://exemplo.com.br/");
-    const metadata = buildPublicPageMetadata({ state: "published", slug: "ana", version: 1, publishedAt: null, showBadge: true, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana Lima", bio: "  Nutricionista\n em SP ", avatarPath: null, blocks: [] } });
+    const metadata = buildPublicPageMetadata({ state: "published", slug: "ana", version: 1, publishedAt: null, showBadge: true, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana Lima", bio: "  Nutricionista\n em SP ", avatarPath: null, theme: null, blocks: [] } });
     expect(metadata.alternates?.canonical).toBe("https://exemplo.com.br/ana");
     expect(metadata.openGraph).toMatchObject({ url: "https://exemplo.com.br/ana", title: "Ana Lima", description: "Nutricionista em SP", locale: "pt_BR" });
     expect(metadata.robots).toEqual({ index: true, follow: true });
@@ -165,8 +165,8 @@ describe("public page metadata", () => {
 
   it("falls back to a default description and truncates long bios", () => {
     const base = { state: "published" as const, slug: "ana", version: 1, publishedAt: null, showBadge: true };
-    expect(buildPublicPageMetadata({ ...base, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana", bio: "", avatarPath: null, blocks: [] } }).description).toBe("Links e contatos de Ana.");
-    const long = buildPublicPageMetadata({ ...base, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana", bio: "x".repeat(280), avatarPath: null, blocks: [] } }).description ?? "";
+    expect(buildPublicPageMetadata({ ...base, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana", bio: "", avatarPath: null, theme: null, blocks: [] } }).description).toBe("Links e contatos de Ana.");
+    const long = buildPublicPageMetadata({ ...base, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana", bio: "x".repeat(280), avatarPath: null, theme: null, blocks: [] } }).description ?? "";
     expect(long.length).toBe(160);
     expect(long.endsWith("…")).toBe(true);
   });

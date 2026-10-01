@@ -6,9 +6,9 @@ export const PRODUCT = {
   locale: "pt-BR",
   currency: "BRL",
   plans: {
-    free: { monthlyPriceInCents: 0, includedProfiles: 1, analyticsDays: 7, teamMembers: 1, customDomain: false, removeBadge: false, shareableReports: false },
-    pro: { monthlyPriceInCents: 1490, includedProfiles: 1, analyticsDays: 90, teamMembers: 1, customDomain: true, removeBadge: true, shareableReports: false },
-    agency: { monthlyPriceInCents: 5790, includedProfiles: 10, analyticsDays: 90, teamMembers: 5, customDomain: true, removeBadge: true, shareableReports: true },
+    free: { monthlyPriceInCents: 0, includedProfiles: 1, analyticsDays: 7, teamMembers: 1, storageMb: 20, customDomain: false, removeBadge: false, shareableReports: false },
+    pro: { monthlyPriceInCents: 1490, includedProfiles: 1, analyticsDays: 90, teamMembers: 1, storageMb: 100, customDomain: true, removeBadge: true, shareableReports: false },
+    agency: { monthlyPriceInCents: 5790, includedProfiles: 10, analyticsDays: 90, teamMembers: 5, storageMb: 500, customDomain: true, removeBadge: true, shareableReports: true },
   },
 } as const;
 

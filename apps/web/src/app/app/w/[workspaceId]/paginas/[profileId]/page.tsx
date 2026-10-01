@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { APP_COPY, EDITOR_COPY } from "@/content/pt-BR";
+import { APP_COPY, EDITOR_COPY, LEADS_COPY } from "@/content/pt-BR";
 import { publicAddressLabel } from "@/lib/app-url";
 import { BlockEditor } from "@/modules/editor/components/block-editor";
 import { isUuid } from "@/modules/identity/guard";
@@ -25,7 +25,7 @@ export const metadata: Metadata = { title: "Editar página" };
 const STATUS_TONE = { draft: "neutral", published: "success", archived: "warning" } as const;
 
 /**
- * Page editor (Sprint 4): block editor with autosave and live preview, then publishing history,
+ * Page editor: block editor with autosave, uploads, appearance and live preview, then publishing history,
  * address and deletion. Every command re-authorizes on the server; this page only decides what to
  * show for the caller's role.
  */
@@ -54,7 +54,7 @@ export default async function ProfileEditorPage({ params }: { params: Promise<{ 
     <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
       <Link className="inline-flex min-h-11 w-fit items-center font-bold text-app-accent underline" href={`/app/w/${workspaceId}`}>← {APP_COPY.pages.listTitle}</Link>
       <header className="flex flex-wrap items-center gap-4">
-        <ProfileAvatar title={profile.title} size="lg" />
+        <ProfileAvatar title={profile.title} avatarPath={profile.avatarPath} size="lg" />
         <div className="min-w-0">
           <h1 className="text-3xl font-bold break-words">{profile.title}</h1>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-app-muted">
@@ -69,7 +69,7 @@ export default async function ProfileEditorPage({ params }: { params: Promise<{ 
           <p className="m-0 rounded-xl border border-app-border bg-app-surface-soft p-3 font-bold">{APP_COPY.draft.notice}</p>
           <BlockEditor
             profileId={profile.id}
-            initial={{ title: profile.title, bio: profile.bio, blocks: profile.blocks, revision: profile.draftRevision }}
+            initial={{ title: profile.title, bio: profile.bio, avatarPath: profile.avatarPath, theme: profile.theme, blocks: profile.blocks, revision: profile.draftRevision }}
             livePublicationId={profile.livePublicationId}
             publications={publications}
             canPublish={canPublish}
@@ -94,6 +94,12 @@ export default async function ProfileEditorPage({ params }: { params: Promise<{ 
           canPublish={canPublish}
           editorManaged={canEdit}
         />
+
+        <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="leads-title">
+          <h2 id="leads-title" className="text-xl font-bold">{LEADS_COPY.title}</h2>
+          <p className="m-0 text-app-muted">{LEADS_COPY.lead}</p>
+          <div><Link className="ui-button ui-button-secondary" href={`${basePath}/contatos`}>{LEADS_COPY.open}</Link></div>
+        </section>
 
         <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="address-title">
           <h2 id="address-title" className="text-xl font-bold">{APP_COPY.profileForm.slug}</h2>

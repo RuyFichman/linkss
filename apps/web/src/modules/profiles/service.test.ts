@@ -13,7 +13,7 @@ const PAGE_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
 function page(id: string, workspaceId: string, slug: string): ProfileSummary {
   return {
-    id, workspaceId, title: "Página", bio: "", slug, status: "draft", avatarPath: null, blocks: [], draftRevision: 1,
+    id, workspaceId, title: "Página", bio: "", slug, status: "draft", avatarPath: null, theme: null, blocks: [], draftRevision: 1,
     livePublicationId: null, publishedAt: null, createdAt: "2026-09-25T00:00:00Z", updatedAt: "2026-09-25T00:00:00Z",
   };
 }
@@ -86,7 +86,7 @@ describe("profile commands: server-side authorization", () => {
 
   it("treats a page of another tenant as not found for every command", async () => {
     const service = createProfileService(identity("u1", { [WS_A]: "owner" }), fakeRepository([WS_A]));
-    expect(await service.saveDraft(PAGE_B, { expectedRevision: 1, title: "X", bio: "", blocks: [] })).toMatchObject({ ok: false, error: "not_found" });
+    expect(await service.saveDraft(PAGE_B, { expectedRevision: 1, title: "X", bio: "", avatarPath: null, theme: null, blocks: [] })).toMatchObject({ ok: false, error: "not_found" });
     expect(await service.loadDraft(PAGE_B)).toMatchObject({ ok: false, error: "not_found" });
     expect(await service.changeSlug(PAGE_B, "roubado")).toMatchObject({ ok: false, error: "not_found" });
     expect(await service.softDelete(PAGE_B)).toMatchObject({ ok: false, error: "not_found" });
@@ -97,7 +97,7 @@ describe("profile commands: server-side authorization", () => {
     // The page is visible (member) but the caller is only an editor there.
     const repository = fakeRepository([WS_A]);
     const service = createProfileService(identity("u1", { [WS_A]: "editor" }), repository);
-    expect(await service.saveDraft(PAGE_A, { expectedRevision: 1, title: "Novo nome", bio: "", blocks: [] })).toMatchObject({ ok: true });
+    expect(await service.saveDraft(PAGE_A, { expectedRevision: 1, title: "Novo nome", bio: "", avatarPath: null, theme: null, blocks: [] })).toMatchObject({ ok: true });
     expect(await service.changeSlug(PAGE_A, "novo-endereco")).toMatchObject({ ok: false, error: "forbidden" });
     expect(await service.softDelete(PAGE_A)).toMatchObject({ ok: false, error: "forbidden" });
     expect(repository.changeSlug).not.toHaveBeenCalled();
@@ -144,27 +144,46 @@ describe("draft autosave command", () => {
   const LINK = { id: "6f1c1d2e-0000-4000-8000-000000000001", type: "link", visible: true, title: "Site", url: "https://exemplo.com.br/" };
   const owner = () => identity("u1", { [WS_A]: "owner" });
 
-  it("writes title, bio and blocks together against the expected revision", async () => {
+  const THEME = { background: "#f5efe5", button: "#1f5b49", buttonStyle: "filled", corners: "rounded", spacing: "regular", font: "serif" };
+  const AVATAR = "9a000000-0000-4000-8000-0000000000aa";
+  const BASE = { expectedRevision: 1, title: "A", bio: "", avatarPath: null, theme: null, blocks: [] };
+
+  it("writes title, bio, avatar, theme and blocks together against the expected revision", async () => {
     const repository = fakeRepository([WS_A]);
-    const result = await createProfileService(owner(), repository).saveDraft(PAGE_A, { expectedRevision: 7, title: "  Café   Ipê ", bio: "Bio", blocks: [LINK] });
+    const result = await createProfileService(owner(), repository).saveDraft(PAGE_A, { expectedRevision: 7, title: "  Café   Ipê ", bio: "Bio", avatarPath: AVATAR, theme: THEME, blocks: [LINK] });
     expect(result).toEqual({ ok: true, value: { revision: 8 } });
-    expect(repository.updateDraft).toHaveBeenCalledWith(PAGE_A, 7, { title: "Café Ipê", bio: "Bio", blocks: [LINK] });
+    expect(repository.updateDraft).toHaveBeenCalledWith(PAGE_A, 7, { title: "Café Ipê", bio: "Bio", avatarPath: AVATAR, theme: THEME, blocks: [LINK] });
+    // Null means "initials" and "classic look": it is written, never treated as "keep what is stored".
+    await createProfileService(owner(), repository).saveDraft(PAGE_A, { ...BASE, expectedRevision: 8 });
+    expect(repository.updateDraft).toHaveBeenLastCalledWith(PAGE_A, 8, { title: "A", bio: "", avatarPath: null, theme: null, blocks: [] });
   });
 
   it("rejects forged payloads before touching the repository", async () => {
     const repository = fakeRepository([WS_A]);
     const service = createProfileService(owner(), repository);
     const forged = [
-      { expectedRevision: 1, title: "A", bio: "", blocks: [{ ...LINK, url: "javascript:alert(1)" }] },
-      { expectedRevision: 1, title: "A", bio: "", blocks: [{ ...LINK, url: "JaVaScRiPt:alert(1)" }] },
-      { expectedRevision: 1, title: "A", bio: "", blocks: [{ ...LINK, url: "exemplo.com.br" }] },
-      { expectedRevision: 1, title: "A", bio: "", blocks: [{ ...LINK, onclick: "x" }] },
-      { expectedRevision: 1, title: "A", bio: "", blocks: [{ id: LINK.id, type: "whatsapp", visible: true, label: "Zap", phone: "https://evil.example", message: "" }] },
-      { expectedRevision: 1, title: "A", bio: "", blocks: [LINK, LINK] },
-      { expectedRevision: 1, title: "A", bio: "", blocks: "[]" },
-      { expectedRevision: "1", title: "A", bio: "", blocks: [] },
-      { expectedRevision: 0, title: "A", bio: "", blocks: [] },
-      { expectedRevision: 1, title: " ", bio: "", blocks: [] },
+      { ...BASE, blocks: [{ ...LINK, url: "javascript:alert(1)" }] },
+      { ...BASE, blocks: [{ ...LINK, url: "JaVaScRiPt:alert(1)" }] },
+      { ...BASE, blocks: [{ ...LINK, url: "exemplo.com.br" }] },
+      { ...BASE, blocks: [{ ...LINK, onclick: "x" }] },
+      { ...BASE, blocks: [{ id: LINK.id, type: "whatsapp", visible: true, label: "Zap", phone: "https://evil.example", message: "" }] },
+      { ...BASE, blocks: [LINK, LINK] },
+      { ...BASE, blocks: "[]" },
+      { ...BASE, expectedRevision: "1" },
+      { ...BASE, expectedRevision: 0 },
+      { ...BASE, title: " " },
+      // Sprint 5: embed markup, theme with CSS, avatar as a URL, and payloads that omit the new keys.
+      { ...BASE, blocks: [{ id: LINK.id, type: "embed", visible: true, provider: "youtube", ref: '"><script>alert(1)</script>', title: "x" }] },
+      { ...BASE, blocks: [{ id: LINK.id, type: "embed", visible: true, provider: "evil", ref: "dQw4w9WgXcQ", title: "x" }] },
+      { ...BASE, blocks: [{ id: LINK.id, type: "image", visible: true, mediaId: "https://evil.example/x.png", width: 10, height: 10, alt: "x", decorative: false }] },
+      { ...BASE, blocks: [{ id: LINK.id, type: "form", visible: true, title: "x", fields: ["email"], buttonLabel: "x", consentText: "x", consentRequired: true, action: "https://evil.example" }] },
+      { ...BASE, theme: { ...THEME, button: "url(javascript:alert(1))" } },
+      { ...BASE, theme: { ...THEME, css: "body{display:none}" } },
+      { ...BASE, theme: "dark" },
+      { ...BASE, avatarPath: "https://evil.example/avatar.png" },
+      { ...BASE, avatarPath: "../etc/passwd" },
+      { expectedRevision: 1, title: "A", bio: "", blocks: [] },
+      { expectedRevision: 1, title: "A", bio: "", blocks: [], theme: null },
       null,
     ];
     for (const payload of forged) {
@@ -175,9 +194,9 @@ describe("draft autosave command", () => {
 
   it("rejects anonymous callers and pages of other tenants", async () => {
     const repository = fakeRepository([WS_A]);
-    expect(await createProfileService(identity(null, {}), repository).saveDraft(PAGE_A, { expectedRevision: 1, title: "A", bio: "", blocks: [] })).toMatchObject({ ok: false, error: "unauthenticated" });
-    expect(await createProfileService(owner(), repository).saveDraft(PAGE_B, { expectedRevision: 1, title: "A", bio: "", blocks: [] })).toMatchObject({ ok: false, error: "not_found" });
-    expect(await createProfileService(owner(), repository).saveDraft("not-a-uuid", { expectedRevision: 1, title: "A", bio: "", blocks: [] })).toMatchObject({ ok: false, error: "not_found" });
+    expect(await createProfileService(identity(null, {}), repository).saveDraft(PAGE_A, BASE)).toMatchObject({ ok: false, error: "unauthenticated" });
+    expect(await createProfileService(owner(), repository).saveDraft(PAGE_B, BASE)).toMatchObject({ ok: false, error: "not_found" });
+    expect(await createProfileService(owner(), repository).saveDraft("not-a-uuid", BASE)).toMatchObject({ ok: false, error: "not_found" });
     expect(repository.updateDraft).not.toHaveBeenCalled();
   });
 
@@ -185,13 +204,13 @@ describe("draft autosave command", () => {
     const repository = fakeRepository([WS_A]);
     const service = createProfileService(owner(), repository);
     repository.updateDraft = vi.fn(async () => ({ ok: false as const, error: "conflict" as const }));
-    expect(await service.saveDraft(PAGE_A, { expectedRevision: 1, title: "A", bio: "", blocks: [] })).toMatchObject({ ok: false, error: "conflict" });
+    expect(await service.saveDraft(PAGE_A, BASE)).toMatchObject({ ok: false, error: "conflict" });
     repository.updateDraft = vi.fn(async () => ({ ok: false as const, error: "content_invalid" as const }));
-    expect(await service.saveDraft(PAGE_A, { expectedRevision: 1, title: "A", bio: "", blocks: [] })).toMatchObject({ ok: false, error: "content_invalid" });
+    expect(await service.saveDraft(PAGE_A, BASE)).toMatchObject({ ok: false, error: "content_invalid" });
   });
 
   it("loads the saved draft with its revision for conflict recovery", async () => {
     const result = await createProfileService(owner(), fakeRepository([WS_A])).loadDraft(PAGE_A);
-    expect(result).toEqual({ ok: true, value: { title: "Página", bio: "", blocks: [], revision: 1 } });
+    expect(result).toEqual({ ok: true, value: { title: "Página", bio: "", avatarPath: null, theme: null, blocks: [], revision: 1 } });
   });
 });

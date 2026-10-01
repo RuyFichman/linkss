@@ -121,7 +121,7 @@ as $$
 $$;
 
 -- Variant plan (mirror of modules/media/policy.ts planVariants): avatars are the three squares;
--- images keep 416/832/1248 below the master width plus the master itself, never enlarged.
+-- images keep 448/896/1344 below the master width plus the master itself, never enlarged.
 create function private.media_variants_are_valid(p_kind public.media_kind, p_width integer, p_height integer, p_variants jsonb)
 returns boolean
 language plpgsql
@@ -157,11 +157,11 @@ begin
       return false;
     end if;
   else
-    if p_width not between 200 and 1248 or p_height not between 100 and 4096
+    if p_width not between 200 and 1344 or p_height not between 100 and 4096
       or p_width > 3 * p_height or p_height > 3 * p_width then
       return false;
     end if;
-    v_expected := array(select w from unnest(array[416, 832, 1248]) w where w < p_width order by w) || p_width;
+    v_expected := array(select w from unnest(array[448, 896, 1344]) w where w < p_width order by w) || p_width;
   end if;
   if v_widths is distinct from v_expected then
     return false;

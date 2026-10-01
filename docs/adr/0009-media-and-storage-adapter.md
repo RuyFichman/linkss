@@ -29,9 +29,9 @@ Variants (all WebP, quality 80, never enlarged for image blocks):
 | Kind | Stored variants | Rendered as |
 |---|---|---|
 | `avatar` | 96, 192 and 288 px squares | `width=96`, `srcset` 1x/2x/3x |
-| `image` | widths 416, 832 and 1248 px, limited to the cropped source width (the largest stored width is the *master*) | `srcset` with `w` descriptors, `sizes="(max-width: 448px) calc(100vw - 2rem), 416px"` |
+| `image` | widths 448, 896 and 1344 px, limited to the cropped source width (the largest stored width is the *master*) | `srcset` with `w` descriptors, `sizes="(max-width: 480px) calc(100vw - 2rem), 448px"` |
 
-The widths follow the public column (448 px max, 416 px of content): 416 covers 1x, 832 covers 2x, 1248 covers 3x phones. The set of widths is a pure function of the master width (`imageVariantWidths`), so the snapshot only needs the media id and the master dimensions.
+The widths follow the public column (448 px wide on desktop, the viewport minus 32 px on phones): 448 covers 1x, 896 covers 2x and 1344 covers 3x. The set of widths is a pure function of the master width (`imageVariantWidths`), so the snapshot only needs the media id and the master dimensions.
 
 ### Validation of real content
 
@@ -48,7 +48,7 @@ The widths follow the public column (448 px max, 416 px of content): 416 covers 
 - One **public** bucket, `media`, created by migration with `allowed_mime_types = {image/webp}` and a 2 MiB per-object limit. Public pages are static HTML served to anonymous visitors, so signed URLs would have to be regenerated per render and would defeat the CDN.
 - Object key: `<media id>/<width>.webp`. The media id is a random UUID generated on the server, so keys are unguessable and nothing can be listed (there is no `select` policy on `storage.objects`).
 - **Deviation from the recommended "workspace/profile prefix":** public pages must not expose workspace or page identifiers (ADR 0007). Ownership lives in the `media_assets` table instead, which is what the policies, quota and cleanup read. A purge never needs to list a prefix because the table knows every key.
-- Keys are immutable: replacing an image creates a new asset and a new key. Objects are uploaded with `Cache-Control: public, max-age=31536000, immutable`.
+- Keys are immutable: replacing an image creates a new asset and a new key. Objects are uploaded with a one-year `Cache-Control` (`max-age=31536000`).
 - Drafts and snapshots store only the media id and dimensions. The URL is built at render time by `publicMediaUrl()` from `NEXT_PUBLIC_MEDIA_BASE_URL` (or, by default, the Supabase public object path), so moving to R2 is a copy of the bucket plus one configuration value.
 
 ### Who may write: attested uploads without the service key
@@ -100,7 +100,7 @@ Applied in the browser before upload: fixed 1:1 for the avatar; original, 1:1, 4
 
 - **Need:** decode and re-encode on the server (validity, metadata stripping, consistent WebP output).
 - **Maintenance and license:** actively maintained, Apache-2.0; prebuilt binaries (libvips, LGPL, dynamically linked).
-- **Cost:** it was already installed as an optional dependency of Next.js 16 (`sharp@^0.35.4`); declaring it adds no package. Server only, never in a browser bundle. Around 40–120 ms per upload.
+- **Cost:** it was already installed as an optional dependency of Next.js 16 (`sharp@^0.35.4`); declaring it (`^0.35.5`) adds no package. Server only, never in a browser bundle. Around 40–120 ms per upload.
 - **Security posture:** input is bounded before decoding (bytes, dimensions, pixels) and the decoder runs with `limitInputPixels` and `failOn: "error"`.
 - **Exit path:** it is used in one file (`modules/media/process.ts`) behind a function that takes bytes and returns variants.
 
@@ -116,4 +116,5 @@ Applied in the browser before upload: fixed 1:1 for the avatar; original, 1:1, 4
 - Deploying needs three operational steps besides the migration: the Vault secret `media_signing_secret`, `MEDIA_SIGNING_SECRET` on the server with the same value, and (for cleanup) `CRON_SECRET` plus the existing `SUPABASE_SECRET_KEY`. Without the signing secret uploads fail visibly ("unavailable"); nothing else is affected.
 - Transparent PNG logos keep their transparency only in browsers that can encode WebP in canvas; elsewhere the pre-pass flattens them onto white.
 - Page duplication (Sprint 7) must copy assets or widen the "same page" rule for references.
+- The variant plan is part of the storage contract: the renderer derives the file names from the master width. Changing the widths later needs the old files to be produced again (or the plan to be versioned per asset) before the constants change.
 - Egress grows with visits: see `docs/SUPABASE_CAPACITY.md` for the measured bytes per variant.
