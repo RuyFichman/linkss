@@ -1,4 +1,4 @@
-import { normalizeUrl } from "@/modules/editor/model/urls";
+import { normalizeBlockUrl } from "./url-policy";
 
 /**
  * Social networks shown as icons in the page header. `hosts` must equal
@@ -60,7 +60,7 @@ export function normalizeSocialInput(network: SocialNetwork, input: string): Soc
     return { ok: true, url: SOCIAL_NETWORKS[network].handleUrl(encodeURIComponent(handle[1] ?? "")) };
   }
 
-  const normalized = normalizeUrl(trimmed);
+  const normalized = normalizeBlockUrl(trimmed);
   if (!normalized.ok) return { ok: false, reason: "invalid" };
   const url = new URL(normalized.url);
   if (url.protocol === "http:") url.protocol = "https:";

@@ -41,11 +41,14 @@ Verificado localmente (pgTAP + `next start` de produção + Lighthouse); nada pr
 
 ## Sprint 4 — editor
 
-- [ ] P0 CRUD, ordem, duplicação e visibilidade de blocos.
-- [ ] P0 Blocos link, texto, social, WhatsApp e separador.
-- [ ] P0 Autosave seguro e preview mobile.
-- [ ] P0 Validar URLs e bloquear esquemas perigosos.
-- [ ] P1 Undo de exclusão recente.
+- [x] P0 CRUD, ordem, duplicação e visibilidade de blocos.
+- [x] P0 Blocos link, texto, social, WhatsApp e separador.
+- [x] P0 Autosave seguro e preview mobile.
+- [x] P0 Validar URLs e bloquear esquemas perigosos.
+- [x] P1 Undo de exclusão recente.
+- [ ] P1 Validar com usuários reais (AC5: cinco blocos em < 10 min) — só proxy interno feito; depende das sessões de `docs/research/USABILITY_TEST_PLAN.md`.
+- [ ] P2 Arrastar e soltar para reordenar (alternativa por botões já existe; UX-029).
+- [ ] P2 Limpeza da coluna legada `profiles.social_links` (precisa de aprovação do founder).
 
 ## Sprint 5 — visual e mídia
 

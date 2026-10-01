@@ -4,20 +4,21 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { IdentityPort } from "@/modules/identity/guard";
 import type { WorkspaceRole } from "@/modules/identity/permissions";
-import { documentFromDraft, parsePublishedDocument } from "./document";
+import { buildDocumentJson, documentFromDraft, LEGACY_SOCIAL_BLOCK_ID, parsePublishedDocument } from "./document";
 import { buildPublicPageMetadata } from "./metadata";
 import { mapPublicPageRow, PublicPageUnavailableError, type PublicPageRow } from "./public-page";
 import { resolveRouteSlug } from "./route-slug";
 import { createPublishingService, publicationState, publishingErrorFromDatabase, type PublishingRepository, type PublishTarget } from "./service";
-import { isAllowedSocialUrl, normalizeSocialInput, SOCIAL_NETWORK_IDS, SOCIAL_NETWORKS } from "./social";
+import { isAllowedSocialUrl, normalizeSocialInput, SOCIAL_NETWORK_IDS, SOCIAL_NETWORKS } from "@/modules/blocks";
 
 const MIGRATIONS_DIR = fileURLToPath(new URL("../../../../../supabase/migrations/", import.meta.url));
 
-/** Parses `when 'network' then array['host', ...]` from private.social_network_hosts(). */
+/** Parses `when 'network' then array['host', ...]` from the body of private.social_network_hosts(). */
 function socialHostsInMigrations(): Record<string, string[]> {
   const sql = readdirSync(MIGRATIONS_DIR).filter((file) => file.endsWith(".sql")).map((file) => readFileSync(join(MIGRATIONS_DIR, file), "utf8")).join("\n");
   const hosts: Record<string, string[]> = {};
-  for (const match of sql.matchAll(/when '([a-z]+)' then array\[([^\]]+)\]/g)) {
+  const body = /create function private\.social_network_hosts[\s\S]*?\$\$;/.exec(sql)?.[0] ?? "";
+  for (const match of body.matchAll(/when '([a-z]+)' then array\[([^\]]+)\]/g)) {
     hosts[match[1] ?? ""] = [...(match[2] ?? "").matchAll(/'([^']+)'/g)].map((host) => host[1] ?? "");
   }
   return hosts;
@@ -50,7 +51,7 @@ describe("social links", () => {
 });
 
 describe("published document", () => {
-  const raw = {
+  const v1 = {
     schemaVersion: 1,
     title: "Café Ipê",
     bio: "Cafés",
@@ -60,30 +61,64 @@ describe("published document", () => {
       { id: "b1", type: "link", title: "Cardápio", url: "https://cafe.example/menu" },
       { id: "b2", type: "link", title: "XSS", url: "javascript:alert(1)" },
       { id: "b3", type: "embed", title: "Script", url: "https://x.example" },
+      { id: "b4", type: "text", text: "not a v1 type" },
     ],
   };
 
-  it("keeps valid content and drops unsafe links, unknown networks and unknown block types", () => {
-    const document = parsePublishedDocument(raw);
-    expect(document?.socialLinks).toEqual([{ network: "instagram", url: "https://www.instagram.com/cafeipe" }]);
-    expect(document?.blocks.map((block) => block.id)).toEqual(["b1"]);
+  it("still renders version 1 snapshots: header social links become a leading social block", () => {
+    const document = parsePublishedDocument(v1);
+    expect(document).toMatchObject({ schemaVersion: 2, sourceSchemaVersion: 1, title: "Café Ipê" });
+    expect(document?.blocks).toEqual([
+      { id: LEGACY_SOCIAL_BLOCK_ID, type: "social", items: [{ network: "instagram", url: "https://www.instagram.com/cafeipe" }] },
+      { id: "b1", type: "link", title: "Cardápio", url: "https://cafe.example/menu" },
+    ]);
+  });
+
+  it("reads version 2 blocks and drops unsafe or malformed ones", () => {
+    const document = parsePublishedDocument({
+      schemaVersion: 2, title: "Ana", bio: "", avatarPath: null,
+      blocks: [
+        { id: "l", type: "link", title: "Site", url: "https://exemplo.com.br/" },
+        { id: "x", type: "link", title: "XSS", url: "javascript:alert(1)" },
+        { id: "t", type: "text", text: "Olá\n<b>texto</b>" },
+        { id: "s", type: "social", items: [{ network: "x", url: "https://x.com/ana" }, { network: "x", url: "https://x.com/dup" }] },
+        { id: "e", type: "social", items: [] },
+        { id: "w", type: "whatsapp", label: "Zap", phone: "5511912345678", message: "Oi" },
+        { id: "wx", type: "whatsapp", label: "Zap", phone: "https://evil.example", message: "" },
+        { id: "d", type: "divider" },
+        { id: "f", type: "form", title: "Sprint 5" },
+      ],
+    });
+    expect(document?.blocks.map((block) => block.id)).toEqual(["l", "t", "s", "w", "d"]);
+    expect(document?.blocks[2]).toEqual({ id: "s", type: "social", items: [{ network: "x", url: "https://x.com/ana" }] });
   });
 
   it("refuses unknown schema versions and documents without a title", () => {
-    expect(parsePublishedDocument({ ...raw, schemaVersion: 2 })).toBeNull();
-    expect(parsePublishedDocument({ ...raw, title: " " })).toBeNull();
-    expect(parsePublishedDocument([raw])).toBeNull();
+    expect(parsePublishedDocument({ ...v1, schemaVersion: 3 })).toBeNull();
+    expect(parsePublishedDocument({ ...v1, title: " " })).toBeNull();
+    expect(parsePublishedDocument([v1])).toBeNull();
   });
 
-  it("builds the preview document like the database: hidden links are left out", () => {
-    const document = documentFromDraft({
-      title: "Ana", bio: "", avatarPath: null, socialLinks: [],
+  it("builds the document like private.build_publication_document: order kept, hidden and empty social rows dropped", () => {
+    const draft = {
+      title: "Studio", bio: "", avatarPath: null,
       blocks: [
-        { id: "a", type: "link", title: "Visível", url: "https://a.example/", visible: true },
-        { id: "b", type: "link", title: "Oculto", url: "https://b.example/", visible: false },
+        { id: "a", type: "social" as const, visible: true, items: [{ network: "instagram" as const, url: "https://www.instagram.com/studio" }] },
+        { id: "b", type: "link" as const, visible: false, title: "Oculto", url: "https://b.example.com/" },
+        { id: "c", type: "whatsapp" as const, visible: true, label: "Fale comigo", phone: "5511912345678", message: "Olá!" },
+        { id: "d", type: "social" as const, visible: true, items: [] },
+        { id: "e", type: "divider" as const, visible: true },
+      ],
+    };
+    expect(buildDocumentJson(draft)).toEqual({
+      schemaVersion: 2, title: "Studio", bio: "", avatarPath: null,
+      blocks: [
+        { id: "a", type: "social", items: [{ network: "instagram", url: "https://www.instagram.com/studio" }] },
+        { id: "c", type: "whatsapp", label: "Fale comigo", phone: "5511912345678", message: "Olá!" },
+        { id: "e", type: "divider" },
       ],
     });
-    expect(document.blocks).toEqual([{ id: "a", type: "link", title: "Visível", url: "https://a.example/" }]);
+    expect(documentFromDraft({ ...draft, title: " " }, "Sua página").title).toBe("Sua página");
   });
 });
 
@@ -122,7 +157,7 @@ describe("public page metadata", () => {
 
   it("uses the configured public origin for canonical and Open Graph URLs", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://exemplo.com.br/");
-    const metadata = buildPublicPageMetadata({ state: "published", slug: "ana", version: 1, publishedAt: null, showBadge: true, document: { schemaVersion: 1, title: "Ana Lima", bio: "  Nutricionista\n em SP ", avatarPath: null, socialLinks: [], blocks: [] } });
+    const metadata = buildPublicPageMetadata({ state: "published", slug: "ana", version: 1, publishedAt: null, showBadge: true, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana Lima", bio: "  Nutricionista\n em SP ", avatarPath: null, blocks: [] } });
     expect(metadata.alternates?.canonical).toBe("https://exemplo.com.br/ana");
     expect(metadata.openGraph).toMatchObject({ url: "https://exemplo.com.br/ana", title: "Ana Lima", description: "Nutricionista em SP", locale: "pt_BR" });
     expect(metadata.robots).toEqual({ index: true, follow: true });
@@ -130,8 +165,8 @@ describe("public page metadata", () => {
 
   it("falls back to a default description and truncates long bios", () => {
     const base = { state: "published" as const, slug: "ana", version: 1, publishedAt: null, showBadge: true };
-    expect(buildPublicPageMetadata({ ...base, document: { schemaVersion: 1, title: "Ana", bio: "", avatarPath: null, socialLinks: [], blocks: [] } }).description).toBe("Links e contatos de Ana.");
-    const long = buildPublicPageMetadata({ ...base, document: { schemaVersion: 1, title: "Ana", bio: "x".repeat(280), avatarPath: null, socialLinks: [], blocks: [] } }).description ?? "";
+    expect(buildPublicPageMetadata({ ...base, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana", bio: "", avatarPath: null, blocks: [] } }).description).toBe("Links e contatos de Ana.");
+    const long = buildPublicPageMetadata({ ...base, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana", bio: "x".repeat(280), avatarPath: null, blocks: [] } }).description ?? "";
     expect(long.length).toBe(160);
     expect(long.endsWith("…")).toBe(true);
   });

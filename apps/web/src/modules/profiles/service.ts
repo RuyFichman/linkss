@@ -2,9 +2,8 @@ import { APP_COPY, AUTH_COPY } from "@/content/pt-BR";
 import type { Database } from "@/lib/database.types";
 import { assertEntitlement, EntitlementError, type Entitlements } from "@/modules/entitlements";
 import { AuthorizationError, isUuid, requireUser, requireWorkspaceAccess, type IdentityPort } from "@/modules/identity/guard";
-import type { SocialLink, SocialNetwork } from "@/modules/publishing/social";
+import { validateStoredBlocks, type DraftBlock } from "@/modules/blocks";
 import { validateProfileContent, type ProfileContentField } from "./content";
-import { MAX_BLOCKS, validateLinkInput, validateSocialForm, type DraftLinkBlock, type LinkField } from "./draft-content";
 import { isSlugError, profileErrorMessage, type ProfileErrorKind } from "./errors";
 import { fromAvailabilityStatus, validateSlug, type SlugValidation } from "./slug";
 
@@ -18,8 +17,8 @@ export interface ProfileSummary {
   slug: string;
   status: ProfileStatus;
   avatarPath: string | null;
-  socialLinks: SocialLink[];
-  blocks: DraftLinkBlock[];
+  /** Draft blocks as stored (tolerant read: outdated content is kept for the editor to flag). */
+  blocks: DraftBlock[];
   /** Bumped by the database on every draft content change. */
   draftRevision: number;
   livePublicationId: string | null;
@@ -37,15 +36,25 @@ export interface ProfileRepository {
   countLive(workspaceId: string): Promise<number>;
   entitlements(workspaceId: string): Promise<Entitlements>;
   insert(input: { workspaceId: string; title: string; bio: string; slug: string }): Promise<RepositoryResult<ProfileSummary>>;
-  updateContent(profileId: string, input: { title: string; bio: string }): Promise<RepositoryResult<ProfileSummary>>;
-  /** Writes only if the draft is still at `expectedRevision`; otherwise fails with "conflict". */
-  updateDraft(profileId: string, expectedRevision: number, patch: { socialLinks?: SocialLink[]; blocks?: DraftLinkBlock[] }): Promise<RepositoryResult<ProfileSummary>>;
+  /** Writes the whole draft only if it is still at `expectedRevision`; otherwise fails with "conflict". */
+  updateDraft(profileId: string, expectedRevision: number, draft: DraftContent): Promise<RepositoryResult<ProfileSummary>>;
   changeSlug(profileId: string, slug: string): Promise<RepositoryResult<string>>;
   softDelete(profileId: string): Promise<RepositoryResult<null>>;
   checkSlug(slug: string, workspaceId: string | null): Promise<RepositoryResult<{ normalized: string; status: string }>>;
 }
 
-export type ProfileField = ProfileContentField | "slug" | LinkField | SocialNetwork;
+export type ProfileField = ProfileContentField | "slug";
+
+/** The editable draft: header fields plus the ordered blocks (ADR 0008: saved as one unit). */
+export interface DraftContent {
+  title: string;
+  bio: string;
+  blocks: DraftBlock[];
+}
+
+export interface DraftSnapshot extends DraftContent {
+  revision: number;
+}
 
 const VALIDATION_SUMMARY = AUTH_COPY.validation.summary;
 
@@ -111,81 +120,40 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       return inserted;
     },
 
-    async updateContent(profileId: unknown, input: { title: unknown; bio: unknown }): Promise<CommandResult<ProfileSummary>> {
+    /**
+     * Autosave: replaces title, bio and the ordered blocks in one conditional write against the
+     * revision the editor last confirmed. The payload is untrusted and validated exactly like the
+     * database (values must already be normalized); nothing is repaired here.
+     */
+    async saveDraft(profileId: unknown, payload: unknown): Promise<CommandResult<{ revision: number }>> {
       try {
         await authorizeProfile(profileId, "profile.edit_content");
       } catch (error) {
         return authorizationFailure(error);
       }
-      const content = validateProfileContent(input);
+      const input = payload && typeof payload === "object" && !Array.isArray(payload) ? payload as Record<string, unknown> : {};
+      const expectedRevision = input.expectedRevision;
+      if (typeof expectedRevision !== "number" || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
+        return { ok: false, error: "validation", message: VALIDATION_SUMMARY };
+      }
+      const content = validateProfileContent({ title: input.title, bio: input.bio });
       if (!content.ok) return { ok: false, error: "validation", message: VALIDATION_SUMMARY, fieldErrors: content.errors };
-      const updated = await repository.updateContent(profileId as string, content.value);
-      return updated.ok ? updated : failure(updated.error);
+      const blocks = validateStoredBlocks(input.blocks);
+      if (!blocks.ok) return { ok: false, error: "validation", message: profileErrorMessage("content_invalid") };
+
+      const updated = await repository.updateDraft(profileId as string, expectedRevision, { title: content.value.title, bio: content.value.bio, blocks: blocks.blocks });
+      return updated.ok ? { ok: true, value: { revision: updated.value.draftRevision } } : failure(updated.error);
     },
 
-    async updateSocialLinks(profileId: unknown, input: Partial<Record<SocialNetwork, unknown>>): Promise<CommandResult<ProfileSummary>> {
+    /** Current saved draft, used by the editor to recover from a conflict. */
+    async loadDraft(profileId: unknown): Promise<CommandResult<DraftSnapshot>> {
       let profile;
       try {
         profile = await authorizeProfile(profileId, "profile.edit_content");
       } catch (error) {
         return authorizationFailure(error);
       }
-      const social = validateSocialForm(input);
-      if (!social.ok) return { ok: false, error: "validation", message: VALIDATION_SUMMARY, fieldErrors: social.errors };
-      const updated = await repository.updateDraft(profile.id, profile.draftRevision, { socialLinks: social.value });
-      return updated.ok ? updated : failure(updated.error);
-    },
-
-    /** Adds a link (linkId null) or edits an existing one, keeping its position and visibility. */
-    async saveLink(profileId: unknown, linkId: unknown, input: { title: unknown; url: unknown }): Promise<CommandResult<ProfileSummary>> {
-      let profile;
-      try {
-        profile = await authorizeProfile(profileId, "profile.edit_content");
-      } catch (error) {
-        return authorizationFailure(error);
-      }
-      const link = validateLinkInput(input);
-      if (!link.ok) return { ok: false, error: "validation", message: VALIDATION_SUMMARY, fieldErrors: link.errors };
-
-      let blocks: DraftLinkBlock[];
-      if (linkId === null) {
-        if (profile.blocks.length >= MAX_BLOCKS) return { ok: false, error: "validation", message: APP_COPY.links.limit };
-        blocks = [...profile.blocks, { id: crypto.randomUUID(), type: "link", visible: true, ...link.value }];
-      } else {
-        if (!profile.blocks.some((block) => block.id === linkId)) return failure("not_found");
-        blocks = profile.blocks.map((block) => (block.id === linkId ? { ...block, ...link.value } : block));
-      }
-      const updated = await repository.updateDraft(profile.id, profile.draftRevision, { blocks });
-      return updated.ok ? updated : failure(updated.error);
-    },
-
-    async removeLink(profileId: unknown, linkId: unknown): Promise<CommandResult<ProfileSummary>> {
-      let profile;
-      try {
-        profile = await authorizeProfile(profileId, "profile.edit_content");
-      } catch (error) {
-        return authorizationFailure(error);
-      }
-      if (!profile.blocks.some((block) => block.id === linkId)) return failure("not_found");
-      const updated = await repository.updateDraft(profile.id, profile.draftRevision, { blocks: profile.blocks.filter((block) => block.id !== linkId) });
-      return updated.ok ? updated : failure(updated.error);
-    },
-
-    async moveLink(profileId: unknown, linkId: unknown, direction: unknown): Promise<CommandResult<ProfileSummary>> {
-      let profile;
-      try {
-        profile = await authorizeProfile(profileId, "profile.edit_content");
-      } catch (error) {
-        return authorizationFailure(error);
-      }
-      const index = profile.blocks.findIndex((block) => block.id === linkId);
-      if (index < 0 || (direction !== "up" && direction !== "down")) return failure("not_found");
-      const target = direction === "up" ? index - 1 : index + 1;
-      if (target < 0 || target >= profile.blocks.length) return { ok: true, value: profile };
-      const blocks = [...profile.blocks];
-      [blocks[index], blocks[target]] = [blocks[target] as DraftLinkBlock, blocks[index] as DraftLinkBlock];
-      const updated = await repository.updateDraft(profile.id, profile.draftRevision, { blocks });
-      return updated.ok ? updated : failure(updated.error);
+      return { ok: true, value: { title: profile.title, bio: profile.bio, blocks: profile.blocks, revision: profile.draftRevision } };
     },
 
     async changeSlug(profileId: unknown, rawSlug: unknown): Promise<CommandResult<string>> {

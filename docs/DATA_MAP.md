@@ -40,6 +40,17 @@ Nenhum novo operador/subprocessador. A página pública é conteúdo que o clien
 
 Exclusão da página remove o conteúdo público imediatamente (404 após a invalidação); o conteúdo continua nas tabelas até o purge, como na Sprint 2. Links de terceiros e caches externos (prévias já geradas pelo WhatsApp/Instagram) estão fora do nosso controle e devem ser mencionados na política de privacidade.
 
+## Dados adicionados na Sprint 4 (editor por blocos)
+
+Nenhum novo operador/subprocessador nem novo store: os blocos vivem em `profiles.blocks` (rascunho) e em `profile_publications.document` (snapshots), já mapeados acima.
+
+| Dado | Onde | Finalidade | Base / owner | Retenção e exclusão |
+|---|---|---|---|---|
+| Número de WhatsApp (dígitos E.164) e mensagem pronta do bloco WhatsApp | rascunho e snapshots | o cliente escolhe publicar um contato comercial | execução do contrato; owner: o workspace | segue o ciclo do rascunho e das 10 versões publicadas; apagado no purge da página. Pode ser número pessoal do profissional: a política de privacidade deve dizer que é conteúdo público escolhido pelo cliente |
+| Textos livres, links, e-mails (`mailto:`) e telefones (`tel:`) nos blocos | rascunho e snapshots | conteúdo da página | execução do contrato | idem |
+| Coluna legada `profiles.social_links` | rascunho | não é mais gravada pela aplicação (as redes viraram bloco `social`) | — | mantida até limpeza aprovada pelo founder; apagada no purge da página |
+| Logs `editor.save` / `editor.load_latest` | logs | operação do autosave | legítimo interesse | só resultado, duração e correlation id — **nunca** conteúdo de bloco, números ou e-mails |
+
 ### Purge planejado (documentado, não agendado)
 
 O job da Sprint 9 deverá, em transação e com trilha própria:
