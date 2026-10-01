@@ -45,9 +45,17 @@ O limite de dois projetos Free permite staging e uma produção inicial privada.
 - E-mails locais aparecem no Mailpit em `http://127.0.0.1:54324`.
 - Tabelas nunca são expostas implicitamente (`auto_expose_new_tables = false`); cada migração faz `REVOKE`/`GRANT` explícitos.
 
+## Supabase hospedado: staging (2026-10-01)
+
+- Um projeto Supabase no plano Free é o banco de staging; produção será um projeto separado. O ref do projeto não fica neste repositório (que é público): está no dashboard do Supabase e no link local da CLI.
+- As sete migrações até `202609300001_block_editor` foram aplicadas com `supabase db push` em 2026-10-01. O schema hospedado foi comparado com o local (funções, policies, índices, triggers, colunas e grants iguais). Não há dados de usuários.
+- Para aplicar migrações novas: `npx supabase login` na conta dona do projeto (em terminal interativo), `npx supabase link --project-ref <ref>` e `npx supabase db push`. As versões no histórico remoto precisam ser as dos arquivos em `supabase/migrations/`; aplicar por outra via (dashboard, SQL avulso) cria versões divergentes.
+- **Pendente:** o checklist de Auth abaixo, o projeto na Vercel e as variáveis de ambiente. Nenhuma aplicação rodou contra este banco ainda.
+- Com o SMTP padrão do plano Free, o Auth só envia e-mail para endereços de membros da organização no Supabase e com limite baixo por hora. Serve para o founder testar o cadastro; não serve para usuários externos.
+
 ## Checklist de Auth para projetos hospedados (não aplicado)
 
-Configurar em staging e produção **antes** de convidar usuários externos, espelhando `supabase/config.toml`. Nenhuma destas mudanças foi aplicada em projeto hospedado nesta sprint.
+Configurar em staging e produção **antes** de convidar usuários externos, espelhando `supabase/config.toml`. Nenhuma destas mudanças foi aplicada no projeto hospedado.
 
 | Área | Configuração |
 |---|---|

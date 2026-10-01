@@ -22,7 +22,7 @@ Verificado no stack Supabase local (pgTAP + navegador); nada foi aplicado em pro
 - [x] P0 Criar workspace individual no onboarding.
 - [x] P0 Reservar, normalizar e validar slugs.
 - [x] P1 Registrar auditoria de ações sensíveis (`profile.published` preparado para a Sprint 3).
-- [ ] P0 Provisionar staging (Supabase + Vercel), aplicar migrações e configurar Auth conforme `docs/ENVIRONMENTS.md` — depende de aprovação do founder.
+- [ ] P0 Provisionar staging (Supabase + Vercel), aplicar migrações e configurar Auth conforme `docs/ENVIRONMENTS.md` — parcial: projeto Supabase criado e migrações aplicadas em 2026-10-01; faltam o projeto na Vercel, as variáveis de ambiente e o checklist de Auth.
 - [ ] P0 Escolher e contratar SMTP para e-mails de Auth (ADR `MailAdapter`) e atualizar o mapa de dados.
 - [ ] P1 Ativar CAPTCHA (Turnstile) no Auth antes do piloto externo.
 
