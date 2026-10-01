@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useId, useRef } from "react";
-import { PUBLIC_PAGE_COPY } from "@/content/pt-BR";
+import { PUBLIC_PAGE_COPY } from "@/content/public-page";
 import { FORM_FIELD_RULES, type FormField } from "@/modules/blocks/form";
 import type { LeadFormState } from "@/modules/leads/actions";
 

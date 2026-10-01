@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PUBLIC_PAGE_COPY } from "@/content/pt-BR";
+import { PUBLIC_PAGE_COPY } from "@/content/public-page";
 
 /**
  * Copies the Pix key. An enhancement only: the key next to it is plain, selectable text, so the

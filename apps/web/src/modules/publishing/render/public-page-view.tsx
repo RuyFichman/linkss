@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { preconnect } from "react-dom";
-import { BLOCKS_COPY, PUBLIC_PAGE_COPY } from "@/content/pt-BR";
+import { PIX_KEY_TYPE_LABELS, PUBLIC_PAGE_COPY } from "@/content/public-page";
 import { PRODUCT } from "@/lib/product";
 import { formatPixKey, SOCIAL_NETWORKS, whatsAppHref } from "@/modules/blocks";
 import { submitLeadAction } from "@/modules/leads/actions";
@@ -19,7 +19,7 @@ import { SocialIcon, WhatsAppIcon } from "./social-icon";
 const USER_LINK_REL = "ugc nofollow noopener noreferrer";
 const ICON_CLASS = "grid h-11 w-11 place-items-center rounded-full text-[var(--page-text)] hover:bg-[var(--icon-hover-bg)]";
 // Colors, corners and spacing come from CSS custom properties set once on the page root (ADR 0010).
-const BUTTON_BASE = "flex min-h-14 w-full items-center justify-center gap-2 rounded-[var(--page-radius)] border border-[var(--btn-border)] bg-[var(--btn-bg)] px-5 py-3 font-bold leading-snug break-words text-[var(--btn-text)] shadow-sm transition-colors";
+const BUTTON_BASE = "page-button flex min-h-14 w-full items-center justify-center gap-2 rounded-[var(--page-radius)] border border-[var(--btn-border)] bg-[var(--btn-bg)] px-5 py-3 font-bold leading-snug break-words text-[var(--btn-text)] shadow-sm transition-colors";
 const BUTTON_CLASS = `${BUTTON_BASE} hover:border-[var(--btn-hover-border)] hover:bg-[var(--btn-hover-bg)]`;
 const SURFACE_CLASS = "grid gap-3 rounded-[var(--page-radius)] border border-[var(--surface-border)] bg-[var(--surface-bg)] p-4 text-[var(--surface-text)]";
 
@@ -123,7 +123,7 @@ function BlockView({ block, context }: { block: PublishedBlock; context: BlockCo
     case "embed":
       return <EmbedFacade blockId={block.id} provider={block.provider} embedRef={block.ref} title={block.title} interactive={interactive} />;
     case "pix": {
-      const keyType = BLOCKS_COPY.pixKeyTypes[block.keyType];
+      const keyType = PIX_KEY_TYPE_LABELS[block.keyType];
       return (
         <section {...data} className={`${SURFACE_CLASS} justify-items-center`} aria-label={block.label}>
           <strong className="text-lg leading-snug break-words">{block.label}</strong>

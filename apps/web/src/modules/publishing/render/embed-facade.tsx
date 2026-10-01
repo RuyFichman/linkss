@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PUBLIC_PAGE_COPY } from "@/content/pt-BR";
+import { PUBLIC_PAGE_COPY } from "@/content/public-page";
 import { EMBED_FRAME_ATTRIBUTES, EMBED_PROVIDERS, embedFrameSrc, embedLayout, embedPageUrl, type EmbedProvider } from "@/modules/blocks/embed";
 
 const USER_LINK_REL = "ugc nofollow noopener noreferrer";
-const BOX_CLASS = "block w-full overflow-hidden rounded-[var(--page-radius)] border border-[var(--surface-border)] bg-[var(--surface-bg)] text-[var(--surface-text)]";
+const BOX_CLASS = "page-surface block w-full overflow-hidden rounded-[var(--page-radius)] border border-[var(--surface-border)] bg-[var(--surface-bg)] text-[var(--surface-text)]";
 const FACADE_CLASS = "flex h-full w-full flex-col items-center justify-center gap-2 px-4 py-3 text-center";
 
 function PlayIcon() {
