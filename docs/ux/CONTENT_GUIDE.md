@@ -68,6 +68,26 @@ Fonte: `AUTH_COPY` e `APP_COPY` em `apps/web/src/content/pt-BR.ts`. O schema usa
 
 Papéis na interface: **Proprietário** (owner), **Administrador** (admin), **Editor** (editor). O workspace pessoal aparece sempre como **Pessoal**, independentemente do nome salvo.
 
+## Editor por blocos (Sprint 4)
+
+Fonte: `BLOCKS_COPY` e `EDITOR_COPY` em `apps/web/src/content/pt-BR.ts`. Decisões: UX-026 a UX-032 (provisórias).
+
+| Elemento | Texto |
+|---|---|
+| Tipos de bloco | Link · Texto · Redes sociais · WhatsApp · Separador, cada um com uma frase dizendo o que faz |
+| Nome do bloco para leitores de tela | "bloco 3, WhatsApp" (posição + tipo), usado em "Mover … para cima", "Duplicar …", "Excluir …" |
+| Selos no cartão | "Oculto: não aparece na página" · "Precisa de ajuste" (sempre em texto, nunca só cor) |
+| Status do salvamento | "Salvo" · "Salvando…" · "Alterações não salvas" · "Não salvo: corrija os campos destacados." · "Sem resposta do servidor. Tentando salvar de novo…" · "Não foi possível salvar." + motivo + "Tentar novamente" · "Não salvo: a página mudou em outro lugar." |
+| Publicar bloqueado | "Aguarde salvar para publicar." · "Corrija os blocos destacados para publicar." · "Resolva o conflito para publicar." · "Salve as alterações para publicar." |
+| Link recusado | dizer o motivo: "Esse tipo de link não é permitido. Use um site (https://), e-mail (mailto:) ou telefone (tel:)." · "Informe o endereço completo, por exemplo exemplo.com.br." · "Links com usuário ou senha no endereço não são permitidos." · "Confira o endereço: falta o domínio (como .com ou .com.br)." |
+| Aviso (não bloqueia) | "Este site não usa conexão segura (https). Se ele tiver versão https, prefira-a." |
+| WhatsApp | "Informe um número válido com DDD, ex.: (11) 91234-5678. Para outro país, comece com +." |
+| Desfazer | "Bloco excluído." + "Desfazer" |
+| Conflito | título "Esta página foi alterada em outro lugar"; ações "Carregar a versão mais recente" / "Manter as minhas alterações", cada uma com confirmação que diz o que será perdido |
+| Prévia | "Prévia do rascunho. Os links não funcionam aqui." |
+
+Regra: erro de campo diz o que corrigir; status nunca diz "Salvo" antes da confirmação do servidor.
+
 ## Padrões de erro
 
 1. **O que ocorreu:** “Este endereço já está em uso.”

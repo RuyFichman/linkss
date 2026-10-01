@@ -294,7 +294,7 @@ export const EDITOR_COPY = {
   hiddenBadge: "Oculto: não aparece na página",
   invalidBadge: "Precisa de ajuste",
   actions: {
-    edit: (name: string) => `Editar ${name}`,
+    editPrefix: "Editar",
     moveUp: (name: string) => `Mover ${name} para cima`,
     moveDown: (name: string) => `Mover ${name} para baixo`,
     moveTop: "Mover para o topo",

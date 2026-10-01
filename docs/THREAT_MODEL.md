@@ -58,6 +58,20 @@ Legenda: **implementado + verificado** (teste automatizado ou verificação manu
 | Banco lento derrubar páginas | timeout de 4 s; ISR mantém a última cópia boa | implementado + verificado | teste de queda: página em cache seguiu 200 (STALE); nova respondeu 500 em 4 s |
 | Phishing/impersonação em páginas publicadas | suspensão por workspace; denúncia e moderação por página | parcial: suspensão existe, **denúncia/moderação pendentes** (Sprint 9) | — |
 
+## Controles adicionados na Sprint 4 (editor por blocos)
+
+| Ameaça | Controle | Estado | Evidência |
+|---|---|---|---|
+| XSS/esquema perigoso em destino de link (inclusive ofuscado: maiúsculas, espaços, tabs, controles, `%6A`, entidades HTML) | política única `modules/blocks/url-policy.ts` (https, http, mailto, tel; `https://` em domínio puro; sem `//host`, caminho relativo, `user:pass@`, host sem ponto ou IP) espelhada em `private.is_allowed_block_url`; destino armazenado sempre em ASCII imprimível | implementado + verificado | tabela `url-cases.ts` (28 casos) no Vitest e no pgTAP 100 (função e trigger, como editor autenticado sem passar pela UI); teste de divergência SQL × TS; no navegador: `JaVaScRiPt:` digitado → erro no campo; payload de Server Action forjado com `javascript:` → recusado, nada gravado |
+| Payload forjado burlando a UI (chaves extras, tipos desconhecidos, ids duplicados, número de WhatsApp como URL) | chaves exatas por tipo, validação estrita no serviço (`validateStoredBlocks`) e de novo no banco (`LK040`) | implementado + verificado | Vitest `service.test.ts` (11 payloads forjados, repositório não chamado); pgTAP 100 |
+| WhatsApp usado para levar a outro host | número guardado só como dígitos E.164; `wa.me` montado no render | implementado + verificado | pgTAP 100 (`https://evil.example` como telefone → `LK040`); Vitest |
+| Injeção de HTML/script em bloco de texto | texto puro renderizado como nó de texto React; controles recusados | implementado + verificado | página pública mostrou `<script>alert(1)</script>` como texto |
+| Payload gigante / DoS de armazenamento | até 100 blocos (check) e 64 KiB serializados (`octet_length(blocks::text)`), limites por campo | implementado + verificado | pgTAP 100; Vitest |
+| Homógrafo (host com letras de outro alfabeto imitando marca) | host armazenado e exibido em punycode (`xn--`) no editor, com aviso; a página pública mostra só o texto do botão | **mitigação parcial**: o visitante não vê o destino antes de clicar; depende da moderação | ADR 0008; revisar com denúncia/moderação (Sprint 9) |
+| Phishing por links publicados | política de URL bloqueia esquemas perigosos, mas não destinos maliciosos em https | **pendente**: denúncia, moderação e lista de bloqueio de domínios (Sprint 9) | runbook `EDITOR.md` §3 |
+| Autosave sobrescrevendo edição de outra pessoa | compare-and-swap em `draft_revision`, conflito explícito, sobrescrever só com confirmação | implementado + verificado | pgTAP 100 (revisão antiga não grava); Vitest (máquina de estados); navegador: conflito → "carregar" e "manter" |
+| Links que vazam o referer ou `window.opener` | `rel="ugc nofollow noopener noreferrer"` em todo link de usuário | implementado + verificado | HTML da página pública |
+
 ## Requisitos antes do MVP privado
 
 - headers de segurança e CSP;

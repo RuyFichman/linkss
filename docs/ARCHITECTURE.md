@@ -90,12 +90,29 @@ Visitante ── CDN/ISR (/[slug], revalidate 60 s) ── get_public_page(slug)
    └─ proxy.ts só para grafias não canônicas (308) ── nunca para páginas canônicas
 ```
 
-- **Rascunho:** `profiles.title`, `bio`, `avatar_path`, `social_links`, `blocks` (só links nesta sprint) e `draft_revision` (controle otimista). O banco valida formato, esquemas de URL e hosts das redes (`LK040`).
+- **Rascunho:** `profiles.title`, `bio`, `avatar_path`, `social_links`, `blocks` (só links na Sprint 3; ver Sprint 4 abaixo) e `draft_revision` (controle otimista). O banco valida formato, esquemas de URL e hosts das redes (`LK040`).
 - **Snapshot:** `profile_publications` imutável, versão por página, 10 versões retidas; ponteiro `live_publication_id` com FK composta para a própria página.
 - **Estados públicos:** publicada; endereço trocado (307 durante a retenção); suspensa ("indisponível", `noindex`); não publicada e inexistente respondem o mesmo 404.
 - **Metadados:** canonical/OG a partir de `NEXT_PUBLIC_APP_URL`; imagem OG gerada por endereço; `robots.txt` sem sitemap.
 - **Observabilidade:** `onRequestError`, eventos `public_page.*` e `publishing.*`, Web Vitals em `/api/vitals`.
 - **Módulos:** `publishing` (documento, serviço, repositório, cache, renderer, metadados, rota pública); `profiles` ganhou o rascunho de links/redes (`draft-content.ts`). O editor de blocos completo é da Sprint 4.
+
+## Editor por blocos — implementado na Sprint 4
+
+Decisão: `docs/adr/0008-block-model-and-editor.md` (complementa a ADR 0007: documento versão 2 e `rel` com `noreferrer`).
+
+```text
+Editor (client) ── estado + reducer (modules/editor/draft) ── autosave (debounce 1 s, fila única, retry)
+   │                                                            └─ saveDraftAction → profiles.service.saveDraft
+   │                                                                  └─ UPDATE profiles SET title, bio, blocks WHERE draft_revision = esperado (RLS)
+   │                                                                        └─ trigger private.validate_profile_draft (LK040)
+   └─ prévia = PublicPageView(documentFromDraft(estado)) — mesmo renderer e mesmo mapeamento do snapshot
+```
+
+- **Blocos:** `link`, `text`, `social`, `whatsapp`, `divider` em `profiles.blocks`, chaves exatas por tipo; política de URL e regras de campo em `modules/blocks` (fonte TypeScript) espelhadas no SQL e cobertas pela mesma tabela de casos.
+- **Rascunho:** título, bio e blocos salvos juntos numa única escrita condicional; conflito tipado; sem evento de auditoria por salvamento (publicação continua auditada). `social_links` deixou de ser gravada (mantida).
+- **Snapshot versão 2:** só `blocks` (sem `visible`, sem blocos ocultos nem redes vazias); o renderer lê as versões 1 e 2. `data-block-id`/`data-block-type` ficam no HTML para os cliques da Sprint 6.
+- **Módulos:** `blocks` (modelo, validação, URL, WhatsApp, redes), `editor/draft` (reducer, verificação do rascunho, autosave), `editor/components` (UI cliente). `editor/model` segue sendo só do protótipo da Sprint 1.
 
 ## Regras de escala
 

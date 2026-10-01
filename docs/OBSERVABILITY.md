@@ -41,6 +41,17 @@ Métrica de funil (produto): cadastro → e-mail confirmado → primeira página
 
 Cabeçalho `x-nextjs-cache` (`HIT`/`STALE`/`MISS`) mostra o comportamento do cache em produção. Runbook: `docs/runbooks/PUBLIC_PAGE.md`.
 
+## Sinais do editor e do autosave (Sprint 4)
+
+Os eventos carregam só resultado, duração e correlation id — nunca conteúdo de bloco, URLs, telefones ou e-mails.
+
+| Evento | Significado | Sinal / limiar proposto antes do piloto |
+|---|---|---|
+| `editor.save` (`outcome`: `ok`, `conflict`, `validation`, `forbidden`, `not_found`, `unauthenticated`, `unavailable`; `durationMs`) | um salvamento do autosave (um por pausa de ~1 s na digitação ou por ação estrutural) | `unavailable` > 2% em 15 min → P1 (as pessoas veem "Não foi possível salvar"); `durationMs` p95 > 1,5 s → P2; `validation` recorrente → bug de divergência entre UI e banco ou payload forjado (P2, olhar com `editor.save` + sessão); `conflict` em alta → muitas edições simultâneas (produto, não incidente) |
+| `editor.load_latest` (`outcome`) | "Carregar a versão mais recente" / "Manter as minhas alterações" leram o rascunho atual | falhas repetidas → P2 |
+
+Falhas de rede no navegador (servidor inacessível) não geram log no servidor: o editor mostra "Sem resposta do servidor. Tentando salvar de novo…" e depois "Não foi possível salvar", mantendo a cópia local. Runbook: `docs/runbooks/EDITOR.md`.
+
 ## Regras
 
 - Logs estruturados incluem request/correlation ID, módulo, ambiente e resultado.

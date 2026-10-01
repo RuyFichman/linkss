@@ -34,6 +34,10 @@ npm run db:stop
 
 Migrações nunca são aplicadas em projetos hospedados por este fluxo; veja `docs/ENVIRONMENTS.md`.
 
+## Rotas da Sprint 4
+
+- `/app/w/[workspaceId]/paginas/[profileId]` — editor por blocos (link, texto, redes sociais, WhatsApp, separador) com autosave, desfazer, prévia móvel ao lado e publicação; abaixo, versões publicadas, endereço e exclusão. Nenhuma rota nova de nível superior.
+
 ## Rotas da Sprint 3
 
 - `/<endereço>` — página pública publicada (ISR). Grafias não canônicas redirecionam (308); endereço trocado redireciona (307) durante a retenção; não publicada ou inexistente → 404; workspace suspenso → "Página indisponível".
@@ -115,7 +119,7 @@ apps/web/src/prototype/        store local, cenários e instrumentação
 apps/web/src/ui/               componentes acessíveis que graduam
 apps/web/src/app/(auth)/       autenticação
 apps/web/src/app/app/          área autenticada
-apps/web/src/modules/          identity, profiles, entitlements, audit, editor, waitlist
+apps/web/src/modules/          identity, profiles, blocks, editor, publishing, entitlements, audit, waitlist
 apps/web/src/lib/supabase/     clientes Supabase (server, browser, proxy)
 docs/ux/                       jornadas, wireframes, tokens e decisões
 docs/research/                 entrevistas e teste de usabilidade

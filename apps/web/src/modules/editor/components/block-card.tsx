@@ -55,9 +55,10 @@ export function BlockCard(props: BlockCardProps) {
           className="flex min-h-11 min-w-0 flex-1 flex-col items-start gap-1 rounded-lg px-2 py-1 text-left hover:bg-app-surface-soft"
           aria-expanded={open}
           aria-controls={`${block.id}-panel`}
-          aria-label={`${EDITOR_COPY.actions.edit(name)}: ${blockSummary(block.input)}`}
           onClick={props.onToggleOpen}
         >
+          {/* The visible text stays part of the accessible name (WCAG 2.5.3 label in name). */}
+          <span className="sr-only">{EDITOR_COPY.actions.editPrefix} </span>
           <span className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-extrabold uppercase tracking-wide text-app-muted">{position}. {typeLabel}</span>
             {!block.visible ? <Badge tone="neutral">{EDITOR_COPY.hiddenBadge}</Badge> : null}
