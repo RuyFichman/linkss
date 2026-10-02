@@ -147,7 +147,50 @@ Leitura:
 
 - Na v3, a imagem que virou o LCP era o 2º bloco e saía com `loading="lazy"`: a regra só priorizava imagem no 1º bloco. **Corrigido:** a primeira imagem entre os três primeiros blocos agora carrega sem lazy e com prioridade alta (`priorityImageId`, com teste de regressão). A correção ainda não foi remedida no staging.
 - As execuções desta máquina saem acima das do PageSpeed na mesma página, porque a rede até a Vercel entra na conta.
-- **Ainda não há medição de campo:** os logs `web_vital` das visitas reais não foram lidos.
+- **Primeira leitura dos logs `web_vital`:** veja "Verificações no staging depois da correção".
+
+### Verificações no staging depois da correção (02/10/2026)
+
+Feitas depois do merge do PR #14 (imagem prioritária), na página `teste-pagina`.
+
+**Logs `web_vital`** (`vercel logs`, 115 eventos entre 05:20 e 06:11 UTC):
+
+| Métrica | n | p50 | p75 | Máximo | Meta p75 |
+|---|---|---|---|---|---|
+| LCP | 32 | 388 ms | 680 ms | 3372 ms | ≤ 2500 ms |
+| LCP, só `navigate` | 15 | 633 ms | 996 ms | 2456 ms | ≤ 2500 ms |
+| CLS | 17 | 0 | 0 | 0 | ≤ 0,1 |
+| TTFB | 32 | 40 ms | 100 ms | 830 ms | — |
+| INP | 2 | 96 ms | 120 ms | 120 ms | — |
+
+Leitura:
+
+- **Não é p75 de visitantes reais.** São cerca de 50 minutos de acessos do founder (celular em guia anônima) misturados com execuções de Lighthouse; o log não guarda user agent, então não dá para separar. 8 das 32 amostras de LCP são de voltar/avançar (11–18 ms) e 9 são recarregamentos.
+- A única amostra fora da meta foi um recarregamento com LCP de 3372 ms, cerca de três minutos depois de um deploy.
+- Não havia evento anterior a 05:20 UTC. Se o plano da Vercel guarda os logs por pouco tempo, a regra "p75 em 24 h" de `docs/OBSERVABILITY.md` não é verificável sem um destino externo de logs. **A retenção não foi confirmada.**
+
+**LCP de laboratório depois da correção** (página com formulário no 1º bloco e imagens do 2º ao 4º):
+
+| Medição | LCP | FCP | CLS | Desempenho | Elemento LCP |
+|---|---|---|---|---|---|
+| PageSpeed Insights, celular, Lighthouse 13.5.0 (founder, 2 execuções) | 2,4 e 2,3 s | 1,5 s | 0 | 97 e 98 | não anotado |
+| Lighthouse 12.8.2, celular, limitação simulada (desta máquina), com o script do antivírus bloqueado | 3,14 / 3,03 / 2,91 s | 1,7 s | 0 | 93–94 | imagem do 2º bloco |
+| Mesma medição, sem bloquear o script do antivírus | 4,40 / 4,07 / 3,97 s | 2,6–3,0 s | 0 | 79–83 | imagem do 2º bloco |
+
+Leitura:
+
+- **A correção está no ar:** a imagem do 2º bloco sai com `loading="eager"` e `fetchPriority="high"` e é pedida junto com o CSS; as outras duas continuam `lazy`.
+- **O PageSpeed fica dentro da meta, mas perto do limite** (2,3–2,4 s contra 2,5 s).
+- **As execuções desta máquina não servem de referência sem cuidado:** o antivírus (Kaspersky) injeta na página um script de 172 KB que bloqueia a renderização e soma cerca de 1,6 s ao LCP simulado. Não sei se ele já estava presente nas execuções anteriores à correção (2,7–3,4 s), então **não há comparação antes/depois confiável nesta máquina**.
+- Mesmo sem o script, o LCP simulado daqui fica em 2,9–3,1 s com a imagem como elemento LCP. A imagem vem de outra origem (o bucket do Supabase), e a página não declara `preconnect` nem `preload` para ela; essa é a próxima otimização a avaliar se o campo confirmar o problema.
+
+**Publicação visível em ≤ 30 s:** o founder publicou uma mudança e a página pública mostrou o conteúdo novo em cerca de 5 s (uma repetição, cronometrada à mão). Os logs mostram o primeiro acesso depois da publicação com TTFB de 830 ms (página regenerada) e os seguintes com 54–227 ms. Restaurar e despublicar não foram cronometrados no staging.
+
+**Prévia Open Graph:**
+
+- Com o user agent do WhatsApp, a página devolve `og:title`, `og:description`, `og:url`, `og:image` (1200×630, com texto alternativo) e `twitter:card`; a imagem responde 200, PNG de 28 KB, em 0,2 s.
+- No WhatsApp (iPhone), o cartão aparece com a imagem, o título, a descrição e o domínio (captura de tela do founder). O founder informou o mesmo resultado no Instagram.
+- A imagem mostra as iniciais e o nome, sem a foto nem o tema da página (item já aberto no backlog).
 
 **Bytes:**
 
@@ -197,8 +240,8 @@ As migrações foram aplicadas no banco local com `supabase migration up`. **Nã
 
 ## Pendências, gaps e riscos
 
-- **Staging (atualizado em 02/10/2026):** o PR #10 foi mergeado antes da migração, e as duas migrações foram aplicadas logo depois com `supabase db push`. O segredo no Vault e as três variáveis na Vercel também foram criados em 02/10/2026. Upload e formulário ainda não foram exercitados no staging. Passos em `docs/ENVIRONMENTS.md`.
-- **LCP de laboratório acima de 2,5 s** no método simulado para páginas com imagens. Sem medição de campo.
+- **Staging (atualizado em 02/10/2026):** o PR #10 foi mergeado antes da migração, e as duas migrações foram aplicadas logo depois com `supabase db push`. O segredo no Vault e as três variáveis na Vercel também foram criados em 02/10/2026. O founder exercitou upload e formulário no staging no mesmo dia. Passos em `docs/ENVIRONMENTS.md`.
+- **LCP de laboratório acima de 2,5 s** no método simulado para páginas com imagens, medido antes da correção da imagem prioritária. A primeira leitura dos logs `web_vital` ficou dentro da meta, mas não vem de visitantes reais.
 - **Limpeza de órfãos:** resolvido depois da sprint, em 02/10/2026, com um Vercel Cron diário (`GET` autenticado na rota e `apps/web/vercel.json`). A primeira execução em staging ainda não foi observada.
 - **Sem moderação de imagens** nem denúncia (Sprint 9). O bucket é público: tirar a página do ar não tira o arquivo; a remoção é manual (runbook).
 - **Pix sem verificação de titularidade:** a mitigação é o aviso ao visitante e a futura moderação.
