@@ -79,7 +79,7 @@ A ordem importa: o código da Sprint 5 lê a coluna `profiles.theme`, então **a
 3. Na Vercel (Production e Preview): `MEDIA_SIGNING_SECRET` com **o mesmo valor** (Sensitive); `VISITOR_HASH_SALT` (outro valor aleatório, 32+ caracteres, Sensitive); `CRON_SECRET` (outro valor aleatório, 32+ caracteres, Sensitive). `SUPABASE_SECRET_KEY` já existe e passa a ser usada também pelo job de limpeza.
 4. Mergear e aguardar o deploy.
 5. Conferir: enviar um avatar no editor, publicar, abrir a página; `curl -X POST https://<host>/api/jobs/media-cleanup -H "Authorization: Bearer <CRON_SECRET>"` deve responder `{"ok":true,...}`.
-6. Agendar a limpeza (uma vez por dia basta). Ainda **não há agendador**: a rota só aceita `POST`, e o Cron da Vercel chama com `GET`; decidir entre um workflow agendado do GitHub Actions com `curl` ou `pg_cron` + `pg_net` no Supabase. Até lá, chamar à mão (runbook `MEDIA.md`).
+6. Agendar a limpeza: **decidido em 02/10/2026 usar o Vercel Cron, uma vez por dia** (ADR 0009). Ainda **não implementado**: falta a rota aceitar `GET` com a mesma checagem de `CRON_SECRET` (a Vercel envia `Authorization: Bearer <CRON_SECRET>`) e o `crons` no `vercel.json`. O plano Hobby só permite execução diária, com horário aproximado. Até lá, chamar à mão (runbook `MEDIA.md`).
 
 Rollback da aplicação para a Sprint 4 depois da migração: suportado para a página pública (blocos novos e tema são ignorados, a página não quebra). O editor antigo descarta os blocos novos do rascunho ao salvar (ADR 0010).
 

@@ -58,7 +58,7 @@ O que é órfã: mídia `ready` sem referência no rascunho nem nas publicaçõe
 2. É seguro repetir: a mídia é marcada `deleting`, os arquivos são removidos pelo Storage e só então a linha é apagada. Uma execução interrompida é retomada pela seguinte.
 3. `503 not_configured`: falta `CRON_SECRET` (mínimo 32 caracteres) ou `SUPABASE_SECRET_KEY` no ambiente. `401`: segredo errado.
 4. `failed` > 0: o Storage recusou a remoção; a mídia fica `deleting` e a próxima execução tenta de novo. Duas execuções seguidas com falha → abrir incidente P2.
-5. **Ainda não há agendador** (ver `docs/ENVIRONMENTS.md`). Até existir, rodar à mão uma vez por semana no staging.
+5. **Agendador decidido: Vercel Cron, uma vez por dia (ADR 0009), ainda não implementado.** Até ele entrar, rodar à mão uma vez por semana no staging. Depois de implementado, as execuções aparecem em *Vercel → Settings → Cron Jobs* e nos logs `media.cleanup`. Se o cron parar, a chamada manual acima continua valendo.
 6. A limpeza nunca remove mídia usada por uma versão publicada retida: restaurar uma versão antiga continua mostrando as imagens dela. Se uma imagem de versão retida sumir, é bug P1: guarde o id da mídia e os logs `media.cleanup` do período.
 
 ## 6. Rollback da aplicação para antes da Sprint 5
