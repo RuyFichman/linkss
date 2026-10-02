@@ -179,9 +179,9 @@ As migrações foram aplicadas no banco local com `supabase migration up`. **Nã
 
 ## Pendências, gaps e riscos
 
-- **Nada desta sprint está em staging.** O código lê `profiles.theme`: a migração precisa ser aplicada **antes** do merge em `main`, que publica automaticamente. Passos em `docs/ENVIRONMENTS.md`.
+- **Staging (atualizado em 02/10/2026):** o PR #10 foi mergeado antes da migração, e as duas migrações foram aplicadas logo depois com `supabase db push`. O segredo no Vault também foi criado em 02/10/2026. Faltam as três variáveis na Vercel: sem elas, upload e formulário respondem "indisponível" no staging. Passos em `docs/ENVIRONMENTS.md`.
 - **LCP de laboratório acima de 2,5 s** no método simulado para páginas com imagens. Sem medição de campo.
-- **Limpeza de órfãos sem agendador.** A rota só aceita `POST` e o Cron da Vercel chama com `GET`; falta decidir o mecanismo. Até lá, órfãos se acumulam no projeto (não na cota do cliente depois de 24 h).
+- **Limpeza de órfãos sem agendador.** Mecanismo decidido depois da sprint (02/10/2026): Vercel Cron diário. Falta implementar o `GET` autenticado na rota e o `vercel.json`. Até lá, órfãos se acumulam no projeto (não na cota do cliente depois de 24 h).
 - **Sem moderação de imagens** nem denúncia (Sprint 9). O bucket é público: tirar a página do ar não tira o arquivo; a remoção é manual (runbook).
 - **Pix sem verificação de titularidade:** a mitigação é o aviso ao visitante e a futura moderação.
 - **Formulário sem CAPTCHA** e sem limite global por IP. O limite por página (60 por hora) também recusa visitantes legítimos durante um ataque.
@@ -200,7 +200,7 @@ As migrações foram aplicadas no banco local com `supabase migration up`. **Nã
 3. **Pix sem QR (UX-039):** aceitável para o MVP, ou o "copia e cola" com QR volta como prioridade?
 4. **Leads (UX-041):** 90 dias de retenção, exclusão e exportação só para owner e admin, sem aviso por e-mail por enquanto?
 5. **Cor do texto derivada (UX-036):** confirma que a pessoa não escolhe a cor do texto?
-6. **Agendador da limpeza:** GitHub Actions agendado ou `pg_cron` no Supabase?
+6. **Agendador da limpeza:** ~~GitHub Actions agendado ou `pg_cron` no Supabase?~~ **Decidido em 02/10/2026: Vercel Cron, diário** (ADR 0009). Implementação pendente.
 7. **Embeds (UX-038):** os três provedores bastam para o piloto?
 
 ## Implicações para a Sprint 6

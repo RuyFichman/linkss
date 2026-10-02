@@ -83,7 +83,12 @@ interface StorageAdapter {
 - An asset is a **cleanup candidate** when it is `pending` or `failed` for more than 1 hour, when it is `ready`, unreferenced and older than 24 hours (the grace period covers an uploaded image not yet saved in the draft and the undo window), or when its page was soft-deleted and its `purge_after` has passed.
 - `claim_media_cleanup(limit)` (service role only) locks the page row, re-checks the references and moves candidates to `deleting`; `runMediaCleanup()` removes the objects through the adapter; `finish_media_cleanup(ids)` deletes the rows. Every step can be repeated.
 - `media_assets` references the page with `on delete restrict`: a page cannot be purged while it still owns objects.
-- **Trigger:** `POST /api/jobs/media-cleanup` with `Authorization: Bearer <CRON_SECRET>`. No scheduler is configured yet (no job runner exists and Vercel settings are not changed in this sprint); until one is, the route is called by hand (runbook `MEDIA.md`). No queue was added.
+- **Trigger:** `POST /api/jobs/media-cleanup` with `Authorization: Bearer <CRON_SECRET>`. No queue was added.
+- **Scheduler (decided 2026-10-02):** Vercel Cron, once a day (the Hobby plan limit; enough, since orphans become candidates only after 24 hours). Vercel Cron calls with `GET` and sends `Authorization: Bearer <CRON_SECRET>` when that variable is set, so the route will also accept `GET` with the same secret check, and `vercel.json` will declare the daily cron. The alternatives were rejected:
+  - GitHub Actions on a schedule would put the secret in a second place and spend the free private-repository minutes that CI already uses.
+  - `pg_cron` + `pg_net` would need the secret in the Vault and an HTTP call back to the application, because objects cannot be deleted from SQL.
+
+  **Not implemented yet.** Until it ships, the route is called by hand (runbook `MEDIA.md`).
 
 ### Quota
 
