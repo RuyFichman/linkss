@@ -1,6 +1,6 @@
 -- Structural guarantees: RLS everywhere, no anon privileges, hardened functions, seeded catalogue.
 begin;
-select plan(30);
+select plan(31);
 
 select has_table('public', 'user_accounts', 'user_accounts exists');
 select has_table('public', 'workspaces', 'workspaces exists');
@@ -19,6 +19,7 @@ select has_table('public', 'analytics_events', 'analytics_events exists');
 select has_table('public', 'analytics_daily', 'analytics_daily exists');
 select has_table('public', 'analytics_day_status', 'analytics_day_status exists');
 select has_table('public', 'analytics_settings', 'analytics_settings exists');
+select has_table('public', 'analytics_rate_hits', 'analytics_rate_hits exists');
 
 select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace

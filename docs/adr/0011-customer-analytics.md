@@ -61,7 +61,7 @@ The form works without JavaScript and the server already knows when a lead is ac
 
 1. Refuses cross-site requests (`Sec-Fetch-Site`, `Origin`), bodies over 4 KiB and content types other than `text/plain` / `application/json`.
 2. Parses and normalizes the batch with the contract module. Anything malformed is dropped.
-3. Derives the server-side dimensions (below) and the visitor hash.
+3. Derives the server-side dimensions (below) and the visitor hashes.
 4. Answers **204 with no body before touching the database**. The write runs in `after()`, so a slow or unavailable database cannot delay the response, and the client never depends on the answer.
 5. Calls the anonymous RPC with a 2-second timeout. On timeout or error the batch is dropped and logged as `unavailable`; there is no server-side queue or retry (a queue is an extraction signal, not an MVP need).
 
@@ -71,11 +71,11 @@ Logs carry the correlation id and outcome counts only: never the payload, the ha
 
 `public.ingest_analytics_events(p_payload text, p_signature text)`, `security definer`, fixed `search_path`, granted to `anon`. No secret or service key is involved; the Route Handler uses the publishable key like `submit_form_lead`.
 
-- **Attestation.** The server signs the exact payload text with HMAC-SHA256 (`ANALYTICS_SIGNING_SECRET`); the database verifies it with the same value from Supabase Vault (`analytics_signing_secret`), as ADR 0009 does for uploads. Without it, anyone holding the publishable key could call the RPC directly and choose the visitor hash, the country and the source, which would make the per-visitor limit meaningless. With it, every stored event went through the Route Handler, where the IP address comes from the platform and cannot be spoofed. The secret attests; it grants no access to data.
+- **Attestation.** The server signs the exact payload text with HMAC-SHA256 (`ANALYTICS_SIGNING_SECRET`); the database verifies it with the same value from Supabase Vault (`analytics_signing_secret`), as ADR 0009 does for uploads. Without it, anyone holding the publishable key could call the RPC directly and choose the visitor hash, the country and the source, which would make the per-address limits meaningless. With it, every stored event went through the Route Handler, where the IP address comes from the platform and cannot be spoofed. The secret attests; it grants no access to data.
 - **Validation against the live snapshot.** The page must exist, be published and belong to an active workspace. A block event must name a block that is in the **live** publication with the type that matches the event (`link_click` → `link`, and so on). The version-1 legacy social row is accepted under its fixed id. An event for a block that a new publication just removed is rejected: block ids are stable across publications, so this only loses clicks on a block that no longer exists. The publication version is **not** stored (no report uses it and it costs 4 bytes per row).
 - **Closed values.** Types, sources and device classes are enums; the country is two capital letters or `ZZ`; UTM values match `^[a-z0-9_.-]{1,40}$`. Nothing else can be written, so there is no free text in the events table.
 - **Bounded batch:** 1 to 10 events, payload up to 8 KiB.
-- **Answer:** a JSON object with counts (`accepted`, `duplicate`, `repeat`, `rejected`, `rate_limited`) and a status. The Route Handler logs it; the browser never sees it.
+- **Answer:** a JSON object with counts (`accepted`, `duplicate`, `repeat`, `rejected`, `rate_limited`) and a status (`ok`, `not_configured`, `forbidden`, `invalid`, `unsupported`, `unavailable`, `shedding`). The Route Handler logs it; the browser never sees it. The signature is checked before anything else, so an unsigned caller learns nothing about pages or limits.
 
 ### Deduplication
 
@@ -87,11 +87,13 @@ Logs carry the correlation id and outcome counts only: never the payload, the ha
 
 - **Visit** (*provisional*, UX-044): a page view from a visitor hash that has no stored page view for the same page in the previous **30 minutes**. A reload, a back/forward restore or a second tab inside the window does not count. Repeat views are not stored at all, which also bounds the table. The window starts at the stored view, so a person who stays active is counted again after 30 minutes.
 - **"Unique visitors" is not shown.** A daily hash can only estimate uniques per day, and adding days would count the same person again. The dashboard shows visits and says they are estimates.
-- **Visitor hash:** `HMAC-SHA256(VISITOR_HASH_SALT, "analytics:v1:" + reporting day + ":" + page address + ":" + IP + ":" + user agent)`, truncated to 32 hexadecimal characters. The IP address and the user agent are inputs only and are never stored.
-  - It **reuses `VISITOR_HASH_SALT`** (ADR 0010) with its own message prefix. HMAC outputs for different messages are independent, so the analytics hash cannot be matched with the lead rate-limit hash of the same person. One secret means one rotation procedure and no extra deploy step.
-  - The **day** is in the message: the hash of the same person changes every day, so nobody can be followed across days.
-  - The **page address** is in the message: the same person has unrelated hashes on two pages, of the same or of different workspaces.
-  - Without the salt the hash is absent: every view counts as a visit and all visitors of a page share one rate-limit bucket. Numbers are then inflated and tightly bounded; the Route Handler logs `hashed=false`.
+- **Hashes** (`modules/analytics/visitor-hash.ts`). All are HMAC-SHA256 keyed by `VISITOR_HASH_SALT`; the IP address and the user agent are inputs only and are never stored.
+  - **`visitor_hash`**, stored on events, is two halves of 16 hexadecimal characters. The first is computed from the reporting day, the page address and the IP address: it is the **per-page rate-limit bucket**. The second also includes the user agent: the whole value is the **visit key**, so two devices behind one address (a home network, a mobile carrier's shared address) are two visitors. Because the bucket ignores the user agent, a sender cannot open a new bucket by changing it.
+  - **`client_hash`**, 32 characters from the reporting day and the IP address only, is the bucket for the limit **across pages**. It is stored only in `analytics_rate_hits`, a table of counters that has no page, workspace or event column, so it cannot show where anybody went.
+  - They **reuse `VISITOR_HASH_SALT`** (ADR 0010) with their own message prefixes. HMAC outputs for different messages are independent: these values cannot be matched with each other or with the lead rate-limit hash of the same person. One secret means one rotation procedure and no extra deploy step.
+  - The **day** is in every message: the values of the same person change every day, so nobody can be followed across days.
+  - The **page address** is in `visitor_hash`: the same person has unrelated values on two pages, of the same or of different workspaces.
+  - Without the salt, or without an address (the local stack sends none), both are absent: every view counts as a visit and all visitors of a page share one rate-limit bucket. Numbers are then inflated and tightly bounded; the Route Handler logs `hashed=false`.
 
 ### Dimensions
 
@@ -120,9 +122,10 @@ Filtered events are **dropped** by the Route Handler (not stored with a flag) an
 
 - **`analytics_events`** (raw, append-only): `profile_id`, `event_id` (primary key together), `workspace_id`, `event_type`, `block_id`, `occurred_at` (server clock; the client's clock is never trusted), `day` (the reporting day of `occurred_at`), `visitor_hash`, and the four page-view dimensions. Indexes: the primary key (deduplication and the page foreign key), `(workspace_id, profile_id, occurred_at)` (rate limits, the visit rule, live reads and the workspace foreign key) and `(day)` (aggregation and purge). No client role can read or write it.
 - **Purge by plain `DELETE`, not time partitioning.** At the measured row size (see Capacity) the table stays in the tens of megabytes at the private-MVP scale. Partitioning would force the partition key into the primary key and add partition maintenance for no benefit at this size. It is the first step to take if the table passes about 5 million live rows.
-- **`analytics_daily`** (aggregate): one row per `(profile_id, day, dimension, key, event_type)` with a count, where `dimension` is `total`, `block`, `source`, `utm`, `device` or `country`. One narrow table instead of five, because every dashboard query is "sum the counts of one page (or one workspace) between two days for one dimension". Members read it under RLS; nobody writes it except the job.
+- **`analytics_daily`** (aggregate): one row per `(profile_id, day, dimension, key, event_type)` with a count, where `dimension` is `total`, `block`, `source`, `utm`, `device` or `country`. One narrow table instead of five, because every dashboard query is "sum the counts of one page (or one workspace) between two days for one dimension". No client role reads it directly: members read through `get_profile_analytics`, which applies the plan's history depth; nobody writes it except the job.
 - **`analytics_day_status`**: the watermark. One row per reporting day with when it was aggregated and whether it is final.
-- **`analytics_settings`**: one row with the reporting timezone and the day collection started.
+- **`analytics_rate_hits`**: counters for the cross-page limit: `client_hash`, a 10-minute window and a count. Deleted after two days.
+- **`analytics_settings`**: one row with the reporting timezone, the day collection started and the capacity guard (`max_raw_events`).
 - **Sprint 7:** the consolidated dashboard sums `analytics_daily` by `workspace_id` and day (index `(workspace_id, day)`); the read-only report link reads the same function for one page through a token-scoped RPC. Neither needs raw events.
 
 ### Aggregation and freshness
@@ -148,26 +151,34 @@ One reporting timezone, **`America/Sao_Paulo`**, for every page (*provisional*, 
 
 Enforced in the database, counting stored events (rejected events are not stored and do not count):
 
-- **30 events per visitor hash per page per 10 minutes**; requests without a hash share one bucket per page.
-- **2,000 events per page per hour** (*provisional*). A page under a flood stops recording; it never stops opening.
-- 10 events per batch, 8 KiB per payload at the database, 4 KiB per request at the Route Handler.
-- An advisory lock per page serializes the counters.
+| Limit (*provisional*) | Value | What it bounds |
+|---|---|---|
+| Per address, per page | 60 events per 10 minutes | one sender inflating one page; requests without a hash share one bucket per page |
+| Per address, all pages | 200 events per 10-minute window and 2,000 per day | one sender spreading a flood over many pages |
+| Per page | 2,000 events per hour | many senders inflating one page: at most 48,000 events a day |
+| Whole table | ingestion **sheds everything** while the raw table holds about 500,000 events (`analytics_settings.max_raw_events`) | the database itself: about 165 MB of raw events at most |
+| Per request | 10 events per batch, 8 KiB per payload at the database, 4 KiB at the Route Handler | the cost of one request |
 
-The page keeps working under any of these: the public page is static, and the endpoint answers 204 before the database is involved. The owner's numbers are bounded by 48,000 events per page per day.
+- An advisory lock per page serializes the per-page counters. The cross-page counter is one upsert per accepted batch; two pages receiving from the same address at the same instant can overshoot it by one batch.
+- The capacity guard reads the planner's row estimate (`pg_class.reltuples`), so the check costs nothing. It lags the real count by the autovacuum threshold (about 10%), which is acceptable for a ceiling. When it trips, the Route Handler logs `shedding` at error level: that is an alert, not a normal state (`docs/runbooks/ANALYTICS.md`).
+- The per-address limit is by address, not by person: many people behind one shared address (a carrier) visiting the same page within ten minutes share its 60 events. A page that popular is also the page whose numbers matter most; the limit is the first value to revisit with real traffic.
 
-**Still exposed until Sprint 9** (global rate limiting and firewall): a flood of requests to `/api/events` costs function invocations and one short transaction each, even when everything is rejected; a distributed sender with many IP addresses can add up to the per-page limit of fake visits.
+The page keeps working under any of these: the public page is static, and the endpoint answers 204 before the database is involved.
+
+**Still exposed until Sprint 9** (global rate limiting and firewall): a flood of requests to `/api/events` costs function invocations and one short transaction each, even when everything is rejected; a distributed sender with many IP addresses can add fake visits up to the per-page limit, and can fill the raw table up to the capacity guard, at which point real events are shed too until the purge catches up.
 
 ### Retention
 
 - **Raw events:** 7 full reporting days plus the current day. The job deletes events older than that, only for days that are final, at most 50,000 rows per run.
-- **Aggregates:** 400 days (*provisional*). The **visible** history is the `analytics_days` entitlement that already exists (Free 7, Pro and Agency 90), enforced by `get_profile_analytics` through `private.entitlement_int`; no plan name is compared. Keeping more than the largest entitlement means an upgrade shows history at once.
+- **Aggregates:** 100 days (*provisional*): the largest history any plan shows (90) plus a margin. The **visible** history is the `analytics_days` entitlement that already exists (Free 7, Pro and Agency 90), enforced by `get_profile_analytics` through `private.entitlement_int`; no plan name is compared. Every workspace keeps the 100 days whatever its plan, so an upgrade shows the history at once. Keeping more than any plan can show would only cost space: an active page writes about 6 KB of aggregates a day.
+- **Rate-limit counters:** two days.
 - **Page soft delete:** ingestion stops (the page is not published) and RLS hides the aggregates. The purge of the page (Sprint 9) cascades to events, aggregates and nothing else is needed.
 - **Workspace deletion:** cascade.
 - **Sprint 9 export and deletion:** an account export includes `analytics_daily` of its workspaces (aggregates only, no personal data). Raw events hold no identifier that maps to a person once the day's salted hash rotates; a visitor's deletion request cannot be matched to rows and is answered by the 7-day retention. Recorded in `docs/DATA_MAP.md`.
 
 ### Capacity
 
-Measured on the local stack (`docs/SUPABASE_CAPACITY.md`, "Medido na Sprint 6"): bytes per raw event and per aggregate row, with indexes, and the resulting ceiling. The upgrade or extraction signal is unchanged: the database at 60% of its quota, or the extraction signals in `docs/ARCHITECTURE.md` (analytics dominating CPU or I/O, tens of millions of events).
+Measured on the local stack with 200,000 synthetic events and 234,000 aggregate rows (`docs/SUPABASE_CAPACITY.md`, "Medido na Sprint 6"): **329 bytes per raw event** (158 of table, 172 of indexes) and **241 bytes per aggregate row** (97 + 144), about 6.3 KB per active page per day. A page with 3,300 events a month holds about 0.3 MB of raw events (8 days) and 0.6 MB of aggregates (100 days); 100 such pages are about 90 MB. The capacity guard caps raw events at about 165 MB whatever the traffic. The upgrade or extraction signal is unchanged: the database at 60% of its quota, or the extraction signals in `docs/ARCHITECTURE.md` (analytics dominating CPU or I/O, tens of millions of events).
 
 ### Audit
 
@@ -187,7 +198,9 @@ None added. Charts are server-rendered SVG and CSS; dates use `Intl`; the user-a
 - **Counting views in the server render or in `proxy.ts`:** makes the public page dynamic or puts a database write in front of every visit. Rejected by ADR 0007 and by the rule that analytics never sits in the visitor's path.
 - **Redirect-through tracking links** (`/r/<id>` that logs and redirects): exact click counts, but the click then depends on our server. Forbidden by `docs/ARCHITECTURE.md`.
 - **A first-party cookie or `localStorage` id:** better visit and unique counts. It is a persistent identifier on people who never signed up, and needs consent handling. Rejected; the daily hash is enough for an estimate.
-- **Unattested anonymous RPC, limited per page only:** simpler (no secret), but the per-visitor limit and every server-derived dimension could be forged with the publishable key.
+- **Unattested anonymous RPC, limited per page only:** simpler (no secret), but the per-address limits and every server-derived dimension could be forged with the publishable key.
+- **One hash of address and user agent for both the visit rule and the rate limit:** the first design. A sender then gets a fresh bucket, and a fresh visit, by changing the user agent on every request. Splitting the hash keeps the visit rule per device and the limit per address.
+- **A cross-page limit keyed by a column on the events table:** would need a page-independent identifier next to each event, which is exactly what would let somebody be followed across pages. The separate counter table stores no page.
 - **Writing with the secret key from the Route Handler:** removes the attestation, and puts a key that bypasses RLS in a public, anonymous request path. Rejected (AGENTS.md §11).
 - **Storing filtered traffic with a flag:** keeps evidence for tuning the filter but doubles the rows that the Free plan has to hold. The log line counts them instead.
 - **Storing the referrer host:** more detail for "other" sources, and one more unbounded text column that a sender controls. Deferred.
@@ -201,4 +214,4 @@ None added. Charts are server-rendered SVG and CSS; dates use `Intl`; the user-a
 - The event contract, the SQL enums and validators, the collector and both test suites change together. A new block type that should be counted needs a row in the type-to-block map on both sides.
 - Numbers are estimates and are labeled as such: visitors without JavaScript, blocked requests and in-app browsers that drop beacons are missing; an owner who is signed out and a bot with a browser user agent are included.
 - The Sprint 5 `submit_form_lead` is replaced by a version that also records the event. Its signature and answers are unchanged, so the Sprint 5 application keeps working against the new schema.
-- `VISITOR_HASH_SALT` now protects two hashes; rotating it resets the current day's visit deduplication and the lead rate-limit buckets, and nothing else.
+- `VISITOR_HASH_SALT` now protects the lead hash and the analytics hashes; rotating it resets the current day's visit deduplication and rate-limit buckets, and nothing else.

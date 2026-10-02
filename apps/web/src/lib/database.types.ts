@@ -68,15 +68,28 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"analytics_settings": {
+                },"analytics_rate_hits": {
                   Row: {
-                    "collection_started_at": string,"id": boolean,"reporting_timezone": string
+                    "client_hash": string,"count": number,"window_start": string
                   }
                   Insert: {
-                    "collection_started_at"?: string,"id"?: boolean,"reporting_timezone"?: string
+                    "client_hash": string,"count": number,"window_start": string
                   }
                   Update: {
-                    "collection_started_at"?: string,"id"?: boolean,"reporting_timezone"?: string
+                    "client_hash"?: string,"count"?: number,"window_start"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"analytics_settings": {
+                  Row: {
+                    "collection_started_at": string,"id": boolean,"max_raw_events": number,"reporting_timezone": string
+                  }
+                  Insert: {
+                    "collection_started_at"?: string,"id"?: boolean,"max_raw_events"?: number,"reporting_timezone"?: string
+                  }
+                  Update: {
+                    "collection_started_at"?: string,"id"?: boolean,"max_raw_events"?: number,"reporting_timezone"?: string
                   }
                   Relationships: [
                     

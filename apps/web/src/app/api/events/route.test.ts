@@ -79,7 +79,7 @@ describe("POST /api/events", () => {
     await call(JSON.stringify(batch), { "x-forwarded-for": "" });
     await settled();
     const [payload] = ingest.mock.calls[0] as [string];
-    expect(JSON.parse(payload)).toMatchObject({ visitor: null, view: { country: "ZZ" } });
+    expect(JSON.parse(payload)).toMatchObject({ visitor: null, client: null, view: { country: "ZZ" } });
   });
 
   it.each([
@@ -111,6 +111,13 @@ describe("POST /api/events", () => {
     expect(logged().at(-1)).toMatchObject({ outcome: "not_configured" });
   });
 
+  it("logs an error when the database is shedding events at its capacity guard", async () => {
+    ingest.mockResolvedValue({ status: "shedding", accepted: 0, duplicate: 0, repeat: 0, rejected: 0, rateLimited: 0 });
+    expect((await call(JSON.stringify(batch))).status).toBe(204);
+    await settled();
+    expect(logged().at(-1)).toMatchObject({ level: "error", outcome: "shedding" });
+  });
+
   it("reports a missing migration as not_deployed, still with 204", async () => {
     ingest.mockResolvedValue({ status: "not_deployed", accepted: 0, duplicate: 0, repeat: 0, rejected: 0, rateLimited: 0 });
     expect((await call(JSON.stringify(batch))).status).toBe(204);
@@ -124,7 +131,7 @@ describe("POST /api/events", () => {
     const line = JSON.stringify(logged());
     expect(logged().at(-1)).toMatchObject({ outcome: "ok", events: 1, accepted: 1, hashed: true });
     const [payload] = ingest.mock.calls[0] as [string];
-    const visitor = (JSON.parse(payload) as { visitor: string }).visitor;
-    for (const secret of [visitor, "instagram", "203.0.113.7", "iPhone", "ana-lima", "segredo-utm", EVENT]) expect(line).not.toContain(secret);
+    const { visitor, client } = JSON.parse(payload) as { visitor: string; client: string };
+    for (const secret of [visitor, client, "instagram", "203.0.113.7", "iPhone", "ana-lima", "segredo-utm", EVENT]) expect(line).not.toContain(secret);
   });
 });

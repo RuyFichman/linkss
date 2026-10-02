@@ -5,7 +5,7 @@
 -- Mirrors apps/web/src/modules/analytics. The signing secret and the signature vector below are the
 -- same ones apps/web/src/modules/analytics/analytics.test.ts computes (drift guard).
 begin;
-select plan(140);
+select plan(154);
 
 -- The application server and the database share this secret; here it is the test value.
 do $$
@@ -22,6 +22,7 @@ $$;
 delete from public.analytics_events;
 delete from public.analytics_daily;
 delete from public.analytics_day_status;
+delete from public.analytics_rate_hits;
 
 -- What the application server does with ANALYTICS_SIGNING_SECRET.
 create function pg_temp.sign(p_payload text)
@@ -36,11 +37,11 @@ language sql
 security definer
 as $$ select public.ingest_analytics_events(p_payload, pg_temp.sign(p_payload)) $$;
 
-create function pg_temp.ingest(p_slug text, p_visitor text, p_events jsonb, p_view jsonb default '{"source": "instagram", "device": "mobile", "country": "BR"}')
+create function pg_temp.ingest(p_slug text, p_visitor text, p_events jsonb, p_view jsonb default '{"source": "instagram", "device": "mobile", "country": "BR"}', p_client text default null)
 returns jsonb
 language sql
 security definer
-as $$ select pg_temp.ingest_text(jsonb_build_object('v', 1, 'slug', p_slug, 'visitor', p_visitor, 'view', p_view, 'events', p_events)::text) $$;
+as $$ select pg_temp.ingest_text(jsonb_build_object('v', 1, 'slug', p_slug, 'visitor', p_visitor, 'client', p_client, 'view', p_view, 'events', p_events)::text) $$;
 
 -- One event of the batch; the id is derived from a number so retries can repeat it.
 create function pg_temp.ev(p_n integer, p_type text, p_block text default null)
@@ -127,10 +128,10 @@ select set_config('tests.form', 'a6000000-0000-4000-8000-000000000006', true);
 select set_config('tests.va', repeat('a', 32), true);
 select set_config('tests.vb', repeat('b', 32), true);
 -- The vector analytics.test.ts signs with the same secret.
-select set_config('tests.vector', '{"v":1,"slug":"studio-dados","visitor":null,"view":{"source":"direct","device":"mobile","country":"ZZ","utm_source":null,"utm_medium":null,"utm_campaign":null},"events":[{"id":"e0000000-0000-4000-8000-000000000001","type":"page_view","block":null}]}', true);
+select set_config('tests.vector', '{"v":1,"slug":"studio-dados","visitor":null,"client":null,"view":{"source":"direct","device":"mobile","country":"ZZ","utm_source":null,"utm_medium":null,"utm_campaign":null},"events":[{"id":"e0000000-0000-4000-8000-000000000001","type":"page_view","block":null}]}', true);
 
 -- ---- Structure and privileges ---------------------------------------------------------------------
-select is(pg_temp.sign(current_setting('tests.vector')), 'b0aa10142d3dddc9a33f91f5679424772c37f771a6519f1edbaa5c7e858dc745',
+select is(pg_temp.sign(current_setting('tests.vector')), '627bc7f51778e91d291b85981d5935056aafd7b4ec37c2b4764b3b59e87ba9da',
   'the database computes the same signature as the application for the shared vector');
 select ok(has_function_privilege('anon', 'public.ingest_analytics_events(text, text)', 'execute'), 'anon may call the ingestion RPC');
 select is(
@@ -323,22 +324,27 @@ select is(
 -- ---- Rate limits -----------------------------------------------------------------------------------
 select is(
   (select sum((pg_temp.ingest('studio-dados', repeat('d', 32), (select jsonb_agg(pg_temp.ev(1000 + batch * 10 + n, 'badge_click')) from generate_series(1, 10) n)) ->> 'accepted')::int)
-   from generate_series(0, 2) batch),
-  30::bigint, 'a visitor stores 30 events in 10 minutes');
+   from generate_series(0, 5) batch),
+  60::bigint, 'an address stores 60 events on a page in 10 minutes');
 select is(
   pg_temp.ingest('studio-dados', repeat('d', 32), jsonb_build_array(pg_temp.ev(1100, 'badge_click'), pg_temp.ev(1101, 'link_click', current_setting('tests.link')))),
   '{"status": "ok", "accepted": 0, "duplicate": 0, "repeat": 0, "rejected": 0, "rate_limited": 2}'::jsonb,
-  'the 31st event of that visitor is rate limited');
+  'the 61st event of that address is rate limited');
 select is(
   pg_temp.ingest('studio-dados', repeat('e', 32), jsonb_build_array(pg_temp.ev(1102, 'badge_click'))) ->> 'accepted',
-  '1', 'another visitor is not affected');
+  '1', 'another address is not affected');
+-- Same address (first half of the hash), a different user agent on every request (second half).
+select is(
+  (select sum((pg_temp.ingest('studio-dados', repeat('9', 16) || substr(md5(batch::text), 1, 16), (select jsonb_agg(pg_temp.ev(1400 + batch * 10 + n, 'badge_click')) from generate_series(1, 10) n)) ->> 'accepted')::int)
+   from generate_series(0, 6) batch),
+  60::bigint, 'rotating the user agent does not open a new bucket: the limit is per address');
 select is(
   pg_temp.ingest('studio-dados', repeat('d', 32), jsonb_build_array(pg_temp.ev(1001, 'badge_click'))) ->> 'duplicate',
   '1', 'a retry of a stored event is still answered as a duplicate while the visitor is limited');
 select is(
   (select sum((pg_temp.ingest('studio-dados', case when batch = 0 then null else 'forged-hash' end, (select jsonb_agg(pg_temp.ev(1200 + batch * 10 + n, 'badge_click')) from generate_series(1, 10) n)) ->> 'accepted')::int)
-   from generate_series(0, 3) batch),
-  29::bigint, 'requests without a valid hash share one bucket of 30 events (one was stored without a hash above)');
+   from generate_series(0, 6) batch),
+  59::bigint, 'requests without a valid hash share one bucket of 60 events (one was stored without a hash above)');
 select is(pg_temp.events_of(tests.id('other_page')), 1::bigint, 'limits of one page do not spill into another');
 
 select pg_temp.store(tests.id('other_page'), now() - interval '30 minutes', 'badge_click') from generate_series(1, 1999);
@@ -350,6 +356,50 @@ update public.analytics_events set occurred_at = occurred_at - interval '1 hour'
 select is(
   pg_temp.ingest('outra-dados', repeat('f', 32), jsonb_build_array(pg_temp.ev(1300, 'page_view'))) ->> 'accepted',
   '1', 'and accepts events again when the hour has passed');
+delete from public.analytics_events where profile_id = tests.id('other_page');
+
+-- ---- The same address across pages (the counter holds no page) ------------------------------------
+select set_config('tests.client', repeat('7', 32), true);
+select is(
+  pg_temp.ingest('outra-dados', repeat('3', 32), jsonb_build_array(pg_temp.ev(1500, 'badge_click'), pg_temp.ev(1501, 'badge_click')), p_client => current_setting('tests.client')) ->> 'accepted',
+  '2', 'events of an address are counted across pages');
+select results_eq(
+  $$select count, window_start = date_bin(interval '10 minutes', now(), timestamptz '2000-01-01 00:00:00+00') from public.analytics_rate_hits where client_hash = current_setting('tests.client')$$,
+  $$values (2, true)$$, 'in one counter per 10-minute window');
+select is(
+  (select array_agg(column_name::text order by ordinal_position) from information_schema.columns where table_schema = 'public' and table_name = 'analytics_rate_hits'),
+  array['client_hash', 'window_start', 'count'], 'the counter holds a hash, a window and a count: no page, workspace or event');
+update public.analytics_rate_hits set count = 195 where client_hash = current_setting('tests.client');
+select is(
+  pg_temp.ingest('studio-dados', repeat('4', 32), (select jsonb_agg(pg_temp.ev(1510 + n, 'badge_click')) from generate_series(1, 10) n), p_client => current_setting('tests.client')),
+  '{"status": "ok", "accepted": 5, "duplicate": 0, "repeat": 0, "rejected": 0, "rate_limited": 5}'::jsonb,
+  'an address stores at most 200 events per window across all pages, whatever page it sends to');
+select is((select count from public.analytics_rate_hits where client_hash = current_setting('tests.client')), 200, 'and the counter stops at the limit');
+update public.analytics_rate_hits set count = 5, window_start = window_start - interval '2 hours' where client_hash = current_setting('tests.client');
+insert into public.analytics_rate_hits (client_hash, window_start, count)
+select current_setting('tests.client'), date_bin(interval '10 minutes', now(), timestamptz '2000-01-01 00:00:00+00') - n * interval '10 minutes', 199 from generate_series(1, 10) n;
+select is(
+  pg_temp.ingest('outra-dados', repeat('5', 32), (select jsonb_agg(pg_temp.ev(1530 + n, 'badge_click')) from generate_series(1, 10) n), p_client => current_setting('tests.client')),
+  '{"status": "ok", "accepted": 5, "duplicate": 0, "repeat": 0, "rejected": 0, "rate_limited": 5}'::jsonb,
+  'and at most 2,000 per day');
+select is(
+  pg_temp.ingest('outra-dados', repeat('6', 32), jsonb_build_array(pg_temp.ev(1550, 'badge_click')), p_client => repeat('8', 32)) ->> 'accepted',
+  '1', 'another address is not affected');
+select is(
+  pg_temp.ingest('outra-dados', repeat('6', 32), jsonb_build_array(pg_temp.ev(1551, 'badge_click')), p_client => 'not-a-hash') ->> 'accepted',
+  '1', 'a malformed client hash is ignored (the page limits still apply)');
+select is((select count(*)::int from public.analytics_rate_hits where client_hash !~ '^[0-9a-f]{32}$'), 0, 'and never stored');
+
+-- ---- Capacity guard --------------------------------------------------------------------------------
+update public.analytics_settings set max_raw_events = 0;
+select is(
+  pg_temp.ingest('studio-dados', repeat('6', 32), jsonb_build_array(pg_temp.ev(1560, 'badge_click'))),
+  '{"status": "shedding"}'::jsonb, 'at the capacity guard of the raw table every event is shed');
+select is(public.ingest_analytics_events(current_setting('tests.vector'), repeat('0', 64)) ->> 'status', 'forbidden', 'an unsigned caller still learns nothing while shedding');
+update public.analytics_settings set max_raw_events = 500000;
+select is(
+  pg_temp.ingest('outra-dados', repeat('6', 32), jsonb_build_array(pg_temp.ev(1561, 'badge_click'))) ->> 'accepted',
+  '1', 'and ingestion resumes when the table is below the guard again');
 delete from public.analytics_events where profile_id = tests.id('other_page');
 
 -- ---- UTM cardinality cap ---------------------------------------------------------------------------
@@ -584,10 +634,12 @@ select is(
 
 -- Aggregates past their own retention.
 insert into public.analytics_daily (profile_id, workspace_id, day, dimension, event_type, count, key)
-values (tests.id('page'), tests.id('ws'), current_setting('tests.today')::date - 401, 'total', 'page_view', 9, '');
+values (tests.id('page'), tests.id('ws'), current_setting('tests.today')::date - 101, 'total', 'page_view', 9, '');
+insert into public.analytics_rate_hits (client_hash, window_start, count) values (repeat('1', 32), now() - interval '3 days', 4), (repeat('1', 32), now() - interval '1 hour', 4);
 select tests.authenticate_service();
-select is((public.run_analytics_maintenance()) ->> 'purged_aggregate_rows', '1', 'aggregates older than 400 days are purged');
+select is((public.run_analytics_maintenance()) ->> 'purged_aggregate_rows', '1', 'aggregates older than 100 days are purged');
 select tests.clear_authentication();
+select is((select array_agg(count) from public.analytics_rate_hits where client_hash = repeat('1', 32)), array[4], 'and so are rate-limit counters older than two days');
 
 -- ---- Off the air, suspended, deleted ---------------------------------------------------------------
 select tests.authenticate_as(tests.id('owner'));

@@ -2,7 +2,7 @@ import { serializeIngestPayload, signIngestPayload } from "./attestation";
 import { MAX_REQUEST_BYTES, parseClientBatch } from "./contract";
 import { classifyDevice, isAutomatedUserAgent, normalizeCountry } from "./device";
 import { classifySource, normalizeUtm } from "./sources";
-import { analyticsVisitorHash } from "./visitor-hash";
+import { analyticsVisitorHashes } from "./visitor-hash";
 
 /**
  * Ingestion boundary (ADR 0011): turns one untrusted request into either a reason to drop it or a
@@ -52,10 +52,11 @@ export function prepareIngestion(input: IngestInput): PreparedIngestion {
   if (!input.signingSecret) return { send: false, reason: "not_configured" };
 
   const utm = normalizeUtm(batch.utm);
-  const visitor = analyticsVisitorHash({ ip: input.ip, userAgent: input.userAgent, slug: batch.slug, day: input.day, salt: input.salt });
+  const { visitor, client } = analyticsVisitorHashes({ ip: input.ip, userAgent: input.userAgent, slug: batch.slug, day: input.day, salt: input.salt });
   const payload = serializeIngestPayload({
     slug: batch.slug,
     visitor,
+    client,
     view: {
       // The referrer is used here and discarded: only its class leaves this function.
       source: classifySource(batch.referrer, utm.source, input.ownHost),
@@ -69,7 +70,7 @@ export function prepareIngestion(input: IngestInput): PreparedIngestion {
 }
 
 /** Statuses of public.ingest_analytics_events(), plus the two the application adds. */
-export type IngestStatus = "ok" | "not_configured" | "forbidden" | "invalid" | "unsupported" | "unavailable" | "not_deployed";
+export type IngestStatus = "ok" | "not_configured" | "forbidden" | "invalid" | "unsupported" | "unavailable" | "shedding" | "not_deployed";
 
 export interface IngestOutcome {
   status: IngestStatus;
@@ -80,7 +81,7 @@ export interface IngestOutcome {
   rateLimited: number;
 }
 
-const STATUSES: readonly string[] = ["ok", "not_configured", "forbidden", "invalid", "unsupported", "unavailable"];
+const STATUSES: readonly string[] = ["ok", "not_configured", "forbidden", "invalid", "unsupported", "unavailable", "shedding"];
 
 function counter(value: unknown): number {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : 0;

@@ -7,7 +7,8 @@ import { addDays, daysBetween, daysInWindow, formatDay, isDay, localDay, parsePe
 import { classifyDevice, isAutomatedUserAgent, normalizeCountry } from "./device";
 import { hasSessionCookie, parseIngestOutcome, prepareIngestion, type IngestInput } from "./ingest";
 import { classifySource, normalizeUtm, normalizeUtmValue, referrerHost, TRAFFIC_SOURCES } from "./sources";
-import { analyticsVisitorHash } from "./visitor-hash";
+import { visitorHash } from "@/modules/leads/visitor-hash";
+import { analyticsVisitorHashes } from "./visitor-hash";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -268,30 +269,50 @@ describe("reporting days (mirror of private.analytics_local_day)", () => {
   });
 });
 
-describe("visitor hash", () => {
+describe("visitor hashes", () => {
   const SALT = "0123456789abcdef0123456789abcdef";
   const base = { ip: "203.0.113.7", userAgent: "Mozilla/5.0", slug: "ana-lima", day: "2026-10-02", salt: SALT };
+  const hashes = analyticsVisitorHashes(base);
 
-  it("is stable for the same person, page and day", () => {
-    expect(analyticsVisitorHash(base)).toMatch(/^[0-9a-f]{32}$/);
-    expect(analyticsVisitorHash({ ...base })).toBe(analyticsVisitorHash(base));
+  it("are stable for the same person, page and day", () => {
+    expect(hashes.visitor).toMatch(/^[0-9a-f]{32}$/);
+    expect(hashes.client).toMatch(/^[0-9a-f]{32}$/);
+    expect(analyticsVisitorHashes({ ...base })).toEqual(hashes);
   });
 
-  it("changes with the day, the page, the address, the device and the secret", () => {
-    const hash = analyticsVisitorHash(base);
-    expect(analyticsVisitorHash({ ...base, day: "2026-10-03" })).not.toBe(hash);
-    expect(analyticsVisitorHash({ ...base, slug: "outra-pagina" })).not.toBe(hash);
-    expect(analyticsVisitorHash({ ...base, ip: "203.0.113.8" })).not.toBe(hash);
-    expect(analyticsVisitorHash({ ...base, userAgent: "Mozilla/5.1" })).not.toBe(hash);
-    expect(analyticsVisitorHash({ ...base, salt: `${SALT}x` })).not.toBe(hash);
+  it("change with the day, the address and the secret", () => {
+    for (const other of [{ ...base, day: "2026-10-03" }, { ...base, ip: "203.0.113.8" }, { ...base, salt: `${SALT}x` }]) {
+      const changed = analyticsVisitorHashes(other);
+      expect(changed.visitor?.slice(0, 16)).not.toBe(hashes.visitor?.slice(0, 16));
+      expect(changed.visitor?.slice(16)).not.toBe(hashes.visitor?.slice(16));
+      expect(changed.client).not.toBe(hashes.client);
+    }
   });
 
-  it("is absent without an address or a usable salt, and never contains the address", () => {
-    expect(analyticsVisitorHash({ ...base, ip: null })).toBeNull();
-    expect(analyticsVisitorHash({ ...base, ip: "  " })).toBeNull();
-    expect(analyticsVisitorHash({ ...base, salt: undefined })).toBeNull();
-    expect(analyticsVisitorHash({ ...base, salt: "short" })).toBeNull();
-    expect(analyticsVisitorHash(base)).not.toContain("203");
+  it("give the same person unrelated visitor hashes on two pages, and one page-independent client hash", () => {
+    const other = analyticsVisitorHashes({ ...base, slug: "outra-pagina" });
+    expect(other.visitor?.slice(0, 16)).not.toBe(hashes.visitor?.slice(0, 16));
+    expect(other.visitor?.slice(16)).not.toBe(hashes.visitor?.slice(16));
+    expect(other.client).toBe(hashes.client);
+  });
+
+  it("keep the rate-limit half when only the user agent changes, so rotating it opens no new bucket", () => {
+    const other = analyticsVisitorHashes({ ...base, userAgent: "Mozilla/5.1" });
+    expect(other.visitor?.slice(0, 16)).toBe(hashes.visitor?.slice(0, 16));
+    expect(other.visitor?.slice(16)).not.toBe(hashes.visitor?.slice(16));
+    expect(other.client).toBe(hashes.client);
+  });
+
+  it("cannot be matched with each other or with the lead rate-limit hash of the same person", () => {
+    expect(hashes.client).not.toContain(hashes.visitor?.slice(0, 16));
+    expect(hashes.client?.slice(0, 16)).not.toBe(hashes.visitor?.slice(16));
+    const lead = visitorHash(base.ip, SALT, new Date("2026-10-02T15:00:00Z"));
+    for (const value of [hashes.visitor, hashes.client]) expect(value).not.toBe(lead);
+  });
+
+  it("are absent without an address or a usable salt, and never contain the address", () => {
+    for (const other of [{ ...base, ip: null }, { ...base, ip: "  " }, { ...base, salt: undefined }, { ...base, salt: "short" }]) expect(analyticsVisitorHashes(other)).toEqual({ visitor: null, client: null });
+    expect(JSON.stringify(hashes)).not.toContain("203.0");
   });
 });
 
@@ -299,14 +320,14 @@ describe("attestation (mirror of private.analytics_signature_is_valid)", () => {
   // The same vector is signed by supabase/tests/database/140-analytics.test.sql.
   const SECRET = "test-analytics-signing-secret-0123456789";
   const payload = serializeIngestPayload({
-    slug: "studio-dados", visitor: null,
+    slug: "studio-dados", visitor: null, client: null,
     view: { source: "direct", device: "mobile", country: "ZZ", utm: { source: null, medium: null, campaign: null } },
     events: [{ id: EVENT, type: "page_view", blockId: null }],
   });
 
   it("serializes with a fixed key order and signs it like the database", () => {
-    expect(payload).toBe('{"v":1,"slug":"studio-dados","visitor":null,"view":{"source":"direct","device":"mobile","country":"ZZ","utm_source":null,"utm_medium":null,"utm_campaign":null},"events":[{"id":"e0000000-0000-4000-8000-000000000001","type":"page_view","block":null}]}');
-    expect(signIngestPayload(payload, SECRET)).toBe("b0aa10142d3dddc9a33f91f5679424772c37f771a6519f1edbaa5c7e858dc745");
+    expect(payload).toBe('{"v":1,"slug":"studio-dados","visitor":null,"client":null,"view":{"source":"direct","device":"mobile","country":"ZZ","utm_source":null,"utm_medium":null,"utm_campaign":null},"events":[{"id":"e0000000-0000-4000-8000-000000000001","type":"page_view","block":null}]}');
+    expect(signIngestPayload(payload, SECRET)).toBe("627bc7f51778e91d291b85981d5935056aafd7b4ec37c2b4764b3b59e87ba9da");
     expect(signIngestPayload(payload.replace("studio-dados", "outra-dados"), SECRET)).not.toBe(signIngestPayload(payload, SECRET));
   });
 
@@ -334,7 +355,7 @@ describe("ingestion boundary", () => {
     const prepared = prepareIngestion(input);
     if (!prepared.send) throw new Error("expected a payload");
     expect(JSON.parse(prepared.payload)).toEqual({
-      v: 1, slug: "ana-lima", visitor: expect.stringMatching(/^[0-9a-f]{32}$/),
+      v: 1, slug: "ana-lima", visitor: expect.stringMatching(/^[0-9a-f]{32}$/), client: expect.stringMatching(/^[0-9a-f]{32}$/),
       view: { source: "instagram", device: "mobile", country: "BR", utm_source: "promo", utm_medium: "bio", utm_campaign: "primavera-2026" },
       events: [{ id: EVENT, type: "page_view", block: null }, { id: "e0000000-0000-4000-8000-000000000002", type: "link_click", block: BLOCK }],
     });
@@ -368,7 +389,7 @@ describe("ingestion boundary", () => {
     for (const override of [{ salt: undefined }, { ip: null }]) {
       const prepared = prepareIngestion({ ...input, ...override });
       expect(prepared).toMatchObject({ send: true, hashed: false });
-      if (prepared.send) expect(JSON.parse(prepared.payload).visitor).toBeNull();
+      if (prepared.send) expect(JSON.parse(prepared.payload)).toMatchObject({ visitor: null, client: null });
     }
   });
 
@@ -387,6 +408,7 @@ describe("ingestion boundary", () => {
   it("reads the database's answer defensively", () => {
     expect(parseIngestOutcome({ status: "ok", accepted: 2, duplicate: 1, repeat: 0, rejected: 0, rate_limited: 3 })).toEqual({ status: "ok", accepted: 2, duplicate: 1, repeat: 0, rejected: 0, rateLimited: 3 });
     expect(parseIngestOutcome({ status: "forbidden" })).toMatchObject({ status: "forbidden", accepted: 0 });
+    expect(parseIngestOutcome({ status: "shedding" }).status).toBe("shedding");
     for (const value of [null, "ok", { status: "weird" }, { status: "ok", accepted: "9" }]) expect(parseIngestOutcome(value).accepted).toBe(0);
     expect(parseIngestOutcome({ status: "weird" }).status).toBe("unavailable");
   });

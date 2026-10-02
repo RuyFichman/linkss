@@ -32,7 +32,10 @@ create table public.analytics_settings (
   -- Every "day" in analytics is a calendar day in this timezone (provisional: one for all pages).
   reporting_timezone text not null default 'America/Sao_Paulo',
   -- Days before this have no data for any page ("not collected" is not "zero").
-  collection_started_at timestamptz not null default now()
+  collection_started_at timestamptz not null default now(),
+  -- Capacity guard: while the raw table holds about this many events, ingestion sheds everything.
+  -- 500,000 events are about 165 MB with indexes (docs/SUPABASE_CAPACITY.md).
+  max_raw_events integer not null default 500000 check (max_raw_events >= 0)
 );
 
 comment on table public.analytics_settings is
@@ -89,14 +92,14 @@ immutable
 set search_path = ''
 as $$ select 7 $$;
 
--- Daily aggregates are kept for this many days (provisional). What a workspace SEES is the
--- analytics_days entitlement, which is smaller.
+-- Daily aggregates are kept for this many days (provisional): the largest analytics_days
+-- entitlement (90) plus a margin. What a workspace SEES is its own entitlement.
 create function private.analytics_aggregate_retention_days()
 returns integer
 language sql
 immutable
 set search_path = ''
-as $$ select 400 $$;
+as $$ select 100 $$;
 
 -- ---------------------------------------------------------------------------------------------
 -- Raw events (append-only, short-lived)
@@ -118,7 +121,8 @@ create table public.analytics_events (
   country text check (country is null or country ~ '^[A-Z]{2}$'),
   -- Id of the block in the live publication; null for page-level events.
   block_id text check (block_id is null or char_length(block_id) between 1 and 64),
-  -- Salted daily HMAC of page + address + user agent; never the address. Null when the server has no salt.
+  -- Two salted daily HMACs, 16 hex characters each: page + address (rate limit), then page +
+  -- address + user agent (visit rule). Never the address. Null when the server has no salt.
   visitor_hash text check (visitor_hash is null or visitor_hash ~ '^[0-9a-f]{32}$'),
   utm_source text check (utm_source is null or utm_source ~ '^[a-z0-9_.-]{1,40}$'),
   utm_medium text check (utm_medium is null or utm_medium ~ '^[a-z0-9_.-]{1,40}$'),
@@ -177,16 +181,32 @@ create table public.analytics_day_status (
 comment on table public.analytics_day_status is
   'Aggregation watermark (ADR 0011): one row per reporting day that was aggregated. The dashboard reads the latest final day to tell "consolidation is late" from "zero".';
 
+-- Events stored per address, across every page, in 10-minute windows. It holds no page, workspace
+-- or event: only "this salted daily hash stored N events in this window", so it cannot be used to
+-- see where somebody went. Rows are deleted after two days.
+create table public.analytics_rate_hits (
+  client_hash text not null check (client_hash ~ '^[0-9a-f]{32}$'),
+  window_start timestamptz not null,
+  count integer not null check (count > 0),
+  primary key (client_hash, window_start)
+);
+
+create index analytics_rate_hits_window_idx on public.analytics_rate_hits (window_start);
+
+comment on table public.analytics_rate_hits is
+  'Rate-limit counters of analytics ingestion (ADR 0011): salted daily hash of the visitor address (never the address, and unrelated to analytics_events.visitor_hash) and a count per 10-minute window. No page or workspace. Deleted after two days by run_analytics_maintenance.';
+
 alter table public.analytics_settings enable row level security;
+alter table public.analytics_rate_hits enable row level security;
 alter table public.analytics_events enable row level security;
 alter table public.analytics_daily enable row level security;
 alter table public.analytics_day_status enable row level security;
 
 -- No client role holds any table privilege and there are no policies: visitors write through
 -- ingest_analytics_events, members read through get_profile_analytics, the job runs as the owner.
-revoke all on public.analytics_settings, public.analytics_events, public.analytics_daily, public.analytics_day_status
+revoke all on public.analytics_settings, public.analytics_events, public.analytics_daily, public.analytics_day_status, public.analytics_rate_hits
   from public, anon, authenticated, service_role;
-grant select on public.analytics_settings, public.analytics_events, public.analytics_daily, public.analytics_day_status to service_role;
+grant select on public.analytics_settings, public.analytics_events, public.analytics_daily, public.analytics_day_status, public.analytics_rate_hits to service_role;
 
 -- ---------------------------------------------------------------------------------------------
 -- Attestation (ADR 0011): only batches signed by the application server are stored
@@ -277,7 +297,7 @@ as $$ select p_day::timestamp at time zone private.analytics_timezone() $$;
 
 -- Stores a batch of events for one published page. `p_payload` is the JSON text built by the
 -- application server (modules/analytics/attestation.ts) and `p_signature` its HMAC-SHA256:
---   {"v":1,"slug":"…","visitor":"<32 hex>"|null,
+--   {"v":1,"slug":"…","visitor":"<32 hex>"|null,"client":"<32 hex>"|null,
 --    "view":{"source":"…","device":"…","country":"BR","utm_source":…,"utm_medium":…,"utm_campaign":…},
 --    "events":[{"id":"<uuid>","type":"link_click","block":"<block id>"|null}]}
 -- Answers {"status": …} and, for "ok", how many events were accepted, were duplicates of stored
@@ -288,6 +308,9 @@ as $$ select p_day::timestamp at time zone private.analytics_timezone() $$;
 --   invalid         malformed payload
 --   unsupported     contract version this database does not know
 --   unavailable     no published page at this address
+--   shedding        the raw table is at its capacity guard; nothing is stored until the purge runs
+-- Limits, counted on stored events: 2,000 per page per hour; 60 per address per page per
+-- 10 minutes; 200 per address per 10-minute window and 2,000 per address per day across all pages.
 create function public.ingest_analytics_events(p_payload text, p_signature text)
 returns jsonb
 language plpgsql
@@ -303,6 +326,10 @@ declare
   v_blocks jsonb;
   v_view jsonb;
   v_visitor text;
+  v_address text;
+  v_window timestamptz := date_bin(interval '10 minutes', now(), timestamptz '2000-01-01 00:00:00+00');
+  v_address_window integer := 0;
+  v_address_day integer := 0;
   v_source public.analytics_source;
   v_device public.analytics_device;
   v_country text;
@@ -334,6 +361,13 @@ begin
   end if;
   if not v_valid then
     return jsonb_build_object('status', 'forbidden');
+  end if;
+
+  -- Capacity guard. The planner's estimate is used so the check costs nothing; it lags behind the
+  -- real count by at most the autovacuum threshold, which is fine for a ceiling.
+  if (select greatest(c.reltuples, 0) from pg_catalog.pg_class c where c.oid = 'public.analytics_events'::regclass)
+    >= (select s.max_raw_events from public.analytics_settings s) then
+    return jsonb_build_object('status', 'shedding');
   end if;
 
   begin
@@ -384,6 +418,8 @@ begin
 
   v_visitor := case when jsonb_typeof(v_payload -> 'visitor') = 'string' and v_payload ->> 'visitor' ~ '^[0-9a-f]{32}$' then v_payload ->> 'visitor' end;
 
+  v_address := case when jsonb_typeof(v_payload -> 'client') = 'string' and v_payload ->> 'client' ~ '^[0-9a-f]{32}$' then v_payload ->> 'client' end;
+
   v_view := case when jsonb_typeof(v_payload -> 'view') = 'object' then v_payload -> 'view' else '{}'::jsonb end;
   v_source := case when v_view ->> 'source' = any (enum_range(null::public.analytics_source)::text[]) then (v_view ->> 'source')::public.analytics_source end;
   v_device := case when v_view ->> 'device' = any (enum_range(null::public.analytics_device)::text[]) then (v_view ->> 'device')::public.analytics_device end;
@@ -404,13 +440,22 @@ begin
   from public.analytics_events e
   where e.workspace_id = v_profile.workspace_id and e.profile_id = v_profile.id
     and e.occurred_at > now() - interval '1 hour';
-  -- Requests without a hash share one bucket per page. Server-side form events are not a visitor's.
+  -- Per address, not per device: the first half of the hash depends on the page and the address
+  -- only, so changing the user agent does not open a new bucket. Requests without a hash share one
+  -- bucket per page. Server-side form events are not a visitor's.
   select count(*) into v_visitor_count
   from public.analytics_events e
   where e.workspace_id = v_profile.workspace_id and e.profile_id = v_profile.id
     and e.occurred_at > now() - interval '10 minutes'
-    and e.visitor_hash is not distinct from v_visitor
+    and left(e.visitor_hash, 16) is not distinct from left(v_visitor, 16)
     and e.event_type <> 'form_submit';
+  -- The same address across every page: this window and the last 24 hours.
+  if v_address is not null then
+    select coalesce(sum(h.count) filter (where h.window_start = v_window), 0), coalesce(sum(h.count), 0)
+    into v_address_window, v_address_day
+    from public.analytics_rate_hits h
+    where h.client_hash = v_address and h.window_start > now() - interval '1 day';
+  end if;
 
   for v_event in select value from jsonb_array_elements(v_payload -> 'events') loop
     -- form_submit is recorded by submit_form_lead when a lead is stored; nobody can send it.
@@ -440,7 +485,7 @@ begin
       continue;
     end if;
 
-    if v_page_count >= 2000 or v_visitor_count >= 30 then
+    if v_page_count >= 2000 or v_visitor_count >= 60 or v_address_window >= 200 or v_address_day >= 2000 then
       v_limited := v_limited + 1;
       continue;
     end if;
@@ -498,8 +543,16 @@ begin
       v_accepted := v_accepted + 1;
       v_page_count := v_page_count + 1;
       v_visitor_count := v_visitor_count + 1;
+      v_address_window := v_address_window + 1;
+      v_address_day := v_address_day + 1;
     end if;
   end loop;
+
+  if v_address is not null and v_accepted > 0 then
+    insert into public.analytics_rate_hits (client_hash, window_start, count)
+    values (v_address, v_window, v_accepted)
+    on conflict (client_hash, window_start) do update set count = public.analytics_rate_hits.count + excluded.count;
+  end if;
 
   return jsonb_build_object('status', 'ok', 'accepted', v_accepted, 'duplicate', v_duplicate, 'repeat', v_repeat,
     'rejected', v_rejected, 'rate_limited', v_limited);
@@ -788,6 +841,7 @@ begin
   delete from public.analytics_daily d where d.day < v_today - private.analytics_aggregate_retention_days();
   get diagnostics v_purged_aggregates = row_count;
   delete from public.analytics_day_status s where s.day < v_today - private.analytics_aggregate_retention_days();
+  delete from public.analytics_rate_hits h where h.window_start < now() - interval '2 days';
 
   return jsonb_build_object('status', 'ok', 'aggregated_days', v_days, 'aggregate_rows', v_rows,
     'purged_events', v_purged_events, 'purged_aggregate_rows', v_purged_aggregates,
@@ -805,7 +859,7 @@ $$;
 -- that are not final yet (normally only today) are counted from that page's raw events, so the
 -- dashboard does not wait for the nightly job. The window is clamped to today and to the history
 -- depth of the workspace's plan (the analytics_days entitlement). One JSON object, bounded:
--- at most 400 days x 9 types of daily totals, the page's blocks, 12 sources, 4 device classes and
+-- at most 100 days x 9 types of daily totals, the page's blocks, 12 sources, 4 device classes and
 -- the 20 largest UTM triples and countries.
 create function public.get_profile_analytics(p_profile_id uuid, p_from date, p_to date)
 returns jsonb

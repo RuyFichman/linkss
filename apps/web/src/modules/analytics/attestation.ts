@@ -15,6 +15,8 @@ export const ANALYTICS_SIGNING_SECRET_MIN_LENGTH = 32;
 export interface IngestPayload {
   slug: string;
   visitor: string | null;
+  /** Address-only hash for the limit across pages; kept in the rate-limit counters, never on events. */
+  client: string | null;
   /** Dimensions of the visit; stored on page views only. */
   view: { source: TrafficSource; device: DeviceClass; country: string; utm: UtmValues };
   events: readonly ClientEvent[];
@@ -26,6 +28,7 @@ export function serializeIngestPayload(payload: IngestPayload): string {
     v: ANALYTICS_CONTRACT_VERSION,
     slug: payload.slug,
     visitor: payload.visitor,
+    client: payload.client,
     view: {
       source: payload.view.source,
       device: payload.view.device,

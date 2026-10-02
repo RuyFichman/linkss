@@ -74,7 +74,8 @@ export async function POST(request: Request): Promise<Response> {
       // Not configured (no Supabase URL or key in this environment).
       outcome = { status: "unavailable" as const, accepted: 0, duplicate: 0, repeat: 0, rejected: 0, rateLimited: 0 };
     }
-    logEvent(outcome.status === "ok" ? "info" : outcome.status === "unavailable" ? "error" : "warn", "analytics.ingest", {
+    // `shedding`: the raw table reached its capacity guard and every event is being dropped.
+    logEvent(outcome.status === "ok" ? "info" : outcome.status === "unavailable" || outcome.status === "shedding" ? "error" : "warn", "analytics.ingest", {
       correlationId,
       outcome: outcome.status,
       events: prepared.events,
