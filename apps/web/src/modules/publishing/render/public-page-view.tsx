@@ -152,6 +152,22 @@ function BlockView({ block, context }: { block: PublishedBlock; context: BlockCo
 }
 
 /**
+ * How many leading blocks can share the first screen of a phone with the header. Measured on
+ * staging (2026-10-02): with a form first, the image in the second block was the LCP element and
+ * still lazy, so the browser only fetched it after layout.
+ */
+export const PRIORITY_IMAGE_WINDOW = 3;
+
+/**
+ * The image most likely to be the LCP element: the first image among the leading blocks. Only one
+ * image gets eager loading and high fetch priority; images further down stay lazy, so a page with
+ * many images still costs one image above the fold.
+ */
+export function priorityImageId(blocks: readonly PublishedBlock[]): string | null {
+  return blocks.slice(0, PRIORITY_IMAGE_WINDOW).find((block) => block.type === "image")?.id ?? null;
+}
+
+/**
  * Public page markup for a published (or preview) document. Server-rendered HTML with plain
  * anchors and a plain form: every link and the form work without JavaScript, so a failing
  * analytics/telemetry script cannot break navigation. `slug` is the published address (forms
@@ -159,8 +175,7 @@ function BlockView({ block, context }: { block: PublishedBlock; context: BlockCo
  */
 export function PublicPageView({ document, showBadge, as: Root = "main", interactive = true, slug = null }: { document: PublishedDocument; showBadge: boolean; as?: "main" | "div"; interactive?: boolean; slug?: string | null }) {
   const theme = resolveTheme(document.theme);
-  const firstBlock = document.blocks[0];
-  const context: BlockContext = { interactive, slug, priorityImageId: firstBlock?.type === "image" ? firstBlock.id : null };
+  const context: BlockContext = { interactive, slug, priorityImageId: priorityImageId(document.blocks) };
 
   // One early connection to the media host when the page shows images. Nothing else is hinted.
   const origin = document.avatarPath || document.blocks.some((block) => block.type === "image") ? mediaOrigin() : null;
