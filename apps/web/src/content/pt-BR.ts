@@ -44,6 +44,7 @@ export const AUTH_COPY = {
     emailNotConfirmed: "Confirme seu e-mail para entrar. Se o link expirou, peça um novo abaixo.",
     signedOut: "Você saiu da sua conta.",
     passwordUpdated: "Senha atualizada. Entre com a nova senha.",
+    emailLinkNoSession: "Seu e-mail provavelmente já foi confirmado, mas não conseguimos abrir a sessão por este link. Entre com seu e-mail e senha. Se aparecer que o e-mail não foi confirmado, peça um novo link.",
   },
   confirmEmail: {
     title: "Confirme seu e-mail",

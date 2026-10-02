@@ -17,6 +17,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
   const next = safeNextPath(single(params.next));
   const notice = single(params.saiu) ? { tone: "success" as const, text: AUTH_COPY.signIn.signedOut }
     : single(params.senha) === "atualizada" ? { tone: "success" as const, text: AUTH_COPY.signIn.passwordUpdated }
+    : single(params.email) === "confirmado" ? { tone: "warning" as const, text: AUTH_COPY.signIn.emailLinkNoSession }
     : single(params.erro) === "indisponivel" ? { tone: "danger" as const, text: AUTH_COPY.unavailable }
     : null;
 

@@ -59,3 +59,23 @@ const LINK_TYPES: readonly LinkType[] = ["email", "recovery", "email_change", "s
 export function parseLinkType(value: string | null): LinkType | null {
   return LINK_TYPES.find((type) => type === value) ?? null;
 }
+
+export type EmailLinkMethod = "token_hash" | "code" | "none";
+
+/**
+ * Where /auth/confirm sends a person whose link did not open a session.
+ *
+ * A PKCE `code` only reaches us after Supabase's `/verify` accepted the link, so a confirmation
+ * email is usually already confirmed when the exchange fails. The usual causes: the code-verifier
+ * cookie was replaced by a later sign-up or resend in the same browser (`bad_code_verifier`), or the
+ * link was opened in another browser or device. Saying "link expired" there sends the person in a
+ * loop of resends that cannot succeed. Sign-in is the honest next step: it works if the email is
+ * confirmed, and otherwise answers "email not confirmed" with the resend option.
+ *
+ * A failed `token_hash` link and every recovery link really are unusable: ask for a new one.
+ */
+export function emailLinkFailurePath({ method, isRecovery }: { method: EmailLinkMethod; isRecovery: boolean }): string {
+  if (isRecovery) return "/recuperar-acesso?erro=link-expirado";
+  if (method === "code") return "/entrar?email=confirmado";
+  return "/confirmar-email?erro=link-expirado";
+}

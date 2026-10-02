@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { AUTH_COPY } from "@/content/pt-BR";
-import { passwordUpdateOutcome, parseLinkType, recoveryOutcome, signInOutcome, signUpOutcome } from "./auth-outcomes";
+import { emailLinkFailurePath, passwordUpdateOutcome, parseLinkType, recoveryOutcome, signInOutcome, signUpOutcome } from "./auth-outcomes";
 import { passwordError, validateNewPassword, validateSignIn, validateSignUp } from "./auth-validation";
 import { AuthorizationError, requireWorkspaceAccess, type IdentityPort } from "./guard";
 import { PERMISSIONS, WORKSPACE_ROLES, can, canChangeRole, canRemoveMember, type WorkspaceRole } from "./permissions";
@@ -164,6 +164,15 @@ describe("neutral auth outcomes (anti-enumeration)", () => {
     expect(parseLinkType("invite")).toBeNull();
     expect(parseLinkType(null)).toBeNull();
   });
+
+  it("sends a failed PKCE confirmation to sign-in, and only real dead links to 'expired'", () => {
+    // Regression (staging, 2026-10-02): /verify confirmed the email, then the code exchange failed
+    // with bad_code_verifier and the person was told the link had expired.
+    expect(emailLinkFailurePath({ method: "code", isRecovery: false })).toBe("/entrar?email=confirmado");
+    expect(emailLinkFailurePath({ method: "token_hash", isRecovery: false })).toBe("/confirmar-email?erro=link-expirado");
+    expect(emailLinkFailurePath({ method: "none", isRecovery: false })).toBe("/confirmar-email?erro=link-expirado");
+    // A recovery link that did not open a session cannot be used to set a password: ask again.
+    for (const method of ["code", "token_hash", "none"] as const) expect(emailLinkFailurePath({ method, isRecovery: true })).toBe("/recuperar-acesso?erro=link-expirado");  });
 });
 
 describe("minimum response duration", () => {
