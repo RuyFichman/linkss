@@ -60,7 +60,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + Lighthouse em `next star
 - [x] P0 Temas e aplicação de template sem perda de conteúdo.
 - [x] P1 Sanitização/allowlist de provedores de embed.
 - [ ] P0 Aplicar a Sprint 5 em staging: `supabase db push`, segredo no Vault, variáveis na Vercel (passos em `docs/ENVIRONMENTS.md`) e medir LCP/CLS de campo numa página com imagens.
-- [ ] P0 Agendar a limpeza de mídia órfã (`POST /api/jobs/media-cleanup`); hoje só roda à mão.
+- [x] P0 Agendar a limpeza de mídia órfã: Vercel Cron diário (`GET /api/jobs/media-cleanup`, `apps/web/vercel.json`), em 02/10/2026.
 - [ ] P1 Pix "copia e cola" (BR Code) e QR code — cortados nesta sprint (ADR 0010).
 - [ ] P1 Imagem de fundo no tema — cortada nesta sprint.
 - [ ] P1 Aviso ao dono da página quando chega um contato (depende do SMTP).

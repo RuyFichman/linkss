@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { isSameOriginRequest, secretsMatch } from "@/lib/same-origin";
-import { runMediaCleanup, type MediaCleanupRepository } from "./cleanup";
+import { runMediaCleanup, runMediaCleanupBatches, type MediaCleanupRepository } from "./cleanup";
 import { parseUploadResponse } from "./client-upload";
 import { formatBytes, uploadErrorMessage } from "./messages";
 import type { StorageAdapter } from "./storage/adapter";
@@ -47,6 +47,48 @@ describe("orphan cleanup", () => {
     const repo = repository([]);
     expect(await runMediaCleanup(repo, createMemoryStorageAdapter())).toEqual({ claimed: 0, removedObjects: 0, finished: 0, failed: 0 });
     expect(repo.finish).not.toHaveBeenCalled();
+  });
+});
+
+describe("scheduled cleanup batches", () => {
+  /** A backlog of `size` claimable assets with one object each; `failOn` makes removal of that asset fail. */
+  function backlog(size: number, failOn?: string) {
+    const pending = Array.from({ length: size }, (_, index) => `asset-${index}`);
+    const repo: MediaCleanupRepository = {
+      claim: vi.fn(async (limit: number) => pending.slice(0, limit).map((mediaId) => ({ mediaId, objectNames: [`${mediaId}/448.webp`] }))),
+      finish: vi.fn(async (ids: string[]) => {
+        for (const id of ids) pending.splice(pending.indexOf(id), 1);
+        return ids.length;
+      }),
+    };
+    const storage: StorageAdapter = {
+      ...createMemoryStorageAdapter(),
+      remove: async (keys) => { if (failOn && keys.some((key) => key.startsWith(`${failOn}/`))) throw new Error("storage down"); },
+    };
+    return { repo, storage, pending };
+  }
+
+  it("keeps claiming full batches until the backlog is empty", async () => {
+    const { repo, storage, pending } = backlog(7);
+    expect(await runMediaCleanupBatches(repo, storage, { batchSize: 3 })).toEqual({ claimed: 7, removedObjects: 7, finished: 7, failed: 0, batches: 3 });
+    expect(pending).toEqual([]);
+  });
+
+  it("stops at the batch bound and leaves the rest for the next run", async () => {
+    const { repo, storage, pending } = backlog(10);
+    expect(await runMediaCleanupBatches(repo, storage, { batchSize: 3, maxBatches: 2 })).toMatchObject({ claimed: 6, finished: 6, batches: 2 });
+    expect(pending).toHaveLength(4);
+  });
+
+  it("stops after a batch with a failure instead of re-claiming the stuck asset in a loop", async () => {
+    const { repo, storage } = backlog(9, "asset-1");
+    expect(await runMediaCleanupBatches(repo, storage, { batchSize: 3 })).toEqual({ claimed: 3, removedObjects: 2, finished: 2, failed: 1, batches: 1 });
+    expect(repo.claim).toHaveBeenCalledTimes(1);
+  });
+
+  it("runs a single empty batch when there is nothing to clean", async () => {
+    const { repo, storage } = backlog(0);
+    expect(await runMediaCleanupBatches(repo, storage)).toEqual({ claimed: 0, removedObjects: 0, finished: 0, failed: 0, batches: 1 });
   });
 });
 

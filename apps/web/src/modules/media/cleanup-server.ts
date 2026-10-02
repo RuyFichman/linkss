@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import { runMediaCleanup, type CleanupReport, type MediaCleanupRepository } from "./cleanup";
+import { runMediaCleanupBatches, type CleanupReport, type MediaCleanupRepository } from "./cleanup";
 import { createSupabaseStorageAdapter } from "./storage/supabase-adapter";
 
 /**
@@ -9,7 +9,7 @@ import { createSupabaseStorageAdapter } from "./storage/supabase-adapter";
  * no signed-in user, as allowed by `.env.example` ("future administrative jobs, never user actions").
  * Returns null when the job is not configured in this environment.
  */
-export async function runConfiguredMediaCleanup(): Promise<CleanupReport | null> {
+export async function runConfiguredMediaCleanup(): Promise<(CleanupReport & { batches: number }) | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secret = process.env.SUPABASE_SECRET_KEY;
   if (!url || !secret) return null;
@@ -26,5 +26,5 @@ export async function runConfiguredMediaCleanup(): Promise<CleanupReport | null>
       return data;
     },
   };
-  return runMediaCleanup(repository, createSupabaseStorageAdapter(client));
+  return runMediaCleanupBatches(repository, createSupabaseStorageAdapter(client));
 }
