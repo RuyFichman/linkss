@@ -99,12 +99,37 @@ Legenda: **implementado + verificado** (teste automatizado ou verificação manu
 | Imagem imprópria ou ilegal publicada | — | **pendente**: sem moderação nem denúncia (Sprint 9); hoje a resposta é manual | runbook `MEDIA.md` §1 |
 | Flood de uploads ou de envios por muitas contas/IPs | limites por workspace e por página | **risco residual**: rate limit global e firewall são da Sprint 9 | — |
 
+## Controles adicionados na Sprint 6 (analytics do cliente)
+
+Decisão: ADR 0011. É o primeiro caminho de escrita aberto a visitantes anônimos que cresce com o tráfego.
+
+| Ameaça | Controle | Estado | Evidência |
+|---|---|---|---|
+| Analytics atrasar ou impedir o clique do visitante | links continuam âncoras para o destino real (sem redirecionamento pelo produto); coletor com listeners passivos, sem `preventDefault` e sem `await`; `sendBeacon`/`fetch keepalive` sem esperar resposta; a rota responde 204 antes do banco | implementado + verificado | Vitest `collector.test.ts` (opções do listener, verificação do código-fonte, falhas de transporte); navegador: destino abriu com a rota respondendo 500, pendurada e com a requisição bloqueada |
+| Forjar eventos direto na RPC (escolher hash de visitante, país, origem) | lote assinado pelo servidor (HMAC, segredo no Vault); a assinatura é conferida antes de qualquer outra coisa; sem segredo nada é gravado | implementado + verificado | pgTAP 140 (assinatura errada, ausente, reutilizada em outra página, segredo ausente); Vitest (vetor de assinatura igual nos dois lados) |
+| Inflar os números de uma página (da própria ou de outro tenant) | limites no banco, contados em eventos gravados: 60 por endereço por página em 10 min, 2.000 por página por hora; o balde de limite ignora o user agent | implementado + verificado; **limite global na frente da rota pendente** (Sprint 9) | pgTAP 140; teste de carga: 3.000 eventos enviados, 2.000 gravados; script de precisão (61º evento do mesmo endereço recusado) |
+| Espalhar um flood por muitas páginas a partir de um endereço | contador por endereço em todas as páginas (200 por janela de 10 min, 2.000 por dia), numa tabela que não guarda página | implementado + verificado | pgTAP 140 |
+| Encher o banco (DoS de capacidade) | repetição de visita não é gravada; retenção bruta de 7 dias; a ingestão descarta tudo enquanto a tabela bruta tiver cerca de 500 mil eventos (≈ 165 MB) | implementado + verificado; **sender distribuído ainda consegue chegar ao teto** e fazer eventos reais serem descartados até a limpeza | pgTAP 140 (`shedding`); `docs/SUPABASE_CAPACITY.md` |
+| Replay / retry contado duas vezes | chave de deduplicação `(página, id do evento)` enquanto o bruto existir; duplicata é ignorada sem erro | implementado + verificado | pgTAP 140 (evento e lote repetidos); script de precisão (40 retries, 0 a mais) |
+| Evento para página não publicada, suspensa, excluída ou inexistente | validado contra a publicação **no ar**; resposta única `unavailable` | implementado + verificado | pgTAP 140 |
+| Evento para bloco que não está no snapshot, ou de tipo diferente do bloco | o bloco tem de existir na publicação no ar com o tipo do evento | implementado + verificado | pgTAP 140 (16 casos: oculto, só no rascunho, de outra página, tipo trocado, texto arbitrário) |
+| Forjar envio de formulário para inflar "resultados" | `form_submit` não é aceito de clientes; só `submit_form_lead` cria, quando grava um lead | implementado + verificado | pgTAP 140; Vitest |
+| Ataque de cardinalidade por UTM | valores restritos a `[a-z0-9_.-]`, até 40 caracteres; no máximo 20 combinações distintas por página por dia (acima disso a visita conta sem UTM); só as 20 maiores são lidas | implementado + verificado | pgTAP 140; Vitest |
+| Vazamento do referrer (caminho, query string, tokens na URL de origem) | o coletor envia só o host; o servidor classifica em 12 origens e descarta o host; nada além da categoria é gravado | implementado + verificado | Vitest (`ingest`: caminho, query, IP e user agent não chegam ao payload); pgTAP 140 (endereço no lugar da origem é recusado; nenhuma coluna de URL, referrer, IP ou user agent) |
+| Injeção de texto arbitrário na base ou no painel | nenhuma coluna de texto livre: enumerações, país de 2 letras, UTM restrito, id de bloco validado contra o snapshot | implementado + verificado | pgTAP 140; restrições `check` |
+| Identificar ou seguir um visitante | sem cookie nem armazenamento no navegador; hashes diários com sal do servidor; o hash guardado no evento inclui a página; o contador entre páginas não guarda página; "visitantes únicos" não é exibido | implementado + verificado | Vitest (`visitor hashes`); pgTAP 140 |
+| Leitura de eventos ou agregados por visitante ou por outro tenant | nenhum papel de cliente tem privilégio nas tabelas; leitura só por `get_profile_analytics`, que confere a membership e aplica o histórico do plano | implementado + verificado | pgTAP 140 (anon, membro lendo direto, outro workspace → `P0002`); navegador: outra conta recebe "não encontrada" no painel e 404 no CSV |
+| Tráfego interno ou automático contado como visita | robôs e prévias de link por user agent, `navigator.webdriver`, sessão do produto no mesmo navegador, visita vinda de `/app`; a prévia e o editor não montam o coletor | implementado + verificado; **limite conhecido:** dono sem sessão, em outro navegador ou num navegador embutido conta; robô com user agent de navegador conta até o limite | Vitest (tabela de user agents; teste de isolamento do coletor); navegador (dono com sessão: descartado; prévia: zero requisições) |
+| Injeção de fórmula no CSV | mesmas células da exportação de leads (aspas e apóstrofo); o CSV só tem totais por dia | implementado + verificado | Vitest |
+| Chamar o job de agregação/limpeza sem autorização | `CRON_SECRET` em `Authorization`, comparação em tempo constante; a função só é executável pelo `service_role` | implementado + verificado | Vitest `jobs/analytics/route.test.ts`; pgTAP 140 |
+| Flood de requisições a `/api/events` (custo de função e de transação) | corpo de até 4 KiB, 10 eventos por lote, resposta sem banco | **risco residual**: sem limite global nem firewall até a Sprint 9 | — |
+
 ## Requisitos antes do MVP privado
 
 - headers de segurança e CSP;
 - RLS em todas as tabelas expostas — **feito para as tabelas da Sprint 2**;
 - testes de isolamento por workspace — **feito (pgTAP + Vitest)**;
-- rate limits para auth, formulário, upload e ingestão — Auth configurado localmente; formulário e upload têm limites no banco (Sprint 5); limite global e ingestão pendentes;
+- rate limits para auth, formulário, upload e ingestão — Auth configurado localmente; formulário e upload têm limites no banco (Sprint 5); a ingestão de analytics tem limites no banco por endereço, por página e de capacidade (Sprint 6); limite global na frente das rotas públicas pendente;
 - CAPTCHA no Auth para fechar a enumeração direta pela API;
 - trilha para publicação, domínio, papéis e suspensão — papéis/slug/exclusão/publicação/restauração/despublicação feitos; domínio e suspensão pendentes;
 - backup e restauração testados;

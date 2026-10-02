@@ -106,6 +106,34 @@ Textos em `apps/web/src/content/pt-BR.ts`; o que o **visitante** lê fica em `ap
 
 Regras: nunca prometer que o Pix foi pago ou confirmado (o produto só mostra a chave); nunca dizer "seus dados estão seguros" no formulário — dizer quem recebe e por quanto tempo; a falha de envio diz explicitamente que nada foi guardado.
 
+## Resultados (Sprint 6)
+
+Fonte: `ANALYTICS_COPY` em `apps/web/src/content/pt-BR.ts`. Decisões: UX-043 a UX-050 (provisórias). O coletor da página pública não tem texto nenhum: nada novo entra em `content/public-page.ts`.
+
+| Elemento | Texto |
+|---|---|
+| Nome da tela | "Resultados" (nunca "analytics" ou "métricas") |
+| Números | "Visitas" (com "estimativa" embaixo) · "Resultados" · "Resultados a cada 100 visitas" · "Cliques em links" |
+| Linha de contexto | "De 26/09/2026 a 02/10/2026. Inclui hoje, que ainda está em andamento. Os dias seguem o horário de Brasília (America/Sao_Paulo). Atualizado em …. Os números são estimativas. Como contamos" |
+| Período fora do plano | "30 dias: não disponível no plano desta conta" (texto visível, sem cadeado sozinho) |
+| Ainda não disponível | "A contagem de visitas ainda não está ativa neste ambiente. Sua página pública funciona normalmente…" |
+| Página não publicada | "Só uma página publicada recebe visitas. Publique a página para começar a contar." |
+| Sem dados ainda | "A página está no ar, mas nenhuma visita foi registrada até agora. Compartilhe o link para começar." |
+| Zero no período | "A página já teve visitas em outros períodos, mas nenhuma visita e nenhum clique neste." |
+| Antes do início da contagem | "A contagem desta página começou em 02/10/2026. Antes disso não há dados, o que é diferente de zero visitas." Na tabela: "sem dado" e "Sem contagem: antes do início" |
+| Consolidação atrasada | começa com "Aviso:" e diz o que fazer ("Se este aviso continuar amanhã, fale com o suporte.") |
+| Bloco que saiu da página | "Link (bloco removido da página)" |
+| Origens | "Direto ou sem origem", "Instagram", "WhatsApp", "Google", "Outros buscadores", "Outros sites" |
+| Não identificado | país e aparelho desconhecidos aparecem como "Não identificado", nunca como código (`ZZ`, `unknown`) |
+
+Regras:
+
+- Nunca escrever "visitantes únicos", "pessoas" ou "usuários" para um número: só "visitas".
+- Nunca escrever "taxa de conversão" nem um percentual de resultado: "resultados a cada 100 visitas".
+- "Sem dados" e "zero" nunca usam a mesma frase; zero só é dito quando a contagem estava ativa.
+- Não prometer exatidão: toda tela de números tem "estimativas" e o link "Como contamos".
+- Em "Como contamos", dizer o que **não** é contado (quem bloqueia scripts, robôs, a própria pessoa com a conta aberta) e o que não é guardado (IP, cookies, endereço de origem completo).
+
 ## Padrões de erro
 
 1. **O que ocorreu:** “Este endereço já está em uso.”

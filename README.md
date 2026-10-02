@@ -44,6 +44,25 @@ select vault.create_secret('<mesmo valor de MEDIA_SIGNING_SECRET>', 'media_signi
 
 Sem isso o editor mostra o envio como indisponível; o restante funciona. Detalhes e passos para o ambiente hospedado em `docs/ENVIRONMENTS.md`.
 
+### Resultados (analytics) no ambiente local (Sprint 6)
+
+A contagem precisa do mesmo segredo na aplicação e no banco: `ANALYTICS_SIGNING_SECRET` (64 caracteres hexadecimais) em `apps/web/.env.local` e, no banco local, uma vez:
+
+```sql
+select vault.create_secret('<mesmo valor de ANALYTICS_SIGNING_SECRET>', 'analytics_signing_secret');
+```
+
+Sem isso as páginas públicas funcionam, os eventos são descartados e o painel mostra "Resultados ainda não disponíveis". Quem está com a conta aberta no mesmo navegador não é contado: teste numa guia anônima. O teste de precisão (AC5) roda contra um `next start` local: `node scripts/analytics-accuracy.mjs` em `apps/web` (instruções no cabeçalho do arquivo).
+
+## Rotas da Sprint 6
+
+- `/app/w/[workspaceId]/paginas/[profileId]/resultados` — resultados da página por período (hoje, 7, 30 e 90 dias conforme o plano): visitas, resultados, caminho até o resultado, dia a dia, blocos, origens, aparelhos, países e campanhas; `/resultados/exportar` baixa o CSV dos totais por dia.
+- `/api/events` — recebe os eventos das páginas públicas (sempre 204, sem corpo).
+- `/api/jobs/analytics` — job diário de agregação e limpeza (`GET` pelo Vercel Cron às 04:00 UTC ou `POST` à mão, com `Authorization: Bearer <CRON_SECRET>`; `?day=AAAA-MM-DD` re-agrega um dia).
+- `/<endereço>` — a página pública agora envia visitas e cliques; continua estática e funciona com scripts bloqueados.
+
+Nenhuma rota nova de nível superior.
+
 ## Rotas da Sprint 5
 
 - `/app/w/[workspaceId]/paginas/[profileId]` — o editor ganhou foto da página (envio com recorte), blocos Imagem, Vídeo ou música, Pix e Formulário, o painel Aparência (cores, estilo, fonte), cinco modelos e o uso de armazenamento.

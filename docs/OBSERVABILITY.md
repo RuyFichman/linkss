@@ -65,6 +65,22 @@ Os eventos carregam resultado, tamanhos, duração e correlation id — nunca no
 
 Envios bloqueados pelo honeypot respondem `ok` e não são distinguidos no log de propósito (o robô não aprende nada); o volume de spam aparece em `rate_limited`. Capacidade: acompanhar o uso do bucket `media` e o egress no painel do Supabase (limiar de 60% em `docs/SUPABASE_CAPACITY.md`).
 
+## Sinais de analytics do cliente (Sprint 6)
+
+Os eventos carregam resultado e contagens — nunca o payload, o hash do visitante, o referrer, o IP ou o user agent. Owner de todos: founder técnico. Runbook: `docs/runbooks/ANALYTICS.md`.
+
+| Evento | Significado | Sinal / limiar proposto antes do piloto |
+|---|---|---|
+| `analytics.ingest` com `outcome=ok` (`events`, `accepted`, `duplicate`, `repeat`, `rejected`, `rateLimited`, `hashed`, `durationMs`) | um lote recebido em `POST /api/events` e gravado depois da resposta | `rateLimited` > 20% dos eventos em 15 min → flood numa página ou num endereço (P2, runbook §2); `rejected` em alta logo depois de um deploy → coletor e banco fora de sincronia (P2); `durationMs` p95 > 1 s → banco lento (P2); `hashed=false` em produção → `VISITOR_HASH_SALT` ausente ou proxy sem IP (P2: sem deduplicação de visitas) |
+| `analytics.ingest` com `outcome=unavailable` | o banco não respondeu em 2 s ou falhou; o lote foi perdido | > 2% em 15 min → P2 (números ficam abaixo do real; a página pública não é afetada) |
+| `analytics.ingest` com `outcome=shedding` | a tabela bruta atingiu o teto de capacidade e **todos** os eventos estão sendo descartados | qualquer ocorrência → P1 (runbook §3) |
+| `analytics.ingest` com `outcome=not_configured` / `not_deployed` / `forbidden` | segredo de assinatura ausente; migração não aplicada; segredo diferente entre servidor e Vault | sustentado depois do deploy da Sprint 6 → P1 (nada está sendo contado; runbook §1) |
+| `analytics.ingest` com `outcome=automated`, `signed_in`, `app_referrer`, `cross_site`, `invalid`, `empty` | lote descartado antes do banco (robô, pessoa com sessão, visita vinda do app, outra origem, malformado) | informativo; `invalid` ou `cross_site` em rajada → alguém sondando a rota |
+| `analytics.maintenance` (`outcome`: `ok`, `partial`, `not_configured`, `unauthorized`, `not_deployed`, `invalid`, `unavailable`; `aggregatedDays`, `aggregateRows`, `purgedEvents`, `pendingDays`, `lastFinalDay`) | uma execução do job diário | nenhuma execução `ok` em 36 h → P2 (o painel avisa "consolidação atrasada"; o bruto cresce); `partial` em dois dias seguidos → backlog (rodar à mão); `purgedEvents = 50000` em dias seguidos → o bruto cresce mais rápido que o purge (P2, capacidade); `unauthorized` → alguém chamando a rota sem o segredo |
+| `analytics.export` (`outcome`, `rows`) | exportação CSV (também em `audit_events`) | `not_found`/`forbidden` em rajada para a mesma sessão → tentativa entre tenants |
+
+Atraso de agregação: `lastFinalDay` deve ser o dia anterior depois da execução da madrugada. Capacidade: tamanho de `analytics_events` no painel do Supabase (limiares em `docs/SUPABASE_CAPACITY.md`).
+
 ## Regras
 
 - Logs estruturados incluem request/correlation ID, módulo, ambiente e resultado.

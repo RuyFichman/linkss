@@ -83,6 +83,24 @@ A ordem importa: o código da Sprint 5 lê a coluna `profiles.theme`, então **a
 
 Rollback da aplicação para a Sprint 4 depois da migração: suportado para a página pública (blocos novos e tema são ignorados, a página não quebra). O editor antigo descarta os blocos novos do rascunho ao salvar (ADR 0010).
 
+## Passos de deploy da Sprint 6 (nenhum foi feito)
+
+A Sprint 6 foi desenvolvida e verificada só no stack local. **Nada foi aplicado no Supabase hospedado nem na Vercel.** A ordem importa, mas o código falha de modo seguro em qualquer ordem: sem a migração ou sem o segredo, a página pública abre normalmente, os eventos são descartados (`analytics.ingest` com `not_deployed` ou `not_configured`), o painel mostra "Resultados ainda não disponíveis" e o job responde 503 `not_deployed`.
+
+1. **Migrações:** `npx supabase db push` com a CLI ligada ao projeto de staging. Aplica `202610020001_sprint6_enum_values` e `202610020002_customer_analytics` (tabelas de analytics, funções, e a nova versão de `submit_form_lead`, que tem a mesma assinatura e as mesmas respostas). A aplicação da Sprint 5 continua funcionando sobre esse schema. A data de aplicação vira o "início da contagem" que o painel mostra.
+2. **Segredo no Vault:** gerar um valor aleatório de 64 caracteres hexadecimais dentro do banco e guardá-lo, pelo SQL Editor: `select vault.create_secret(encode(extensions.gen_random_bytes(32), 'hex'), 'analytics_signing_secret');`. Para copiá-lo para a Vercel: `select decrypted_secret from vault.decrypted_secrets where name = 'analytics_signing_secret';`. É configuração secreta, não schema: por isso não está em migração.
+3. **Variável na Vercel** (Production e Preview): `ANALYTICS_SIGNING_SECRET` com **o mesmo valor** (Sensitive). `VISITOR_HASH_SALT`, `CRON_SECRET` e `SUPABASE_SECRET_KEY` já existem e são reutilizadas.
+4. **Merge do PR** em `main` (publica em staging) e aguardar o deploy. O deploy também registra o segundo Vercel Cron declarado em `apps/web/vercel.json`: `GET /api/jobs/analytics` todo dia às 04:00 UTC (01:00 em Brasília; no plano Hobby, em algum minuto dessa hora). O plano Hobby permite até 100 crons por projeto, cada um no máximo uma vez por dia (conferido na documentação da Vercel em 02/10/2026).
+5. **Conferir:**
+   - abrir uma página publicada numa guia anônima do celular, tocar num botão, e ver os números em *Resultados* da página (entram em segundos);
+   - `curl -X POST https://<host>/api/jobs/analytics -H "Authorization: Bearer <CRON_SECRET>"` deve responder `{"ok":true,...}`;
+   - no dia seguinte, o log `analytics.maintenance` com `outcome=ok` e `lastFinalDay` igual ao dia anterior; em *Vercel → Settings → Cron Jobs* devem aparecer os dois crons;
+   - o país das visitas deve aparecer (cabeçalho `x-vercel-ip-country`; no stack local é sempre "não identificado").
+
+Rollback da aplicação para a Sprint 5 depois da migração: suportado. O código antigo não conhece as tabelas novas; o formulário continua gravando leads (e o banco continua gravando o evento `form_submit`, que ninguém lê). Os crons vêm do `vercel.json` do deploy ativo, então o cron de analytics sai junto com o rollback; enquanto ele não roda, o bruto não é apagado (a agregação e o purge retomam do ponto em que pararam no próximo deploy da Sprint 6).
+
+Stack local: `ANALYTICS_SIGNING_SECRET` em `apps/web/.env.local` e o mesmo valor no Vault local (`select vault.create_secret('<valor>', 'analytics_signing_secret');`). Sem `x-forwarded-for` (o `next start` local não tem proxy), o hash do visitante fica ausente: toda visita conta e todos dividem um limite por página. O teste de precisão (`apps/web/scripts/analytics-accuracy.mjs`) envia o cabeçalho ele mesmo.
+
 ## Checklist de Auth para projetos hospedados (não aplicado)
 
 Configurar em staging e produção **antes** de convidar usuários externos, espelhando `supabase/config.toml`. Nenhuma destas mudanças foi aplicada no projeto hospedado.

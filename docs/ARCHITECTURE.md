@@ -44,7 +44,7 @@ Eventos brutos ── retenção curta ── agregados diários ── dashboar
 - `profiles`: perfis, slugs, temas e configurações;
 - `editor`: blocos e estado draft;
 - `publishing`: snapshots imutáveis, cache e rollback;
-- `analytics`: ingestão, retenção, agregação e consulta;
+- `analytics`: ingestão, retenção, agregação e consulta (Sprint 6);
 - `billing`: planos, entitlements, assinatura e webhooks;
 - `media`: upload, validação, transformação e remoção;
 - `trust`: denúncia, moderação, suspensão e auditoria.
@@ -139,6 +139,36 @@ Vercel Cron diário ── GET /api/jobs/media-cleanup (CRON_SECRET) ── clai
 - **Snapshot:** continua na versão 2, só com acréscimos (tema opcional, tipos novos, avatar). Snapshots anteriores renderizam como antes.
 - **Leads:** `form_leads` e `form_submission_hits`; envio anônimo validado contra a publicação no ar; leitura por membros, exclusão e exportação auditadas.
 - **Módulos:** `media` (política, processamento, atestação, adapter, serviço, limpeza), `themes`, `leads`; `blocks`, `publishing` e `editor` estendidos.
+
+## Analytics do cliente — implementado na Sprint 6
+
+Decisão: `docs/adr/0011-customer-analytics.md`.
+
+```text
+Visitante ── /[slug] (HTML estático) ── coletor (só nesta rota; cliques por delegação passiva em data-block-id)
+   └─ sendBeacon / fetch keepalive ── POST /api/events ── 204 imediato
+                                          └─ after(): filtra robôs e sessão do produto, deriva origem/aparelho/país,
+                                             calcula os hashes diários, assina o lote (HMAC)
+                                                └─ ingest_analytics_events (anon, security definer; assinatura conferida com o Vault)
+                                                      └─ analytics_events (bruto, 7 dias)   analytics_rate_hits (contadores por endereço, sem página)
+
+Formulário ── submit_form_lead ── grava o lead e o evento form_submit na mesma transação
+
+Vercel Cron diário ── GET /api/jobs/analytics (CRON_SECRET) ── run_analytics_maintenance
+   └─ agrega os dias ainda não fechados em analytics_daily, fecha os dias encerrados, apaga o bruto com mais de 7 dias
+
+Dono ── /app/w/…/paginas/…/resultados ── get_profile_analytics (membro; aplica o entitlement analytics_days)
+   └─ dias fechados vêm de analytics_daily; os ainda abertos (em geral só hoje) são contados do bruto daquela página
+```
+
+- **Fora do caminho do visitante:** nenhum link passa pelo produto, nada é aguardado antes da navegação e o coletor nunca chama `preventDefault`. A rota de ingestão responde 204 antes de falar com o banco. A página pública continua estática.
+- **Contrato:** nove tipos de evento fechados (`modules/analytics/contract.ts` e o enum `analytics_event_type`). `form_submit` só é criado pelo banco. Nenhum texto livre é guardado: tipos, origem e aparelho são enumerações, o país tem duas letras e os valores de UTM seguem um padrão restrito.
+- **Autoridade do banco:** a página tem de estar publicada e ativa, o bloco tem de existir na publicação no ar com o tipo certo, o id do evento só é guardado uma vez por página e os limites são contados em eventos guardados.
+- **Limites:** 60 eventos por endereço por página a cada 10 minutos; 200 por janela e 2.000 por dia por endereço em todas as páginas; 2.000 por página por hora; e a ingestão descarta tudo enquanto a tabela bruta estiver com cerca de 500 mil eventos.
+- **Tabelas:** `analytics_events`, `analytics_daily` (uma linha por página, dia, dimensão, chave e tipo), `analytics_day_status` (marca d'água da agregação), `analytics_rate_hits` e `analytics_settings` (fuso de relatório, início da contagem e teto de capacidade). Nenhum papel de cliente lê ou escreve nessas tabelas: tudo passa por funções.
+- **Fuso:** `America/Sao_Paulo`, guardado em `analytics_settings`; o dia do evento é decidido na gravação.
+- **Módulo:** `analytics` (contrato, origem, aparelho e robôs, datas, hashes, atestação, ingestão, coletor, estados e cálculos do painel, CSV, serviço e repositórios).
+- **Sprint 7:** o painel consolidado soma `analytics_daily` por `workspace_id` e dia; o link de relatório lê a mesma função por um token.
 
 ## Regras de escala
 

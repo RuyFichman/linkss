@@ -3,6 +3,7 @@
 - **Status:** accepted for the MVP (items marked *provisional* await founder confirmation)
 - **Date:** 2026-10-01
 - **Builds on:** ADR 0007 (publishing), ADR 0008 (block model), ADR 0009 (media)
+- **Extended by:** ADR 0011 (`submit_form_lead` also records a `form_submit` analytics event when a lead is stored, with the same signature and answers; the analytics visitor hashes reuse `VISITOR_HASH_SALT` with their own message prefixes)
 
 ## Context
 

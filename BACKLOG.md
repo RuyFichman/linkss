@@ -70,11 +70,19 @@ Verificado no stack local (pgTAP + Vitest + navegador + Lighthouse em `next star
 
 ## Sprint 6 — analytics
 
-- [ ] P0 Definir taxonomia e contrato de eventos.
-- [ ] P0 Ingestão não bloqueante, deduplicação e rate limit.
-- [ ] P0 Retenção bruta de 7 dias e agregação diária.
-- [ ] P0 Dashboard de visitas, ações, origem e blocos.
-- [ ] P1 Filtros de bot/admin/preview e exportação CSV.
+Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lighthouse em `next start`); **nada aplicado em staging**. Relatório: `docs/SPRINT_6_REPORT.md`.
+
+- [x] P0 Definir taxonomia e contrato de eventos (ADR 0011).
+- [x] P0 Ingestão não bloqueante, deduplicação e rate limit.
+- [x] P0 Retenção bruta de 7 dias e agregação diária.
+- [x] P0 Dashboard de visitas, ações, origem e blocos.
+- [x] P1 Filtros de bot/admin/preview e exportação CSV.
+- [ ] P0 Aplicar a Sprint 6 em staging: `supabase db push`, segredo `analytics_signing_secret` no Vault, `ANALYTICS_SIGNING_SECRET` na Vercel e merge (passos em `docs/ENVIRONMENTS.md`); conferir o país das visitas e a primeira execução do cron.
+- [ ] P1 Região (UF) das visitas — cortada nesta sprint (primeiro item da lista de cortes).
+- [ ] P1 Abrir o CSV exportado numa planilha (Excel/Google Sheets) e conferir acentos e colunas — só o conteúdo foi conferido.
+- [ ] P1 Medir em campo a perda de eventos em navegadores embutidos (Instagram, TikTok, WhatsApp).
+- [ ] P2 Clique em imagem (o bloco de imagem ainda não tem link).
+- [ ] P2 Rever os limites de ingestão com tráfego real (60 por endereço por página em 10 min pode ser baixo para páginas populares atrás de CGNAT).
 
 ## Sprint 7 — agência
 
@@ -108,5 +116,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + Lighthouse em `next star
 - [ ] Comparar gateway por recorrência, Pix, cartão, webhooks, split, chargeback e conciliação.
 - [ ] Definir momento de mover mídia para R2 com base em custo real (o `StorageAdapter` e a URL base configurável já existem; ADR 0009).
 - [ ] Confirmar decisões provisórias UX-033 a UX-042 (limites de imagem, cotas, tema, modelos, Pix sem QR, retenção de leads).
-- [ ] Definir datastore analítico após medir eventos/dia e custo no Postgres.
+- [ ] Definir datastore analítico após medir eventos/dia e custo no Postgres (custo por evento medido na Sprint 6: 329 bytes; falta o volume real).
+- [ ] Confirmar decisões provisórias UX-043 a UX-050 (o que conta como resultado, regra de visita, fuso, períodos, limites e retenção, exclusões, exportação).
+- [ ] Rate limit global e firewall na frente de `/api/events` (Sprint 9; hoje só há limites no banco).
 - [ ] Contratar revisão jurídica/contábil antes do beta pago.
