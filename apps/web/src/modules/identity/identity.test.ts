@@ -32,6 +32,8 @@ describe("permission matrix (mirrors docs/adr/0004 and RLS)", () => {
       "leads.view": ["owner", "admin", "editor"],
       "leads.delete": ["owner", "admin"],
       "leads.export": ["owner", "admin"],
+      "analytics.view": ["owner", "admin", "editor"],
+      "analytics.export": ["owner", "admin", "editor"],
       "audit.view": ["owner", "admin"],
     });
   });

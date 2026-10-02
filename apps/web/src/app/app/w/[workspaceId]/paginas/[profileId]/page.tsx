@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { APP_COPY, EDITOR_COPY, LEADS_COPY } from "@/content/pt-BR";
+import { ANALYTICS_COPY, APP_COPY, EDITOR_COPY, LEADS_COPY } from "@/content/pt-BR";
 import { publicAddressLabel } from "@/lib/app-url";
 import { BlockEditor } from "@/modules/editor/components/block-editor";
 import { isUuid } from "@/modules/identity/guard";
@@ -94,6 +94,12 @@ export default async function ProfileEditorPage({ params }: { params: Promise<{ 
           canPublish={canPublish}
           editorManaged={canEdit}
         />
+
+        <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="results-title">
+          <h2 id="results-title" className="text-xl font-bold">{ANALYTICS_COPY.title}</h2>
+          <p className="m-0 text-app-muted">{ANALYTICS_COPY.lead}</p>
+          <div><Link className="ui-button ui-button-secondary" href={`${basePath}/resultados`}>{ANALYTICS_COPY.open}</Link></div>
+        </section>
 
         <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="leads-title">
           <h2 id="leads-title" className="text-xl font-bold">{LEADS_COPY.title}</h2>

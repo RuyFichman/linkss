@@ -27,6 +27,10 @@ export const PERMISSIONS = {
   "leads.view": ["owner", "admin", "editor"],
   "leads.delete": ["owner", "admin"],
   "leads.export": ["owner", "admin"],
+  // Analytics are aggregates about the page, with no visitor data: every member who operates the
+  // page reads and exports them (ADR 0011).
+  "analytics.view": ["owner", "admin", "editor"],
+  "analytics.export": ["owner", "admin", "editor"],
   "audit.view": ["owner", "admin"],
 } as const satisfies Record<string, readonly WorkspaceRole[]>;
 
