@@ -43,3 +43,29 @@ export async function runMediaCleanup(repository: MediaCleanupRepository, storag
   const finished = done.length > 0 ? await repository.finish(done) : 0;
   return { claimed: claims.length, removedObjects, finished, failed: claims.length - done.length };
 }
+
+/** Upper bound for one scheduled run: the daily cron clears up to 500 assets, the rest waits a day. */
+export const CLEANUP_MAX_BATCHES = 10;
+
+/**
+ * Runs batches until the backlog is empty, the bound is reached, or a batch had a failure. A failed
+ * asset stays in `deleting` and would be claimed again at once, so the run stops instead of looping
+ * on a storage outage; the next scheduled run retries it.
+ */
+export async function runMediaCleanupBatches(
+  repository: MediaCleanupRepository,
+  storage: StorageAdapter,
+  { batchSize = CLEANUP_BATCH_SIZE, maxBatches = CLEANUP_MAX_BATCHES }: { batchSize?: number; maxBatches?: number } = {},
+): Promise<CleanupReport & { batches: number }> {
+  const total = { claimed: 0, removedObjects: 0, finished: 0, failed: 0, batches: 0 };
+  while (total.batches < maxBatches) {
+    const report = await runMediaCleanup(repository, storage, batchSize);
+    total.batches += 1;
+    total.claimed += report.claimed;
+    total.removedObjects += report.removedObjects;
+    total.finished += report.finished;
+    total.failed += report.failed;
+    if (report.claimed < batchSize || report.failed > 0) break;
+  }
+  return total;
+}

@@ -129,7 +129,7 @@ Editor ── recorte e redução no navegador ── POST /api/media (sessão d
 Visitante ── /[slug] (HTML estático do snapshot) ── <img srcset> direto do bucket público
    └─ formulário: Server Action → submit_form_lead (anon, security definer) → form_leads
 
-Job administrativo ── POST /api/jobs/media-cleanup (CRON_SECRET) ── claim_media_cleanup → StorageAdapter.remove → finish_media_cleanup
+Vercel Cron diário ── GET /api/jobs/media-cleanup (CRON_SECRET) ── claim_media_cleanup → StorageAdapter.remove → finish_media_cleanup
 ```
 
 - **Mídia:** `media_assets` (uma linha por imagem; o id é o prefixo da chave no bucket `media`). O banco só registra o que o servidor assinou; upload direto ao Storage com sessão válida é recusado pela policy. Rascunho e snapshot guardam só o id e as dimensões; a URL é montada na renderização (`modules/media/url.ts`).

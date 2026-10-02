@@ -54,11 +54,11 @@ A imagem enviada mas não usada (a pessoa fechou o recorte, trocou de ideia) nã
 
 O que é órfã: mídia `ready` sem referência no rascunho nem nas publicações retidas da página há mais de 24 h; envio que não terminou (`pending`/`failed`) há mais de 1 h; mídia de página já excluída.
 
-1. Rodar: `curl -X POST https://<host>/api/jobs/media-cleanup -H "Authorization: Bearer <CRON_SECRET>"`. Resposta: `{"ok":true,"claimed":n,"removedObjects":n,"finished":n,"failed":n}`. Cada chamada trata até 50 mídias; repita enquanto `claimed` for 50.
+1. Rodar à mão: `curl -X POST https://<host>/api/jobs/media-cleanup -H "Authorization: Bearer <CRON_SECRET>"`. Resposta: `{"ok":true,"claimed":n,"removedObjects":n,"finished":n,"failed":n,"batches":n}`. Cada chamada processa até 10 lotes de 50 mídias e para antes se não sobrar nada ou se um lote tiver falha. Repita enquanto `claimed` for 500.
 2. É seguro repetir: a mídia é marcada `deleting`, os arquivos são removidos pelo Storage e só então a linha é apagada. Uma execução interrompida é retomada pela seguinte.
 3. `503 not_configured`: falta `CRON_SECRET` (mínimo 32 caracteres) ou `SUPABASE_SECRET_KEY` no ambiente. `401`: segredo errado.
 4. `failed` > 0: o Storage recusou a remoção; a mídia fica `deleting` e a próxima execução tenta de novo. Duas execuções seguidas com falha → abrir incidente P2.
-5. **Agendador decidido: Vercel Cron, uma vez por dia (ADR 0009), ainda não implementado.** Até ele entrar, rodar à mão uma vez por semana no staging. Depois de implementado, as execuções aparecem em *Vercel → Settings → Cron Jobs* e nos logs `media.cleanup`. Se o cron parar, a chamada manual acima continua valendo.
+5. **Agendamento: Vercel Cron, uma vez por dia às 06:00 UTC** (`apps/web/vercel.json`, ADR 0009). As execuções aparecem em *Vercel → Settings → Cron Jobs* e nos logs `media.cleanup`. Se o cron parar ou um dia não bastar para o acúmulo, a chamada manual acima continua valendo. Sem log `media.cleanup` por dois dias seguidos, confira se o cron está habilitado e se `CRON_SECRET` existe no ambiente; um `not_configured` ou `unauthorized` no horário do cron indica variável ausente ou trocada.
 6. A limpeza nunca remove mídia usada por uma versão publicada retida: restaurar uma versão antiga continua mostrando as imagens dela. Se uma imagem de versão retida sumir, é bug P1: guarde o id da mídia e os logs `media.cleanup` do período.
 
 ## 6. Rollback da aplicação para antes da Sprint 5
