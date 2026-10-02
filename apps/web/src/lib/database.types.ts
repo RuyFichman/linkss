@@ -5,7 +5,96 @@ export type Database = {
   
   "public": {
           Tables: {
-            "audit_events": {
+            "analytics_daily": {
+                  Row: {
+                    "count": number,"day": string,"dimension": Database["public"]['Enums']["analytics_dimension"],"event_type": Database["public"]['Enums']["analytics_event_type"],"key": string,"profile_id": string,"workspace_id": string
+                  }
+                  Insert: {
+                    "count": number,"day": string,"dimension": Database["public"]['Enums']["analytics_dimension"],"event_type": Database["public"]['Enums']["analytics_event_type"],"key"?: string,"profile_id": string,"workspace_id": string
+                  }
+                  Update: {
+                    "count"?: number,"day"?: string,"dimension"?: Database["public"]['Enums']["analytics_dimension"],"event_type"?: Database["public"]['Enums']["analytics_event_type"],"key"?: string,"profile_id"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "analytics_daily_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "analytics_daily_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"analytics_day_status": {
+                  Row: {
+                    "aggregated_at": string,"day": string,"event_count": number,"finalized_at": string | null
+                  }
+                  Insert: {
+                    "aggregated_at"?: string,"day": string,"event_count"?: number,"finalized_at"?: string | null
+                  }
+                  Update: {
+                    "aggregated_at"?: string,"day"?: string,"event_count"?: number,"finalized_at"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"analytics_events": {
+                  Row: {
+                    "block_id": string | null,"country": string | null,"day": string,"device": Database["public"]['Enums']["analytics_device"] | null,"event_id": string,"event_type": Database["public"]['Enums']["analytics_event_type"],"occurred_at": string,"profile_id": string,"source": Database["public"]['Enums']["analytics_source"] | null,"utm_campaign": string | null,"utm_medium": string | null,"utm_source": string | null,"visitor_hash": string | null,"workspace_id": string
+                  }
+                  Insert: {
+                    "block_id"?: string | null,"country"?: string | null,"day": string,"device"?: Database["public"]['Enums']["analytics_device"] | null,"event_id": string,"event_type": Database["public"]['Enums']["analytics_event_type"],"occurred_at"?: string,"profile_id": string,"source"?: Database["public"]['Enums']["analytics_source"] | null,"utm_campaign"?: string | null,"utm_medium"?: string | null,"utm_source"?: string | null,"visitor_hash"?: string | null,"workspace_id": string
+                  }
+                  Update: {
+                    "block_id"?: string | null,"country"?: string | null,"day"?: string,"device"?: Database["public"]['Enums']["analytics_device"] | null,"event_id"?: string,"event_type"?: Database["public"]['Enums']["analytics_event_type"],"occurred_at"?: string,"profile_id"?: string,"source"?: Database["public"]['Enums']["analytics_source"] | null,"utm_campaign"?: string | null,"utm_medium"?: string | null,"utm_source"?: string | null,"visitor_hash"?: string | null,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "analytics_events_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "analytics_events_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"analytics_rate_hits": {
+                  Row: {
+                    "client_hash": string,"count": number,"window_start": string
+                  }
+                  Insert: {
+                    "client_hash": string,"count": number,"window_start": string
+                  }
+                  Update: {
+                    "client_hash"?: string,"count"?: number,"window_start"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"analytics_settings": {
+                  Row: {
+                    "collection_started_at": string,"id": boolean,"max_raw_events": number,"reporting_timezone": string
+                  }
+                  Insert: {
+                    "collection_started_at"?: string,"id"?: boolean,"max_raw_events"?: number,"reporting_timezone"?: string
+                  }
+                  Update: {
+                    "collection_started_at"?: string,"id"?: boolean,"max_raw_events"?: number,"reporting_timezone"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"audit_events": {
                   Row: {
                     "action": Database["public"]['Enums']["audit_action"],"actor_user_id": string | null,"created_at": string,"id": number,"metadata": NonNullable<Json>,"target_id": string | null,"target_type": string | null,"workspace_id": string | null
                   }
@@ -305,15 +394,24 @@ isOneToOne: false
 "finish_media_cleanup":
 { Args: { "p_media_ids": (string)[] }; Returns: number
                            },
+"get_profile_analytics":
+{ Args: { "p_from": string,"p_profile_id": string,"p_to": string }; Returns: Json
+                           },
 "get_public_page":
 { Args: { "p_slug": string }; Returns: {
               "canonical_slug": string,"document": Json,"published_at": string,"show_badge": boolean,"state": string,"version": number
             }[]
                            },
+"ingest_analytics_events":
+{ Args: { "p_payload": string,"p_signature": string }; Returns: Json
+                           },
 "publish_profile":
 { Args: { "p_expected_revision"?: number,"p_profile_id": string }; Returns: {
               "created": boolean,"publication_id": string,"version": number
             }[]
+                           },
+"record_analytics_export":
+{ Args: { "p_from": string,"p_profile_id": string,"p_rows": number,"p_to": string }; Returns: undefined
                            },
 "record_auth_event":
 { Args: { "p_action": Database["public"]['Enums']["audit_action"],"p_metadata"?: Json }; Returns: undefined
@@ -329,6 +427,9 @@ isOneToOne: false
                            },
 "restore_profile_publication":
 { Args: { "p_profile_id": string,"p_publication_id": string }; Returns: number
+                           },
+"run_analytics_maintenance":
+{ Args: { "p_day"?: string }; Returns: Json
                            },
 "soft_delete_profile":
 { Args: { "p_profile_id": string }; Returns: undefined
@@ -349,7 +450,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "audit_action": "auth.sign_in"|"auth.sign_out"|"auth.password_reset_completed"|"workspace.created"|"workspace.deleted"|"membership.role_changed"|"membership.removed"|"profile.slug_changed"|"profile.deleted"|"profile.published"|"profile.unpublished"|"profile.publication_restored"|"lead.deleted"|"lead.exported","entitlement_key": "max_profiles"|"analytics_days"|"team_members"|"custom_domain"|"remove_badge"|"shareable_reports"|"storage_mb","media_kind": "avatar"|"image","media_status": "pending"|"ready"|"failed"|"deleting","membership_status": "invited"|"active"|"revoked","profile_status": "draft"|"published"|"archived","slug_release_reason": "changed"|"deleted","workspace_kind": "personal"|"agency","workspace_role": "owner"|"admin"|"editor","workspace_status": "active"|"suspended"
+            "analytics_device": "mobile"|"tablet"|"desktop"|"unknown","analytics_dimension": "total"|"block"|"source"|"utm"|"device"|"country","analytics_event_type": "page_view"|"link_click"|"social_click"|"embed_load"|"whatsapp_click"|"pix_copy"|"pix_pay_click"|"form_submit"|"badge_click","analytics_source": "direct"|"instagram"|"facebook"|"whatsapp"|"tiktok"|"youtube"|"x"|"linkedin"|"telegram"|"google"|"search"|"other","audit_action": "auth.sign_in"|"auth.sign_out"|"auth.password_reset_completed"|"workspace.created"|"workspace.deleted"|"membership.role_changed"|"membership.removed"|"profile.slug_changed"|"profile.deleted"|"profile.published"|"profile.unpublished"|"profile.publication_restored"|"lead.deleted"|"lead.exported"|"analytics.exported","entitlement_key": "max_profiles"|"analytics_days"|"team_members"|"custom_domain"|"remove_badge"|"shareable_reports"|"storage_mb","media_kind": "avatar"|"image","media_status": "pending"|"ready"|"failed"|"deleting","membership_status": "invited"|"active"|"revoked","profile_status": "draft"|"published"|"archived","slug_release_reason": "changed"|"deleted","workspace_kind": "personal"|"agency","workspace_role": "owner"|"admin"|"editor","workspace_status": "active"|"suspended"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -465,7 +566,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "audit_action": ["auth.sign_in", "auth.sign_out", "auth.password_reset_completed", "workspace.created", "workspace.deleted", "membership.role_changed", "membership.removed", "profile.slug_changed", "profile.deleted", "profile.published", "profile.unpublished", "profile.publication_restored", "lead.deleted", "lead.exported"],"entitlement_key": ["max_profiles", "analytics_days", "team_members", "custom_domain", "remove_badge", "shareable_reports", "storage_mb"],"media_kind": ["avatar", "image"],"media_status": ["pending", "ready", "failed", "deleting"],"membership_status": ["invited", "active", "revoked"],"profile_status": ["draft", "published", "archived"],"slug_release_reason": ["changed", "deleted"],"workspace_kind": ["personal", "agency"],"workspace_role": ["owner", "admin", "editor"],"workspace_status": ["active", "suspended"]
+            "analytics_device": ["mobile", "tablet", "desktop", "unknown"],"analytics_dimension": ["total", "block", "source", "utm", "device", "country"],"analytics_event_type": ["page_view", "link_click", "social_click", "embed_load", "whatsapp_click", "pix_copy", "pix_pay_click", "form_submit", "badge_click"],"analytics_source": ["direct", "instagram", "facebook", "whatsapp", "tiktok", "youtube", "x", "linkedin", "telegram", "google", "search", "other"],"audit_action": ["auth.sign_in", "auth.sign_out", "auth.password_reset_completed", "workspace.created", "workspace.deleted", "membership.role_changed", "membership.removed", "profile.slug_changed", "profile.deleted", "profile.published", "profile.unpublished", "profile.publication_restored", "lead.deleted", "lead.exported", "analytics.exported"],"entitlement_key": ["max_profiles", "analytics_days", "team_members", "custom_domain", "remove_badge", "shareable_reports", "storage_mb"],"media_kind": ["avatar", "image"],"media_status": ["pending", "ready", "failed", "deleting"],"membership_status": ["invited", "active", "revoked"],"profile_status": ["draft", "published", "archived"],"slug_release_reason": ["changed", "deleted"],"workspace_kind": ["personal", "agency"],"workspace_role": ["owner", "admin", "editor"],"workspace_status": ["active", "suspended"]
           }
         }
 } as const

@@ -62,7 +62,7 @@ interface BlockContext {
 /**
  * One block. `interactive={false}` (editor preview) renders the same look with spans instead of
  * anchors, so the preview neither navigates nor could trigger analytics. `data-block-*` are the
- * stable hooks for Sprint 6 click analytics.
+ * stable hooks that the customer-analytics collector of the public route reads (ADR 0011).
  */
 function BlockView({ block, context }: { block: PublishedBlock; context: BlockContext }) {
   const { interactive } = context;
@@ -204,7 +204,7 @@ export function PublicPageView({ document, showBadge, as: Root = "main", interac
 
         {showBadge ? (
           <footer className="pt-4 text-xs text-[var(--page-muted)]">
-            {interactive ? <Link className="underline" href="/" prefetch={false}>{PUBLIC_PAGE_COPY.badge(PRODUCT.codename)}</Link> : <span className="underline">{PUBLIC_PAGE_COPY.badge(PRODUCT.codename)}</span>}
+            {interactive ? <Link className="underline" href="/" prefetch={false} data-analytics="badge">{PUBLIC_PAGE_COPY.badge(PRODUCT.codename)}</Link> : <span className="underline">{PUBLIC_PAGE_COPY.badge(PRODUCT.codename)}</span>}
           </footer>
         ) : null}
       </article>

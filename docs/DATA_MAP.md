@@ -6,7 +6,7 @@
 | Workspace | membros, papéis, convites | colaboração e autorização | vida do workspace |
 | Perfil público | nome, avatar, bio, links | publicação solicitada pelo cliente | até remoção/despublicação e cache expirar |
 | Leads | campos escolhidos pelo cliente | encaminhar contato ao controlador do perfil | 90 dias (provisório), exportável; ver Sprint 5 abaixo |
-| Analytics | URL/referrer, UTM, dispositivo, região aproximada | medir desempenho | bruto 7 dias; agregados conforme plano/política |
+| Analytics | categoria de origem (nunca a URL ou o host do referrer), UTM, classe de aparelho, país, hash diário do visitante | medir desempenho | bruto 7 dias; agregados 100 dias, visíveis conforme o plano; ver Sprint 6 abaixo |
 | Cobrança | IDs do provedor, status, faturas | assinatura e obrigações legais | prazo fiscal/contratual aplicável |
 | Segurança | IP truncado/hash quando necessário, logs e auditoria | fraude, abuso e incidentes | janela curta baseada em risco |
 | Suporte | mensagens e anexos | atendimento | prazo publicado e minimizado |
@@ -66,6 +66,58 @@ Nenhum novo operador/subprocessador: as imagens ficam no Supabase Storage do mes
 
 Exportação e exclusão de conta (Sprint 9) precisam alcançar: `media_assets` + objetos do bucket (pelo job de limpeza, antes de apagar a página: a FK é `restrict`), `form_leads`, `form_submission_hits`. O segredo de assinatura de uploads fica no Supabase Vault (`media_signing_secret`) e não é dado pessoal.
 
+## Dados adicionados na Sprint 6 (analytics do cliente)
+
+Primeiros dados sobre **visitantes que nunca se cadastraram**. Decisão: ADR 0011. Nenhum novo operador/subprocessador: tudo fica no Postgres do mesmo projeto Supabase; a rota roda na Vercel, que já era o host da aplicação.
+
+**Papéis:** o dono da página é o **controlador** dos dados de visita da sua página (ele decide publicar a página e usar os números); o produto é o **operador**. O produto não usa esses dados para publicidade nem os cruza entre páginas. O termo de tratamento e o aviso de privacidade definitivos são da Sprint 9 e da revisão jurídica.
+
+**O que nunca é guardado:** endereço IP, user agent, endereço completo ou host do referrer, URL da página, cookie ou identificador persistente no navegador, relógio do cliente. IP e user agent entram só no cálculo dos hashes e na classificação (aparelho, robô) dentro da requisição e são descartados.
+
+### `public.analytics_events` (bruto)
+
+Base legal proposta: legítimo interesse do controlador em medir o uso da própria página, com dados minimizados e de curta duração (a confirmar na revisão jurídica). Retenção: **7 dias completos mais o dia em curso**; apagado pelo job diário. Página ou workspace excluídos: cascata.
+
+| Campo | Conteúdo | Finalidade |
+|---|---|---|
+| `profile_id`, `workspace_id` | página e conta donas do evento | isolamento entre tenants; agregação |
+| `event_id` | UUID gerado no navegador do visitante para aquele evento (não identifica a pessoa nem o aparelho; um novo a cada evento) | deduplicar retries |
+| `occurred_at`, `day` | horário de chegada no servidor e dia no fuso de relatório | janelas, limites e agregação |
+| `event_type` | um de nove tipos (visita, cliques por tipo de bloco, envio de formulário, selo) | contagem |
+| `block_id` | id do bloco da publicação no ar | ranking de blocos |
+| `visitor_hash` | 32 caracteres: HMAC diário com sal do servidor de (dia, endereço da página, IP) e de (dia, endereço da página, IP, user agent). Muda todo dia e é diferente em cada página | regra de visita (30 min) e limite por endereço. Pseudônimo de vida curta: sem o sal não é reversível; com o sal, só por força bruta sobre os IPs do dia |
+| `source` | uma de 12 categorias (Instagram, WhatsApp, Google, direto, outros…) | origem do tráfego |
+| `device` | celular, tablet, computador ou não identificado | aparelhos |
+| `country` | código de país de duas letras (do cabeçalho da hospedagem) ou `ZZ` | países |
+| `utm_source`, `utm_medium`, `utm_campaign` | valores do link de campanha do próprio dono, restritos a `[a-z0-9_.-]` e 40 caracteres | campanhas |
+
+O evento `form_submit` não tem hash, origem nem nada do que foi digitado: só a página, o bloco e o horário.
+
+### `public.analytics_daily` (agregados)
+
+| Campo | Conteúdo |
+|---|---|
+| `profile_id`, `workspace_id`, `day` | página, conta e dia de relatório |
+| `dimension`, `key`, `event_type`, `count` | total do dia, ou por bloco, origem, combinação de UTM, aparelho ou país, e a contagem |
+
+Não contém hash nem linha por visitante. Uma contagem muito baixa por país ou campanha pode, em tese, corresponder a uma pessoa; o dado continua sendo "uma visita do país X", sem ligação com identidade. Retenção: **100 dias** (provisório); o que cada conta **vê** é o entitlement `analytics_days` do plano (7 ou 90 dias). Página ou workspace excluídos: cascata.
+
+### Outros
+
+| Dado | Onde | Finalidade | Retenção |
+|---|---|---|---|
+| Hash do endereço para o limite entre páginas (`client_hash`): HMAC diário de (dia, IP), sem página, conta nem evento | `public.analytics_rate_hits` | impedir que um endereço espalhe um flood por muitas páginas | 2 dias |
+| Marca d'água da agregação e configurações (fuso, início da contagem, teto de capacidade) | `analytics_day_status`, `analytics_settings` | operação | sem dado pessoal |
+| Evento de auditoria `analytics.exported` (página, janela, linhas) | `public.audit_events` | trilha de quem exportou | 1 ano (provisório) |
+| Logs `analytics.ingest`, `analytics.maintenance`, `analytics.export` | logs | operação | resultado e contagens — **nunca** o payload, o hash, o referrer, o IP ou o user agent |
+| Segredo de assinatura `analytics_signing_secret` (Vault) e `VISITOR_HASH_SALT` (servidor) | Vault / variáveis de ambiente | atestar lotes; salgar os hashes | não são dados pessoais; rotação em `docs/runbooks/ANALYTICS.md` |
+
+**Exportação e exclusão (Sprint 9):**
+
+- Exportação da conta: incluir `analytics_daily` das páginas dos workspaces da pessoa (só agregados).
+- Exclusão de página ou conta: `analytics_events` e `analytics_daily` saem em cascata com a página; nada mais precisa ser feito.
+- Pedido de um **visitante** (titular): não há como localizar as linhas de uma pessoa (não guardamos IP nem identificador, e o hash muda todo dia e depende de um sal). A resposta é a política: os registros detalhados somem em 7 dias e os agregados não identificam ninguém. Isso precisa constar do aviso de privacidade definitivo.
+
 ### Purge planejado (documentado, não agendado)
 
 O job da Sprint 9 deverá, em transação e com trilha própria:
@@ -77,6 +129,8 @@ O job da Sprint 9 deverá, em transação e com trilha própria:
 4. apagar `audit_events` com mais de 1 ano e `slug_history` com `hold_until` há mais de 1 ano.
 
 Índices parciais em `purge_after` e `created_at` já existem para esse job.
+
+O purge de analytics **já está agendado** (Sprint 6): o job diário `/api/jobs/analytics` apaga eventos brutos com mais de 7 dias, agregados com mais de 100 dias e contadores de limite com mais de 2 dias. Apagar a página no passo 1 leva junto, em cascata, os eventos e agregados dela.
 
 ## Regras
 

@@ -3,7 +3,7 @@
 - **Status:** accepted for the MVP (items marked *provisional* await founder confirmation)
 - **Date:** 2026-09-30
 - **Builds on:** ADR 0003 (published snapshots), ADR 0004 (tenancy and authorization), ADR 0007 (publishing and the public renderer)
-- **Extended by:** ADR 0010 (image, embed, Pix and form blocks; theme and avatar saved in the same draft write; additive document changes do not bump the schema version)
+- **Extended by:** ADR 0010 (image, embed, Pix and form blocks; theme and avatar saved in the same draft write; additive document changes do not bump the schema version); ADR 0011 (the `data-block-id` / `data-block-type` hooks are now read by the analytics collector: renaming them, or moving them off the element that contains the block's controls, changes what is counted)
 
 ## Context
 

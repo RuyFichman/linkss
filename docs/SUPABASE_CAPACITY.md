@@ -49,6 +49,25 @@ Cem perfis nesse padrão gerariam cerca de 330 MB de eventos por mês e pression
 
 Com sete dias de retenção, o mesmo exemplo cai para aproximadamente 77 MB brutos, além dos agregados.
 
+#### Medido na Sprint 6 (ADR 0011)
+
+Medido no ambiente local (Postgres 17) com 200.000 eventos sintéticos realistas (91% visitas com hash e dimensões, 20% delas com UTM; 9% cliques em bloco) e 234.000 linhas de agregado (100 páginas × 90 dias × 26 linhas), em tabelas com os mesmos índices, dentro de uma transação desfeita ao final.
+
+| Tabela | Bytes por linha (tabela) | Bytes por linha (índices) | Total por linha |
+|---|---:|---:|---:|
+| `analytics_events` (bruto) | 158 | 172 | **329** |
+| `analytics_daily` (agregado) | 97 | 144 | **241** |
+
+- O evento bruto custa cerca de um terço da hipótese de 1 KB. Mais da metade é índice: a chave primária `(página, id do evento)` é um UUID aleatório.
+- Uma página ativa escreve cerca de 26 linhas de agregado por dia (totais por tipo, blocos, origens, UTM, aparelhos e países): **≈ 6,3 KB por página por dia**.
+- Página do exemplo acima (3.300 eventos por mês, 110 por dia): 8 dias de bruto ≈ **0,29 MB**; 100 dias de agregados ≈ **0,63 MB**. Cem páginas assim: ≈ **92 MB**, em regime permanente.
+- Os agregados passam a pesar mais que o bruto. Por isso a retenção deles é de 100 dias (o maior histórico que algum plano mostra é 90); os 400 dias pensados no início custariam ≈ 2,5 MB por página ativa.
+- **Teto por abuso:** a ingestão para de gravar quando a tabela bruta chega a cerca de 500 mil eventos (≈ 165 MB com índices; `analytics_settings.max_raw_events`). Somado aos agregados, o analytics fica limitado a cerca de metade dos 500 MB do plano Free mesmo sob ataque. Para tráfego legítimo, 500 mil eventos em 8 dias são cerca de 62 mil eventos por dia (≈ 570 páginas no padrão do exemplo).
+- **Novo teto prático do plano Free:** com ≈ 0,1 MB de dados transacionais e ≈ 0,9 MB de analytics por página ativa, os 350 MB úteis comportam cerca de **300 a 350 páginas ativas** nesse padrão de tráfego. Páginas com pouco tráfego custam bem menos (só existem linhas de agregado para o que aconteceu).
+- **Sinais de upgrade ou extração:** banco em 60% da cota (regra geral abaixo); log `analytics.ingest` com `shedding` (o teto foi atingido); job diário apagando 50.000 eventos por execução em dias seguidos (o bruto cresce mais rápido do que o purge de um dia). Passos, nesta ordem: plano Pro, particionamento por dia da tabela bruta, datastore analítico.
+
+Latência da ingestão (local, `next start`, 336 requisições com 8 em paralelo): p50 15–17 ms, p95 26–36 ms, máximo 46–78 ms. Rajada de 300 lotes de 10 eventos com 50 em paralelo (≈ 450 requisições por segundo): p50 100–109 ms, p95 110–125 ms, máximo 128–203 ms; todas responderam 204; o banco terminou de gravar 2,5 a 4 s depois da última resposta e guardou exatamente 2.000 eventos (o limite por página); a página pública respondeu 200 durante e depois.
+
 ### Armazenamento de mídia
 
 Com 70% do 1 GB reservado para conteúdo de clientes:

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { PUBLIC_PAGE_COPY } from "@/content/pt-BR";
+import { PublicPageAnalytics } from "@/modules/analytics/components/public-page-analytics";
 import { PublicPageWebVitals } from "@/modules/publishing/components/web-vitals-reporter";
 import { buildPublicPageMetadata } from "@/modules/publishing/metadata";
 import { PublicPageView } from "@/modules/publishing/render/public-page-view";
@@ -38,6 +39,8 @@ export default async function PublicPage({ params }: Props) {
         <>
           <PublicPageView document={result.document} showBadge={result.showBadge} slug={result.slug} />
           <PublicPageWebVitals />
+          {/* Customer analytics (ADR 0011): only this route mounts the collector, never the preview. */}
+          <PublicPageAnalytics slug={result.slug} />
         </>
       );
     case "moved":
