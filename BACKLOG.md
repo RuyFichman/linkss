@@ -22,7 +22,7 @@ Verificado no stack Supabase local (pgTAP + navegador); nada foi aplicado em pro
 - [x] P0 Criar workspace individual no onboarding.
 - [x] P0 Reservar, normalizar e validar slugs.
 - [x] P1 Registrar auditoria de ações sensíveis (`profile.published` preparado para a Sprint 3).
-- [ ] P0 Provisionar staging (Supabase + Vercel), aplicar migrações e configurar Auth conforme `docs/ENVIRONMENTS.md` — parcial: projeto Supabase criado, migrações aplicadas e deploy na Vercel no ar (`https://linkss-black.vercel.app`) em 2026-10-01; faltam o checklist de Auth e um teste de cadastro → publicação no ambiente hospedado.
+- [ ] P0 Provisionar staging (Supabase + Vercel), aplicar migrações e configurar Auth conforme `docs/ENVIRONMENTS.md` — parcial: projeto Supabase criado, migrações aplicadas e deploy na Vercel no ar (`https://linkss-black.vercel.app`) em 2026-10-01; o founder fez cadastro → publicação no ambiente hospedado em 2026-10-02; falta o checklist de Auth.
 - [ ] P0 Escolher e contratar SMTP para e-mails de Auth (ADR `MailAdapter`) e atualizar o mapa de dados.
 - [ ] P1 Ativar CAPTCHA (Turnstile) no Auth antes do piloto externo.
 
@@ -35,7 +35,7 @@ Verificado localmente (pgTAP + `next start` de produção + Lighthouse); nada pr
 - [x] P0 Publicar, invalidar cache e restaurar snapshot anterior.
 - [x] P0 Adicionar metadados/OG/canonical e estados 404/suspenso.
 - [x] P1 Instrumentar Web Vitals e erros (logs estruturados; Sentry/dashboards dependem de provisionamento).
-- [ ] P0 Medir em staging (CDN real): publicação visível em ≤ 30 s, LCP/CLS de campo e prévia OG no WhatsApp/Instagram — staging já existe (`https://linkss-black.vercel.app`); a medição ainda não foi feita.
+- [ ] P0 Medir em staging (CDN real): publicação visível em ≤ 30 s, LCP/CLS de campo e prévia OG no WhatsApp/Instagram — parcial em 2026-10-02 (`docs/SPRINT_5_REPORT.md`, "Verificações no staging depois da correção"): publicação visível em ~5 s e prévia OG conferida nos dois apps; os logs `web_vital` ficaram dentro da meta, mas só com acessos do founder e Lighthouse. Falta LCP/CLS de visitantes reais.
 - [ ] P0 Trocar `NEXT_PUBLIC_APP_URL` e o Auth para o domínio comprado (checklist em `docs/ENVIRONMENTS.md`).
 - [ ] P1 Rate limit/firewall para `/api/vitals` e para flood de endereços inexistentes no renderer (Sprint 9).
 
@@ -52,14 +52,14 @@ Verificado localmente (pgTAP + `next start` de produção + Lighthouse); nada pr
 
 ## Sprint 5 — visual e mídia
 
-Verificado no stack local (pgTAP + Vitest + navegador + Lighthouse em `next start`); nada aplicado em staging. Relatório: `docs/SPRINT_5_REPORT.md`.
+Verificado no stack local (pgTAP + Vitest + navegador + Lighthouse em `next start`); aplicado em staging em 2026-10-02. Relatório: `docs/SPRINT_5_REPORT.md`.
 
 - [x] P0 Implementar `StorageAdapter` e quota.
 - [x] P0 Upload/otimização/remoção de imagens.
 - [x] P0 Blocos imagem, embed, Pix e formulário.
 - [x] P0 Temas e aplicação de template sem perda de conteúdo.
 - [x] P1 Sanitização/allowlist de provedores de embed.
-- [ ] P0 Aplicar a Sprint 5 em staging: `supabase db push`, segredo no Vault, variáveis na Vercel (passos em `docs/ENVIRONMENTS.md`) e medir LCP/CLS de campo numa página com imagens.
+- [x] P0 Aplicar a Sprint 5 em staging: `supabase db push`, segredo no Vault e variáveis na Vercel, em 2026-10-02 (a medição de campo segue no item da Sprint 3).
 - [x] P0 Agendar a limpeza de mídia órfã: Vercel Cron diário (`GET /api/jobs/media-cleanup`, `apps/web/vercel.json`), em 02/10/2026.
 - [ ] P1 Pix "copia e cola" (BR Code) e QR code — cortados nesta sprint (ADR 0010).
 - [ ] P1 Imagem de fundo no tema — cortada nesta sprint.
