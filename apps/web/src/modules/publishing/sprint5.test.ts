@@ -145,6 +145,20 @@ describe("public page markup", () => {
     for (const image of images) expect(image).toContain(".webp");
   });
 
+  it("loads eagerly only the first image among the leading blocks, wherever it sits there", async () => {
+    // Regression (staging, 2026-10-02): form first, image second → the LCP image was lazy.
+    const image = (id: string) => ({ id, type: "image" as const, visible: true, mediaId: MEDIA, width: 1344, height: 756, alt: id, decorative: false });
+    const text = (id: string) => ({ id, type: "text" as const, visible: true, text: "Olá" });
+    const loading = async (pageBlocks: DraftBlock[]) => {
+      const html = await render({ title: "Studio", bio: "", avatarPath: null, theme: THEME, blocks: pageBlocks });
+      return [...html.matchAll(/<img [^>]*alt="([^"]*)"[^>]*loading="(eager|lazy)"[^>]*fetchPriority="(high|auto)"/g)].map((match) => `${match[1]}:${match[2]}:${match[3]}`);
+    };
+    expect(await loading([text("t1"), image("a"), image("b")])).toEqual(["a:eager:high", "b:lazy:auto"]);
+    expect(await loading([text("t1"), text("t2"), image("a"), image("b")])).toEqual(["a:eager:high", "b:lazy:auto"]);
+    // Past the first screen: every image stays lazy.
+    expect(await loading([text("t1"), text("t2"), text("t3"), image("a")])).toEqual(["a:lazy:auto"]);
+  });
+
   it("applies the theme through custom properties derived from tokens", async () => {
     const themed = await render({ title: "Studio", bio: "", avatarPath: null, theme: THEME, blocks: [] });
     expect(themed).toContain("--page-bg:#17142b");

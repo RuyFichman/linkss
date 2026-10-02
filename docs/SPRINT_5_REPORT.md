@@ -70,7 +70,7 @@ Produto/UX, todas provisórias (`docs/ux/UX_DECISIONS.md`):
 
 | # | Critério | Estado | Evidência |
 |---|---|---|---|
-| AC1 | Imagens entregues em tamanho e formato adequados ao dispositivo | **verificado** (variantes, marcação e bytes) / **parcial** (LCP de laboratório) | Variantes documentadas na ADR 0009. `<img>` com `width`/`height`, `srcset` (448w, 896w, 1344w), `sizes`, WebP e `loading="lazy"` nos blocos (o avatar e uma imagem que seja o primeiro bloco carregam sem lazy; esta com `fetchpriority="high"`). Navegador, build de produção: **360 px @1x → 448.webp** (94 KB no total da página: avatar + 3 imagens); **360 px @3x → 1344.webp** (469 KB); **390 px @2x → 896.webp** (265 KB); **1280 px @1x → 448.webp** (94 KB); **1280 px @2x → 896.webp** (265 KB). Lighthouse na página com avatar + 3 imagens + 1 embed: CLS 0 em todas as execuções; LCP de 1,68 a 2,00 s com limitação aplicada, mas **2,95 a 3,62 s no método simulado** (o da Sprint 4), contra 2,27 s da página da Sprint 4 no mesmo dia. Detalhes em "Desempenho". Medição de campo em staging pendente |
+| AC1 | Imagens entregues em tamanho e formato adequados ao dispositivo | **verificado** (variantes, marcação e bytes) / **parcial** (LCP de laboratório) | Variantes documentadas na ADR 0009. `<img>` com `width`/`height`, `srcset` (448w, 896w, 1344w), `sizes`, WebP e `loading="lazy"` nos blocos (o avatar carrega sem lazy; a primeira imagem entre os três primeiros blocos carrega sem lazy e com `fetchpriority="high"`. Na entrega da sprint, isso valia só para uma imagem no primeiro bloco; a regra foi ampliada em 02/10/2026 depois da medição no staging). Navegador, build de produção: **360 px @1x → 448.webp** (94 KB no total da página: avatar + 3 imagens); **360 px @3x → 1344.webp** (469 KB); **390 px @2x → 896.webp** (265 KB); **1280 px @1x → 448.webp** (94 KB); **1280 px @2x → 896.webp** (265 KB). Lighthouse na página com avatar + 3 imagens + 1 embed: CLS 0 em todas as execuções; LCP de 1,68 a 2,00 s com limitação aplicada, mas **2,95 a 3,62 s no método simulado** (o da Sprint 4), contra 2,27 s da página da Sprint 4 no mesmo dia. Detalhes em "Desempenho". Medição de campo em staging pendente |
 | AC2 | Arquivos inválidos ou grandes demais não são guardados | **verificado** | Um módulo de política (`modules/media/policy.ts`) com tabela no Vitest: extensão de imagem com bytes errados, SVG, HTML disfarçado, WebP animado e APNG, bomba de pixels (cabeçalho de 30.000 × 30.000), arquivo vazio, acima do limite, proporção extrema, pequeno demais; cota e limite por hora no serviço e no pgTAP 120 (`LK010`, `LK061`). No navegador, cada arquivo foi recusado **pela UI** (mensagem específica, zero requisições) e **por requisição forjada** a `/api/media` (422/413); depois de cada recusa, contagem de `media_assets` e de objetos do bucket inalterada. Upload direto ao Storage com o token do usuário → 403 (RLS); `register_media_asset` com assinatura forjada → `LK060` |
 | AC3 | Trocar de modelo não apaga blocos nem configurações essenciais | **verificado** | `applyTemplate` é função pura; Vitest prova, para os cinco modelos, que blocos, ordem, visibilidade, título, bio, avatar e endereço ficam idênticos, e que os exemplos só entram em página sem blocos. Desfazer testado no reducer. No navegador: página com blocos mistos → cada um dos cinco modelos aplicado → publicado → conteúdo da página pública idêntico; "Desfazer" devolve a aparência anterior |
 | AC4 | Embeds arbitrários e scripts do usuário não executam | **verificado** | `modules/blocks/embed.ts` com a tabela `embed-cases.ts` (21 casos: `<iframe>` e `<script>` colados, host desconhecido, host parecido, `javascript:`/`data:`, URL válida com parâmetros extras ou redirecionamento, id com caracteres inválidos), rodada no Vitest e no pgTAP 110 pela função e pelo trigger; HTML em todos os campos de texto é renderizado como texto. O renderer monta o `src` de provedor + id. No navegador: entradas maliciosas recusadas na UI; Server Action forjada → `validation`, revisão inalterada; nenhum script de entrada do usuário executou; zero pedidos ao provedor antes do clique; iframe com `sandbox`, `allow` e `referrerpolicy="strict-origin-when-cross-origin"` conforme a ADR 0010 |
@@ -129,7 +129,25 @@ Leitura honesta:
 
 - No método da Sprint 4 (2,42 s naquela sprint; 2,27 s hoje), a página com mídia **passa de 2,5 s**. Com a limitação aplicada de verdade pelo navegador, fica abaixo de 2,0 s, com custo de 0,1 a 0,45 s sobre a página sem mídia.
 - Os dois números são de laboratório em `localhost`. A meta do projeto é LCP p75 de campo ≤ 2,5 s, e **não há medição de campo**: fica pendente em staging.
-- Uma imagem como primeiro bloco é o pior caso (ela vira o LCP), mesmo já sendo carregada com prioridade alta e sem lazy loading. Se o campo confirmar o problema, as opções são `preload` da imagem no `<head>` e uma variante menor para a primeira dobra.
+- Uma imagem como primeiro bloco é o pior caso (ela vira o LCP), mesmo já sendo carregada com prioridade alta e sem lazy loading. Se o campo confirmar o problema (veja "Medição no staging"), as opções são `preload` da imagem no `<head>` e uma variante menor para a primeira dobra.
+
+### Medição no staging (02/10/2026)
+
+Página `teste-pagina` no staging (CDN da Vercel e bucket do Supabase em São Paulo), com foto, formulário, 3 imagens e Pix:
+
+| Medição | Versão publicada | LCP | CLS | Elemento LCP |
+|---|---|---|---|---|
+| PageSpeed Insights, celular (founder) | v2 (imagens no fim) | 2,1 s; desempenho 98 e 100 | 0 | texto |
+| PageSpeed Insights, computador (founder) | v2 | 0,5 e 0,8 s | 0 | texto |
+| Lighthouse 12.8.2, celular, limitação simulada (desta máquina) | v2 | 1,8 / 2,8 / 2,7 s | 0 | texto do consentimento |
+| PageSpeed Insights, celular (founder) | v3 (formulário, depois imagens) | desempenho ≥ 95 em todas as execuções | — | — |
+| Lighthouse 12.8.2, celular, limitação simulada (desta máquina) | v3 | 3,35 / 2,75 / 2,74 s | 0 | **a imagem do 2º bloco** |
+
+Leitura:
+
+- Na v3, a imagem que virou o LCP era o 2º bloco e saía com `loading="lazy"`: a regra só priorizava imagem no 1º bloco. **Corrigido:** a primeira imagem entre os três primeiros blocos agora carrega sem lazy e com prioridade alta (`priorityImageId`, com teste de regressão). A correção ainda não foi remedida no staging.
+- As execuções desta máquina saem acima das do PageSpeed na mesma página, porque a rede até a Vercel entra na conta.
+- **Ainda não há medição de campo:** os logs `web_vital` das visitas reais não foram lidos.
 
 **Bytes:**
 

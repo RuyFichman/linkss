@@ -70,7 +70,7 @@ O limite de dois projetos Free permite staging e uma produção inicial privada.
 - Conferido em 2026-10-01: `/api/health`, landing, `/entrar` e `/cadastro` com 200; endereço inexistente com 404; `robots.txt` com o host de staging.
 - Migração de banco continua separada e vem antes: aplicar no Supabase hospedado antes de mergear em `main` o código que depende dela.
 
-## Passos de deploy da Sprint 5 (passos 1 a 4 e 6 feitos em 02/10/2026; o passo 5, de conferência, está pendente)
+## Passos de deploy da Sprint 5 (todos feitos em 02/10/2026)
 
 A ordem importa: o código da Sprint 5 lê a coluna `profiles.theme`, então **a migração vem antes do merge em `main`** (o merge publica em staging).
 
@@ -78,7 +78,7 @@ A ordem importa: o código da Sprint 5 lê a coluna `profiles.theme`, então **a
 2. **Feito em 02/10/2026**: o valor foi gerado dentro do banco com `encode(extensions.gen_random_bytes(32), 'hex')` e não saiu dele. Para copiá-lo para a Vercel, use o SQL Editor: `select decrypted_secret from vault.decrypted_secrets where name = 'media_signing_secret';`. Procedimento original: gerar um segredo aleatório de 64 caracteres hexadecimais e guardá-lo no Vault do projeto, pelo SQL Editor: `select vault.create_secret('<segredo>', 'media_signing_secret');`. É configuração secreta, não schema: por isso não está em migração.
 3. **Feito em 02/10/2026 pelo founder.** Na Vercel (Production e Preview): `MEDIA_SIGNING_SECRET` com **o mesmo valor** (Sensitive); `VISITOR_HASH_SALT` (outro valor aleatório, 32+ caracteres, Sensitive); `CRON_SECRET` (outro valor aleatório, 32+ caracteres, Sensitive). `SUPABASE_SECRET_KEY` já existe e passa a ser usada também pelo job de limpeza.
 4. **Feito** (PR #10, 02/10/2026; mergeado antes do passo 1). Mergear e aguardar o deploy.
-5. Conferir: enviar um avatar no editor, publicar, abrir a página; `curl -X POST https://<host>/api/jobs/media-cleanup -H "Authorization: Bearer <CRON_SECRET>"` deve responder `{"ok":true,...}`.
+5. **Feito em 02/10/2026 pelo founder:** cadastro, confirmação, foto e 3 imagens, formulário e Pix publicados, página aberta no celular, contato enviado e visto em Contatos. Conferir: enviar um avatar no editor, publicar, abrir a página; `curl -X POST https://<host>/api/jobs/media-cleanup -H "Authorization: Bearer <CRON_SECRET>"` deve responder `{"ok":true,...}`.
 6. Agendamento da limpeza: **Vercel Cron diário** (ADR 0009), declarado em `apps/web/vercel.json` (`0 6 * * *`, 06:00 UTC). A Vercel chama a rota com `GET` e envia `Authorization: Bearer <CRON_SECRET>`. O plano Hobby só permite execução diária, com horário aproximado dentro da hora. Ele vale a partir do deploy em `main`. Para conferir, veja *Vercel → Settings → Cron Jobs* e o log `media.cleanup` do dia seguinte.
 
 Rollback da aplicação para a Sprint 4 depois da migração: suportado para a página pública (blocos novos e tema são ignorados, a página não quebra). O editor antigo descarta os blocos novos do rascunho ao salvar (ADR 0010).
