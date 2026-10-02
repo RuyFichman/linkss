@@ -52,6 +52,19 @@ Os eventos carregam só resultado, duração e correlation id — nunca conteúd
 
 Falhas de rede no navegador (servidor inacessível) não geram log no servidor: o editor mostra "Sem resposta do servidor. Tentando salvar de novo…" e depois "Não foi possível salvar", mantendo a cópia local. Runbook: `docs/runbooks/EDITOR.md`.
 
+## Sinais de mídia e formulários (Sprint 5)
+
+Os eventos carregam resultado, tamanhos, duração e correlation id — nunca nome ou conteúdo de arquivo, chave Pix ou dados de lead.
+
+| Evento | Significado | Sinal / limiar proposto antes do piloto |
+|---|---|---|
+| `media.upload` (`outcome`: `ok`, um motivo de recusa — `unsupported`, `too_large`, `animated`, `too_many_pixels`, `too_small`, `bad_aspect`, `undecodable`, `empty` —, `quota`, `rate_limited`, `forbidden`, `not_found`, `unauthenticated`, `unavailable`; `kind`, `receivedBytes`, `storedBytes`, `durationMs`) | um upload recebido em `POST /api/media` | `unavailable` > 2% em 15 min → P1 (Storage fora, segredo de assinatura ausente ou divergente: runbook MEDIA §3); `durationMs` p95 > 3 s → P2; recusas de formato em rajada da mesma sessão → requisições forjadas; `quota` recorrente → conversar sobre plano, não é incidente |
+| `media.cleanup` (`outcome`: `ok`, `partial`, `not_configured`, `unauthorized`, `unavailable`; `claimed`, `removedObjects`, `finished`, `failed`) | uma execução do job de limpeza | nenhuma execução `ok` em 48 h → P2 (órfãos acumulam e a cota do projeto enche); `failed` > 0 em duas execuções seguidas → P2; `unauthorized` → alguém chamando a rota sem o segredo |
+| `lead.submit` (`outcome`: `ok`, `invalid`, `consent_required`, `rate_limited`, `unavailable`; `hashed`, `durationMs`) | um envio de formulário público | `unavailable` > 2% em 15 min → P1 (clientes perdendo contatos: runbook LEADS §1); `rate_limited` em alta → spam em curso (LEADS §2); `hashed=false` em produção → `VISITOR_HASH_SALT` ausente ou proxy sem IP |
+| `lead.delete` / `lead.export` (`outcome`, `count`) | dono apagou ou exportou leads (também em `audit_events`) | `forbidden`/`not_found` em rajada para a mesma sessão → tentativa entre tenants |
+
+Envios bloqueados pelo honeypot respondem `ok` e não são distinguidos no log de propósito (o robô não aprende nada); o volume de spam aparece em `rate_limited`. Capacidade: acompanhar o uso do bucket `media` e o egress no painel do Supabase (limiar de 60% em `docs/SUPABASE_CAPACITY.md`).
+
 ## Regras
 
 - Logs estruturados incluem request/correlation ID, módulo, ambiente e resultado.

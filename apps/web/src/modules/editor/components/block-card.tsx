@@ -1,7 +1,8 @@
 "use client";
 
 import { BLOCKS_COPY, EDITOR_COPY } from "@/content/pt-BR";
-import type { BlockField, SocialNetwork } from "@/modules/blocks";
+import type { BlockField, BlockInput, SocialNetwork } from "@/modules/blocks";
+import type { UploadedMedia } from "@/modules/media/service";
 import { Badge, Button } from "@/ui";
 import type { BlockCheck, EditorBlock, MoveTarget, TextBlockField } from "../draft/state";
 import { blockSummary } from "../draft/summary";
@@ -9,6 +10,7 @@ import { BlockFields } from "./block-fields";
 
 export interface BlockCardProps {
   block: EditorBlock;
+  profileId: string;
   position: number;
   total: number;
   open: boolean;
@@ -17,6 +19,9 @@ export interface BlockCardProps {
   onToggleOpen: () => void;
   onEdit: (field: TextBlockField, value: string) => void;
   onEditSocial: (network: SocialNetwork, value: string) => void;
+  onSetInput: (input: BlockInput) => void;
+  onUploadBusy: (busy: boolean) => void;
+  onImageUploaded: (media: UploadedMedia) => void;
   onBlur: (field: BlockField) => void;
   onMove: (to: MoveTarget) => void;
   onDuplicate: () => void;
@@ -80,12 +85,16 @@ export function BlockCard(props: BlockCardProps) {
         <div id={`${block.id}-panel`} className="grid gap-4 border-t border-app-border pt-4" role="group" aria-label={name}>
           <BlockFields
             blockId={block.id}
+            profileId={props.profileId}
             input={block.input}
             errors={check?.errors ?? {}}
             notices={check?.notices ?? {}}
             showError={props.showError}
             onEdit={props.onEdit}
             onEditSocial={props.onEditSocial}
+            onSetInput={props.onSetInput}
+            onUploadBusy={props.onUploadBusy}
+            onImageUploaded={props.onImageUploaded}
             onBlur={props.onBlur}
           />
           <div className="flex flex-wrap gap-2">

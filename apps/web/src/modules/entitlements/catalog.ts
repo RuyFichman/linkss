@@ -3,7 +3,7 @@ import type { Database } from "@/lib/database.types";
 
 export type EntitlementKey = Database["public"]["Enums"]["entitlement_key"];
 
-export const LIMIT_KEYS = ["max_profiles", "analytics_days", "team_members"] as const satisfies readonly EntitlementKey[];
+export const LIMIT_KEYS = ["max_profiles", "analytics_days", "team_members", "storage_mb"] as const satisfies readonly EntitlementKey[];
 export const FEATURE_KEYS = ["custom_domain", "remove_badge", "shareable_reports"] as const satisfies readonly EntitlementKey[];
 
 export type LimitKey = (typeof LIMIT_KEYS)[number];
@@ -18,7 +18,7 @@ export interface Entitlements {
 export function planEntitlementsFromProduct(planId: PlanId): Entitlements {
   const plan = PRODUCT.plans[planId];
   return {
-    limits: { max_profiles: plan.includedProfiles, analytics_days: plan.analyticsDays, team_members: plan.teamMembers },
+    limits: { max_profiles: plan.includedProfiles, analytics_days: plan.analyticsDays, team_members: plan.teamMembers, storage_mb: plan.storageMb },
     features: { custom_domain: plan.customDomain, remove_badge: plan.removeBadge, shareable_reports: plan.shareableReports },
   };
 }

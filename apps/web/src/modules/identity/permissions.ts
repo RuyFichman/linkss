@@ -22,6 +22,11 @@ export const PERMISSIONS = {
   "profile.change_slug": ["owner", "admin"],
   "profile.delete": ["owner", "admin"],
   "profile.publish": ["owner", "admin", "editor"],
+  // Leads are visitors' personal data: everyone who operates the page reads them, but removing
+  // and taking them out of the product is limited to owners and admins (ADR 0010).
+  "leads.view": ["owner", "admin", "editor"],
+  "leads.delete": ["owner", "admin"],
+  "leads.export": ["owner", "admin"],
   "audit.view": ["owner", "admin"],
 } as const satisfies Record<string, readonly WorkspaceRole[]>;
 

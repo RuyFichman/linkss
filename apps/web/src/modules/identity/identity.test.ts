@@ -29,6 +29,9 @@ describe("permission matrix (mirrors docs/adr/0004 and RLS)", () => {
       "profile.change_slug": ["owner", "admin"],
       "profile.delete": ["owner", "admin"],
       "profile.publish": ["owner", "admin", "editor"],
+      "leads.view": ["owner", "admin", "editor"],
+      "leads.delete": ["owner", "admin"],
+      "leads.export": ["owner", "admin"],
       "audit.view": ["owner", "admin"],
     });
   });

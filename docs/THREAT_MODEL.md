@@ -72,12 +72,39 @@ Legenda: **implementado + verificado** (teste automatizado ou verificação manu
 | Autosave sobrescrevendo edição de outra pessoa | compare-and-swap em `draft_revision`, conflito explícito, sobrescrever só com confirmação | implementado + verificado | pgTAP 100 (revisão antiga não grava); Vitest (máquina de estados); navegador: conflito → "carregar" e "manter" |
 | Links que vazam o referer ou `window.opener` | `rel="ugc nofollow noopener noreferrer"` em todo link de usuário | implementado + verificado | HTML da página pública |
 
+## Controles adicionados na Sprint 5 (mídia, embeds, Pix, formulário e tema)
+
+| Ameaça | Controle | Estado | Evidência |
+|---|---|---|---|
+| Upload malicioso (SVG com script, HTML com extensão de imagem, arquivo corrompido, polyglot) | formato decidido pelos bytes (JPEG, PNG, WebP), nunca pelo nome ou MIME; o servidor decodifica com `sharp` e grava só o que ele mesmo re-codificou em WebP; bucket aceita apenas `image/webp` | implementado + verificado | Vitest `media.test.ts` (tabela de arquivos); navegador: cada arquivo recusado pela UI e por requisição forjada, bucket e tabela conferidos sem mudança |
+| Bomba de descompressão / imagem gigante | dimensões lidas do cabeçalho antes de decodificar (4.096 px por lado, 16,7 MP), `limitInputPixels` no decodificador, corpo de até 4 MiB, 2 MiB por objeto | implementado + verificado | Vitest (cabeçalho PNG 30.000 × 30.000); requisição forjada com PNG real de 9.000 × 9.000 → `too_many_pixels` |
+| Imagem animada | WebP animado e APNG recusados pelo cabeçalho e pelo decodificador | implementado + verificado | Vitest; navegador |
+| Vazamento de metadados (EXIF, GPS) | toda variante é re-codificada a partir dos pixels; o original não é guardado | implementado + verificado | Vitest: marcador EXIF presente no original e ausente em cada variante |
+| Upload direto ao Storage pulando a validação (sessão válida) | única policy de `insert` em `storage.objects`: variante de um asset `pending` do próprio usuário, cujo registro exige assinatura HMAC do servidor (segredo no Vault); sem policy de update/delete/select | implementado + verificado | pgTAP 120; navegador: `POST /storage/v1/object/media/...` com o token do usuário → 403; `register_media_asset` sem assinatura → `LK060` |
+| Upload por quem não pode / em página de outro tenant | guard no servidor (`profile.edit_content`) + RPC que confere `auth.uid()`, papel e workspace ativo; origem da requisição conferida (CSRF) | implementado + verificado | Vitest; pgTAP 120; navegador: outra conta → 404, sem sessão → 401, `Origin` de outro site → 403 |
+| Esgotar o armazenamento | cota por workspace via entitlement `storage_mb` com lock; 60 uploads por workspace por hora; órfãos saem pelo job de limpeza | implementado + verificado (job **não agendado**) | pgTAP 120 (`LK010`, `LK061`); limpeza executada à mão no ambiente local |
+| Bloco de imagem apontando para arquivo de outro tenant ou para uma URL | o validador do rascunho só aceita asset `ready`, do mesmo tipo e **da mesma página**, com as dimensões do próprio asset | implementado + verificado | pgTAP 110 (outro workspace, outra página, pendente, avatar como imagem, URL, dados inline) |
+| Imagem sumir de uma versão publicada (ou de um rollback) | nada é apagado quando o rascunho deixa de usar; limpeza só de assets sem referência no rascunho nem nas publicações retidas, com lock da página | implementado + verificado | pgTAP 120; navegador: imagem trocada, versão anterior restaurada e servida, órfão removido, as demais intactas |
+| Embed arbitrário / script do usuário | embed é provedor + id (allowlist: YouTube, Vimeo, Spotify); código colado (`<iframe>`, `<script>`) é recusado; o `src` do iframe é montado de constantes + id validado; `sandbox`, `allow` e `referrerpolicy` fixos | implementado + verificado | tabela `embed-cases.ts` (21 casos) no Vitest e no pgTAP 110 (função e trigger, para os 3 provedores); navegador: entradas maliciosas na UI e em Server Action forjada → recusadas |
+| Rastreamento do visitante por terceiros ao abrir a página | fachada: nenhum pedido ao provedor antes do clique; YouTube pelo domínio sem cookies; Vimeo com `dnt=1` | implementado + verificado | navegador: zero iframes e zero hosts de provedor antes do clique |
+| CSS/fonte arbitrários pelo tema | tema é um conjunto fechado de tokens (duas cores `#rrggbb` + quatro enumerações); nenhuma string armazenada vira estilo | implementado + verificado | Vitest e pgTAP 110 (CSS, URL de fonte, chaves extras recusados) |
+| Página ilegível por escolha de cores | cores de texto derivadas do fundo, sempre ≥ 4,5:1 | implementado + verificado | Vitest: grade de cores × 3 estilos de botão, inclusive hover |
+| Spam no formulário | honeypot (resposta igual à de sucesso, nada gravado); 5 envios por visitante por página a cada 10 min; 60 por página por hora; corpo ≤ 4 KiB; repetição idêntica em 10 min gravada uma vez | implementado + verificado; **CAPTCHA pendente** | pgTAP 130; navegador: honeypot, sexta tentativa recusada, envio sem JavaScript |
+| Envio a formulário não publicado, removido ou de página fora do ar | `submit_form_lead` valida contra o snapshot **no ar** | implementado + verificado | pgTAP 130 (8 casos) |
+| Coleta sem consentimento | texto e obrigatoriedade definidos pelo dono; o banco recusa envio sem consentimento obrigatório e guarda texto, versão e horário | implementado + verificado | pgTAP 130; navegador (com e sem JavaScript) |
+| Leitura de leads por visitante ou por outro tenant | `anon` sem privilégio em tabelas; RLS por workspace; exclusão e exportação só owner/admin, auditadas | implementado + verificado | pgTAP 130; navegador: outra conta → 404 na lista e na exportação |
+| Identificação do visitante pelo limite de taxa | só um HMAC diário do IP (segredo no servidor), apagado em 24 h; IP nunca gravado | implementado + verificado | pgTAP 130 (nenhuma coluna de IP); Vitest `leads.test.ts` |
+| Injeção de fórmula na exportação CSV | toda célula entre aspas; valores iniciados por `= + - @` recebem apóstrofo | implementado + verificado | Vitest |
+| Fraude/impersonação por chave Pix ou link de pagamento | chave validada por tipo; link só https; a página avisa que o pagamento é no app do banco e pede para conferir o recebedor | **mitigação parcial**: não há verificação de titularidade; depende de denúncia e moderação (Sprint 9) | runbook `MEDIA.md` §1 e `PUBLIC_PAGE.md` §4 |
+| Imagem imprópria ou ilegal publicada | — | **pendente**: sem moderação nem denúncia (Sprint 9); hoje a resposta é manual | runbook `MEDIA.md` §1 |
+| Flood de uploads ou de envios por muitas contas/IPs | limites por workspace e por página | **risco residual**: rate limit global e firewall são da Sprint 9 | — |
+
 ## Requisitos antes do MVP privado
 
 - headers de segurança e CSP;
 - RLS em todas as tabelas expostas — **feito para as tabelas da Sprint 2**;
 - testes de isolamento por workspace — **feito (pgTAP + Vitest)**;
-- rate limits para auth, formulário, upload e ingestão — Auth configurado localmente; demais pendentes;
+- rate limits para auth, formulário, upload e ingestão — Auth configurado localmente; formulário e upload têm limites no banco (Sprint 5); limite global e ingestão pendentes;
 - CAPTCHA no Auth para fechar a enumeração direta pela API;
 - trilha para publicação, domínio, papéis e suspensão — papéis/slug/exclusão/publicação/restauração/despublicação feitos; domínio e suspensão pendentes;
 - backup e restauração testados;

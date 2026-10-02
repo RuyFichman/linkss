@@ -124,6 +124,11 @@ button, a, input, select, textarea, summary { outline: none; }
 .ui-skeleton { border-radius: 0.5rem; background: linear-gradient(90deg, #e7eaf0 25%, #f5f6f9 50%, #e7eaf0 75%); background-size: 200% 100%; animation: skeleton 1.4s infinite linear; }
 @keyframes skeleton { to { background-position-x: -200%; } }
 
+/* Public page (ADR 0010). The element rules above (`a { color: inherit }`, `button { font: inherit }`) are
+   unlayered and win over utilities, so themed buttons and boxes state their color and weight here. */
+.page-button { color: var(--btn-text); font-weight: 700; }
+.page-surface { color: var(--surface-text); }
+
 .bio-theme { --page-bg: #f5efe5; --page-text: #231f1a; --page-muted: #5e574e; --page-font: Arial, Helvetica, sans-serif; --page-heading-font: Georgia, "Times New Roman", serif; --btn-bg: #1f5b49; --btn-text: #ffffff; --btn-border: #1f5b49; --btn-radius: 16px; --btn-style: solid; min-height: 100%; color: var(--page-text); background: var(--page-bg); font-family: var(--page-font); }
 .bio-button { display: flex; min-height: 48px; align-items: center; justify-content: center; border: 2px solid var(--btn-border); border-radius: var(--btn-radius); color: var(--btn-text); background: var(--btn-bg); padding: 0.75rem 1rem; font-weight: 800; text-align: center; text-decoration: none; }
 .bio-button[data-style="outline"] { color: var(--btn-bg); background: transparent; }

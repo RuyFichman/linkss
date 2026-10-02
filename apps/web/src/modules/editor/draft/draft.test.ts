@@ -11,7 +11,7 @@ function link(n: number, visible = true): DraftBlock {
 }
 
 function state(blocks: DraftBlock[] = [link(1), link(2), link(3)]): EditorState {
-  return editorStateFromDraft({ title: "Café Ipê", bio: "", blocks });
+  return editorStateFromDraft({ title: "Café Ipê", bio: "", avatarPath: null, theme: null, blocks });
 }
 
 function run(initial: EditorState, ...actions: EditorAction[]): EditorState {
@@ -133,8 +133,8 @@ describe("draft check and preview", () => {
     const editorOrder = order(edited);
     expect(editorOrder).toEqual([id(3), id(1), id(4)]);
     expect(check.draft.blocks.map((block) => block.id)).toEqual(editorOrder);
-    expect(documentFromDraft({ ...previewDraft(edited), avatarPath: null }).blocks.map((block) => block.id)).toEqual(editorOrder);
-    expect(buildDocumentJson({ ...check.draft, avatarPath: null }).blocks.map((block) => block.id)).toEqual(editorOrder);
+    expect(documentFromDraft(previewDraft(edited)).blocks.map((block) => block.id)).toEqual(editorOrder);
+    expect(buildDocumentJson(check.draft).blocks.map((block) => block.id)).toEqual(editorOrder);
   });
 });
 

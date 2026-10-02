@@ -38,12 +38,19 @@ O limite de dois projetos Free permite staging e uma produção inicial privada.
 ## Supabase local (Sprint 2)
 
 - Requisitos: Docker em execução. A CLI é devDependency fixada (`supabase@2.118.0`).
-- `npm run db:start` sobe Postgres 17, Auth, PostgREST, Studio e Mailpit; `npm run db:stop` encerra.
+- `npm run db:start` sobe Postgres 17, Auth, PostgREST, Storage, Studio e Mailpit; `npm run db:stop` encerra.
 - `npm run db:reset` reaplica `supabase/migrations/` e `supabase/seed.sql` (sem dados pessoais).
 - `npm run test:db` executa os testes pgTAP; `npm run db:types` regenera `apps/web/src/lib/database.types.ts`.
 - `apps/web/.env.local` recebe `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` a partir de `npx supabase status`.
 - E-mails locais aparecem no Mailpit em `http://127.0.0.1:54324`.
 - Tabelas nunca são expostas implicitamente (`auto_expose_new_tables = false`); cada migração faz `REVOKE`/`GRANT` explícitos.
+
+### Mídia no stack local (Sprint 5)
+
+- O Storage local está ligado em `supabase/config.toml`; o bucket `media` e a policy vêm das migrações.
+- Uploads precisam do mesmo segredo no servidor e no banco: `MEDIA_SIGNING_SECRET` em `apps/web/.env.local` e o segredo `media_signing_secret` no Vault local (`select vault.create_secret('<valor>', 'media_signing_secret');`). Sem isso o upload responde "indisponível". O Vault não é recriado por migração nem pelo seed (é segredo).
+- `VISITOR_HASH_SALT` (limite de envios por visitante), `CRON_SECRET` e `SUPABASE_SECRET_KEY` (job de limpeza) também ficam só no `.env.local`.
+- Não existe transformação de imagem no plano Free nem no stack local: as variantes são geradas pela aplicação no upload (ADR 0009).
 
 ## Supabase hospedado: staging (2026-10-01)
 
@@ -62,6 +69,19 @@ O limite de dois projetos Free permite staging e uma produção inicial privada.
 - Um projeto recém-conectado não tem deploy para refazer. O primeiro sai de um commit novo em `main` ou de Deployments → Create Deployment → `main`.
 - Conferido em 2026-10-01: `/api/health`, landing, `/entrar` e `/cadastro` com 200; endereço inexistente com 404; `robots.txt` com o host de staging.
 - Migração de banco continua separada e vem antes: aplicar no Supabase hospedado antes de mergear em `main` o código que depende dela.
+
+## Passos de deploy da Sprint 5 (pendentes: nada disto foi aplicado em staging)
+
+A ordem importa: o código da Sprint 5 lê a coluna `profiles.theme`, então **a migração vem antes do merge em `main`** (o merge publica em staging).
+
+1. `npx supabase db push` com a CLI ligada ao projeto: aplica `202610010001_sprint5_enum_values` e `202610010002_media_themes_forms` (tabelas de mídia e leads, bucket público `media`, policy do Storage, validador do rascunho). A aplicação da Sprint 4 continua funcionando sobre esse schema.
+2. Gerar um segredo aleatório de 64 caracteres hexadecimais e guardá-lo no Vault do projeto, pelo SQL Editor: `select vault.create_secret('<segredo>', 'media_signing_secret');`. É configuração secreta, não schema: por isso não está em migração.
+3. Na Vercel (Production e Preview): `MEDIA_SIGNING_SECRET` com **o mesmo valor** (Sensitive); `VISITOR_HASH_SALT` (outro valor aleatório, 32+ caracteres, Sensitive); `CRON_SECRET` (outro valor aleatório, 32+ caracteres, Sensitive). `SUPABASE_SECRET_KEY` já existe e passa a ser usada também pelo job de limpeza.
+4. Mergear e aguardar o deploy.
+5. Conferir: enviar um avatar no editor, publicar, abrir a página; `curl -X POST https://<host>/api/jobs/media-cleanup -H "Authorization: Bearer <CRON_SECRET>"` deve responder `{"ok":true,...}`.
+6. Agendar a limpeza (uma vez por dia basta). Ainda **não há agendador**: a rota só aceita `POST`, e o Cron da Vercel chama com `GET`; decidir entre um workflow agendado do GitHub Actions com `curl` ou `pg_cron` + `pg_net` no Supabase. Até lá, chamar à mão (runbook `MEDIA.md`).
+
+Rollback da aplicação para a Sprint 4 depois da migração: suportado para a página pública (blocos novos e tema são ignorados, a página não quebra). O editor antigo descarta os blocos novos do rascunho ao salvar (ADR 0010).
 
 ## Checklist de Auth para projetos hospedados (não aplicado)
 

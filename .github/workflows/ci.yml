@@ -37,8 +37,10 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Start local Supabase (database, Auth, PostgREST only)
-        run: npx supabase start -x realtime,storage-api,imgproxy,mailpit,studio,edge-runtime,logflare,vector,supavisor
+      # Storage is needed since Sprint 5: the migrations create the media bucket and its policies,
+      # and the pgTAP suite exercises them.
+      - name: Start local Supabase (database, Auth, PostgREST, Storage)
+        run: npx supabase start -x realtime,imgproxy,mailpit,studio,edge-runtime,logflare,vector,supavisor
       - name: pgTAP tests
         run: npm run test:db
       - name: Security and performance advisors (fail on warnings)

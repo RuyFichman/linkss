@@ -10,7 +10,7 @@ Codinome da plataforma brasileira de conversão mobile orientada a páginas prof
 
 ```bash
 npm install
-npm run db:start                 # Supabase local: Postgres, Auth, PostgREST, Studio, Mailpit
+npm run db:start                 # Supabase local: Postgres, Auth, PostgREST, Storage, Studio, Mailpit
 copy .env.example apps\web\.env.local
 npm run dev
 ```
@@ -33,6 +33,26 @@ npm run db:stop
 ```
 
 Migrações nunca são aplicadas em projetos hospedados por este fluxo; veja `docs/ENVIRONMENTS.md`.
+
+### Imagens e formulários no ambiente local (Sprint 5)
+
+O envio de imagens precisa do mesmo segredo na aplicação e no banco. Em `apps/web/.env.local`, preencha `MEDIA_SIGNING_SECRET` (64 caracteres hexadecimais), `VISITOR_HASH_SALT` e, para testar a limpeza, `CRON_SECRET` e `SUPABASE_SECRET_KEY`. No banco local, uma vez:
+
+```sql
+select vault.create_secret('<mesmo valor de MEDIA_SIGNING_SECRET>', 'media_signing_secret');
+```
+
+Sem isso o editor mostra o envio como indisponível; o restante funciona. Detalhes e passos para o ambiente hospedado em `docs/ENVIRONMENTS.md`.
+
+## Rotas da Sprint 5
+
+- `/app/w/[workspaceId]/paginas/[profileId]` — o editor ganhou foto da página (envio com recorte), blocos Imagem, Vídeo ou música, Pix e Formulário, o painel Aparência (cores, estilo, fonte), cinco modelos e o uso de armazenamento.
+- `/app/w/[workspaceId]/paginas/[profileId]/contatos` — contatos recebidos pelos formulários (lista, exclusão); `/contatos/exportar` baixa o CSV (owner e admin).
+- `/api/media` — recebe o envio de imagem do editor (sessão do usuário, mesma origem).
+- `/api/jobs/media-cleanup` — job administrativo de limpeza de imagens órfãs (`POST` com `Authorization: Bearer <CRON_SECRET>`).
+- `/<endereço>` — a página pública renderiza tema, foto, imagens responsivas, cartão de vídeo/música com carregamento no toque, Pix com copiar e formulário (funciona sem JavaScript).
+
+Nenhuma rota nova de nível superior (`/api` e `/app` já eram reservadas).
 
 ## Rotas da Sprint 4
 

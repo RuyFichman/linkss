@@ -46,7 +46,7 @@ export default async function WorkspaceHomePage({ params, searchParams }: { para
           {profiles.map((profile) => (
             <li key={profile.id} className="surface-card flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
               <div className="flex min-w-0 items-center gap-4">
-                <ProfileAvatar title={profile.title} />
+                <ProfileAvatar title={profile.title} avatarPath={profile.avatarPath} />
                 <div className="min-w-0">
                   <h2 className="truncate text-lg font-bold">{profile.title}</h2>
                   <p className="m-0 truncate text-sm text-app-muted">{publicAddressLabel(profile.slug)}</p>

@@ -3,7 +3,7 @@
 - **Status:** accepted for the MVP (items marked *provisional* await founder confirmation)
 - **Date:** 2026-09-26
 - **Builds on:** ADR 0003 (published snapshots), ADR 0004 (tenancy and authorization)
-- **Amended by:** ADR 0008 (block model, snapshot schema version 2, `noreferrer` on user links)
+- **Amended by:** ADR 0008 (block model, snapshot schema version 2, `noreferrer` on user links); ADR 0010 (optional theme, media references and four more block types, still schema version 2; `anon` may also execute `submit_form_lead`)
 
 ## Context
 

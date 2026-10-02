@@ -39,7 +39,31 @@ Razões calculadas em sRGB segundo WCAG 2.x e arredondadas a duas casas.
 | Loja | 14,78:1 | 6,38:1 | 4,86:1 | AA |
 | Evento | 19,11:1 | 11,25:1 | 5,74:1 | AA |
 
-A Sprint 5 deverá validar combinações livres escolhidas pelo usuário ou ajustar automaticamente o texto.
+A tabela acima é do protótipo da Sprint 1 (`modules/editor/templates.ts`).
+
+### Tema da página pública (Sprint 5)
+
+O tema real da página é um conjunto fechado de tokens em `profiles.theme` (ADR 0010); `null` é a aparência clássica das Sprints 3 e 4.
+
+| Token | Valores |
+|---|---|
+| `background`, `button` | cor livre `#rrggbb` |
+| `buttonStyle` | `filled` (Preenchido), `soft` (Suave), `outline` (Contorno) |
+| `corners` | `square`, `rounded`, `pill` |
+| `spacing` | `compact`, `regular`, `relaxed` |
+| `font` | `system` (Padrão), `serif` (Clássica, fontes do aparelho), `poppins`, `lora` (arquivos próprios, latin, `font-display: swap`, carregados só pela página que usa) |
+
+A pessoa não escolhe cor de texto. `modules/themes/resolve.ts` deriva, a partir das duas cores, o texto da página, o texto secundário, a borda, o texto do botão e o hover, e os aplica como variáveis CSS `--page-*` / `--btn-*` no contêiner da página. Garantia testada numa grade de cores × três estilos (Vitest `themes.test.ts`): texto e texto de botão sempre ≥ 4,5:1, inclusive no hover. Quando o botão se confunde com o fundo (contraste entre eles abaixo de 3:1), o editor avisa, sem bloquear; no estilo Contorno, se a cor do botão não chega a 4,5:1 sobre o fundo, o texto do botão usa a cor do texto da página.
+
+Os cinco modelos reais:
+
+| Modelo | Fundo | Botões | Estilo | Cantos | Espaçamento | Fonte |
+|---|---|---|---|---|---|---|
+| Negócio local | `#f5efe5` | `#1f5b49` | Preenchido | arredondados | normal | Clássica |
+| Criador e lançamento | `#17142b` | `#f2cf4a` | Preenchido | bem arredondados | amplo | Poppins |
+| Profissional independente | `#eef5f2` | `#225e50` | Contorno | arredondados | normal | Lora |
+| Pequena loja | `#fff8ed` | `#c14c20` | Suave | retos | compacto | Padrão |
+| Evento e artista | `#100f12` | `#c21870` | Preenchido | retos | normal | Poppins |
 
 ## Estados de componentes
 

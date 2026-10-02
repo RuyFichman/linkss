@@ -1,9 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { APP_COPY, BLOCKS_COPY, EDITOR_COPY, PUBLISHING_COPY } from "@/content/pt-BR";
+import { APP_COPY, BLOCKS_COPY, EDITOR_COPY, MEDIA_COPY, PUBLISHING_COPY, THEME_COPY } from "@/content/pt-BR";
 import type { FormState } from "@/lib/form-state";
 import { BLOCK_TYPES, MAX_BLOCKS, type BlockField, type BlockType, type DraftBlock } from "@/modules/blocks";
+import type { UploadedMedia } from "@/modules/media/service";
+import { avatarSources } from "@/modules/media/url";
+import { initialsFor } from "@/modules/profiles/content";
+import type { TemplateDefinition } from "@/modules/themes/templates";
+import type { ThemeTokens } from "@/modules/themes/tokens";
 import { BIO_MAX_LENGTH } from "@/modules/profiles/content";
 import { loadDraftAction } from "@/modules/profiles/actions";
 import { PublishForm } from "@/modules/publishing/components/publish-form";
@@ -12,15 +17,18 @@ import { PublicPageView } from "@/modules/publishing/render/public-page-view";
 import { publicationState, type PublicationSummary } from "@/modules/publishing/service";
 import { Badge, Button, Dialog, DialogActions, EmptyState, TextAreaField, TextField } from "@/ui";
 import type { AutosaveSnapshot, SaveFailure } from "../draft/autosave";
-import { checkDraft, editorReducer, type DraftCheck, editorStateFromDraft, isStructuralAction, previewDraft, type EditorAction, type EditorState, type MoveTarget } from "../draft/state";
+import { checkDraft, editorReducer, type DraftCheck, editorStateFromDraft, isStructuralAction, isViewOnlyAction, previewDraft, type EditorAction, type EditorState, type MoveTarget } from "../draft/state";
+import { AppearancePanel } from "./appearance-panel";
 import { BlockCard } from "./block-card";
+import { ImageUploader } from "./image-uploader";
+import { StorageUsage } from "./storage-usage";
 import { useAutosave } from "./use-autosave";
 
 type PublishAction = (previous: FormState, formData: FormData) => Promise<FormState>;
 
 export interface BlockEditorProps {
   profileId: string;
-  initial: { title: string; bio: string; blocks: DraftBlock[]; revision: number };
+  initial: { title: string; bio: string; avatarPath: string | null; theme: ThemeTokens | null; blocks: DraftBlock[]; revision: number };
   livePublicationId: string | null;
   publications: PublicationSummary[];
   canPublish: boolean;
@@ -30,6 +38,7 @@ export interface BlockEditorProps {
 
 const UNDO_WINDOW_MS = 10_000;
 const HEADER_FRESH_KEY = "header";
+const AVATAR_UPLOAD_KEY = "avatar";
 
 const STATUS_TONE = { saved: "success", dirty: "warning", invalid: "warning", saving: "neutral", retrying: "warning", error: "danger", conflict: "danger" } as const;
 const PUBLICATION_TONE = { never: "neutral", live_current: "success", live_outdated: "warning", offline: "warning" } as const;
@@ -49,7 +58,9 @@ function failureMessage(failure: SaveFailure | null): string {
   }
 }
 
-function publishBlockedReason(status: AutosaveSnapshot["status"]): string | null {
+function publishBlockedReason(status: AutosaveSnapshot["status"], uploading: boolean): string | null {
+  // An image still being sent is not in the draft yet: publishing now would leave it out.
+  if (uploading) return EDITOR_COPY.publish.blockedUploading;
   switch (status) {
     case "saved": return null;
     case "invalid": return EDITOR_COPY.publish.blockedInvalid;
@@ -60,7 +71,7 @@ function publishBlockedReason(status: AutosaveSnapshot["status"]): string | null
 }
 
 /**
- * Block editor (Sprint 4, ADR 0008). Business rules live in modules/editor/draft (reducer, draft
+ * Block editor (Sprint 4 and 5, ADR 0008/0010). Business rules live in modules/editor/draft (reducer, draft
  * check, autosave) and modules/blocks (validation); this component wires them to the page, manages
  * focus and announcements, and renders the live preview with the public renderer.
  */
@@ -80,12 +91,16 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
   const [conflictBusy, setConflictBusy] = useState(false);
   const [conflictError, setConflictError] = useState<string | null>(null);
   const [undoPaused, setUndoPaused] = useState(false);
+  const [busyUploads, setBusyUploads] = useState<ReadonlySet<string>>(() => new Set());
+  const [usageKey, setUsageKey] = useState(0);
+  const uploading = busyUploads.size > 0;
+  const uploadingRef = useRef(uploading);
   const pendingFocus = useRef<string | null>(null);
   const focusAfterUndo = useRef<string>("editor-add");
   const scrollByMode = useRef<Record<"edit" | "preview", number>>({ edit: 0, preview: 0 });
 
   const check = useMemo(() => checkDraft(state), [state]);
-  const preview = useMemo(() => documentFromDraft({ ...previewDraft(state), avatarPath: null }, EDITOR_COPY.preview.untitled), [state]);
+  const preview = useMemo(() => documentFromDraft(previewDraft(state), EDITOR_COPY.preview.untitled), [state]);
 
   const announce = useCallback((text: string) => setAnnouncement((previous) => ({ text, n: previous.n + 1 })), []);
 
@@ -96,7 +111,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
     if (next === current) return current;
     stateRef.current = next;
     setState(next);
-    if (action.type === "dismiss_undo") return next;
+    if (isViewOnlyAction(action)) return next;
     const result = checkDraft(next);
     const serialized = serializeCheck(result);
     if (result.ok) {
@@ -120,7 +135,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
   // Warn before closing the tab, reloading or following an in-app link with unsaved changes.
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!autosave.hasUnsavedChanges()) return;
+      if (!autosave.hasUnsavedChanges() && !uploadingRef.current) return;
       event.preventDefault();
       event.returnValue = "";
     };
@@ -128,7 +143,8 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const anchor = (event.target as Element | null)?.closest?.("a[href]");
       if (!(anchor instanceof HTMLAnchorElement) || anchor.target === "_blank" || anchor.origin !== window.location.origin) return;
-      if (autosave.hasUnsavedChanges() && !window.confirm(EDITOR_COPY.leaveWarning)) {
+      const warning = uploadingRef.current ? EDITOR_COPY.leaveWarningUpload : autosave.hasUnsavedChanges() ? EDITOR_COPY.leaveWarning : null;
+      if (warning && !window.confirm(warning)) {
         event.preventDefault();
         event.stopPropagation();
       }
@@ -151,6 +167,18 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
     }, UNDO_WINDOW_MS);
     return () => window.clearTimeout(timer);
   }, [state.lastDeleted, undoPaused, apply]);
+
+  useEffect(() => { uploadingRef.current = uploading; }, [uploading]);
+
+  const setUploadBusy = useCallback((key: string, busy: boolean) => {
+    setBusyUploads((previous) => {
+      if (previous.has(key) === busy) return previous;
+      const next = new Set(previous);
+      if (busy) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }, []);
 
   const total = state.blocks.length;
   const positionOf = (next: EditorState, id: string) => next.blocks.findIndex((block) => block.id === id) + 1;
@@ -218,6 +246,50 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
     announce(EDITOR_COPY.announce.restored(positionOf(next, restoredId)));
   }
 
+  function imageUploaded(blockId: string, media: UploadedMedia) {
+    const block = stateRef.current.blocks.find((item) => item.id === blockId);
+    if (!block || block.input.type !== "image") return;
+    apply({ type: "set_input", id: blockId, input: { ...block.input, mediaId: media.mediaId, width: media.width, height: media.height } });
+    setUsageKey((key) => key + 1);
+    announce(MEDIA_COPY.image.added);
+  }
+
+  function avatarUploaded(media: UploadedMedia) {
+    apply({ type: "set_avatar", mediaId: media.mediaId });
+    setUsageKey((key) => key + 1);
+    announce(MEDIA_COPY.avatar.added);
+  }
+
+  function removeAvatar() {
+    apply({ type: "set_avatar", mediaId: null });
+    focusLater("editor-avatar-pick");
+    announce(MEDIA_COPY.avatar.removed);
+  }
+
+  function applyTemplate(template: TemplateDefinition, withExamples: boolean) {
+    const ids = template.examples.map(() => crypto.randomUUID());
+    const next = apply({ type: "apply_template", templateId: template.id, withExamples, ids });
+    const examples = next.lastTemplate?.exampleIds ?? [];
+    if (examples.length > 0) setFreshIds((previous) => new Set([...previous, ...examples]));
+    focusLater("template-undo");
+    announce(THEME_COPY.templates.applied(template.name));
+  }
+
+  function undoTemplate() {
+    const templateId = stateRef.current.lastTemplate?.templateId;
+    apply({ type: "undo_template" });
+    if (templateId) focusLater(`template-${templateId}`);
+    announce(THEME_COPY.templates.undone);
+  }
+
+  function setTheme(theme: ThemeTokens | null) {
+    apply({ type: "set_theme", theme });
+    if (theme === null) {
+      focusLater("theme-customize");
+      announce(THEME_COPY.resetDone);
+    }
+  }
+
   function switchMode(next: "edit" | "preview") {
     if (next === mode) return;
     scrollByMode.current[mode] = window.scrollY;
@@ -256,7 +328,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
   }
 
   const publication = publicationState({ draftRevision: snapshot.revision, livePublicationId }, publications);
-  const blockedReason = publishBlockedReason(snapshot.status);
+  const blockedReason = publishBlockedReason(snapshot.status, uploading);
   const headerErrors = check.ok ? {} : check.header;
   const showHeaderError = (field: "title" | "bio") => touched.has(`${HEADER_FRESH_KEY}:${field}`) || state[field] !== initial[field];
 
@@ -287,6 +359,24 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
           <section className="surface-card grid gap-4 p-4 sm:p-6" aria-labelledby="editor-header-title">
             <h2 id="editor-header-title" className="m-0 text-xl font-bold">{EDITOR_COPY.headerSection}</h2>
             <TextField id="editor-title" label={APP_COPY.profileForm.title} hint={APP_COPY.profileForm.titleHint} value={state.title} maxLength={120} error={showHeaderError("title") ? headerErrors.title : undefined} onChange={(event) => apply({ type: "set_header", field: "title", value: event.target.value })} onBlur={() => markTouched(`${HEADER_FRESH_KEY}:title`)} />
+            <div className="grid gap-3" role="group" aria-labelledby="editor-avatar-title">
+              <div className="grid gap-1">
+                <p id="editor-avatar-title" className="ui-label m-0">{MEDIA_COPY.avatar.title}</p>
+                <p className="ui-hint">{MEDIA_COPY.avatar.hint}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-4">
+                {state.avatarPath ? (
+                  <picture className="block h-20 w-20 shrink-0">
+                    <img {...avatarSources(state.avatarPath)} className="h-20 w-20 rounded-full border border-app-border object-cover" width={80} height={80} alt={MEDIA_COPY.avatar.current} />
+                  </picture>
+                ) : (
+                  <span aria-hidden="true" className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-app-accent text-2xl font-bold text-white">{initialsFor(state.title)}</span>
+                )}
+                {state.avatarPath ? <Button type="button" variant="secondary" id="editor-avatar-remove" onClick={removeAvatar}>{MEDIA_COPY.avatar.remove}</Button> : null}
+              </div>
+              <ImageUploader id="editor-avatar" pickId="editor-avatar-pick" profileId={profileId} kind="avatar" hasImage={state.avatarPath !== null} labels={{ pick: MEDIA_COPY.avatar.upload, replace: MEDIA_COPY.avatar.replace }} onUploaded={avatarUploaded} onBusyChange={(busy) => setUploadBusy(AVATAR_UPLOAD_KEY, busy)} />
+              <StorageUsage profileId={profileId} refreshKey={usageKey} />
+            </div>
             <TextAreaField id="editor-bio" label={APP_COPY.profileForm.bio} hint={APP_COPY.profileForm.bioHint(Math.max(0, BIO_MAX_LENGTH - state.bio.trim().length))} value={state.bio} rows={3} error={showHeaderError("bio") ? headerErrors.bio : undefined} onChange={(event) => apply({ type: "set_header", field: "bio", value: event.target.value })} onBlur={() => markTouched(`${HEADER_FRESH_KEY}:bio`)} />
           </section>
 
@@ -304,6 +394,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
                   <BlockCard
                     key={block.id}
                     block={block}
+                    profileId={profileId}
                     position={index + 1}
                     total={total}
                     open={openId === block.id}
@@ -318,6 +409,9 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
                     }}
                     onEdit={(field, value) => apply({ type: "edit", id: block.id, field, value })}
                     onEditSocial={(network, value) => apply({ type: "edit_social", id: block.id, network, value })}
+                    onSetInput={(input) => apply({ type: "set_input", id: block.id, input })}
+                    onUploadBusy={(busy) => setUploadBusy(block.id, busy)}
+                    onImageUploaded={(media) => imageUploaded(block.id, media)}
                     onBlur={(field) => {
                       markTouched(`${block.id}:${field}`);
                       apply({ type: "normalize", id: block.id });
@@ -358,6 +452,8 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
             )}
             {!check.ok && check.limit === "too_large" ? <p role="alert" className="m-0 font-bold text-app-danger">{EDITOR_COPY.payloadLimit}</p> : null}
           </section>
+
+          <AppearancePanel theme={state.theme} hasBlocks={total > 0} lastTemplate={state.lastTemplate} onSetTheme={setTheme} onApplyTemplate={applyTemplate} onUndoTemplate={undoTemplate} />
         </div>
 
         <aside className={`${mode === "edit" ? "hidden lg:grid" : "grid"} gap-3 lg:sticky lg:top-4`} aria-labelledby="editor-preview-title">
@@ -385,7 +481,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
           </div>
           {snapshot.status === "error" ? <Button type="button" variant="secondary" onClick={() => autosave.flush()}>{EDITOR_COPY.status.retry}</Button> : null}
           {canPublish ? (
-            <PublishForm action={publishAction} draftRevision={snapshot.revision} upToDate={publication === "live_current" && snapshot.status === "saved"} hasPublished={publications.length > 0} blockedReason={blockedReason} />
+            <PublishForm action={publishAction} draftRevision={snapshot.revision} upToDate={publication === "live_current" && snapshot.status === "saved" && !uploading} hasPublished={publications.length > 0} blockedReason={blockedReason} />
           ) : null}
         </div>
       </div>
