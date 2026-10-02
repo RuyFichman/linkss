@@ -179,7 +179,7 @@ As migrações foram aplicadas no banco local com `supabase migration up`. **Nã
 
 ## Pendências, gaps e riscos
 
-- **Nada desta sprint está em staging.** O código lê `profiles.theme`: a migração precisa ser aplicada **antes** do merge em `main`, que publica automaticamente. Passos em `docs/ENVIRONMENTS.md`.
+- **Staging (atualizado em 02/10/2026):** o PR #10 foi mergeado antes da migração, e as duas migrações foram aplicadas logo depois com `supabase db push`. Ainda faltam o segredo no Vault e as três variáveis na Vercel: sem eles, upload e formulário respondem "indisponível" no staging. Passos em `docs/ENVIRONMENTS.md`.
 - **LCP de laboratório acima de 2,5 s** no método simulado para páginas com imagens. Sem medição de campo.
 - **Limpeza de órfãos sem agendador.** Mecanismo decidido depois da sprint (02/10/2026): Vercel Cron diário. Falta implementar o `GET` autenticado na rota e o `vercel.json`. Até lá, órfãos se acumulam no projeto (não na cota do cliente depois de 24 h).
 - **Sem moderação de imagens** nem denúncia (Sprint 9). O bucket é público: tirar a página do ar não tira o arquivo; a remoção é manual (runbook).
