@@ -153,6 +153,8 @@ export default async function AnalyticsPage({ params, searchParams }: { params: 
   const beforeDays = daysBeforeCollection(report);
   const topClicks = ranking[0]?.clicks ?? 0;
   const includesToday = report.to === report.today;
+  // Bars compare the three steps with each other: clicks can outnumber visits.
+  const funnelPeak = Math.max(totals.visits, totals.interactions, totals.results);
   const canExport = can(access.role, "analytics.export");
 
   return (
@@ -205,7 +207,7 @@ export default async function AnalyticsPage({ params, searchParams }: { params: 
                   <b>{step.label}</b>
                   <span>{NUMBER.format(step.value)}{step.rate !== null ? <span className="text-app-muted"> · {ANALYTICS_COPY.funnel.perHundred(perHundred(step.rate))}</span> : null}</span>
                 </span>
-                <Bar ratio={step.rate === null ? 1 : step.rate} tone={step.label === ANALYTICS_COPY.funnel.results ? "success" : "accent"} />
+                <Bar ratio={funnelPeak > 0 ? step.value / funnelPeak : 0} tone={step.label === ANALYTICS_COPY.funnel.results ? "success" : "accent"} />
               </li>
             ))}
           </ol>
