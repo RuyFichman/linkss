@@ -4,6 +4,10 @@
     {
       "path": "/api/jobs/media-cleanup",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/jobs/analytics",
+      "schedule": "0 4 * * *"
     }
   ]
 }
