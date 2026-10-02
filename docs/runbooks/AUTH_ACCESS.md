@@ -26,6 +26,11 @@ Regras gerais:
 3. Hospedado: Auth → Logs, procurar envio para o usuário; verificar limites de envio do SMTP e do projeto.
 4. Links expiram em 1 hora e valem uma vez. Logs `auth.email_link` com `rejected` em sequência podem indicar que um scanner corporativo abriu o link antes da pessoa: pedir novo link e, se recorrente, priorizar a página de confirmação com botão (ADR 0005).
 5. Sem SMTP próprio configurado, projetos hospedados podem não enviar os templates `token_hash` — ver checklist em `docs/ENVIRONMENTS.md`.
+6. **"Clicou no link e caiu em Entrar com o aviso de que o e-mail provavelmente já foi confirmado"** (`/entrar?email=confirmado`; log `auth.email_link` com `type: code` e `outcome: rejected`). Isso só acontece com os templates padrão (fluxo PKCE). O Supabase já confirmou o e-mail no `/verify`, mas a troca do código pela sessão falhou. Há duas causas:
+   - `bad_code_verifier`: outro cadastro ou reenvio no mesmo navegador trocou o cookie. Visto no staging em 02/10/2026.
+   - O link foi aberto em outro navegador ou aparelho.
+
+   Orientar a pessoa a entrar com e-mail e senha. Se o login responder "e-mail não confirmado", ela pede novo link pela tela. A correção definitiva é SMTP próprio com templates `token_hash`, que não dependem de cookie.
 
 ## 3. Suspeita de tomada de conta
 

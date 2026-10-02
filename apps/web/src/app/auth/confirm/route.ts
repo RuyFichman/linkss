@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import type { NextRequest } from "next/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { recordAuthEvent } from "@/modules/audit/record";
-import { parseLinkType } from "@/modules/identity/auth-outcomes";
+import { emailLinkFailurePath, parseLinkType } from "@/modules/identity/auth-outcomes";
 import { safeNextPath } from "@/modules/identity/redirects";
 import { ensurePersonalWorkspace, getSupabase } from "@/modules/identity/session";
 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   }
 
   logEvent(failed ? "warn" : "info", "auth.email_link", { correlationId, type: type ?? (code ? "code" : "unknown"), outcome: failed ? "rejected" : "verified", errorCode });
-  if (failed) redirect(isRecovery ? "/recuperar-acesso?erro=link-expirado" : "/confirmar-email?erro=link-expirado");
+  if (failed) redirect(emailLinkFailurePath({ method: tokenHash && type ? "token_hash" : code ? "code" : "none", isRecovery }));
 
   if (isRecovery) redirect("/redefinir-senha");
 
