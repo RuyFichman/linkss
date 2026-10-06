@@ -24,6 +24,7 @@ export default async function WorkspaceLayout({ children, params }: { children: 
       {workspace ? (
         <nav aria-label={APP_COPY.nav.workspace} className="mb-6 flex flex-wrap gap-x-5 border-b border-app-border">
           <Link className="inline-flex min-h-11 items-center font-bold text-app-accent underline" href={`/app/w/${workspaceId}`}>{APP_COPY.nav.pages}</Link>
+          <Link className="inline-flex min-h-11 items-center font-bold text-app-accent underline" href={`/app/w/${workspaceId}/resultados`}>{APP_COPY.nav.results}</Link>
           <Link className="inline-flex min-h-11 items-center font-bold text-app-accent underline" href={`/app/w/${workspaceId}/membros`}>{APP_COPY.nav.members}</Link>
         </nav>
       ) : null}

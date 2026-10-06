@@ -192,6 +192,14 @@ export function periodTotals(rows: readonly DayRow[]): Totals {
       if (value) counts[type] = (counts[type] ?? 0) + value;
     }
   }
+  return totalsFromCounts(counts);
+}
+
+/**
+ * The same totals from counts that are already summed over a period (one page's row in the
+ * consolidated view). The only place where visits, interactions, results and rates are defined.
+ */
+export function totalsFromCounts(counts: EventCounts): Totals {
   const visits = counts.page_view ?? 0;
   const interactions = sum(counts, INTERACTION_TYPES);
   const results = sum(counts, VALUE_ACTION_TYPES);

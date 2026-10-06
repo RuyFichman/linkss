@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { APP_COPY, TEAM_COPY } from "@/content/pt-BR";
+import { APP_COPY, TEAM_COPY, WORKSPACE_ANALYTICS_COPY } from "@/content/pt-BR";
 import { publicAddressLabel } from "@/lib/app-url";
 import { limitUsage } from "@/modules/entitlements";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
@@ -59,7 +59,10 @@ export default async function WorkspaceHomePage({ params, searchParams }: { para
             {list.counts.archived > 0 ? <span>{copy.usageNote}</span> : null}
           </p>
         </div>
-        {mayCreate && !usage.reached ? <Link className="ui-button ui-button-primary" href={`/app/w/${workspaceId}/paginas/nova`}>+ {copy.create}</Link> : null}
+        <div className="flex flex-wrap gap-3">
+          {list.total > 0 ? <Link className="ui-button ui-button-secondary" href={`/app/w/${workspaceId}/resultados`}>{WORKSPACE_ANALYTICS_COPY.openFromList}</Link> : null}
+          {mayCreate && !usage.reached ? <Link className="ui-button ui-button-primary" href={`/app/w/${workspaceId}/paginas/nova`}>+ {copy.create}</Link> : null}
+        </div>
       </header>
 
       {mayCreate && usage.reached ? <Notice tone="warning">{copy.limitReached(usage.limit)}</Notice> : null}

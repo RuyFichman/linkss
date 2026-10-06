@@ -230,7 +230,7 @@ export const APP_COPY = {
     sessionExpired: "Sua sessão expirou. Entre novamente para continuar.",
     notDeployed: "Este recurso ainda não está disponível nesta conta. Tente novamente mais tarde.",
   },
-  nav: { home: "Início", skipToContent: "Pular para o conteúdo", workspace: "Seções da conta", pages: "Páginas", members: "Membros" },
+  nav: { home: "Início", skipToContent: "Pular para o conteúdo", workspace: "Seções da conta", pages: "Páginas", results: "Resultados", members: "Membros" },
 } as const;
 
 /** Members, roles and invitations (ADR 0012). */
@@ -946,5 +946,127 @@ export const ANALYTICS_COPY = {
     forbidden: "Você não tem permissão para fazer isso nesta conta.",
     notFound: "Esta página não existe mais.",
     unavailable: "Não foi possível concluir agora. Tente novamente em instantes.",
+  },
+} as const;
+
+/** Consolidated results of a workspace (ADR 0013). Number labels come from ANALYTICS_COPY. */
+export const WORKSPACE_ANALYTICS_COPY = {
+  title: "Resultados da conta",
+  lead: "Visitas e resultados de todas as páginas desta conta no período, para ver quais renderam mais e quais precisam de atenção.",
+  openFromList: "Ver resultados da conta",
+  kpiPages: "Páginas com visitas ou cliques",
+  kpiPagesHint: (listed: number) => (listed === 1 ? "de 1 página listada" : `de ${listed} páginas listadas`),
+  states: {
+    not_available: {
+      title: "Resultados ainda não disponíveis",
+      description: "A contagem de visitas ou o painel da conta ainda não está ativo neste ambiente. As páginas públicas funcionam normalmente, e os números aparecem aqui quando a contagem começar.",
+    },
+    no_pages: { title: "Esta conta ainda não tem páginas", description: "Crie e publique uma página para começar a contar visitas e resultados." },
+    nothing_published: { title: "Nenhuma página no ar", description: "Só uma página publicada recebe visitas. Publique uma página para começar a contar." },
+    before_collection: {
+      title: "Período anterior ao início da contagem",
+      description: (since: string) => `A contagem desta conta começou em ${since}. Antes disso não há dados, o que é diferente de zero visitas.`,
+    },
+    no_data_yet: { title: "Sem dados ainda", description: "Há páginas no ar, mas nenhuma visita foi registrada até agora. Compartilhe os links para começar." },
+    zero: { title: "Nenhuma visita neste período", description: "As páginas desta conta já tiveram visitas em outros períodos, mas nenhuma visita e nenhum clique neste." },
+  },
+  pages: {
+    title: "Páginas",
+    lead: "Ordenadas pelos resultados do período. Abra uma página para ver blocos, origens e o dia a dia dela.",
+    caption: "Visitas, resultados e resultados a cada 100 visitas de cada página no período",
+    page: "Página",
+    visits: "Visitas",
+    results: "Resultados",
+    rate: "A cada 100 visitas",
+    situation: "Situação dos dados",
+    open: "Ver detalhes",
+    openFor: (title: string) => `Ver detalhes de ${title}`,
+    noNumber: "sem dado",
+    noRate: "—",
+    archived: "Arquivada",
+    draft: "Fora do ar",
+    mixed: (withData: number, withoutData: number) =>
+      `${withData === 1 ? "1 página teve" : `${withData} páginas tiveram`} visitas ou cliques no período; ${withoutData === 1 ? "1 não tem" : `${withoutData} não têm`} dados para mostrar (veja a situação de cada uma).`,
+    omitted: (count: number) =>
+      `${count === 1 ? "1 página não aparece" : `${count} páginas não aparecem`} nesta lista porque ${count === 1 ? "está fora do ar e não teve" : "estão fora do ar e não tiveram"} visitas no período.`,
+    truncated: (shown: number) => `A lista mostra as ${shown} páginas com mais visitas. Os totais acima incluem todas.`,
+    states: {
+      data: "Com dados",
+      zero: "Zero: nenhuma visita ou clique no período",
+      no_data_yet: "Sem dados ainda: no ar, sem nenhuma visita registrada",
+      before_collection: "Sem contagem: período anterior ao início",
+      never_published: "Nunca publicada",
+      not_available: "Contagem não disponível",
+    },
+  },
+  sources: { title: "Origem das visitas da conta", lead: "Soma de todas as páginas." },
+  series: { title: "Dia a dia da conta" },
+  export: { button: "Exportar CSV das páginas", hint: "Totais de cada página no período, sem dados de visitantes. A exportação fica registrada." },
+} as const;
+
+/** Report links, management side (ADR 0013). The report a client reads has its own copy file. */
+export const REPORTS_COPY = {
+  title: "Relatório para o cliente",
+  lead: "Crie um link somente leitura com os resultados desta página. Quem tiver o link vê os números sem precisar de conta, e não vê mais nada desta conta.",
+  notInPlan: "Relatórios compartilháveis não estão disponíveis no plano desta conta.",
+  notDeployed: "Relatórios compartilháveis ainda não estão disponíveis neste ambiente.",
+  viewOnly: "Proprietários e administradores criam e cancelam os links de relatório desta página.",
+  loadError: "Não foi possível carregar os links de relatório agora. Tente novamente em instantes.",
+  form: {
+    period: "Período do relatório",
+    periodHint: "O relatório sempre mostra os últimos dias completos, até ontem, e se atualiza sozinho a cada dia.",
+    periodOption: (days: number) => `Últimos ${days} dias`,
+    expires: "O link funciona por",
+    expiresHint: "Depois disso o link deixa de abrir. Você pode cancelá-lo antes a qualquer momento.",
+    expiresOption: (days: number) => `${days} dias`,
+    label: "Anotação (opcional)",
+    labelHint: "Só para você se organizar, por exemplo: Relatório de setembro. Não aparece no relatório.",
+    submit: "Criar link de relatório",
+    created: "Link criado. Copie agora: por segurança, ele não será mostrado de novo.",
+    linkLabel: "Link do relatório",
+    linkHint: (when: string) => `Funciona até ${when}. Quem tiver este link vê os resultados desta página.`,
+    copy: "Copiar link",
+    copied: "Link copiado.",
+    copyFailed: "Não foi possível copiar automaticamente. Selecione o link e copie.",
+    limitReached: (limit: number) => `Esta página já tem ${limit} links ativos. Cancele um deles para criar outro.`,
+  },
+  fieldErrors: {
+    period: "Escolha um período que o plano desta conta cobre.",
+    expires: "Escolha por quanto tempo o link funciona.",
+    label: "A anotação pode ter até 80 caracteres.",
+  },
+  errors: {
+    invalid: "Confira os campos e tente de novo.",
+    not_in_plan: "Relatórios compartilháveis não estão disponíveis no plano desta conta.",
+    too_many_active: "Limite de links ativos atingido. Cancele um link para criar outro.",
+    rate_limited: "Muitos links criados hoje nesta conta. Tente novamente amanhã.",
+    forbidden: "Você não tem permissão para fazer isso nesta conta.",
+    not_found: "Este link ou esta página não existe mais, ou você perdeu o acesso.",
+    not_deployed: "Relatórios compartilháveis ainda não estão disponíveis neste ambiente.",
+    unavailable: "Não foi possível concluir agora. Tente novamente em instantes.",
+    unauthenticated: "Sua sessão expirou. Entre novamente.",
+  },
+  list: {
+    title: "Links criados",
+    empty: "Nenhum link de relatório criado para esta página.",
+    unlabeled: "Sem anotação",
+    period: (days: number) => `Últimos ${days} dias`,
+    created: (when: string) => `Criado em ${when}`,
+    status: {
+      active: (when: string) => `Ativo: funciona até ${when}`,
+      expired: (when: string) => `Expirado em ${when}`,
+      revoked: (when: string) => `Cancelado em ${when}`,
+    },
+    suspendedByPlan: "Enquanto o plano desta conta não incluir relatórios compartilháveis, os links abaixo não abrem. Eles voltam a funcionar se o plano voltar a incluir.",
+    noLinkAgain: "Por segurança, o endereço de um link não é mostrado depois de criado. Se você perdeu o link, cancele-o e crie outro.",
+  },
+  revoke: {
+    open: "Cancelar link",
+    openFor: (name: string) => `Cancelar link: ${name}`,
+    title: "Cancelar este link de relatório?",
+    warning: "O link para de funcionar imediatamente. Quem abrir o endereço verá que o relatório não está disponível. Esta ação não pode ser desfeita.",
+    confirm: "Cancelar link",
+    keep: "Manter link",
+    done: "Link cancelado. Ele já não abre.",
   },
 } as const;
