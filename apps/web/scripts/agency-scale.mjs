@@ -182,7 +182,12 @@ async function signIn(password) {
   const supabase = createServerClient(SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
     cookies: {
       getAll: () => [...jar.entries()].map(([name, value]) => ({ name, value })),
-      setAll: (cookies) => { for (const { name, value } of cookies) (value ? jar.set(name, value) : jar.delete(name)); },
+      setAll: (cookies) => {
+        for (const { name, value } of cookies) {
+          if (value) jar.set(name, value);
+          else jar.delete(name);
+        }
+      },
     },
   });
   const { error } = await supabase.auth.signInWithPassword({ email: EMAIL, password });
