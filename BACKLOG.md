@@ -70,14 +70,15 @@ Verificado no stack local (pgTAP + Vitest + navegador + Lighthouse em `next star
 
 ## Sprint 6 — analytics
 
-Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lighthouse em `next start`); **nada aplicado em staging**. Relatório: `docs/SPRINT_6_REPORT.md`.
+Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lighthouse em `next start`); mergeada em `main` (PR #16, 02/10/2026) e **aplicada em staging, confirmada pelo founder em 06/10/2026**. Relatório: `docs/SPRINT_6_REPORT.md`.
 
 - [x] P0 Definir taxonomia e contrato de eventos (ADR 0011).
 - [x] P0 Ingestão não bloqueante, deduplicação e rate limit.
 - [x] P0 Retenção bruta de 7 dias e agregação diária.
 - [x] P0 Dashboard de visitas, ações, origem e blocos.
 - [x] P1 Filtros de bot/admin/preview e exportação CSV.
-- [ ] P0 Aplicar a Sprint 6 em staging: `supabase db push`, segredo `analytics_signing_secret` no Vault, `ANALYTICS_SIGNING_SECRET` na Vercel e merge (passos em `docs/ENVIRONMENTS.md`); conferir o país das visitas e a primeira execução do cron.
+- [x] P0 Aplicar a Sprint 6 em staging: `supabase db push`, segredo `analytics_signing_secret` no Vault, `ANALYTICS_SIGNING_SECRET` na Vercel e merge (passos em `docs/ENVIRONMENTS.md`). Em 06/10/2026 o job manual respondeu `ok` e o founder relatou visita e clique aparecendo em *Resultados*.
+- [ ] P1 Conferir a primeira execução agendada do cron de analytics com sucesso (log `analytics.maintenance` com `outcome=ok` e `lastFinalDay` preenchido) e os dois crons em *Vercel → Settings → Cron Jobs*.
 - [ ] P1 Região (UF) das visitas — cortada nesta sprint (primeiro item da lista de cortes).
 - [ ] P1 Abrir o CSV exportado numa planilha (Excel/Google Sheets) e conferir acentos e colunas — só o conteúdo foi conferido.
 - [ ] P1 Medir em campo a perda de eventos em navegadores embutidos (Instagram, TikTok, WhatsApp).
