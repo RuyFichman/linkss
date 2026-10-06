@@ -124,6 +124,31 @@ Decisão: ADR 0011. É o primeiro caminho de escrita aberto a visitantes anônim
 | Chamar o job de agregação/limpeza sem autorização | `CRON_SECRET` em `Authorization`, comparação em tempo constante; a função só é executável pelo `service_role` | implementado + verificado | Vitest `jobs/analytics/route.test.ts`; pgTAP 140 |
 | Flood de requisições a `/api/events` (custo de função e de transação) | corpo de até 4 KiB, 10 eventos por lote, resposta sem banco | **risco residual**: sem limite global nem firewall até a Sprint 9 | — |
 
+## Controles adicionados na Sprint 7, parte 1 (páginas, convites e papéis)
+
+Desenho em `docs/adr/0012-multi-page-operations-invitations-and-roles.md`. Verificado no stack local (pgTAP 150, Vitest e navegador).
+
+| Ameaça | Controle | Estado |
+|---|---|---|
+| Roubo ou encaminhamento do link de convite (o link circula por WhatsApp) | O link só é aceito por uma sessão cujo e-mail **confirmado** é o convidado; outra conta recebe "este convite é para outro e-mail", sem nome da conta nem de quem convidou. Uso único, validade de 7 dias, cancelável | Implementado e testado (pgTAP, navegador) |
+| Reuso do link (replay) | A aceitação marca o convite na mesma transação que cria a participação; a segunda tentativa recebe o estado genérico | Implementado e testado |
+| Vazamento do token em repouso | Só o SHA-256 é guardado; a criação recebe apenas o hash; `token_hash` não tem `grant` para nenhum papel de cliente; a aceitação recalcula o hash do token apresentado, então um hash lido não serve para aceitar | Implementado e testado (pgTAP 010 e 150) |
+| Token em logs | Os logs estruturados registram só o desfecho (`members.invite`, `members.accept_invitation`); o logger descarta chaves `token` e `email`. Conferido no log do servidor durante a verificação: nenhuma ocorrência de token ou endereço | Implementado. **Exposição restante:** o token está no caminho da URL e aparece no log de requisições da hospedagem |
+| Token em `Referer` | A tela de convite declara `referrer: no-referrer` e não tem link externo | Implementado (conferido no navegador) |
+| Aceitar na conta errada (convite da conta A concedendo acesso à conta B) | A aceitação não recebe a conta como parâmetro: ela vem da linha do convite. O resultado devolve a conta e o teste confere que nenhuma outra participação foi criada | Implementado e testado |
+| Escalada por convite | Convite só concede administrador ou editor (constraint + RPC + serviço); nem o proprietário convida outro proprietário. Quem já é membro e abre um convite com papel maior não muda de papel | Implementado e testado |
+| Escalada por administrador | `change_member_role` e `remove_workspace_member` (Sprint 2) continuam recusando promover a proprietário, rebaixar ou remover proprietário; o serviço verifica antes e a interface só oferece os papéis permitidos | Implementado e testado |
+| Enumeração de convites | Token desconhecido, malformado, expirado, cancelado, já usado, de conta excluída ou suspensa: a mesma linha do banco e a mesma tela. Editor e outras contas não leem `workspace_invitations` | Implementado e testado |
+| Enumeração de membros e de contas | `list_workspace_members` responde `P0002` a quem não é membro; e-mails só para proprietário e administrador. Convidar um e-mail que já é membro responde "já faz parte" só a quem administra aquela conta. Convidar um e-mail qualquer não revela se ele tem cadastro | Implementado e testado |
+| Sessão aberta de quem foi removido ou rebaixado | Nada é guardado por sessão: a participação é relida a cada Server Action, rota e página, e o RLS a avalia a cada comando. Verificado no navegador: editor removido com a aba aberta → o salvamento seguinte recusado; administrador rebaixado com o diálogo aberto → "sem permissão" | Implementado e testado |
+| Convite além do limite do plano | Convites pendentes contam como lugar; o limite é conferido na criação e de novo na aceitação, com a linha da conta travada | Implementado e testado |
+| Spam de convites | 20 por conta e 30 por pessoa em 24 h (`LK082`); nenhum e-mail é enviado pelo produto | Implementado e testado. **Pendente:** limite global por IP (Sprint 9) |
+| Duplicação como atalho para burlar entitlements | A cópia entra pelo mesmo `insert` de páginas: o gatilho de `max_profiles` vale igual; páginas arquivadas continuam contando; imagens compartilhadas contam uma vez em `storage_mb` | Implementado e testado |
+| Conteúdo mutável compartilhado entre original e cópia | Cópia profunda numa transação, com id novo para cada bloco; imagens são imutáveis (trocar cria outro asset) e ficam vivas enquanto alguma das páginas as usa | Implementado e testado (AC2) |
+| Cópia publicada com Pix, WhatsApp ou consentimento de outro cliente | Aviso "Revise antes de publicar" no rascunho copiado, listando o que conferir, até a primeira publicação. Não bloqueia | Implementado. **Risco aceito:** depende de a pessoa ler o aviso (UX-052) |
+| Busca da lista como vetor de leitura entre contas ou de injeção | A função roda com os privilégios de quem chama (RLS decide); `%`, `_` e `\` são escapados; ordem e filtro vêm de listas fechadas | Implementado e testado com strings hostis |
+| Página arquivada continuar no ar ou em cache | A mesma transação tira a página do ar; a ação invalida o cache público pelo caminho já usado por "Tirar do ar"; uma constraint impede página arquivada com versão no ar | Implementado e testado (navegador: 404 logo após arquivar) |
+
 ## Requisitos antes do MVP privado
 
 - headers de segurança e CSP;

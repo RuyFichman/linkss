@@ -101,6 +101,24 @@ Rollback da aplicação para a Sprint 5 depois da migração: suportado. O códi
 
 Stack local: `ANALYTICS_SIGNING_SECRET` em `apps/web/.env.local` e o mesmo valor no Vault local (`select vault.create_secret('<valor>', 'analytics_signing_secret');`). Sem `x-forwarded-for` (o `next start` local não tem proxy), o hash do visitante fica ausente: toda visita conta e todos dividem um limite por página. O teste de precisão (`apps/web/scripts/analytics-accuracy.mjs`) envia o cabeçalho ele mesmo.
 
+## Passos de deploy da Sprint 7 (parte 1 pronta; **nada aplicado em staging**)
+
+A lista completa e ordenada da sprint fica para o fechamento (parte 2). O que a parte 1 exige:
+
+1. `npx supabase db push` com a CLI logada na conta dona do projeto de staging: aplica `202610060001_sprint7_enum_values` e `202610060002_agency_operations` (só acrescentam objetos; a aplicação da Sprint 6 continua funcionando sobre esse schema).
+2. Nenhum segredo novo e nenhuma variável nova na Vercel.
+3. Merge do PR (a `main` publica em staging).
+
+**Ordem inversa também é segura.** Se a aplicação chegar antes da migração: a lista de páginas usa a consulta antiga (sem busca nem filtros), arquivar, duplicar e *Membros* respondem "ainda não disponível", e um link de convite mostra "Este convite não é válido". Nada do que existia quebra.
+
+**Plano Agência em staging antes da cobrança (Sprint 8).** Toda conta nasce no plano Free (1 página, 1 pessoa) e `workspaces.plan_id` não tem interface nem `grant`: só muda por SQL. Para testar várias páginas e convites, depois de criar a conta da agência pela interface, rode no *SQL Editor* do projeto de staging:
+
+```sql
+update public.workspaces set plan_id = 'agency' where id = '<id da conta, o que aparece na URL /app/w/...>';
+```
+
+Isso é um passo manual do founder, não uma migração. A Sprint 8 substitui por cobrança.
+
 ## Checklist de Auth para projetos hospedados (não aplicado)
 
 Configurar em staging e produção **antes** de convidar usuários externos, espelhando `supabase/config.toml`. Nenhuma destas mudanças foi aplicada no projeto hospedado.

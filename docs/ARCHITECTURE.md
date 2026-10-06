@@ -170,6 +170,29 @@ Dono ── /app/w/…/paginas/…/resultados ── get_profile_analytics (memb
 - **Módulo:** `analytics` (contrato, origem, aparelho e robôs, datas, hashes, atestação, ingestão, coletor, estados e cálculos do painel, CSV, serviço e repositórios).
 - **Sprint 7:** o painel consolidado soma `analytics_daily` por `workspace_id` e dia; o link de relatório lê a mesma função por um token.
 
+## Operação de várias páginas, convites e papéis — implementado na Sprint 7, parte 1
+
+Decisões em `docs/adr/0012-multi-page-operations-invitations-and-roles.md`. Verificado no stack local; nada aplicado em staging.
+
+| Peça | Onde | Observação |
+|---|---|---|
+| Lista de páginas | `list_workspace_profiles` (SQL, `security invoker`) + `modules/profiles/page-list*.ts` + `/app/w/[workspaceId]` | Uma consulta por renderização, qualquer que seja o número de páginas: totais, contagem por situação e a página de itens com estado de publicação. Busca, filtro, ordem e paginação ficam na URL |
+| Arquivar / desarquivar | `archive_profile`, `unarchive_profile` + `modules/profiles/{service,actions}.ts` | Arquivar tira do ar na mesma transação e invalida o cache público pelo caminho existente; `/[slug]` continua estático. Rascunho de página arquivada é congelado por RLS |
+| Duplicar | `duplicate_profile` + `/app/w/[workspaceId]/paginas/[profileId]/duplicar` | Uma transação; mesma conta; ids de bloco novos; passa pelo gatilho de `max_profiles` e pelo validador de rascunho |
+| Imagens compartilhadas | `media_asset_shares`, `private.media_page_references`, `private.media_is_referenced`, `claim_media_cleanup` | A cópia recebe permissão de usar as imagens da origem; a referência continua calculada dos documentos; a limpeza transfere a imagem para a página que ainda a usa quando a dona é expurgada |
+| Convites | `workspace_invitations` + RPCs `create_`, `revoke_`, `get_`, `accept_workspace_invitation` + `modules/identity/{invitations,invitation-token,members-service,members-server,member-actions}.ts` | Token de 256 bits mostrado uma vez; só o hash guardado; aceitação exige e-mail confirmado igual ao convidado; pendentes contam como lugar |
+| Membros | `list_workspace_members` + `/app/w/[workspaceId]/membros` | Interface para `change_member_role` e `remove_workspace_member`, que existiam desde a Sprint 2 |
+| Aceite | `/app/convite/[token]` | Sob `/app`: o proxy leva quem não tem sessão ao login com `next`; nenhuma rota nova na raiz, nada novo em `reserved_slugs` |
+
+Regras que este módulo acrescenta:
+
+1. **A conta de uma ação é a da URL da requisição.** Nenhuma ação lê a conta de cookie, cabeçalho ou "última usada". Ids de página, participação e convite são resolvidos no banco e comparados com a conta da URL.
+2. **A matriz de papéis continua em dois lugares** (`modules/identity/permissions.ts` e RPCs/RLS), com Vitest e pgTAP dos dois lados. As ações novas: `profile.archive`, `profile.duplicate`, `members.invite`, `invitations.view`, `invitations.revoke`.
+3. **Pendente de convite existe só em `workspace_invitations`.** A participação nasce `active` na aceitação.
+4. **Antes da migração** (a `main` chega ao staging primeiro): a lista cai na consulta antiga, sem busca; arquivar, duplicar e membros respondem "ainda não disponível"; o link de convite mostra o estado genérico.
+
+Para a parte 2 (painel consolidado e link de relatório): páginas arquivadas mantêm agregados e `profile_id`; a cópia começa sem histórico; `list_workspace_profiles` já devolve o que a tabela de páginas do consolidado precisa de cada página, menos os números.
+
 ## Regras de escala
 
 1. Não consultar blocos editáveis para cada page view; servir snapshot publicado.

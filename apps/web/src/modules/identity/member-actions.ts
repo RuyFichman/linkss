@@ -19,7 +19,8 @@ function stringField(formData: FormData, name: string): string {
 /** Outcome only: never an address, a token or a path that contains one. */
 async function logCommand(event: string, outcome: string): Promise<void> {
   const correlationId = correlationIdFrom((await headers()).get(CORRELATION_HEADER));
-  logEvent(outcome === "ok" ? "info" : outcome === "unavailable" ? "error" : "warn", event, { correlationId, outcome });
+  const level = outcome === "ok" || outcome === "accepted" || outcome === "left" ? "info" : outcome === "unavailable" ? "error" : "warn";
+  logEvent(level, event, { correlationId, outcome });
 }
 
 function errorMessage(error: MemberCommandError, limit?: number): string {

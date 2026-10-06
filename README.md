@@ -54,6 +54,15 @@ select vault.create_secret('<mesmo valor de ANALYTICS_SIGNING_SECRET>', 'analyti
 
 Sem isso as páginas públicas funcionam, os eventos são descartados e o painel mostra "Resultados ainda não disponíveis". Quem está com a conta aberta no mesmo navegador não é contado: teste numa guia anônima. O teste de precisão (AC5) roda contra um `next start` local: `node scripts/analytics-accuracy.mjs` em `apps/web` (instruções no cabeçalho do arquivo).
 
+## Rotas da Sprint 7 (parte 1 de 2, não aplicada em staging)
+
+- `/app/w/[workspaceId]` — lista de páginas com busca por nome ou endereço, filtro por situação, ordem e paginação na URL (`?q=`, `?situacao=`, `?ordem=`, `?pagina=`), uso do plano e as ações Editar, Resultados, Duplicar e Arquivar conforme o papel.
+- `/app/w/[workspaceId]/paginas/[profileId]/duplicar` — cria uma cópia em rascunho (nome e endereço próprios) na mesma conta.
+- `/app/w/[workspaceId]/membros` — pessoas com acesso e papéis; proprietário e administrador convidam (o link é copiado por quem convida; não há envio de e-mail), cancelam convites, mudam papéis e removem.
+- `/app/convite/[token]` — aceite de convite; exige sessão com o mesmo e-mail convidado.
+
+Para testar localmente com mais de uma página e mais de uma pessoa, coloque a conta no plano Agência: `update public.workspaces set plan_id = 'agency' where id = '<id da conta>';` (não há cobrança até a Sprint 8). Decisões em `docs/adr/0012-multi-page-operations-invitations-and-roles.md`.
+
 ## Rotas da Sprint 6
 
 - `/app/w/[workspaceId]/paginas/[profileId]/resultados` — resultados da página por período (hoje, 7, 30 e 90 dias conforme o plano): visitas, resultados, caminho até o resultado, dia a dia, blocos, origens, aparelhos, países e campanhas; `/resultados/exportar` baixa o CSV dos totais por dia.

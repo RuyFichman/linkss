@@ -120,6 +120,6 @@ Applied in the browser before upload: fixed 1:1 for the avatar; original, 1:1, 4
 
 - Deploying needs three operational steps besides the migration: the Vault secret `media_signing_secret`, `MEDIA_SIGNING_SECRET` on the server with the same value, and (for cleanup) `CRON_SECRET` plus the existing `SUPABASE_SECRET_KEY`. Without the signing secret uploads fail visibly ("unavailable"); nothing else is affected.
 - Transparent PNG logos keep their transparency only in browsers that can encode WebP in canvas; elsewhere the pre-pass flattens them onto white.
-- Page duplication (Sprint 7) must copy assets or widen the "same page" rule for references.
+- Page duplication (Sprint 7) must copy assets or widen the "same page" rule for references. **Resolved in ADR 0012:** the rule was widened. `media_asset_shares` lets a copied page reference the source's assets (same workspace only); "referenced" is still computed from the documents, now of the owner page and of the pages the asset is shared with; an asset is counted once against `storage_mb`; and when the owner page is purged the cleanup re-homes the asset to a page that still uses it. Objects are never copied.
 - The variant plan is part of the storage contract: the renderer derives the file names from the master width. Changing the widths later needs the old files to be produced again (or the plan to be versioned per asset) before the constants change.
 - Egress grows with visits: see `docs/SUPABASE_CAPACITY.md` for the measured bytes per variant.

@@ -134,6 +134,30 @@ Regras:
 - Não prometer exatidão: toda tela de números tem "estimativas" e o link "Como contamos".
 - Em "Como contamos", dizer o que **não** é contado (quem bloqueia scripts, robôs, a própria pessoa com a conta aberta) e o que não é guardado (IP, cookies, endereço de origem completo).
 
+## Várias páginas, membros e convites (Sprint 7)
+
+Textos em `content/pt-BR.ts` (`APP_COPY.pages`, `APP_COPY.archive`, `APP_COPY.duplicate`, `TEAM_COPY`). Nada disto vai para `content/public-page.ts`.
+
+| Situação | Texto | Regra |
+|---|---|---|
+| Uso do plano | "3 de 10 páginas" + "Páginas arquivadas contam neste total." | A segunda frase só aparece quando existe página arquivada |
+| Situação da página | Rascunho · Publicada · Arquivada · "Alterações não publicadas" | Sempre em palavras, nunca só cor |
+| Busca sem resultado | "Nenhuma página encontrada" + "Não há páginas com “<termo>” no nome ou no endereço." + "Limpar busca" | Limpar a busca mantém o filtro de situação |
+| Arquivar página publicada | "A página sai do ar agora: quem abrir <endereço> verá “página não encontrada”." | A confirmação diz o que acontece com o endereço público; depois, o que fica guardado |
+| Arquivar rascunho | "A página não está no ar, então nada muda para os visitantes." | |
+| Desarquivar | "A página volta como rascunho. Ela não volta ao ar sozinha: publique de novo quando estiver pronta." | |
+| Duplicar | "O que é copiado" / "O que não é copiado" antes do formulário | Listas curtas; "As duas ficam independentes: mudar uma não muda a outra." |
+| Rascunho copiado | "Revise antes de publicar" + lista (Número do WhatsApp, Chave Pix, Link de pagamento do Pix, Texto de consentimento do formulário) | Some na primeira publicação; não bloqueia |
+| Lugares | "4 de 5 lugares" + "Convites pendentes reservam um lugar." | "Lugar", não "assento" nem "licença" |
+| Convite criado | "Convite criado. Copie o link agora: ele não será mostrado de novo." | Sempre dizer que **nós não enviamos e-mail** |
+| Convite inválido | "Este convite não é válido" + "O link pode ter expirado, sido cancelado ou já ter sido usado. Peça um novo convite a quem enviou." | **Um só texto** para desconhecido, expirado, cancelado e usado. Nunca dizer qual foi |
+| Convite para outro e-mail | "Este convite é para outro e-mail" | Não mostrar o nome da conta, quem convidou nem o e-mail convidado |
+| Remover pessoa | "<Nome> perde o acesso a todas as páginas desta conta imediatamente. O que essa pessoa fez continua aqui." | |
+| Último proprietário | "A conta precisa de pelo menos um proprietário. Torne outra pessoa proprietária antes." | |
+| Recurso antes da migração | "Este recurso ainda não está disponível nesta conta. Tente novamente mais tarde." | Sem prometer data |
+
+Vocabulário: **membros** (pessoas com acesso), **convite**, **papel** (Proprietário, Administrador, Editor), **lugar**, **arquivar/desarquivar**, **duplicar** (o resultado é uma **cópia**). "Cancelar convite", não "revogar". Sem botão de compra nem preço nas telas de limite: a cobrança é da Sprint 8.
+
 ## Padrões de erro
 
 1. **O que ocorreu:** “Este endereço já está em uso.”

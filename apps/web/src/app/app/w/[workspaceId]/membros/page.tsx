@@ -108,12 +108,8 @@ export default async function MembersPage({ params }: { params: Promise<{ worksp
         <>
           <section className="surface-card grid gap-4 p-5 sm:p-8" aria-labelledby="invite-title">
             <h2 id="invite-title" className="text-xl font-bold">{TEAM_COPY.invite.title}</h2>
-            {seats.reached ? <Notice tone="warning">{TEAM_COPY.limitReached(seats.limit)}</Notice> : (
-              <>
-                <p className="m-0 text-app-muted">{TEAM_COPY.invite.lead}</p>
-                <InviteMemberForm action={inviteMemberAction.bind(null, workspaceId, seats.limit)} roles={INVITABLE_ROLES} />
-              </>
-            )}
+            {seats.reached ? null : <p className="m-0 text-app-muted">{TEAM_COPY.invite.lead}</p>}
+            <InviteMemberForm action={inviteMemberAction.bind(null, workspaceId, seats.limit)} roles={INVITABLE_ROLES} fullMessage={seats.reached ? TEAM_COPY.limitReached(seats.limit) : null} />
           </section>
 
           <section className="surface-card grid gap-4 p-5 sm:p-8" aria-labelledby="invitations-title">

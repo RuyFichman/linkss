@@ -132,6 +132,40 @@ O job da Sprint 9 deverá, em transação e com trilha própria:
 
 O purge de analytics **já está agendado** (Sprint 6): o job diário `/api/jobs/analytics` apaga eventos brutos com mais de 7 dias, agregados com mais de 100 dias e contadores de limite com mais de 2 dias. Apagar a página no passo 1 leva junto, em cascata, os eventos e agregados dela.
 
+## Dados adicionados na Sprint 7, parte 1 (convites e operação de várias páginas)
+
+### `public.workspace_invitations`
+
+O e-mail convidado é dado pessoal de **alguém que talvez nunca crie conta**. Controlador: o produto (gestão de acesso à conta do cliente). Base proposta: execução do contrato com a conta que convida e legítimo interesse em controlar o acesso; a confirmar na revisão jurídica.
+
+| Campo | Conteúdo | Finalidade | Retenção |
+|---|---|---|---|
+| `email` | Endereço convidado, normalizado (minúsculas, sem espaços) | Conferir que quem aceita é a pessoa convidada; mostrar o convite a quem administra a conta | Até 30 dias depois de o convite terminar (aceito, cancelado ou expirado) |
+| `role` | `admin` ou `editor` | Papel concedido na aceitação | Idem |
+| `token_hash` | SHA-256 do token. O token nunca é guardado | Localizar o convite a partir do link | Idem |
+| `invited_by`, `revoked_by`, `accepted_by` | Ids de usuários (ficam nulos se a pessoa for excluída) | Mostrar quem convidou; trilha | Idem |
+| `created_at`, `expires_at`, `revoked_at`, `accepted_at` | Datas | Validade e estado | Idem |
+
+- **Quem lê:** proprietários e administradores da conta (RLS), sem a coluna `token_hash`. Editores, outras contas e `anon` não leem nada. A pessoa convidada vê só o nome da conta, o papel e o nome de quem convidou, e só com um convite válido para o e-mail dela.
+- **Exclusão:** convites terminados há mais de 30 dias são apagados quando a conta cria o convite seguinte. **Purge agendado para contas que não convidam mais: pendente (Sprint 9)**, junto com os demais purges.
+- **Exportação e exclusão de conta (Sprint 9):** alcançar por `email` (pedido de um convidado sem conta), por `invited_by` e `accepted_by` (pedido de um usuário) e por `workspace_id` (exclusão da conta; já em cascata).
+- **Trilha de auditoria:** `invitation.created`, `invitation.revoked` e `invitation.accepted` guardam papel e ids, **nunca** o endereço nem algo derivado do token.
+- **Nenhum e-mail é enviado** pelo produto: nenhum subprocessador novo.
+
+### E-mail de membros na tela "Membros"
+
+`list_workspace_members` lê `auth.users.email` e o devolve **só** a proprietários e administradores da mesma conta (e a cada pessoa, o próprio). Editores veem nome e papel. Finalidade: identificar quem tem acesso. Nada novo é guardado.
+
+### Cookie `lnk_after_confirm`
+
+Definido só quando alguém se cadastra a partir de um link de convite: guarda o caminho do convite por 1 hora, `HttpOnly`, `SameSite=Lax`, restrito a `/auth`. Finalidade: voltar ao convite depois da confirmação de e-mail no mesmo aparelho. Não identifica a pessoa e não é lido por nenhuma outra rota.
+
+### Outros
+
+- `profiles.duplicated_from`: id da página de origem de uma cópia. Não é dado pessoal.
+- `media_asset_shares`: quais páginas podem usar uma imagem de outra página da mesma conta. Não é dado pessoal. As imagens em si seguem o que já está descrito na Sprint 5; uma imagem compartilhada só é apagada quando nenhuma página a usa.
+- **Duplicar copia dados que podem ser pessoais** (chave Pix, número de WhatsApp) para outra página da mesma conta. Não há novo destinatário: os dois rascunhos pertencem à mesma conta.
+
 ## Regras
 
 - Não coletar dado sem finalidade e owner.

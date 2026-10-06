@@ -81,6 +81,20 @@ Os eventos carregam resultado e contagens — nunca o payload, o hash do visitan
 
 Atraso de agregação: `lastFinalDay` deve ser o dia anterior depois da execução da madrugada. Capacidade: tamanho de `analytics_events` no painel do Supabase (limiares em `docs/SUPABASE_CAPACITY.md`).
 
+## Sinais de páginas, convites e membros (Sprint 7, parte 1)
+
+Logs estruturados com `correlationId` e `outcome`. **Nunca** contêm e-mail, token, caminho de convite nem conteúdo de página.
+
+| Evento | Quando | `outcome` | O que observar |
+|---|---|---|---|
+| `profile.archive`, `profile.unarchive` | Arquivar e desarquivar | `ok`, `forbidden`, `not_found`, `not_deployed`, `unavailable` | `forbidden` repetido da mesma conta: interface desatualizada ou tentativa direta |
+| `profile.duplicate` | Duplicar | os mesmos, mais `limit_reached`, `slug_taken`, `content_invalid`, `validation` | `content_invalid`: a origem tem bloco que o validador recusa |
+| `members.invite` | Criar convite | `ok`, `invalid_email`, `already_member`, `rate_limited`, `limit_reached`, `forbidden`, `not_found`, `not_deployed`, `unavailable` | `rate_limited`: possível abuso; ver runbook de acesso |
+| `members.revoke_invitation`, `members.change_role`, `members.remove` | Gestão de membros | `ok`, `left` (a pessoa saiu), `last_owner`, `forbidden`, `not_found`, `unavailable` | `last_owner`: a conta ficaria sem proprietário |
+| `members.accept_invitation` | Aceitar convite | `accepted`, `invalid`, `wrong_account`, `already_member`, `limit_reached`, `unavailable` | Pico de `invalid`: links vencidos em circulação ou varredura; pico de `wrong_account`: pessoas entrando com outro e-mail |
+
+Sem alerta novo nesta parte: nenhum desses sinais exige ação imediata. `not_deployed` em produção significa migração da Sprint 7 não aplicada.
+
 ## Regras
 
 - Logs estruturados incluem request/correlation ID, módulo, ambiente e resultado.

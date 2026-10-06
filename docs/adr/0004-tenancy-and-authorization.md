@@ -105,4 +105,5 @@ RPCs and triggers raise stable SQLSTATEs the app maps to pt-BR copy: `LK001` inv
 - Adding a role or capability requires changing the TypeScript matrix, the policies/RPCs and both test suites together.
 - Security-definer RPCs are a privileged surface: each must check `auth.uid()` and role explicitly and is covered by negative tests.
 - Column-level grants mean new user-editable columns need an explicit grant in their migration.
-- Invitations for people without an account need a separate `workspace_invitations` table (token hash, email, expiry, revocation) in Sprint 7; memberships already carry `invited` status and `invited_by`.
+- Invitations for people without an account need a separate `workspace_invitations` table (token hash, email, expiry, revocation); memberships already carry `invited` status and `invited_by`. **Resolved in Sprint 7 (ADR 0012):** the table exists, a pending invitation lives only there, a membership is created `active` at acceptance, and the `invited` status is not written.
+- The role matrix above gained `profile.archive`, `profile.duplicate`, `members.invite`, `invitations.view` and `invitations.revoke` (owners and admins) in ADR 0012. The `max_profiles` rule for archived pages (*provisional* above) was kept.
