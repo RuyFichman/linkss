@@ -1,6 +1,6 @@
 -- Structural guarantees: RLS everywhere, no anon privileges, hardened functions, seeded catalogue.
 begin;
-select plan(35);
+select plan(39);
 
 select has_table('public', 'user_accounts', 'user_accounts exists');
 select has_table('public', 'workspaces', 'workspaces exists');
@@ -22,6 +22,8 @@ select has_table('public', 'analytics_settings', 'analytics_settings exists');
 select has_table('public', 'analytics_rate_hits', 'analytics_rate_hits exists');
 select has_table('public', 'workspace_invitations', 'workspace_invitations exists');
 select has_table('public', 'media_asset_shares', 'media_asset_shares exists');
+select has_table('public', 'report_links', 'report_links exists');
+select has_table('public', 'report_lookup_failures', 'report_lookup_failures exists');
 
 select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -82,8 +84,8 @@ select is(
 select is(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname in ('public', 'private') and has_function_privilege('anon', p.oid, 'execute')),
-  array['get_public_page', 'ingest_analytics_events', 'submit_form_lead'],
-  'anon can execute only the public page lookup, the form submission and the attested event ingestion'
+  array['get_public_page', 'get_shared_report', 'ingest_analytics_events', 'submit_form_lead'],
+  'anon can execute only the public page lookup, the shared report read, the form submission and the attested event ingestion'
 );
 
 select is(
@@ -140,6 +142,21 @@ select is(
    where grantee in ('authenticated', 'anon') and table_schema = 'public' and table_name = 'workspace_invitations' and column_name = 'token_hash'),
   0,
   'no client role can read an invitation token hash'
+);
+
+select is(
+  (select count(*)::int from information_schema.role_table_grants
+   where grantee = 'authenticated' and table_schema = 'public' and table_name in ('report_links', 'report_lookup_failures')
+     and privilege_type <> 'SELECT'),
+  0,
+  'members cannot write report links or their lookup counters directly'
+);
+
+select is(
+  (select count(*)::int from information_schema.column_privileges
+   where grantee in ('authenticated', 'anon') and table_schema = 'public' and table_name = 'report_links' and column_name = 'token_hash'),
+  0,
+  'no client role can read a report token hash'
 );
 
 select * from finish();
