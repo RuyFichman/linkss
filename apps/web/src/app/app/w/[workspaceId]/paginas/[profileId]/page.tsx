@@ -8,9 +8,12 @@ import { isUuid } from "@/modules/identity/guard";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { can } from "@/modules/identity/permissions";
 import { changeProfileSlugAction, deleteProfileAction } from "@/modules/profiles/actions";
+import { ArchiveControl } from "@/modules/profiles/components/archive-controls";
 import { ChangeSlugDialog } from "@/modules/profiles/components/change-slug-dialog";
 import { DeleteProfileDialog } from "@/modules/profiles/components/delete-profile-dialog";
 import { ProfileAvatar } from "@/modules/profiles/components/profile-avatar";
+import { copyReviewKinds, needsCopyReview } from "@/modules/profiles/copy-review";
+import { fetchDuplicatedFrom } from "@/modules/profiles/page-list-server";
 import { getProfileRepository } from "@/modules/profiles/server";
 import { publishProfileAction } from "@/modules/publishing/actions";
 import { PublishPanel } from "@/modules/publishing/components/publish-panel";
@@ -18,7 +21,7 @@ import { documentFromDraft } from "@/modules/publishing/document";
 import { PublicPageView } from "@/modules/publishing/render/public-page-view";
 import { getPublishingRepository } from "@/modules/publishing/server";
 import { PUBLICATION_HISTORY_LIMIT } from "@/modules/publishing/service";
-import { Badge } from "@/ui";
+import { Badge, Notice } from "@/ui";
 
 export const metadata: Metadata = { title: "Editar página" };
 
@@ -29,8 +32,9 @@ const STATUS_TONE = { draft: "neutral", published: "success", archived: "warning
  * address and deletion. Every command re-authorizes on the server; this page only decides what to
  * show for the caller's role.
  */
-export default async function ProfileEditorPage({ params }: { params: Promise<{ workspaceId: string; profileId: string }> }) {
+export default async function ProfileEditorPage({ params, searchParams }: { params: Promise<{ workspaceId: string; profileId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { workspaceId, profileId } = await params;
+  const justDuplicated = typeof (await searchParams).duplicada === "string";
   const access = await authorizeWorkspacePage(workspaceId, "profile.view");
   if (!access || !isUuid(profileId)) notFound();
 
@@ -38,15 +42,21 @@ export default async function ProfileEditorPage({ params }: { params: Promise<{ 
   const profiles = await getProfileRepository();
   const profile = await profiles.findById(profileId);
   if (!profile || profile.workspaceId !== workspaceId) notFound();
-  const [publications, entitlements] = await Promise.all([
+  const [publications, entitlements, duplicatedFrom] = await Promise.all([
     (await getPublishingRepository()).listPublications(profile.id, PUBLICATION_HISTORY_LIMIT),
     profiles.entitlements(workspaceId),
+    fetchDuplicatedFrom(profile.id),
   ]);
 
-  const canEdit = can(access.role, "profile.edit_content");
+  // An archived page is frozen (ADR 0012): no editor and no publishing until it is unarchived.
+  const archived = profile.status === "archived";
+  const canEdit = can(access.role, "profile.edit_content") && !archived;
+  const canArchive = can(access.role, "profile.archive");
+  const canDuplicate = can(access.role, "profile.duplicate");
+  const reviewKinds = needsCopyReview({ duplicatedFrom, publicationCount: publications.length }) ? copyReviewKinds(profile.blocks) : null;
   const canChangeSlug = can(access.role, "profile.change_slug");
   const canDelete = can(access.role, "profile.delete");
-  const canPublish = can(access.role, "profile.publish");
+  const canPublish = can(access.role, "profile.publish") && !archived;
   const showBadge = !entitlements.features.remove_badge;
   const basePath = `/app/w/${workspaceId}/paginas/${profile.id}`;
 
@@ -64,6 +74,29 @@ export default async function ProfileEditorPage({ params }: { params: Promise<{ 
         </div>
       </header>
 
+      {justDuplicated ? <Notice tone="success">{APP_COPY.duplicate.created}</Notice> : null}
+
+      {archived ? (
+        <section className="grid gap-3 rounded-2xl border border-app-warning/40 bg-app-warning/10 p-4 sm:p-5" aria-labelledby="archived-title">
+          <h2 id="archived-title" className="text-lg font-bold">{APP_COPY.pages.status.archived}</h2>
+          <p className="m-0">{APP_COPY.archive.notice}</p>
+          {canArchive ? <div><ArchiveControl page={profile} /></div> : <p className="m-0 text-app-muted">{APP_COPY.archive.noticeEditor}</p>}
+        </section>
+      ) : null}
+
+      {reviewKinds && !archived ? (
+        <section className="grid gap-2 rounded-2xl border border-app-warning/40 bg-app-warning/10 p-4 sm:p-5" aria-labelledby="copy-review-title">
+          <h2 id="copy-review-title" className="text-lg font-bold">{APP_COPY.duplicate.review.title}</h2>
+          {reviewKinds.length > 0 ? (
+            <>
+              <p className="m-0">{APP_COPY.duplicate.review.lead}</p>
+              <ul className="m-0 grid list-disc gap-1 pl-5 font-bold">{reviewKinds.map((kind) => <li key={kind}>{APP_COPY.duplicate.review.items[kind]}</li>)}</ul>
+            </>
+          ) : <p className="m-0">{APP_COPY.duplicate.review.generic}</p>}
+          <p className="m-0 text-sm text-app-muted">{APP_COPY.duplicate.review.until}</p>
+        </section>
+      ) : null}
+
       {canEdit ? (
         <>
           <p className="m-0 rounded-xl border border-app-border bg-app-surface-soft p-3 font-bold">{APP_COPY.draft.notice}</p>
@@ -79,7 +112,7 @@ export default async function ProfileEditorPage({ params }: { params: Promise<{ 
         </>
       ) : (
         <section className="grid gap-3" aria-label={EDITOR_COPY.preview.title}>
-          <p className="m-0 text-app-muted">{EDITOR_COPY.readOnly}</p>
+          {archived ? null : <p className="m-0 text-app-muted">{EDITOR_COPY.readOnly}</p>}
           <div className="overflow-hidden rounded-2xl border border-app-border">
             <PublicPageView as="div" document={documentFromDraft(profile)} showBadge={showBadge} interactive={false} />
           </div>
@@ -87,13 +120,15 @@ export default async function ProfileEditorPage({ params }: { params: Promise<{ 
       )}
 
       <div className="mx-auto grid w-full max-w-3xl gap-6">
-        <PublishPanel
-          target={{ id: profile.id, workspaceId: profile.workspaceId, slug: profile.slug, draftRevision: profile.draftRevision, livePublicationId: profile.livePublicationId, publishedAt: profile.publishedAt }}
-          publications={publications}
-          previewHref={`${basePath}/previa`}
-          canPublish={canPublish}
-          editorManaged={canEdit}
-        />
+        {archived ? null : (
+          <PublishPanel
+            target={{ id: profile.id, workspaceId: profile.workspaceId, slug: profile.slug, draftRevision: profile.draftRevision, livePublicationId: profile.livePublicationId, publishedAt: profile.publishedAt }}
+            publications={publications}
+            previewHref={`${basePath}/previa`}
+            canPublish={canPublish}
+            editorManaged={canEdit}
+          />
+        )}
 
         <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="results-title">
           <h2 id="results-title" className="text-xl font-bold">{ANALYTICS_COPY.title}</h2>
@@ -112,6 +147,17 @@ export default async function ProfileEditorPage({ params }: { params: Promise<{ 
           <p className="m-0 break-all font-bold">{publicAddressLabel(profile.slug)}</p>
           {canChangeSlug ? <div><ChangeSlugDialog action={changeProfileSlugAction.bind(null, profile.id)} currentSlug={profile.slug} workspaceId={workspaceId} /></div> : <p className="m-0 text-app-muted">{APP_COPY.slugChange.forbidden}</p>}
         </section>
+
+        {canDuplicate || (canArchive && !archived) ? (
+          <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="manage-title">
+            <h2 id="manage-title" className="text-xl font-bold">{APP_COPY.manage.title}</h2>
+            <p className="m-0 text-app-muted">{APP_COPY.manage.lead}</p>
+            <div className="flex flex-wrap gap-2">
+              {canDuplicate ? <Link className="ui-button ui-button-secondary" href={`${basePath}/duplicar`}>{APP_COPY.duplicate.open}</Link> : null}
+              {canArchive && !archived ? <ArchiveControl page={profile} /> : null}
+            </div>
+          </section>
+        ) : null}
 
         {canDelete ? (
           <section className="grid gap-3 rounded-2xl border border-app-danger/30 p-5 sm:p-8" aria-labelledby="danger-title">

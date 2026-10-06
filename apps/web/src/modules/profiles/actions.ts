@@ -114,6 +114,37 @@ export async function deleteProfileAction(profileId: string): Promise<FormState<
   redirect(`/app/w/${result.value.workspaceId}?excluida=1`);
 }
 
+/** Takes the page off the air (if it was on) and freezes it. Owners and admins; re-authorized in the service. */
+export async function archiveProfileAction(profileId: string): Promise<FormState<ProfileField>> {
+  const result = await (await getProfileService()).archive(profileId);
+  await logCommand("profile.archive", result);
+  if (!result.ok) return toFormState(result, {});
+  // Same path as "Tirar do ar": the static public page is dropped, never made dynamic.
+  if (result.value.wasPublished) revalidatePublicPage(result.value.slug);
+  refresh();
+  return { status: "success", message: result.value.wasPublished ? APP_COPY.archive.doneOffline : APP_COPY.archive.done };
+}
+
+export async function unarchiveProfileAction(profileId: string): Promise<FormState<ProfileField>> {
+  const result = await (await getProfileService()).unarchive(profileId);
+  await logCommand("profile.unarchive", result);
+  if (!result.ok) return toFormState(result, {});
+  refresh();
+  return { status: "success", message: APP_COPY.archive.unarchive.done };
+}
+
+/** Deep copy into a new draft of the same workspace; lands on the new page with the review notice. */
+export async function duplicateProfileAction(profileId: string, _previous: FormState, formData: FormData): Promise<FormState<ProfileField>> {
+  const values = { title: stringField(formData, "title"), slug: stringField(formData, "slug") };
+  const result = await (await getProfileService()).duplicate(profileId, values);
+  await logCommand("profile.duplicate", result);
+  if (!result.ok) {
+    const state = toFormState(result, values);
+    return result.error === "content_invalid" ? { ...state, message: APP_COPY.duplicate.sourceInvalid } : state;
+  }
+  redirect(`/app/w/${result.value.workspaceId}/paginas/${result.value.profileId}?duplicada=1`);
+}
+
 /** Debounced availability check used while typing an address. */
 export async function checkSlugAction(slug: string, workspaceId: string | null): Promise<SlugValidation> {
   return (await getProfileService()).checkSlug(slug, workspaceId);

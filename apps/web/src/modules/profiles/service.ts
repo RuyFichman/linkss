@@ -45,6 +45,11 @@ export interface ProfileRepository {
   updateDraft(profileId: string, expectedRevision: number, draft: DraftContent): Promise<RepositoryResult<ProfileSummary>>;
   changeSlug(profileId: string, slug: string): Promise<RepositoryResult<string>>;
   softDelete(profileId: string): Promise<RepositoryResult<null>>;
+  /** Takes the page off the air and freezes it. `wasPublished` tells the caller to drop the public cache. */
+  archive(profileId: string): Promise<RepositoryResult<{ slug: string; wasPublished: boolean }>>;
+  unarchive(profileId: string): Promise<RepositoryResult<null>>;
+  /** One transaction in the database: a new draft page in the same workspace with new block ids. */
+  duplicate(profileId: string, title: string, slug: string): Promise<RepositoryResult<string>>;
   checkSlug(slug: string, workspaceId: string | null): Promise<RepositoryResult<{ normalized: string; status: string }>>;
 }
 
@@ -198,6 +203,61 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       }
       const deleted = await repository.softDelete(profile.id);
       return deleted.ok ? { ok: true, value: { workspaceId: profile.workspaceId, slug: profile.slug } } : failure(deleted.error);
+    },
+
+    /** Owners and admins. Returns the address so the caller can invalidate the cached public page. */
+    async archive(profileId: unknown): Promise<CommandResult<{ workspaceId: string; slug: string; wasPublished: boolean }>> {
+      let profile;
+      try {
+        profile = await authorizeProfile(profileId, "profile.archive");
+      } catch (error) {
+        return authorizationFailure(error);
+      }
+      const archived = await repository.archive(profile.id);
+      return archived.ok ? { ok: true, value: { workspaceId: profile.workspaceId, slug: archived.value.slug, wasPublished: archived.value.wasPublished } } : failure(archived.error);
+    },
+
+    /** Back to a draft; never republishes. */
+    async unarchive(profileId: unknown): Promise<CommandResult<{ workspaceId: string }>> {
+      let profile;
+      try {
+        profile = await authorizeProfile(profileId, "profile.archive");
+      } catch (error) {
+        return authorizationFailure(error);
+      }
+      const restored = await repository.unarchive(profile.id);
+      return restored.ok ? { ok: true, value: { workspaceId: profile.workspaceId } } : failure(restored.error);
+    },
+
+    /**
+     * Deep copy into a new draft of the same workspace. The target workspace is never an input: it
+     * is the source page's, re-read here and again inside the database function.
+     */
+    async duplicate(profileId: unknown, input: { title: unknown; slug: unknown }): Promise<CommandResult<{ workspaceId: string; profileId: string }>> {
+      let source;
+      try {
+        source = await authorizeProfile(profileId, "profile.duplicate");
+      } catch (error) {
+        return authorizationFailure(error);
+      }
+      const content = validateProfileContent({ title: input.title, bio: "" });
+      const slug = validateSlug(typeof input.slug === "string" ? input.slug : "");
+      if (!content.ok || !slug.valid) {
+        const fieldErrors = { ...(content.ok ? {} : content.errors), ...(slug.valid ? {} : { slug: slug.message }) };
+        return { ok: false, error: "validation", message: VALIDATION_SUMMARY, fieldErrors };
+      }
+
+      const entitlements = await repository.entitlements(source.workspaceId);
+      try {
+        assertEntitlement(entitlements, "max_profiles", await repository.countLive(source.workspaceId));
+      } catch (error) {
+        if (error instanceof EntitlementError) return failure("limit_reached", { limit: entitlements.limits.max_profiles });
+        throw error;
+      }
+
+      const created = await repository.duplicate(source.id, content.value.title, slug.normalized);
+      if (!created.ok) return failure(created.error, { slug: slug.normalized, limit: entitlements.limits.max_profiles });
+      return { ok: true, value: { workspaceId: source.workspaceId, profileId: created.value } };
     },
 
     /** Debounced availability check. Local rules first; the database decides taken/held. */
