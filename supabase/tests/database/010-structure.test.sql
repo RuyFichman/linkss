@@ -1,6 +1,6 @@
 -- Structural guarantees: RLS everywhere, no anon privileges, hardened functions, seeded catalogue.
 begin;
-select plan(31);
+select plan(35);
 
 select has_table('public', 'user_accounts', 'user_accounts exists');
 select has_table('public', 'workspaces', 'workspaces exists');
@@ -20,6 +20,8 @@ select has_table('public', 'analytics_daily', 'analytics_daily exists');
 select has_table('public', 'analytics_day_status', 'analytics_day_status exists');
 select has_table('public', 'analytics_settings', 'analytics_settings exists');
 select has_table('public', 'analytics_rate_hits', 'analytics_rate_hits exists');
+select has_table('public', 'workspace_invitations', 'workspace_invitations exists');
+select has_table('public', 'media_asset_shares', 'media_asset_shares exists');
 
 select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -59,7 +61,10 @@ select is(
      'publish_profile', 'restore_profile_publication', 'unpublish_profile',
      'register_media_asset', 'activate_media_asset', 'fail_media_asset', 'workspace_storage_usage',
      'claim_media_cleanup', 'finish_media_cleanup', 'delete_form_lead', 'record_lead_export',
-     'run_analytics_maintenance', 'get_profile_analytics', 'record_analytics_export')
+     'run_analytics_maintenance', 'get_profile_analytics', 'record_analytics_export',
+     'archive_profile', 'unarchive_profile', 'duplicate_profile', 'list_workspace_profiles',
+     'create_workspace_invitation', 'revoke_workspace_invitation', 'get_workspace_invitation',
+     'accept_workspace_invitation', 'list_workspace_members')
      and has_function_privilege('anon', p.oid, 'execute')),
   0,
   'anon cannot execute any tenancy RPC'
@@ -120,6 +125,21 @@ select is(
   (select count(*)::int from pg_policies where schemaname = 'public' and tablename like 'analytics_%'),
   0,
   'analytics tables have no policies: they are reached only through functions'
+);
+
+select is(
+  (select count(*)::int from information_schema.role_table_grants
+   where grantee = 'authenticated' and table_schema = 'public' and table_name in ('workspace_invitations', 'media_asset_shares')
+     and privilege_type <> 'SELECT'),
+  0,
+  'members cannot write invitations or media shares directly'
+);
+
+select is(
+  (select count(*)::int from information_schema.column_privileges
+   where grantee in ('authenticated', 'anon') and table_schema = 'public' and table_name = 'workspace_invitations' and column_name = 'token_hash'),
+  0,
+  'no client role can read an invitation token hash'
 );
 
 select * from finish();
