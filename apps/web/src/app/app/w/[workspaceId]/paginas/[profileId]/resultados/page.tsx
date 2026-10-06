@@ -15,6 +15,7 @@ import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { can } from "@/modules/identity/permissions";
 import { getProfileRepository } from "@/modules/profiles/server";
 import { getPublishingRepository } from "@/modules/publishing/server";
+import { ReportLinksSection } from "@/modules/reports/components/report-links-section";
 import { EmptyState, Notice } from "@/ui";
 
 export const metadata: Metadata = { title: "Resultados" };
@@ -83,7 +84,8 @@ function HowWeCount() {
  * Results of one page (Sprint 6, ADR 0011): visits, results, the path between them, the daily
  * series, blocks, sources, devices and countries for a period. Server-rendered from aggregates;
  * every member of the workspace reads it, and the read function re-checks membership and applies
- * the plan's history depth. States without numbers ("not available", "never published", "before
+ * the plan's history depth. Owners and admins also manage the page's report links here (ADR 0013).
+ * States without numbers ("not available", "never published", "before
  * counting", "no data yet", "zero") each have their own text: no data is never shown as zero.
  */
 export default async function AnalyticsPage({ params, searchParams }: { params: Promise<{ workspaceId: string; profileId: string }>; searchParams: Promise<{ periodo?: string | string[] }> }) {
@@ -126,6 +128,9 @@ export default async function AnalyticsPage({ params, searchParams }: { params: 
   const { report, period } = view.value;
   const state = dashboardState({ report, everPublished });
   const resultsPath = `${basePath}/resultados`;
+  // Report links for the client (ADR 0013). Offered whatever the state of the numbers: a link
+  // created today shows results as they arrive.
+  const reportLinks = <ReportLinksSection workspaceId={workspaceId} profileId={profile.id} role={access.role} />;
 
   if (!report || state !== "data") {
     return (
@@ -137,6 +142,7 @@ export default async function AnalyticsPage({ params, searchParams }: { params: 
         ) : null}
         <StateMessage state={state === "data" ? "not_available" : state} report={report} />
         {report && report.configured && aggregationIsDelayed(report) ? <Notice tone="warning">{ANALYTICS_COPY.delayed}</Notice> : null}
+        {report && report.configured ? reportLinks : null}
         <HowWeCount />
       </div>
     );
@@ -394,6 +400,7 @@ export default async function AnalyticsPage({ params, searchParams }: { params: 
         </form>
       ) : null}
 
+      {reportLinks}
       <HowWeCount />
     </div>
   );
