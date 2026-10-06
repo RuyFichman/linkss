@@ -1,6 +1,6 @@
 # ADR 0012 — Multi-page operations, invitations and roles
 
-- **Status:** accepted for the MVP (items marked *provisional* await founder confirmation)
+- **Status:** accepted for the MVP. **The founder confirmed on 2026-10-06** the decisions recorded as UX-019 and UX-051 to UX-059 (archiving, what duplication copies and the review notice, the seven-day invitation, the same-e-mail rule, no e-mail sent, pending invitations holding seats, no ownership by invitation, the members screen, duplication as a screen) and the two technical choices of this ADR that were open: media is shared between a page and its copy instead of copied, and the invitation token travels in the URL path. Items still marked *provisional* below that are not in that list (the creation limits of 20 and 30 per 24 hours, the 30-day retention of finished invitations) await confirmation
 - **Date:** 2026-10-06
 - **Builds on:** ADR 0004 (tenancy and authorization), ADR 0005 (authentication), ADR 0007 (publishing), ADR 0008 (block model), ADR 0009 (media), ADR 0011 (analytics)
 - **Scope:** Sprint 7, part 1 of 2. The consolidated dashboard and the read-only report link are ADR 0013 (part 2).

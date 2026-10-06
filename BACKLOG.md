@@ -119,7 +119,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 ## Débito/decisões abertas
 
 - [ ] Rate limit próprio para Server Actions sensíveis (além dos limites do Supabase Auth) — Sprint 9.
-- [ ] Confirmar decisões provisórias UX-013 a UX-019 (retenção de slug, papéis, limites).
+- [ ] Confirmar decisões provisórias UX-013 a UX-018 (retenção de slug, papéis, limites). A UX-019 foi confirmada em 06/10/2026.
 
 - [ ] Selecionar nome público após busca de marca, domínio e redes.
 - [ ] Comparar gateway por recorrência, Pix, cartão, webhooks, split, chargeback e conciliação.
@@ -127,7 +127,8 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [ ] Confirmar decisões provisórias UX-033 a UX-042 (limites de imagem, cotas, tema, modelos, Pix sem QR, retenção de leads).
 - [ ] Definir datastore analítico após medir eventos/dia e custo no Postgres (custo por evento medido na Sprint 6: 329 bytes; falta o volume real).
 - [ ] Confirmar decisões provisórias UX-043 a UX-050 (o que conta como resultado, regra de visita, fuso, períodos, limites e retenção, exclusões, exportação).
-- [ ] Confirmar decisões provisórias UX-051 a UX-060 (arquivamento, o que a duplicação copia, validade e regra de e-mail do convite, convite sem envio de e-mail, lugares, tela Membros, lista de páginas) e a UX-019 mantida.
+- [x] Confirmar UX-019 e UX-051 a UX-059 (arquivamento, o que a duplicação copia, validade e regra de e-mail do convite, convite sem envio de e-mail, lugares, tela Membros, lista de páginas): confirmadas pelo founder em 06/10/2026.
+- [ ] Decidir a UX-060 (lembrar a última conta usada em `/app`, cortado na parte 1).
 - [ ] Decidir na Sprint 8 o que acontece, num rebaixamento de plano, com páginas além de `max_profiles` e pessoas e convites além de `team_members` (hoje nada é removido; só o que é novo é recusado).
 - [ ] `npm audit`: 5 avisos altos em ferramentas de desenvolvimento (`eslint-config-next` → `braces`), sem correção compatível em 06/10/2026; rever a cada atualização do Next.
 - [ ] Rate limit global e firewall na frente de `/api/events` (Sprint 9; hoje só há limites no banco).

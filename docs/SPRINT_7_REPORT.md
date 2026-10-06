@@ -20,7 +20,7 @@
 ## Estado dos gates (§0 do prompt)
 
 - **Gate de usabilidade:** o *override* do founder de 25/09/2026 continua valendo; as cinco sessões seguem pendentes.
-- **UX confirmadas:** UX-020, 021, 023 e 025. As demais, inclusive as novas **UX-051 a UX-060**, são provisórias e foram usadas como padrão.
+- **UX confirmadas:** UX-020, 021, 023 e 025 e, desde 06/10/2026 (depois da entrega desta parte), **UX-019 e UX-051 a UX-059**. A UX-060 (corte de "lembrar a última conta") e as demais seguem provisórias.
 - **Respostas do founder em 06/10/2026**, aplicadas: página arquivada mantém o painel de resultados acessível (**sim**); região (UF) fica para depois; UX-043 a UX-050 seguem provisórias; UX-019 decidida "pela melhor opção para o negócio" (abaixo); a sprint foi dividida em dois prompts.
 - **Staging:** não foi tocado. Nenhuma migração aplicada, nenhum segredo criado, nenhuma configuração alterada no Supabase hospedado nem na Vercel.
 - **Falha segura:** sem a migração, a lista cai na consulta antiga (sem busca), arquivar, duplicar e *Membros* dizem "ainda não disponível" e o link de convite mostra o estado genérico. Coberto por testes de unidade (`not_deployed`); **não** foi exercitado no navegador contra um banco sem a migração.
@@ -133,6 +133,10 @@ As migrações foram aplicadas no banco local com `supabase migration up`. **Nã
 - **Herdadas:** sessões de usabilidade, Auth hospedado, SMTP, CAPTCHA, LCP/CLS de visitantes reais, primeira execução agendada dos crons.
 
 ## Perguntas para o founder
+
+> **Respondidas em 06/10/2026 (depois da entrega da parte 1):** o founder confirmou as perguntas 1 a 6 (UX-019 e UX-051 a UX-059) e as duas escolhas do ADR 0012 (imagens compartilhadas entre original e cópia; token do convite no caminho da URL). Seguem abertas a 7 (lembrar a última conta, UX-060) e a 8 (`npm audit`).
+>
+> No mesmo dia o founder tentou `npx supabase db push` e recebeu **403** ("Your account does not have the necessary privileges"): a CLI estava logada numa conta que não é a dona do projeto de staging, o caso já descrito no `AGENTS.md` §22. **As migrações da Sprint 7 continuam não aplicadas em staging.**
 
 1. **UX-019:** mantive "arquivadas contam no limite". Confirma? (A alternativa comercial seria vender "páginas arquivadas ilimitadas" como benefício de plano na Sprint 8.)
 2. **Página arquivada congelada (UX-051):** não editar nem publicar enquanto arquivada, e desarquivar sem voltar ao ar. Está certo?
