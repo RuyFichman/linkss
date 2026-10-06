@@ -3,7 +3,7 @@ import { AUTH_COPY } from "@/content/pt-BR";
 import { emailLinkFailurePath, passwordUpdateOutcome, parseLinkType, recoveryOutcome, signInOutcome, signUpOutcome } from "./auth-outcomes";
 import { passwordError, validateNewPassword, validateSignIn, validateSignUp } from "./auth-validation";
 import { AuthorizationError, requireWorkspaceAccess, type IdentityPort } from "./guard";
-import { PERMISSIONS, WORKSPACE_ROLES, can, canChangeRole, canRemoveMember, type WorkspaceRole } from "./permissions";
+import { PERMISSIONS, WORKSPACE_ROLES, assignableRoles, can, canChangeRole, canInvite, canRemoveMember, type WorkspaceRole } from "./permissions";
 import { safeNextPath } from "./redirects";
 import { withMinimumDuration } from "./timing";
 
@@ -23,12 +23,17 @@ describe("permission matrix (mirrors docs/adr/0004 and RLS)", () => {
       "members.view": ["owner", "admin", "editor"],
       "members.change_role": ["owner", "admin"],
       "members.remove": ["owner", "admin"],
+      "members.invite": ["owner", "admin"],
+      "invitations.view": ["owner", "admin"],
+      "invitations.revoke": ["owner", "admin"],
       "profile.view": ["owner", "admin", "editor"],
       "profile.create": ["owner", "admin"],
       "profile.edit_content": ["owner", "admin", "editor"],
       "profile.change_slug": ["owner", "admin"],
       "profile.delete": ["owner", "admin"],
       "profile.publish": ["owner", "admin", "editor"],
+      "profile.archive": ["owner", "admin"],
+      "profile.duplicate": ["owner", "admin"],
       "leads.view": ["owner", "admin", "editor"],
       "leads.delete": ["owner", "admin"],
       "leads.export": ["owner", "admin"],
@@ -36,6 +41,25 @@ describe("permission matrix (mirrors docs/adr/0004 and RLS)", () => {
       "analytics.export": ["owner", "admin", "editor"],
       "audit.view": ["owner", "admin"],
     });
+  });
+
+  it("invites admins and editors only, from owners and admins only", () => {
+    for (const actor of ["owner", "admin"] as const) {
+      expect(canInvite(actor, "admin")).toBe(true);
+      expect(canInvite(actor, "editor")).toBe(true);
+      expect(canInvite(actor, "owner")).toBe(false);
+      expect(canInvite(actor, "anything")).toBe(false);
+    }
+    expect(canInvite("editor", "editor")).toBe(false);
+  });
+
+  it("offers each actor only the roles it may grant", () => {
+    expect(assignableRoles("owner", "editor")).toEqual(["owner", "admin"]);
+    expect(assignableRoles("owner", "owner")).toEqual(["admin", "editor"]);
+    expect(assignableRoles("admin", "editor")).toEqual(["admin"]);
+    expect(assignableRoles("admin", "admin")).toEqual(["editor"]);
+    expect(assignableRoles("admin", "owner")).toEqual([]);
+    expect(assignableRoles("editor", "editor")).toEqual([]);
   });
 
   it("denies everything without a role", () => {

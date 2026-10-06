@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { APP_COPY } from "@/content/pt-BR";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
@@ -19,6 +20,12 @@ export default async function WorkspaceLayout({ children, params }: { children: 
           <span>{workspace.kind === "personal" ? APP_COPY.workspace.personalLabel : APP_COPY.workspace.agencyLabel}</span>
           {workspace.kind === "agency" ? <><span aria-hidden="true">•</span><b className="text-app-text">{workspaceLabel(workspace)}</b><Badge tone="accent">{APP_COPY.roles[workspace.role]}</Badge></> : null}
         </div>
+      ) : null}
+      {workspace ? (
+        <nav aria-label={APP_COPY.nav.workspace} className="mb-6 flex flex-wrap gap-x-5 border-b border-app-border">
+          <Link className="inline-flex min-h-11 items-center font-bold text-app-accent underline" href={`/app/w/${workspaceId}`}>{APP_COPY.nav.pages}</Link>
+          <Link className="inline-flex min-h-11 items-center font-bold text-app-accent underline" href={`/app/w/${workspaceId}/membros`}>{APP_COPY.nav.members}</Link>
+        </nav>
       ) : null}
       {workspace?.status === "suspended" ? <div className="mb-6"><Notice tone="warning">Esta conta está suspensa. Você pode consultar as páginas, mas não alterá-las. Fale com o suporte.</Notice></div> : null}
       {children}
