@@ -1070,3 +1070,112 @@ export const REPORTS_COPY = {
     done: "Link cancelado. Ele já não abre.",
   },
 } as const;
+
+/**
+ * Marketing home (`/`). Every claim describes something the deployed product does; paid plans are
+ * listed without a price because billing does not exist yet (PLANO_DE_NEGOCIO §5 keeps prices as
+ * hypotheses).
+ */
+export const HOME_COPY = {
+  meta: {
+    title: "Um link para tudo o que você faz",
+    description: "Monte uma página profissional para a sua bio com WhatsApp, Pix, formulários e vídeos, e veja quais caminhos trazem resultado.",
+  },
+  nav: {
+    label: "Navegação principal",
+    features: "Recursos",
+    templates: "Modelos",
+    plans: "Planos",
+    faq: "Dúvidas",
+    signIn: "Entrar",
+    signUp: "Criar página",
+    provisionalName: "Nome provisório",
+  },
+  hero: {
+    badge: "WhatsApp, Pix e formulários na mesma página",
+    title: "Um link para tudo",
+    lead: "Reúna tudo o que você cria, vende e divulga em uma página bonita para a sua bio. Crie a sua hoje.",
+    addressPlaceholder: "seunome",
+    cta: "Começar",
+  },
+  marquee: ["Botão de WhatsApp", "Pix copia e cola", "Formulários e contatos", "Resultados da página", "Vídeo e música", "Várias páginas", "Relatório para o cliente", "Modelos prontos", "Sem código"],
+  templates: {
+    title: "Comece por um modelo pronto",
+    lead: "Cinco visuais para sair do zero. Escolha um, troque cores, fontes e botões e deixe com a sua cara.",
+    cta: "Criar minha página",
+  },
+  editor: {
+    title: "Edite e veja na hora",
+    lead: "Mude um título, reordene os blocos, troque as cores: a prévia ao lado mostra a página como o visitante vai ver. Tudo é salvo sozinho e só vai ao ar quando você publicar.",
+    panelTitle: "Blocos",
+    saved: "Salvo",
+    publish: "Publicar",
+    blocks: ["Botão de WhatsApp", "Link", "Imagem", "Formulário", "Pix"],
+    previewLabel: "Prévia",
+  },
+  features: {
+    title: "Mais que um link na bio",
+    lead: "Personalize, converse, receba e meça, tudo em uma página.",
+    items: [
+      { title: "Deixe com a sua cara", body: "Modelos, cores, fontes e estilos de botão, com foto e imagens recortadas e otimizadas no envio." },
+      { title: "Leve a conversa para o WhatsApp", body: "Botão com mensagem pronta, chave Pix com copiar em um toque e formulário que guarda os contatos para você exportar." },
+      { title: "Veja o que dá resultado", body: "Visitas, cliques, origens e ações de valor por dia, sem cookies no navegador do visitante. Os números são aproximações, com filtros contra robôs." },
+      { title: "Cuide de várias páginas", body: "Lista com busca, duplicação, convites para a equipe, painel consolidado e um link de relatório somente leitura para o cliente." },
+    ],
+  },
+  plans: {
+    title: "Comece de graça",
+    lead: "O plano gratuito já está disponível. Os planos pagos ainda não estão à venda e os preços não foram definidos.",
+    available: "Disponível agora",
+    soon: "Em breve",
+    free: { name: "Gratuito", price: "R$ 0", description: "Tudo o que você precisa para publicar a sua página.", cta: "Criar minha página" },
+    pro: { name: "Pro", description: "Para quem quer acompanhar os resultados por mais tempo." },
+    agency: { name: "Agência", description: "Para quem cuida das páginas de vários clientes." },
+    items: {
+      profiles: (count: number) => (count === 1 ? "1 página" : `${count} páginas`),
+      analyticsDays: (days: number) => `Resultados dos últimos ${days} dias`,
+      storage: (megabytes: number) => `${megabytes} MB para imagens`,
+      teamMembers: (count: number) => `Equipe de até ${count} pessoas`,
+      allBlocks: "Todos os tipos de bloco e modelos",
+      leads: "Contatos de formulário com exportação",
+      consolidated: "Painel consolidado de todas as páginas",
+      reports: "Link de relatório para o cliente",
+    },
+  },
+  faq: {
+    title: "Perguntas frequentes",
+    lead: "O que você precisa saber antes de começar.",
+    items: [
+      { question: "O que é?", answer: "Uma página feita para o link da sua bio. Você reúne links, textos, imagens, vídeos, WhatsApp, Pix e formulários em um só endereço e acompanha as visitas e os cliques." },
+      { question: "Quanto tempo leva para montar?", answer: "Poucos minutos. Crie o acesso, escolha um modelo, troque os textos e publique. Dá para editar depois quantas vezes quiser." },
+      { question: "É de graça?", answer: "Sim. O plano gratuito inclui uma página, todos os tipos de bloco e os resultados dos últimos 7 dias. Os planos pagos ainda não estão à venda." },
+      { question: "Que conteúdo posso colocar?", answer: "Links, textos, imagens, ícones de redes sociais, botão de WhatsApp, vídeos do YouTube e do Vimeo, músicas do Spotify, chave Pix, formulários e divisores." },
+      { question: "Consigo ver os resultados?", answer: "Sim. A página mostra visitas, cliques, origens e ações de valor por dia. A contagem não usa cookies e os números são aproximações." },
+      { question: "Posso cuidar de várias páginas?", answer: "A lista de páginas, os convites para a equipe, o painel consolidado e o relatório para o cliente já existem e fazem parte do plano Agência, que ainda não está à venda." },
+      { question: "Posso usar meu próprio domínio?", answer: "Ainda não. Por enquanto a página fica em um endereço nosso, com o nome que você escolher." },
+      { question: "A página altera depois de publicada?", answer: "Só quando você publicar de novo. O rascunho fica separado e você pode voltar para uma versão anterior." },
+    ],
+  },
+  closing: {
+    title: "Crie o seu link hoje",
+    lead: "Um link para tudo o que você cria, vende e divulga. Grátis para montar, no ar em minutos.",
+  },
+  footer: {
+    tagline: "Páginas para a bio com prova de resultado.",
+    provisional: "codinome provisório",
+    productTitle: "Produto",
+    audienceTitle: "Para quem",
+    accountTitle: "Conta",
+    agencies: "Agências",
+    professionals: "Profissionais",
+    recover: "Recuperar acesso",
+    privacy: "Privacidade (versão provisória)",
+  },
+  phones: {
+    creator: { name: "Lia Moraes", bio: "Fotografia de viagem e histórias visuais", primary: "Fale comigo", secondary: "Meu último ensaio" },
+    local: { name: "Café da Praça", bio: "Café coado e bolo do dia, de terça a domingo", primary: "Reservar pelo WhatsApp", secondary: "Como chegar" },
+    shop: { name: "Ateliê Mar", bio: "Cerâmica feita à mão, em pequenos lotes", primary: "Ver catálogo", secondary: "Pague com Pix" },
+    service: { name: "Davi Rocha", bio: "Treino funcional para iniciantes", primary: "Ver horários disponíveis", secondary: "Conversar sobre seu treino" },
+    event: { name: "Noite Aberta", bio: "Música ao vivo, toda sexta", primary: "Comprar ingresso", secondary: "Entrar na lista VIP" },
+  },
+} as const;

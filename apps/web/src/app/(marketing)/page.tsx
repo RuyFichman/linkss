@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
+import { HOME_COPY } from "@/content/pt-BR";
 import { PRODUCT } from "@/lib/product";
-import { Landing } from "./landing";
-export const metadata: Metadata = { title: `${PRODUCT.codename} — hub de conversão mobile`, description: "Página profissional, WhatsApp, Pix, agenda e resultados em linguagem simples. Entre na lista do piloto.", openGraph: { title: `${PRODUCT.codename} — piloto em construção`, description: "Transforme visitas da bio em próximos passos claros.", type: "website" } };
-export default function HomePage() { return <Landing variant="neutral" />; }
+import { Home } from "./home";
+
+export const metadata: Metadata = {
+  title: `${PRODUCT.codename} — ${HOME_COPY.meta.title}`,
+  description: HOME_COPY.meta.description,
+  openGraph: { title: `${PRODUCT.codename} — ${HOME_COPY.meta.title}`, description: HOME_COPY.meta.description, type: "website" },
+};
+
+export default function HomePage() { return <Home />; }
