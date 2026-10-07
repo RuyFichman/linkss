@@ -159,3 +159,26 @@ Desenho em `docs/adr/0012-multi-page-operations-invitations-and-roles.md`. Verif
 - trilha para publicação, domínio, papéis e suspensão — papéis/slug/exclusão/publicação/restauração/despublicação feitos; domínio e suspensão pendentes;
 - backup e restauração testados;
 - processo de denúncia e contato de segurança.
+
+## Controles adicionados na Sprint 7, parte 2 (painel consolidado e links de relatório)
+
+Decisões em `docs/adr/0013-consolidated-analytics-and-report-links.md`. O link de relatório é a primeira superfície em que dado de uma conta é mostrado a quem não tem conta, só com um segredo na URL.
+
+| Ameaça | Controle | Estado |
+|---|---|---|
+| Vazamento do token pelo cabeçalho `Referer` | `Referrer-Policy: no-referrer` como cabeçalho (também no 404) e como meta; o único link do relatório é o endereço público da própria página, com `rel="noreferrer"`; nenhuma requisição a terceiros | implementado; verificado na resposta real |
+| Vazamento pelo log da aplicação | O log registra `report.read` com o desfecho e nunca o token nem o caminho; as ações de criar e cancelar registram só o desfecho (testes de unidade e log real conferido) | implementado |
+| Vazamento pelo log de requisições da hospedagem e pelo histórico do navegador | O token fica no caminho da URL. Mitigado por validade obrigatória (até 90 dias), cancelamento imediato e pelo fato de o link abrir só totais de uma página | **risco aceito**, registrado no ADR |
+| Vazamento por prévia de link e mensagem encaminhada | Título genérico, sem imagem Open Graph, `noindex`. Quem recebe a mensagem encaminhada abre o relatório: o link **é** a credencial. A agência cancela e cria outro | aceito; a tela de gestão avisa que quem tiver o link vê os resultados |
+| Adivinhar um token | 256 bits aleatórios; só o hash é guardado; o hash não abre nada | implementado |
+| Tentativas em massa | 20 falhas por cliente em 10 minutos (hash diário do endereço) bloqueiam aquele cliente; no máximo 5.000 falhas gravadas por 10 minutos. Quem chama a RPC direto pode variar a chave | parcial; limite global na frente de `/r/` fica para a Sprint 9 |
+| Usar o link depois de cancelado ou expirado por causa de cache | Rota dinâmica, lida a cada requisição; `Cache-Control: private, no-store`; nunca ISR. Verificado: 404 na requisição seguinte ao cancelamento | implementado |
+| Ler outra página com o token de uma | A função resolve o token para uma linha e lê só a página dela; parâmetros na URL são ignorados; pgTAP com duas páginas e duas contas | implementado |
+| Ler dados internos pelo relatório | Lista fechada de campos montada no banco; pgTAP falha se aparecer um campo a mais; nenhum identificador (teste procura qualquer UUID na resposta), nada do rascunho, nenhum UTM | implementado |
+| Usar o relatório para descobrir quais páginas ou links existem | Token desconhecido, malformado, expirado, cancelado, de página excluída, de conta suspensa ou sem o recurso no plano: o mesmo 404 com o mesmo texto | implementado |
+| Membro sem permissão criando ou cancelando links | Só proprietário e administrador, na aplicação e nas RPCs; editor recebe `42501`; membro de outra conta recebe "não encontrado" | implementado; chamadas diretas testadas |
+| Ler o consolidado de outra conta | `get_workspace_analytics` confere a participação e responde "não encontrada"; `anon` não executa | implementado |
+| Negação do relatório por um terceiro | Quem chama a RPC sem chave de cliente divide um balde de 300 falhas; com `VISITOR_HASH_SALT` configurado, visitantes reais não estão nesse balde. Sem o segredo, estariam | parcial; depende do segredo já existente e do limite global da Sprint 9 |
+| Relatório aberto contando como visita | A rota não monta o coletor; teste garante que só `/[slug]` o importa; conferido que abrir o relatório não grava evento | implementado |
+
+Pendente: limite global e CAPTCHA (Sprint 9), expurgo agendado de links e contadores (Sprint 9), incluir os links na exportação e na exclusão de conta (Sprint 9), revisão jurídica do texto do relatório.

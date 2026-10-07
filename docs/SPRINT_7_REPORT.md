@@ -1,93 +1,93 @@
 # Relatório da Sprint 7
 
-> **EM ANDAMENTO — PARTE 1 DE 2.** Este relatório cobre só a primeira metade da sprint (lista de páginas, busca, arquivamento, duplicação, convites, membros e papéis). O painel consolidado, o link de relatório somente leitura, a medição da décima página e o fechamento da sprint são da parte 2, que roda numa sessão nova na mesma branch. **A sprint não está concluída.**
-
-**Status da parte 1:** implementada e verificada no ambiente local (Supabase local, `next start` de produção, Chrome). **Nada foi aplicado em staging**, nada foi enviado ao remoto e nenhum PR foi aberto.
-**Objetivo da sprint:** transformar o produto individual em ferramenta de operação (várias páginas, várias pessoas, níveis de acesso) e entregar a segunda metade do diferencial, "operação multi-perfil + prova de resultado".
-**Objetivo desta parte:** quem opera uma conta de agência encontra qualquer página rápido, arquiva as que não usa, começa a página de um cliente a partir de outra, traz colegas com o nível certo de acesso e troca de conta sem nunca agir na conta errada.
+**Status:** implementada e verificada no ambiente local (Supabase local, `next start` de produção, Chrome). Em staging: as duas migrações da parte 1 foram aplicadas pelo founder em 06/10/2026 (informado por ele; não conferi o projeto hospedado); as duas migrações da parte 2 **não** foram aplicadas, a branch **não** foi enviada ao remoto e não há PR. A sprint só chega a staging depois desses passos (seção "Passos de deploy").
+**Objetivo:** transformar o produto individual em ferramenta de operação (várias páginas, várias pessoas, níveis de acesso) e entregar a segunda metade do diferencial, "operação multi-perfil + prova de resultado".
+**Resultado:** quem opera uma conta de agência encontra, arquiva e duplica páginas, traz colegas com o papel certo, vê os resultados de todas as páginas numa tela e entrega ao cliente um link somente leitura, com validade e cancelamento, que mostra os resultados de uma página e nada mais.
 **Data:** 06/10/2026
-**Branch:** `feat/sprint-7-agency`. No início ela estava igual à `main` (`7634102`); o commit de documentação `425c2a5` (branch `docs/sprint-6-staging-applied`, ainda fora da `main`) foi trazido por *fast-forward*, sem rebase. Commits desta parte: `91c7aa9`, `33dbf65`, `214f9b2` e o commit de documentação que inclui este relatório.
+**Branch:** `feat/sprint-7-agency`. Parte 1: `91c7aa9`, `33dbf65`, `214f9b2`, `5be24fb`, `23af1a8`. Parte 2: `e27b292` (banco), `8f0060e` (painel da conta), `6a0de51` (links de relatório), `38db843` e seguinte (script do AC5), e o commit de documentação que inclui este relatório.
 
-## Resultado
+## Como a sprint foi executada
 
-- **Lista de páginas** (`/app/w/<conta>`): busca por nome ou endereço, filtro por situação com contagem, ordem (mais recentes ou nome), 20 por tela, uso do plano ("9 de 10 páginas") e as ações que o papel permite. Busca, filtro, ordem e página ficam na URL e funcionam sem JavaScript. Uma consulta por renderização, qualquer que seja o número de páginas.
-- **Arquivar e desarquivar:** arquivar tira a página do ar na mesma transação, mantém endereço, versões, resultados e contatos, e congela o rascunho. Desarquivar devolve como rascunho, sem republicar. A confirmação diz o que acontece com o endereço público.
-- **Duplicar:** uma transação no banco cria um rascunho novo na mesma conta, com id novo em cada bloco, a aparência, a foto e a apresentação. Imagens não são copiadas: a cópia ganha permissão de usar as da origem e elas contam uma vez na cota. O rascunho copiado mostra "Revise antes de publicar" com os dados de contato e pagamento a conferir.
-- **Convites:** proprietário e administrador criam um link (administrador ou editor), que é mostrado uma vez para copiar e enviar. Nenhum e-mail é enviado. Só aceita quem entra com o mesmo e-mail convidado. Validade de 7 dias, uso único, cancelável; convite pendente ocupa lugar no plano.
-- **Membros** (`/app/w/<conta>/membros`): pessoas, papéis, convites com validade, convidar, cancelar, alterar papel, remover e sair. `change_member_role` e `remove_workspace_member`, que existiam sem tela desde a Sprint 2, ganharam interface.
-- **Aceite** (`/app/convite/<token>`): uma tela para cada estado; link desconhecido, expirado, cancelado ou usado mostra o mesmo texto.
+A sprint foi dividida pelo founder em dois prompts, executados em duas sessões na mesma branch. A parte 1 entregou lista de páginas, busca, arquivamento, duplicação, convites, membros e papéis (ADR 0012). A parte 2 entregou o painel da conta, os links de relatório, a medição da décima página e este fechamento (ADR 0013). Entre as duas, o founder confirmou UX-019 e UX-051 a UX-059 e as duas escolhas técnicas abertas do ADR 0012, e aplicou as migrações da parte 1 em staging.
 
-## Estado dos gates (§0 do prompt)
+No início da parte 2 o estado da branch foi conferido contra o relatório parcial: `npm run test:db` (816 asserções em 17 arquivos) e `npm run check` (863 testes, 44 rotas) passaram sem alteração. **Uma divergência:** o relatório parcial e o bloco de estado do prompt diziam "nada aplicado em staging", e o founder informou ter aplicado as migrações da parte 1; este relatório registra o estado informado.
+
+## Resultado por entrega
+
+**Parte 1**
+
+- **Lista de páginas** (`/app/w/<conta>`): busca por nome ou endereço, filtro por situação com contagem, ordem, 20 por tela, uso do plano e as ações que o papel permite. Tudo na URL, funciona sem JavaScript, uma consulta por tela.
+- **Arquivar e desarquivar:** arquivar tira a página do ar na mesma transação, mantém endereço, versões, resultados e contatos, e congela o rascunho. Desarquivar devolve como rascunho.
+- **Duplicar:** uma transação cria um rascunho novo com id novo em cada bloco. Imagens são compartilhadas por permissão, não copiadas. O rascunho copiado avisa o que revisar antes de publicar.
+- **Convites e membros:** link mostrado uma vez (nenhum e-mail é enviado), válido por 7 dias, uso único, cancelável, aceito só pelo e-mail convidado; pendentes ocupam lugar. Tela *Membros* com alterar papel, remover e sair.
+
+**Parte 2**
+
+- **Resultados da conta** (`/app/w/<conta>/resultados`): totais do período, quantas páginas tiveram atividade, tabela de páginas ordenada por resultados (cartões no celular) com a situação dos dados de cada uma em palavras e link para o painel dela, dia a dia e origens somadas. Mesmos períodos, fuso e "atualizado em" do painel da página. CSV com uma linha por página.
+- **Relatório para o cliente:** na tela de resultados de cada página, proprietário e administrador criam um link (últimos 7, 30 ou 90 dias completos; validade de 7, 30 ou 90 dias; anotação opcional), copiam uma vez, veem a lista com a situação em palavras e cancelam com confirmação.
+- **`/r/<token>`:** nome da agência, nome e endereço da página, período, frase-resumo, visitas, resultados, taxa, de onde vieram os resultados e as visitas, o que mais foi clicado, dia a dia em gráfico e tabela, como os números são contados, e a data em que o link deixa de funcionar. Todo link que não abre relatório recebe o mesmo 404 com o mesmo texto.
+- **Medição do AC5:** script no repositório, aprovado no limiar definido antes de medir.
+
+## Estado dos gates
 
 - **Gate de usabilidade:** o *override* do founder de 25/09/2026 continua valendo; as cinco sessões seguem pendentes.
-- **UX confirmadas:** UX-020, 021, 023 e 025 e, desde 06/10/2026 (depois da entrega desta parte), **UX-019 e UX-051 a UX-059**. A UX-060 (corte de "lembrar a última conta") e as demais seguem provisórias.
-- **Respostas do founder em 06/10/2026**, aplicadas: página arquivada mantém o painel de resultados acessível (**sim**); região (UF) fica para depois; UX-043 a UX-050 seguem provisórias; UX-019 decidida "pela melhor opção para o negócio" (abaixo); a sprint foi dividida em dois prompts.
-- **Staging:** não foi tocado. Nenhuma migração aplicada, nenhum segredo criado, nenhuma configuração alterada no Supabase hospedado nem na Vercel.
-- **Falha segura:** sem a migração, a lista cai na consulta antiga (sem busca), arquivar, duplicar e *Membros* dizem "ainda não disponível" e o link de convite mostra o estado genérico. Coberto por testes de unidade (`not_deployed`); **não** foi exercitado no navegador contra um banco sem a migração.
+- **UX confirmadas:** UX-020, 021, 023, 025 (30/09/2026) e UX-019, UX-051 a UX-059 (06/10/2026). **Provisórias:** UX-060 (corte de "lembrar a última conta") e as novas **UX-061 a UX-071**, usadas como padrão.
+- **Staging:** nada foi tocado por mim em nenhuma das partes. Nenhuma migração, segredo ou configuração no Supabase hospedado ou na Vercel.
+- **Falha segura:** coberta por testes de unidade (`not_deployed`); **não** exercitada no navegador contra um banco sem as migrações.
 
 ## Decisões tomadas
 
-Técnicas (ADR 0012, em inglês; ADR 0004 e 0009 receberam a resolução das notas em aberto):
+Técnicas, parte 1 (ADR 0012): arquivadas contam no limite (UX-019, confirmada); arquivar usa o efeito de "Tirar do ar" e uma constraint impede situação e versão no ar de divergirem; mídia compartilhada entre original e cópia (confirmada); convites em tabela própria; token de 256 bits no caminho da URL (confirmado), só o hash guardado; aceite só pelo e-mail convidado; lista por função `security invoker`; sem dependência nova.
 
-- **UX-019, páginas arquivadas contam no limite — mantida.** O número de páginas é o que separa os planos; arquivo que não conta viraria guarda ilimitada e gratuita de páginas e de endereços. A lista avisa que arquivadas contam. Para revisar com a cobrança (Sprint 8), se houver demanda por "guardar páginas antigas".
-- **Arquivar** usa o mesmo efeito de "Tirar do ar" e a mesma invalidação de cache; `/[slug]` continua estático. Uma constraint nova impede situação e versão no ar de divergirem. Publicar ou restaurar uma página arquivada responde `LK070`.
-- **Mídia na duplicação: a regra de referência foi alargada, os objetos não são copiados.** `media_asset_shares` é uma *permissão* (esta página pode usar esta imagem); a referência continua calculada dos documentos. Quando a página dona é expurgada, a limpeza transfere a imagem para a página que ainda a usa. Copiar objetos exigiria a chave de serviço numa ação de usuário ou um segundo upload atestado por imagem, e não caberia numa transação.
-- **Convites numa tabela própria** (`workspace_invitations`): pendente existe só ali; a participação nasce `active` na aceitação. `status = 'invited'` não é gravado.
-- **Token** de 256 bits; a criação recebe só o hash; a aceitação recebe o token e o banco recalcula o hash, então um hash lido não serve para aceitar; `token_hash` não tem `grant`. O token vai no caminho da URL porque precisa sobreviver ao redirecionamento do login.
-- **E-mail igual ao convidado** para aceitar; outra conta recebe um estado próprio ("é para outro e-mail") sem nenhum dado da conta.
-- **Cadastro a partir do convite:** o modelo de e-mail de confirmação tem `next=/app` fixo. Para não mexer nos modelos hospedados, o cadastro guarda o caminho do convite num cookie `HttpOnly` de 1 hora restrito a `/auth`, e `/auth/confirm` só o honra se for exatamente um caminho de convite.
-- **Lista** por uma função `security invoker`: quem isola as contas é o RLS, quaisquer que sejam os argumentos. Sem índice novo: o índice `(workspace_id, created_at desc)` da Sprint 2 atende. Limite declarado para rever: cerca de 500 páginas numa conta.
-- **Sem dependência nova.**
+Técnicas, parte 2 (ADR 0013):
 
-Produto/UX, todas provisórias salvo indicação (`docs/ux/UX_DECISIONS.md`): UX-051 (arquivamento; o acesso aos resultados foi **confirmado**), UX-052 (o que a duplicação copia e o aviso de revisão), UX-053 (7 dias), UX-054 (mesmo e-mail), UX-055 (sem envio de e-mail), UX-056 (pendentes ocupam lugar), UX-057 (convite não concede proprietário), UX-058 (tela Membros por papel), UX-059 (lista e duplicação em tela, desvio do wireframe 7), UX-060 (corte de "lembrar a última conta").
+- **Uma definição de cada número.** `get_profile_analytics` manteve assinatura e resposta e passou a delegar para um núcleo privado que o relatório também chama. Na aplicação, o painel da conta e o relatório usam as funções do painel da página; `totalsFromCounts` foi extraído para que a linha de uma página na conta e o painel dela não possam divergir.
+- **Leitura da conta numa chamada**, com uma segunda função de contagem de dias abertos filtrada por conta. É a única duplicação, justificada por custo (a função existente varreria os dias abertos de todos os clientes uma vez por página) e vigiada por um teste de igualdade.
+- **Páginas excluídas ficam fora do total da conta;** arquivadas e fora do ar entram. Só vira linha a página no ar ou com evento no período.
+- **Relatório = janela móvel de dias completos** (termina ontem). Sem intervalo fixo de datas.
+- **Sem registro de abertura do link.** O "aberto pela última vez" recomendado não foi construído: a prévia de link de um aplicativo de mensagens marcaria o relatório como aberto antes de qualquer pessoa, e a rota hoje não guarda nada sobre quem lê.
+- **Lista fechada de campos montada no banco,** sem identificadores, sem UTM, sem aparelhos e países, sem rascunho. Títulos vêm da versão publicada.
+- **Rota dinâmica, sem cache, sem cookie, sem terceiros, sem coletor.** Cabeçalhos aplicados pelo `next.config.ts` também ao 404.
+- **Limite de tentativas por endereço no banco** (20 falhas em 10 minutos), declarado como redutor de custo, não como fronteira de segurança.
+- **Links param de abrir sem `shareable_reports` e são mantidos;** sobrevivem à saída de quem criou; cancelar é permitido mesmo com a conta suspensa.
+- **Sem dependência nova, sem segredo novo, sem variável nova.**
+
+Produto/UX, parte 2 (`docs/ux/UX_DECISIONS.md`, todas provisórias): UX-061 (painel da conta como ranking e triagem), UX-062 (quais páginas aparecem), UX-063 (situação dos dados em palavras), UX-064 (dias completos, padrão 30), UX-065 (validade obrigatória, link mostrado uma vez, 5 por página), UX-066 (o que o relatório não mostra), UX-067 (um só texto para link que não abre), UX-068 (papéis), UX-069 (sem o recurso no plano), UX-070 (sem registro de abertura), UX-071 (rodapé de atribuição segue o selo).
 
 ### Cortes de escopo
 
-- **Lembrar a última conta usada em `/app`:** cortado (primeiro item da lista de cortes). `/app` abre a conta pessoal.
-- Os demais itens da lista de cortes (filtro por situação, alterar papel pela interface, sair da conta pela interface) **foram entregues**.
+- **Lembrar a última conta usada em `/app`** (parte 1; primeiro item da lista de cortes daquela parte).
+- **Data de última abertura do link** (parte 2; item da lista de cortes, cortado por decisão e não por prazo; a anotação do link foi entregue).
+- Nenhum outro item da lista de cortes da parte 2 foi cortado: CSV do consolidado, origens no consolidado, ranking de blocos no relatório e a medição com 50 páginas foram entregues.
 
 ## Critérios de aceite
 
-| # | Critério (`PLANO_DE_EXECUCAO.md`) | Estado | Evidência |
+| # | Critério (`PLANO_DE_EXECUCAO.md`) | Estado | Evidência (parte que a produziu) |
 |---|---|---|---|
-| AC1 | Permissões aplicadas no servidor para cada ação sensível | **verificado para as ações desta parte**; a parte 2 acrescenta as dela e revisa o conjunto | Tabela em ADR 0012 ("AC1"), uma linha por Server Action, leitura e RPC, contra proprietário, administrador, editor, membro de outra conta, não membro e `anon`. Banco: pgTAP `150-agency-operations.test.sql` (cada papel em cada RPC; `anon` em todas) e `010-structure` (nenhuma função nova executável por `anon`; `token_hash` ilegível). Aplicação: Vitest `modules/identity/invitations.test.ts`, `member-actions.test.ts` e `modules/profiles/service.test.ts` (o serviço recusa **antes** de chamar o repositório). Chamada sem a interface: RPCs chamadas direto no pgTAP como cada papel; no navegador, administrador rebaixado no banco com o diálogo de arquivar já aberto → "Você não tem permissão", página intacta, log `profile.archive outcome=forbidden`; editor abrindo `/duplicar` pela URL → aviso de permissão, sem formulário |
-| AC2 | Template duplicado não compartilha conteúdo mutável com o original | **verificado** | pgTAP 150: todo id de bloco é novo e distinto; mesmos blocos na mesma ordem; editar a cópia não muda nome, blocos nem revisão do original, e vice-versa; publicar a cópia não acrescenta versão ao original e cada página tem a sua versão no ar; arquivar o original deixa a cópia publicada; excluir o original deixa a cópia salvar e publicar com as imagens; a limpeza não reivindica imagens que a cópia usa e, vencida a retenção do original, as transfere para a cópia e remove só a que ninguém usa; a cópia nasce sem publicações, analytics, leads e histórico de endereço, em rascunho, com endereço e revisão próprios; cópia de cópia, origem arquivada (aceita) e origem excluída (recusada). Vitest: nome e endereço da cópia, validação, limite do plano. Navegador: página com foto, imagem, Pix, formulário e WhatsApp duplicada; cópia publicada; original arquivado e depois excluído; imagens da cópia respondendo 200 na página pública. **Não coberto:** domínio próprio, pixels e links de relatório ainda não existem (Sprint 8 e parte 2); a regra está no ADR para quando existirem |
-| AC3 | Convites expiram, podem ser revogados e não concedem acesso à conta errada | **verificado** | pgTAP 150: aceito uma vez e só uma; expirado; cancelado; cancelar duas vezes; substituído por convite novo; token desconhecido, malformado e nulo; os quatro inválidos devolvem **a mesma linha**; outra conta e conta não confirmada → `wrong_account` sem dados; a aceitação não recebe conta e não cria participação em nenhuma outra; quem já é membro mantém o papel (sem escalada) e o convite é fechado; membro removido e convidado de novo volta na mesma linha com o papel novo; limite atingido entre convite e aceite; pendentes ocupam lugar; administrador convidando proprietário e proprietário convidando proprietário (recusados); editor convidando (recusado); conta suspensa; limite de criação; expurgo após 30 dias; o valor guardado é o hash e a trilha não tem endereço nem token. Vitest: normalização, token com fonte aleatória injetada, validade com relógio injetado, um estado de tela por resposta do banco, o serviço nunca manda o token ao criar. Navegador: três contas; aceite como administrador e como editora; conta errada; cancelado, expirado e desconhecido com o mesmo texto; segundo uso do link → inválido. Log do servidor conferido: nenhum token e nenhum e-mail |
-| AC4 | Relatório compartilhado não expõe configurações internas nem dados de outros perfis | **não iniciado** | Parte 2 |
-| AC5 | Agência cria o décimo perfil sem degradação perceptível | **preparado**, não medido | A lista faz 2 consultas por renderização (lista + entitlements), o fluxo de criar faz o mesmo número de sempre e o de duplicar faz 4 leituras fixas mais a RPC; nenhuma cresce com o número de páginas. Índice de apoio já existente. No navegador, a conta QA ficou com 9 páginas, a décima foi criada por duplicação e a lista foi usada com 10. **A medição cronometrada e o `EXPLAIN` são da parte 2** |
+| AC1 | Permissões aplicadas no servidor para cada ação sensível | **verificado** | Tabelas "AC1" no ADR 0012 (parte 1) e no ADR 0013 (parte 2), uma linha por tela, Server Action, rota e RPC contra proprietário, administrador, editor, membro de outra conta e `anon`. **Banco:** pgTAP `150-agency-operations` (parte 1) e `160-reports` (parte 2), cada papel em cada RPC; `010-structure`: `anon` executa só quatro funções (página pública, relatório, formulário, ingestão) e nenhum papel lê hash de token. **Aplicação:** Vitest de `identity`, `invitations`, `member-actions`, `profiles/service` (parte 1) e `analytics/workspace`, `reports/reports`, `reports/actions`, rota de exportação (parte 2): o serviço recusa antes de chamar o repositório. **Chamada direta ao servidor (parte 2):** com sessões reais de editora e de membro de outra conta, criar e cancelar link devolveram `42501` e `P0002`, a lista veio vazia, o consolidado de outra conta devolveu `P0002` e `anon` recebeu 401. **Revisão das linhas da parte 1:** os testes foram rodados de novo no fim da sprint e continuam valendo |
+| AC2 | Template duplicado não compartilha conteúdo mutável com o original | **verificado** (parte 1; testes rodados de novo na parte 2) | pgTAP 150: ids de bloco novos; editar ou publicar a cópia não muda o original e vice-versa; arquivar ou excluir o original deixa a cópia funcionando com as imagens; a limpeza transfere as imagens para a cópia; a cópia nasce sem publicações, analytics, leads e histórico de endereço. Navegador (parte 1): página com foto, imagem, Pix, formulário e WhatsApp duplicada, cópia publicada, original excluído, imagens da cópia respondendo 200. **Links de relatório não são copiados** (existem só por página; pgTAP 160 cria links por página). **Não coberto:** domínio próprio e pixels ainda não existem (Sprint 8) |
+| AC3 | Convites expiram, podem ser revogados e não concedem acesso à conta errada | **verificado** (parte 1; testes rodados de novo na parte 2) | pgTAP 150: aceito uma vez; expirado, cancelado, substituído, desconhecido, malformado e nulo devolvem a mesma linha; outra conta e conta não confirmada → `wrong_account` sem dados; sem escalada para quem já é membro; limite entre convite e aceite; recusa de proprietário por convite; expurgo após 30 dias; trilha sem endereço nem token. Navegador (parte 1): três contas, aceite como administrador e editora, conta errada, link reusado |
+| AC4 | Relatório compartilhado não expõe configurações internas nem dados de outros perfis | **verificado no local** (parte 2) | **Lista campo a campo** no ADR 0013 ("What the report contains"). **pgTAP 160:** as chaves da resposta são exatamente a lista (o teste falha com um campo a mais), e o mesmo para cada linha de dia, origem e bloco; nenhuma sequência com formato de UUID em toda a resposta; valores de UTM, título só do rascunho e anotação do link ausentes; o token da página A nunca devolve nada da B, na mesma conta e em outra; desconhecido, malformado, nulo, vazio, hash usado como token, expirado e cancelado devolvem o mesmo `{"status":"unavailable"}`; o link para ao excluir a página, suspender ou excluir a conta e perder `shareable_reports`, e volta quando o recurso volta; continua com página fora do ar ou arquivada (sem o endereço) e depois que quem criou sai. **Vitest:** o modelo de tela é montado só com a lista fechada (campos extras na resposta não aparecem); cabeçalhos da rota fixados em teste e aplicados pelo `next.config.ts`. **Resposta real (build de produção):** `Cache-Control: private, no-store, max-age=0`, `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet`, sem `Set-Cookie`, também no 404; HTML sem id de conta, página, bloco ou pessoa; o token aparece só como o segmento de rota da própria página; cancelado → 404 na requisição seguinte. **Ressalvas:** não aplicado em staging; revisão jurídica do texto pendente |
+| AC5 | Agência cria o décimo perfil sem degradação perceptível | **verificado no local** (parte 2) | Limiar escrito antes de medir, no cabeçalho de `apps/web/scripts/agency-scale.mjs`: requisições por tela constantes com o número de páginas; mediana com 10 páginas até 2x a de 1 página e abaixo de 300 ms. Resultado: **PASS** (tabela em "Medição do AC5"). `EXPLAIN` com uso de índice para a lista, o consolidado (dias fechados e abertos) e a busca do link. **Ressalva:** medido em máquina local, com banco local e dados sintéticos; não é medição de campo |
 
 ## Entregáveis
 
-| ID | Entrega | Onde revisar |
+| Parte | Entrega | Onde revisar |
 |---|---|---|
-| D1 | ADR 0012 | `docs/adr/0012-multi-page-operations-invitations-and-roles.md` |
-| D2 | Migrações + pgTAP | `supabase/migrations/202610060001_sprint7_enum_values.sql`, `202610060002_agency_operations.sql`; `supabase/tests/database/150-agency-operations.test.sql` (173 asserções), `010-structure.test.sql` (+4); `apps/web/src/lib/database.types.ts` regenerado |
-| D3 | Módulos puros e Server Actions | `modules/identity/{permissions,invitations,invitation-token,after-confirm,members-service,members-server,member-actions}.ts`; `modules/profiles/{page-list,page-list-server,duplicate-naming,copy-review,service,supabase-repository,errors,actions}.ts`; `lib/supabase/missing-schema.ts` |
-| D4 | Interface | `app/app/w/[workspaceId]/page.tsx` (lista), `…/paginas/[profileId]/duplicar/page.tsx`, `…/paginas/[profileId]/page.tsx` (arquivada, aviso de revisão, duplicar/arquivar), `…/membros/{page,loading}.tsx`, `app/app/convite/[token]/page.tsx`, `app/app/w/[workspaceId]/layout.tsx` (Páginas · Membros); componentes `ui/confirm-dialog.tsx`, `modules/profiles/components/{archive-controls,duplicate-profile-form}.tsx`, `modules/identity/components/{invite-member-form,member-role-form,accept-invitation-form}.tsx`; login e cadastro levam o convite adiante; textos em `content/pt-BR.ts` (`APP_COPY.pages/archive/duplicate/manage`, `TEAM_COPY`) |
-| D5 | Testes | Vitest: `modules/identity/{identity,invitations,member-actions}.test.ts`, `modules/profiles/{service,page-list}.test.ts`, `app/auth/confirm/route.test.ts`; pgTAP acima |
-| D6 | Documentação | ADR 0012, ADR 0004 e 0009 (notas resolvidas), `docs/{ARCHITECTURE,THREAT_MODEL,DATA_MAP,OBSERVABILITY,ENVIRONMENTS}.md`, `docs/runbooks/AUTH_ACCESS.md` (seções 5 e 6), `docs/ux/{UX_DECISIONS,CONTENT_GUIDE}.md`, `README.md`, `BACKLOG.md`, este relatório. `AGENTS.md` §22 **não** foi alterado (fica para o fechamento) |
+| 1 | ADR 0012 | `docs/adr/0012-multi-page-operations-invitations-and-roles.md` |
+| 1 | Migrações + pgTAP | `supabase/migrations/202610060001_sprint7_enum_values.sql`, `202610060002_agency_operations.sql`; `supabase/tests/database/150-agency-operations.test.sql` |
+| 1 | Módulos e telas | `modules/identity/*` (convites, membros), `modules/profiles/*` (lista, arquivar, duplicar), `app/app/w/[workspaceId]/{page,membros,paginas/[profileId]/duplicar}`, `app/app/convite/[token]` |
+| 2 | ADR 0013 | `docs/adr/0013-consolidated-analytics-and-report-links.md` |
+| 2 | Migrações + pgTAP | `supabase/migrations/202610060003_sprint7_report_enum_values.sql`, `202610060004_consolidated_analytics_and_report_links.sql`; `supabase/tests/database/160-reports.test.sql` (131 asserções), `010-structure.test.sql` (+4); `apps/web/src/lib/database.types.ts` regenerado |
+| 2 | Módulos puros e servidor | `modules/analytics/{workspace,workspace-service,dashboard,supabase-repository,server}.ts`; `modules/reports/{links,token,shared-report,service,server,actions,response-headers}.ts`; `modules/identity/permissions.ts` |
+| 2 | Painel da conta | `app/app/w/[workspaceId]/resultados/{page,loading}.tsx`, `…/resultados/exportar/route.ts`; navegação em `layout.tsx`; atalho na lista de páginas |
+| 2 | Links de relatório | `modules/reports/components/{report-links-section,report-link-form}.tsx` na tela `…/paginas/[profileId]/resultados`; rota pública `app/r/{layout.tsx,[token]/page.tsx,[token]/not-found.tsx}`; cabeçalhos em `next.config.ts` |
+| 2 | Textos | `content/pt-BR.ts` (`WORKSPACE_ANALYTICS_COPY`, `REPORTS_COPY`), `content/shared-report.ts` (o que o cliente lê) |
+| 2 | Medição | `apps/web/scripts/agency-scale.mjs` |
+| 2 | Testes | Vitest: `modules/analytics/workspace.test.ts`, `modules/reports/{reports,actions}.test.ts`, `app/r/[token]/page.test.ts`, `app/app/w/[workspaceId]/resultados/exportar/route.test.ts`, `modules/identity/identity.test.ts` (matriz) |
+| 2 | Documentação | ADR 0013; ADR 0011 e 0012 (notas resolvidas); `docs/{ARCHITECTURE,THREAT_MODEL,DATA_MAP,OBSERVABILITY,SUPABASE_CAPACITY,ENVIRONMENTS}.md`; `docs/runbooks/REPORTS.md` (novo); `docs/ux/{UX_DECISIONS,CONTENT_GUIDE}.md`; `README.md`; `BACKLOG.md`; `AGENTS.md` §22; página `/privacidade` |
 
 ## Validação executada
-
-### Navegador (Chrome, build de produção em `localhost:3000`, Supabase local, contas `qa-sprint7-*@example.test`)
-
-- **Proprietária:** criou a conta de agência pela interface (o `next` do login foi preservado); lista com 9 páginas, busca "café" → 1 resultado com "Limpar busca e filtros"; duplicou a página com foto, imagem, Pix, formulário e WhatsApp → caiu no rascunho novo com "Cópia criada como rascunho" e "Revise antes de publicar" (WhatsApp, Chave Pix, consentimento); publicou a cópia (o aviso sumiu); arquivou o original publicado pelo diálogo (texto com o endereço) → endereço público passou a responder 404 na hora, editor e publicação saíram da tela, resultados e contatos continuaram abrindo; excluiu o original → as duas imagens da cópia responderam 200 na página pública.
-- **Convites:** quatro criados (um com o e-mail em maiúsculas e espaço, normalizado); um cancelado pelo diálogo; um expirado ajustando a linha no banco local. Sem sessão, o link levou ao login com o aviso de convite e o link de cadastro levando o convite. Com outra conta: "Este convite é para outro e-mail", sem dados, `referrer` `no-referrer`, botão para sair e voltar ao convite. Cancelado, expirado, desconhecido e malformado: "Este convite não é válido". Administrador e editora aceitaram; o segundo uso do link do administrador → inválido.
-- **Papéis:** a editora viu só Editar e Resultados, sem "Nova página", a tela Membros com nomes e papéis, sem e-mails alheios e só com "Sair desta conta", e `/duplicar` com o aviso de permissão. O administrador viu Duplicar, Arquivar e a gestão de membros.
-- **Removida com a aba aberta:** a editora salvou uma alteração ("Salvo"); o administrador a removeu (RPC chamada com a identidade dele); a alteração seguinte na mesma aba → "Não foi possível salvar. Esta página não existe mais ou você perdeu o acesso a ela."; o título no banco não mudou; a URL da conta passou a mostrar "Página não encontrada".
-- **Interface desatualizada:** administrador rebaixado a editor no banco com o diálogo de arquivar aberto → "Você não tem permissão para fazer isso nesta conta."; página continuou em rascunho.
-- **Lugares:** com 2 pessoas e 3 convites, "5 de 5 lugares"; o formulário dá lugar ao aviso de limite.
-- **Larguras:** 360, 390, 768 e 1280 px (360 e 390 num iframe, porque a janela não fica menor que 500 px) para lista, busca vazia, membros, duplicar, editor e convite: sem rolagem horizontal e sem alvo menor que 44 px nas telas novas.
-- **Log do servidor:** desfechos de cada ação com `correlationId`; nenhuma ocorrência de token, caminho de convite ou e-mail.
-
-**Não feito no navegador:** cadastro de uma pessoa nova a partir do convite com confirmação de e-mail (coberto por teste de unidade do cookie e da rota); alterar papel e sair da conta pela interface (cobertos por Vitest e pgTAP; a remoção foi feita por RPC); paginação com mais de 20 páginas (o plano local permite 10; coberta por pgTAP e Vitest); a aplicação contra um banco sem a migração; celular real, Safari e leitor de tela; a troca de conta foi conferida pelo seletor listando as duas contas, não por uma sequência de ações em cada uma.
-
-### Problemas encontrados e corrigidos durante esta parte
-
-- **O link do convite sumia quando o convite ocupava o último lugar:** a tela trocava o formulário pelo aviso de limite e o link, que só existe ali, se perdia. O formulário agora continua montado e o link permanece. Verificado de novo no navegador.
-- **Convite expirado e depois substituído contava a retenção a partir da substituição:** a regra passou a usar o que acontecer primeiro (término ou validade). Caso no pgTAP.
-- **Termo de busca em forma de endereço com hífen nas pontas** (`'; drop table…` virava `-drop-table…`): passa a ser aparado. Caso no Vitest.
-- **Aceite registrado em nível `warn`:** corrigido para `info`.
 
 ### Resultado final registrado
 
@@ -95,94 +95,130 @@ Produto/UX, todas provisórias salvo indicação (`docs/ux/UX_DECISIONS.md`): UX
 npm audit: 5 high (só ferramentas de desenvolvimento: eslint-config-next → fast-glob → micromatch → braces); npm audit --omit=dev: found 0 vulnerabilities
 lint: aprovado (eslint --max-warnings=0)
 typecheck: aprovado
-test: 29 arquivos, 863 testes aprovados (173 novos)
-test:db: 17 arquivos, 816 asserções aprovadas (177 novas: 173 no arquivo 150 e 4 no 010)
+test: 34 arquivos, 943 testes aprovados (80 novos na parte 2; 173 na parte 1)
+test:db: 18 arquivos, 951 asserções aprovadas (135 novas na parte 2: 131 no arquivo 160 e 4 no 010; 177 na parte 1)
 supabase db advisors --local: No issues found
-build: aprovado, 44 rotas + Proxy (3 novas: /app/convite/[token], /app/w/[workspaceId]/membros, /app/w/[workspaceId]/paginas/[profileId]/duplicar)
+build: aprovado, 47 rotas + Proxy (3 novas na parte 2: /app/w/[workspaceId]/resultados, /app/w/[workspaceId]/resultados/exportar, /r/[token]; 3 na parte 1)
 npm run check: aprovado (exit 0)
 ```
 
-**Sobre o `npm audit`.** O lockfile não tinha mudado desde a Sprint 6 (que registrou 0); dois avisos foram publicados depois. `source-map-js` foi corrigido com `npm audit fix` (1.2.1 → 1.2.2, só o lockfile). O de `braces` não tem correção sem rebaixar `eslint-config-next` para a versão 14, o que quebraria o lint do Next 16: ficou aberto. É negação de serviço em padrões de glob, só alcançável pela ferramenta de lint na máquina de desenvolvimento e no CI; nada disso vai para o servidor nem para o navegador.
+As quatro migrações da sprint foram aplicadas no banco local com `supabase migration up`. **Não rodei `db reset`.** A aplicação a partir do zero fica a cargo do job `database` do CI, que ainda não rodou com esta branch (não houve push).
 
-As migrações foram aplicadas no banco local com `supabase migration up`. **Não rodei `db reset`.** A função `create_workspace_invitation` mudou depois de aplicada (regra de retenção) e foi recriada no banco local a partir do arquivo; a aplicação a partir do zero fica a cargo do job `database` do CI, que ainda não rodou com esta branch (não houve push).
+### Medição do AC5
+
+`node scripts/agency-scale.mjs`, build de produção em `localhost:3100`, Supabase local, 20 renderizações por tela depois de 3 de aquecimento. A conta medida tem páginas publicadas com 89 dias de agregados; uma segunda conta do mesmo tamanho serve de ruído para o planejador. Requisições = chamadas ao PostgREST por renderização, contadas por `pg_stat_statements`.
+
+| Páginas | Tela | Mediana (ms) | p95 (ms) | Requisições | Banco por tela (ms) |
+|---:|---|---:|---:|---:|---:|
+| 1 | Lista de páginas | 17,7 | 21,5 | 5 | 3,4 |
+| 1 | Resultados da conta (30 dias) | 21,2 | 29,1 | 3 | 5,7 |
+| 1 | Criar página (5 execuções) | 192,0 | 1.879,7 | 5 | 3,0 |
+| 10 | Lista de páginas | 18,5 | 28,9 | 5 | 3,0 |
+| 10 | Resultados da conta (30 dias) | 24,7 | 26,9 | 3 | 7,7 |
+| 10 | Criar página (5 execuções) | 165,1 | 312,9 | 5 | 2,8 |
+| 50 | Lista de páginas | 20,1 | 26,6 | 5 | 3,2 |
+| 50 | Resultados da conta (30 dias) | 51,0 | 64,5 | 3 | 29,2 |
+
+Leitura honesta dos números:
+
+- **As requisições não crescem com o número de páginas** em nenhuma tela. O que cresce no painel da conta é o volume agregado (50 páginas × 30 dias = 8.700 linhas, 29 ms de banco), que é inerente à pergunta.
+- **A décima criação é da mesma ordem da primeira** (165 ms contra 192 ms de mediana; 2,8 ms contra 3,0 ms de banco). O tempo de "criar página" é o das cinco chamadas que a Server Action faz, **repetidas pelo script** pelo gateway local; não é o tempo da Server Action no navegador. O p95 de 1.880 ms com 1 página é a primeira das cinco execuções (conexão fria), não um efeito do tamanho.
+- Uma primeira execução do script, antes de um ajuste no fixture, deu os mesmos padrões (lista 17,9/18,2/19,9 ms; conta 19,7/23,2/48,5 ms; criação 329/291 ms). Nenhuma das duas mostrou crescimento que exigisse correção.
+- Com 50 páginas não se mede criação: o plano Agência permite 10. Para a leitura com 50, o script eleva o limite dentro de uma transação e o restaura antes do `commit`.
+
+`EXPLAIN` (53.429 linhas em `analytics_daily`, 26.700 da conta medida): dias fechados → `Index Scan using analytics_daily_workspace_day_idx` (8.700 linhas); dias abertos → `Index Scan using analytics_events_workspace_profile_time_idx`; busca do link → `Index Scan using report_links_token_hash_key`; lista, como membro sob RLS → `Index Scan using profiles_workspace_live_created_idx`.
+
+### Igualdade dos totais entre as três telas
+
+Conferido por script contra o build de produção, com tráfego real enviado a `/api/events` para três páginas (7, 4 e 2 visitas; 3, 1 e 0 cliques no WhatsApp, todos contados), antes e depois de rodar o job de analytics:
+
+| Janela | Painel da conta | Soma dos 50 painéis de página |
+|---|---|---|
+| Hoje | 163 visitas, 4 resultados | 163 visitas, 4 resultados |
+| 7 dias (depois do job) | 13.027 visitas, 1.768 resultados | 13.027 visitas, 1.768 resultados |
+| 30 dias | 62.339 visitas, 8.530 resultados | 62.339 visitas, 8.530 resultados |
+
+A tela da conta mostrou esses totais; para as três páginas, o painel de cada uma mostrou o mesmo número da sua linha na conta. **Relatório:** para os mesmos 30 dias completos, a página do relatório mostrou "1.230 visitas e 120 resultados", igual à leitura do painel da página para a mesma janela. (O painel da página, que inclui hoje, mostra 1.206 para "30 dias": são janelas diferentes, e é esperado.) No pgTAP a igualdade é comparada linha a linha, por dia e por tipo.
+
+### Verificação ponta a ponta (script, 79 verificações, todas aprovadas)
+
+Contas `qa-ac5-*@example.test` em `127.0.0.1:3100`: ingestão real; igualdade dos totais; relatório aberto sem sessão, com a sessão de outra conta e com a da proprietária (mesmo conteúdo); cabeçalhos; ausência de cookie, de requisição a terceiros e do coletor; abrir o relatório não grava evento; mudar a URL não alcança a página B; token desconhecido, malformado, com um caractere trocado, hash no lugar do token, expirado (linha ajustada no banco local), cancelado, conta sem `shareable_reports` e conta suspensa → mesmo 404 e mesmo documento; cancelamento vale na requisição seguinte; o link volta quando o recurso volta; editora e membro de outra conta chamando o servidor direto; 20 tentativas erradas bloqueiam o endereço e não outro; CSV (200, anexo, marca de ordem de bytes, fuso, 50 linhas, 17 colunas), recusa de origem cruzada e de quem não é membro; trilha de auditoria; log do servidor sem token e sem caminho de relatório.
+
+### Navegador (Chrome, build de produção)
+
+- Painel da conta com 50 páginas em desktop; em 360, 390, 430 e 768 px (iframe) sem rolagem horizontal e sem alvo menor que 44 px; no celular as linhas viram cartões e a tabela mantém os papéis ARIA.
+- Criar link pelo formulário (o link apareceu uma vez, com a validade); o relatório abriu com os números certos; cancelar pelo diálogo (foco dentro do diálogo, texto dizendo que para imediatamente); o relatório passou a responder 404 e a mostrar "Relatório não disponível" no recarregamento seguinte.
+- O relatório não pode ser carregado em iframe (`X-Frame-Options: DENY`), como previsto.
+
+**Não feito, marcado como preparado e não verificado:** o relatório em largura de celular (a janela não ficou menor que o desktop e o iframe é bloqueado; a página usa a mesma grade de uma coluna das outras telas); impressão e "salvar como PDF" (as regras `@media print` e `break-inside: avoid` estão na folha de estilo, mas nada foi impresso); o CSV aberto num programa de planilha (conferido só o formato do arquivo); celular real, Safari e leitor de tela; a aplicação contra um banco sem as migrações; e, da parte 1, cadastro novo a partir de convite, alterar papel e sair pela interface.
+
+### Problemas encontrados e corrigidos
+
+Parte 2:
+
+- **Condição `if … case … then` no PL/pgSQL** da leitura do relatório não compilava; reescrita com uma variável (pego ao aplicar a migração numa transação de teste, antes de aplicá-la).
+- **Fixture do script do AC5:** o histórico sintético era mais antigo que as páginas, e o relatório respondia, corretamente, "a contagem começou depois deste período". O script passou a retroagir a criação das páginas de teste.
+- **Tabela do painel da conta no celular:** ao virar cartões ela perderia a semântica de tabela em alguns navegadores; os papéis ARIA ficaram explícitos.
+- **Página `/privacidade`:** dizia que só o dono da página vê os totais; passou a mencionar as pessoas convidadas e o link de relatório.
+
+Parte 1 (já registrados): o link do convite sumia ao ocupar o último lugar; retenção de convite expirado e depois substituído; termo de busca com hífen nas pontas; aceite registrado em nível `warn`.
+
+**Defeitos da parte 1 corrigidos na parte 2:** nenhum foi encontrado.
 
 ## Segurança, privacidade, acessibilidade, performance e operação
 
-- **Segurança:** seção nova em `docs/THREAT_MODEL.md`. Casos negativos testados: cada papel, membro de outra conta, não membro e `anon` contra arquivar, desarquivar, duplicar, listar, listar membros, convidar, cancelar, consultar e aceitar convite; convite reusado, expirado, cancelado, substituído, desconhecido, malformado e nulo; conta errada e conta não confirmada; conta suspensa; quem já é membro (sem escalada); limite atingido entre convite e aceite; convidar proprietário; convite e participação de outra conta passados para a ação; strings de busca hostis (`%`, `_`, `\`, aspas, `drop table`, caracteres de controle, 500 caracteres); parâmetros de lista inesperados (`__proto__`, ordem arbitrária, página negativa); duplicar no limite do plano, com endereço em uso, reservado e sem nome; página arquivada publicada, restaurada e editada; cookie de retorno apontando para outro site. Nenhuma validação, policy ou regra de lint foi afrouxada.
-- **Privacidade:** `docs/DATA_MAP.md` (o e-mail convidado campo a campo, retenção de 30 dias, quem lê, como exportação e exclusão alcançam). Nenhum subprocessador novo e nenhum e-mail enviado. Um cookie funcional novo, só no cadastro vindo de convite. A base legal é proposta e depende da revisão jurídica.
-- **Acessibilidade:** rótulos programáticos em todos os campos; botões repetidos na lista com nome acessível próprio ("Arquivar: Café Ipê"); situação, limite e estado do convite em texto; diálogos devolvem o foco; regiões `role="status"`/`alert`; filtro com `aria-current`; busca com `role="search"`; alvos de 44 px. **Leitor de tela real não foi usado.**
-- **Performance:** nenhuma mudança na página pública nem no seu JavaScript. A lista deixou de trazer os blocos de todas as páginas (a consulta antiga trazia) e faz uma consulta só.
-- **Operação:** sinais novos em `docs/OBSERVABILITY.md`; runbook `docs/runbooks/AUTH_ACCESS.md` seções 5 ("alguém não consegue aceitar um convite") e 6 ("um membro está com o acesso errado"); passos de deploy e o plano Agência em staging em `docs/ENVIRONMENTS.md`.
+- **Segurança:** seções novas em `docs/THREAT_MODEL.md` (uma por parte). Casos negativos da parte 2: leitura cruzada entre páginas e entre contas; tokens expirado, cancelado, desconhecido, malformado, nulo, vazio e hash no lugar do token; recurso ausente no plano; cada papel contra cada ação; `anon`; cache depois do cancelamento; token em log e em `Referer`; lista fechada de campos; período, validade e anotação inválidos; limite de links ativos e de criações; inserção, alteração e exclusão diretas na tabela; POST de outra origem na exportação. Nenhuma validação, policy ou regra de lint foi afrouxada.
+- **Privacidade:** `docs/DATA_MAP.md` (`report_links` campo a campo; o relatório como divulgação a um terceiro escolhido pela conta; retenção; exportação e exclusão). Nenhum subprocessador novo, nenhum e-mail enviado, nenhum cookie para quem abre um relatório, nenhum registro de quem abriu. O relatório não tem dado de visitante. A base legal é proposta e depende da revisão jurídica.
+- **Acessibilidade:** todo número em texto ou tabela; gráfico com descrição; situação em palavras; rótulos programáticos; nomes acessíveis próprios nos botões repetidos ("Ver detalhes de …", "Cancelar link: …"); diálogo com foco; alvos de 44 px nas telas da conta. **Leitor de tela real não foi usado.**
+- **Performance:** a página pública não mudou: nenhum arquivo do seu grafo de módulos foi alterado e o JavaScript transferido é de 189.201 bytes (189.200 na Sprint 6). Painel da conta: 3 requisições por tela.
+- **Operação:** sinais novos em `docs/OBSERVABILITY.md`; runbook `docs/runbooks/REPORTS.md` ("o link não abre", "derrubar um link agora", "os números não batem", tentativas em massa); `docs/runbooks/AUTH_ACCESS.md` seções 5 e 6 (parte 1); passos de deploy em `docs/ENVIRONMENTS.md`.
 
 ## Pendências, gaps e riscos
 
-- **Sprint incompleta:** painel consolidado, link de relatório, medição do AC5 e fechamento (parte 2).
-- **Staging:** nada aplicado. Para testar lá é preciso a migração e pôr a conta no plano Agência por SQL (não há cobrança até a Sprint 8).
-- **O token do convite fica no caminho da URL** e, portanto, no log de requisições da hospedagem. Mitigado por uso único, 7 dias e exigência do e-mail convidado; registrado no modelo de ameaças.
-- **Sem limite global nem CAPTCHA** nas ações de convite (Sprint 9); há só os limites do banco (20 por conta, 30 por pessoa em 24 h).
-- **Sem tentativa limitada de tokens por usuário:** inviável adivinhar (256 bits), mas não há contador.
-- **Cadastro por convite em outro aparelho:** depois de confirmar o e-mail a pessoa cai no início e precisa abrir o link de novo. Resolver de vez exige levar o `next` no modelo de e-mail do Auth (configuração hospedada).
-- **Aviso de revisão da cópia não bloqueia a publicação:** uma cópia pode ir ao ar com Pix ou WhatsApp da origem se a pessoa ignorar o aviso.
-- **Página arquivada não pode ser editada** nem ter imagens enviadas; é preciso desarquivar antes. Decisão provisória (UX-051).
-- **Rebaixamento de plano:** nada é removido; quem já é membro mantém o acesso e páginas além do limite continuam existindo. Convites e páginas novas são recusados. A Sprint 8 precisa decidir o que comunicar e bloquear.
-- **Expurgo de convites** só acontece quando a conta cria outro convite; o expurgo agendado fica para a Sprint 9.
-- **`npm audit`:** 5 avisos altos em ferramentas de desenvolvimento, sem correção compatível hoje.
-- **Não verificado:** os itens listados em "Não feito no navegador".
-- **Banco local com dados de QA** (ver "Handoff").
-- **Fora do repositório:** iniciei o Docker Desktop (estava parado) para subir o stack local; contêineres de outros projetos subiram junto por política própria e não foram tocados. No Chrome, **a sessão local do founder em `localhost:3000` foi encerrada** para eu entrar com as contas de QA (basta entrar de novo); nada foi alterado na conta dele.
-- **Herdadas:** sessões de usabilidade, Auth hospedado, SMTP, CAPTCHA, LCP/CLS de visitantes reais, primeira execução agendada dos crons.
+- **Staging:** parte 2 não aplicada; branch sem push e sem PR. A aplicação das migrações da parte 1 foi informada pelo founder e não conferida por mim.
+- **O token do relatório fica no caminho da URL** e, portanto, no log de requisições da hospedagem e no histórico do navegador. Mitigado por validade, cancelamento e por abrir só totais de uma página. O mesmo vale para o token do convite.
+- **Um link encaminhado é um link compartilhado:** quem recebe abre. É a natureza do recurso; a tela avisa.
+- **Sem limite global nem CAPTCHA** na frente de `/r/` e das ações (Sprint 9). O limite por endereço no banco pode ser contornado por quem chama a RPC direto; sem `VISITOR_HASH_SALT`, todos dividiriam um balde.
+- **404 do relatório sem JavaScript é uma página em branco** (status e cabeçalhos corretos): o framework renderiza estados de "não encontrado" no cliente. O mesmo acontece com o 404 das páginas públicas na primeira requisição.
+- **Expurgo de links e de contadores** só acontece na criação ou na falha seguinte; o agendado fica para a Sprint 9.
+- **Relatório sem intervalo fixo de datas** e sem campanha (UTM): decisões provisórias.
+- **Rebaixamento de plano:** nada é removido. Páginas além do limite e pessoas além dos lugares continuam; links de relatório param de abrir; um histórico menor encurta os relatórios existentes. A Sprint 8 decide o que comunicar.
+- **`npm audit`:** 5 avisos altos em ferramentas de desenvolvimento (`braces`, via `eslint-config-next`), sem correção compatível hoje; nada disso vai para o servidor nem para o navegador.
+- **Não verificado:** os itens listados em "Não feito".
+- **Banco local:**
+  - o job de analytics do próprio produto foi executado algumas vezes no stack local, pela rota `/api/jobs/analytics` (o prompt pedia): marcou como finais os dias 02 a 05/10 e agregou-os; **nenhum evento foi apagado**;
+  - ficaram as contas `qa-ac5-escala@example.test`, `qa-ac5-editora@example.test` e `qa-ac5-vizinha@example.test`, as contas "AC5 Escala" e "AC5 Ruído" com 50 páginas cada e cerca de 53 mil linhas sintéticas em `analytics_daily`. `node scripts/agency-scale.mjs --cleanup` (em `apps/web`) remove tudo isso;
+  - continuam os dados de QA da parte 1 (`qa-sprint7-*@example.test`, "Agência QA Sete") e das sprints anteriores.
+- **Fora do repositório:** nada foi escrito ou apagado fora dele além dos arquivos temporários da sessão. No Chrome usei `127.0.0.1:3100`, que não compartilha cookies com `localhost`: a sessão local do founder não foi tocada nesta parte.
+- **Herdadas:** sessões de usabilidade, Auth hospedado em padrões, SMTP, CAPTCHA, LCP/CLS de visitantes reais, primeira execução agendada dos crons com sucesso, revisão jurídica.
 
 ## Perguntas para o founder
 
-> **Respondidas em 06/10/2026 (depois da entrega da parte 1):** o founder confirmou as perguntas 1 a 6 (UX-019 e UX-051 a UX-059) e as duas escolhas do ADR 0012 (imagens compartilhadas entre original e cópia; token do convite no caminho da URL). Seguem abertas a 7 (lembrar a última conta, UX-060) e a 8 (`npm audit`).
->
-> No mesmo dia o founder tentou `npx supabase db push` e recebeu **403** ("Your account does not have the necessary privileges"): a CLI estava logada numa conta que não é a dona do projeto de staging, o caso já descrito no `AGENTS.md` §22. **As migrações da Sprint 7 continuam não aplicadas em staging.**
+1. **Relatório termina ontem (UX-064):** só dias completos, sem intervalo fixo. Serve para o piloto, ou as agências vão querer "o mês de setembro"?
+2. **Sem "aberto pela última vez" (UX-070):** aceita não saber se o cliente abriu?
+3. **O relatório não mostra campanhas (UTM), aparelhos e países (UX-066).** Concorda?
+4. **Só proprietário e administrador criam links (UX-068).** Editor deveria poder?
+5. **Limites:** 5 links ativos por página, validade máxima de 90 dias, 30 criações por dia por conta. Algum ajuste?
+6. **Rebaixamento (UX-069):** links param de abrir e voltam se o plano voltar. É o comportamento que a Sprint 8 deve manter?
+7. **Rodapé "Relatório gerado com Projeto LNK" (UX-071)** só aparece em plano sem remoção de selo (hoje, nenhum que tenha relatório). Manter assim?
+8. **"Lembrar a última conta" (UX-060)** continua cortado. Volta?
+9. **`npm audit`:** aceita conviver com o aviso de `braces` (só lint) até o Next publicar a correção?
 
-1. **UX-019:** mantive "arquivadas contam no limite". Confirma? (A alternativa comercial seria vender "páginas arquivadas ilimitadas" como benefício de plano na Sprint 8.)
-2. **Página arquivada congelada (UX-051):** não editar nem publicar enquanto arquivada, e desarquivar sem voltar ao ar. Está certo?
-3. **Duplicar copia Pix, WhatsApp e consentimento com aviso (UX-052)**, em vez de apagar esses dados na cópia. Concorda?
-4. **Convite só para o mesmo e-mail (UX-054) e sem envio de e-mail (UX-055):** aceitável para o piloto?
-5. **Validade de 7 dias (UX-053)** e **pendentes ocupando lugar (UX-056):** ok?
-6. **Editor vê a tela Membros sem e-mails (UX-058):** ok?
-7. **"Lembrar a última conta" (UX-060)** foi cortado. Volta na parte 2, depois, ou não precisa?
-8. **`npm audit`:** aceita conviver com o aviso de `braces` (só lint) até o Next publicar a correção?
+## Passos de deploy em staging
 
-## Handoff para a parte 2
-
-**Estado da branch.** `feat/sprint-7-agency`, limpa e verde (`npm run check` e `npm run test:db` passam), com os commits desta parte por cima de `425c2a5`. Sem push, sem PR. A `main` não mudou.
-
-**Antes de mexer em qualquer coisa:** `npm run db:start` (o Docker pode estar parado), `npm run test:db` e `npm run check`. Esperado: 816 asserções em 17 arquivos; 863 testes em 29 arquivos; 44 rotas.
-
-**Banco local.** As duas migrações da Sprint 7 já estão aplicadas (`supabase migration list --local`). Use `supabase migration up` para as novas; não rode `db reset`.
-
-**Contas e dados de QA criados no banco local** (domínio `example.test`; senhas não registradas — redefina por SQL se precisar entrar):
-
-- `qa-sprint7-dona@example.test` (proprietária), `qa-sprint7-admin@example.test` (administrador), `qa-sprint7-editora@example.test` (removida da conta; participação `revoked`), `qa-sprint7-outra@example.test` (sem participação).
-- Conta de agência **"Agência QA Sete"**, no plano `agency` por SQL, com 9 páginas vivas: `qa7-cafe-ipe-copia` (publicada, com foto e imagem reais, Pix, formulário e WhatsApp) e `qa7-cliente-01` a `-08` (rascunhos). A página `qa7-cafe-ipe` (origem da cópia) está excluída (*soft delete*) e ainda é dona das duas imagens que a cópia usa por `media_asset_shares`.
-- Convites na conta: três pendentes (`qa-sprint7-lugar3/4/5@example.test`), deixando a conta com 5 de 5 lugares; um cancelado; um expirado (com hash de token de teste); dois aceitos.
-- Os dados de QA das sprints anteriores continuam lá.
-
-**Nada ficou pela metade no código.** O que a parte 2 herda como trabalho:
-
-1. **AC5:** medir (script no repositório, contas `example.test` próprias) lista, consolidado e criação com 1, 10 e, se der, 50 páginas, com `EXPLAIN` de `list_workspace_profiles`. Para 50 páginas é preciso aumentar `max_profiles` localmente.
-2. **AC1:** estender a tabela do ADR 0012 com as ações da parte 2 e rever as linhas desta parte contra o código.
-3. **Fechamento:** relatório final único, `AGENTS.md` §22, `BACKLOG.md`, passos de deploy completos em `docs/ENVIRONMENTS.md` (a seção da parte 1 já existe).
-
-**O que saber antes de ler agregados por conta:**
-
-- **Páginas arquivadas** têm `status = 'archived'`, `live_publication_id` nulo, e **mantêm** agregados, eventos brutos dentro da retenção e `profile_id`. Elas param de receber eventos (a ingestão exige versão no ar). O painel delas continua acessível por decisão do founder; o consolidado deve incluí-las, rotuladas.
-- **Páginas excluídas** (`deleted_at` preenchido) continuam com linhas em `analytics_daily` até o expurgo; `get_profile_analytics` já as recusa. Decida no ADR 0013 se entram no total da conta.
-- **Cópias** começam sem histórico: ids de bloco novos e nenhum agregado. `profiles.duplicated_from` aponta a origem, mas não deve ser usado para somar resultados.
-- **`list_workspace_profiles`** devolve, numa consulta, id, nome, endereço, situação, foto, datas e "tem alterações não publicadas" de cada página, além das contagens por situação. Serve de base para a tabela de páginas do consolidado; os números vêm de outra função.
-- **Papéis:** `analytics.view` e `analytics.export` já são dos três papéis. As ações de link de relatório ainda não existem em `permissions.ts`; acrescente nos dois lados, como nesta parte.
-- **Padrões para reaproveitar:** token e hash em `modules/identity/invitation-token.ts`; "uma resposta genérica para todo token inválido" em `private.resolve_invitation`; `ConfirmDialog` em `ui/confirm-dialog.tsx`; `isMissingSchemaError` em `lib/supabase/missing-schema.ts` para a falha segura antes da migração; `r` já está em `reserved_slugs` (confira nos dois lugares).
-- **A conta de teste já está no plano Agência**, então tem `shareable_reports` e 90 dias de histórico. Não há tráfego de analytics nessas páginas: gere com `apps/web/scripts/analytics-accuracy.mjs` ou numa janela anônima (sessão do produto no mesmo navegador não conta).
-
-## Passos de deploy em staging (parte 1; a lista final fica para o fechamento)
-
-1. `npx supabase db push` (duas migrações: `202610060001`, `202610060002`).
+1. `npx supabase db push` com a CLI logada na conta dona do projeto: deve listar `202610060003_sprint7_report_enum_values` e `202610060004_consolidated_analytics_and_report_links` (as duas da parte 1 já constam como aplicadas, segundo o founder; se não constarem, elas entram na mesma execução).
 2. Nenhum segredo e nenhuma variável nova.
-3. Merge do PR.
-4. Para testar: `update public.workspaces set plan_id = 'agency' where id = '<conta>';` no *SQL Editor*.
+3. Enviar a branch `feat/sprint-7-agency`, abrir o PR e fazer o merge (a `main` publica em staging). O job `database` do CI aplica as 15 migrações do zero: é a primeira vez que isso roda para a Sprint 7.
+4. Pôr a conta de teste no plano Agência: `update public.workspaces set plan_id = 'agency' where id = '<conta>';`.
+5. Conferir: lista com busca, *Membros*, *Resultados* da conta, criar um link de relatório, abrir numa janela anônima, cancelar e recarregar.
 
-Detalhes em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 7".
+Entre a aplicação chegar e as migrações serem aplicadas (ou o contrário), nada do que existia quebra; os detalhes estão em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 7".
+
+## Implicações para a Sprint 8
+
+- **Quatro entitlements já governam a Sprint 7** e são lidos a cada requisição, sem cópia: `max_profiles` (criar e duplicar), `team_members` (convidar e aceitar; pendentes contam), `shareable_reports` (criar e abrir links) e `analytics_days` (profundidade dos painéis e período máximo de um relatório). Trocar o plano de uma conta muda o comportamento na requisição seguinte, sem migração de dados.
+- **Rebaixamento, hoje:** páginas acima do limite continuam existindo e publicadas, só não se cria nem se duplica; pessoas acima dos lugares mantêm o acesso, só não se convida; links de relatório param de abrir e ficam guardados; relatórios e painéis passam a mostrar menos dias. **A Sprint 8 precisa decidir** o que comunicar em cada caso e se algo deve ser bloqueado (por exemplo, impedir publicar com páginas acima do limite).
+- **Sem fluxo de upgrade em nenhuma tela:** onde um limite aparece, há uma frase e nenhum botão. A Sprint 8 liga esses pontos ao checkout: aviso de limite de páginas, de lugares, períodos não cobertos e a seção de relatório.
+- **Plano Agência por SQL** é provisório e some com a cobrança.
+- **Domínio próprio e pixels** não devem ser copiados na duplicação (ADR 0012) nem aparecer no relatório (ADR 0013); o endereço mostrado no relatório vem de `NEXT_PUBLIC_APP_URL` e precisará considerar o domínio próprio.
+- **Ponto de partida recomendado:** ADR do provedor de pagamento e o modelo de assinatura que escreve `workspaces.plan_id`; depois, as decisões de rebaixamento acima, que dependem só de texto e de regras já centralizadas nas RPCs.

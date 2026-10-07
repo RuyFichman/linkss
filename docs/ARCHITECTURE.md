@@ -168,7 +168,7 @@ Dono ── /app/w/…/paginas/…/resultados ── get_profile_analytics (memb
 - **Tabelas:** `analytics_events`, `analytics_daily` (uma linha por página, dia, dimensão, chave e tipo), `analytics_day_status` (marca d'água da agregação), `analytics_rate_hits` e `analytics_settings` (fuso de relatório, início da contagem e teto de capacidade). Nenhum papel de cliente lê ou escreve nessas tabelas: tudo passa por funções.
 - **Fuso:** `America/Sao_Paulo`, guardado em `analytics_settings`; o dia do evento é decidido na gravação.
 - **Módulo:** `analytics` (contrato, origem, aparelho e robôs, datas, hashes, atestação, ingestão, coletor, estados e cálculos do painel, CSV, serviço e repositórios).
-- **Sprint 7:** o painel consolidado soma `analytics_daily` por `workspace_id` e dia; o link de relatório lê a mesma função por um token.
+- **Sprint 7 (implementado, ADR 0013):** o painel consolidado lê `get_workspace_analytics`, que soma `analytics_daily` por `workspace_id` e dia; o link de relatório lê `get_shared_report`, que chama o mesmo núcleo privado do painel da página (`private.profile_analytics`). Detalhes na seção "Painel consolidado e links de relatório".
 
 ## Operação de várias páginas, convites e papéis — implementado na Sprint 7, parte 1
 
@@ -212,3 +212,16 @@ Para a parte 2 (painel consolidado e link de relatório): páginas arquivadas ma
 - jobs exigem garantias que a outbox simples não entrega.
 
 Até esses sinais existirem, manter o monólito reduz custo operacional e acelera o aprendizado.
+
+## Painel consolidado e links de relatório — implementado na Sprint 7, parte 2
+
+Decisões em `docs/adr/0013-consolidated-analytics-and-report-links.md`. Verificado no stack local.
+
+- **Uma definição de cada número.** `get_profile_analytics` manteve assinatura e resposta e passou a delegar para `private.profile_analytics`; o relatório compartilhado chama o mesmo núcleo. Na aplicação, o consolidado (`modules/analytics/workspace.ts`) e o relatório (`modules/reports/shared-report.ts`) usam as funções de `modules/analytics/dashboard.ts` e `dates.ts`. Não há segundo funil nem segundo cálculo de datas.
+- **Consolidado:** `get_workspace_analytics(conta, de, até)` devolve, numa chamada, os totais por dia, as origens somadas e uma linha por página (até 200). Dias fechados vêm de `analytics_daily` pelo índice `(workspace_id, day)`; dias ainda abertos vêm dos eventos brutos da conta (`private.analytics_workspace_counts`, índice `(workspace_id, profile_id, occurred_at)`). Páginas excluídas ficam de fora de tudo; página fora do ar e sem eventos no período não vira linha, só entra na contagem de omitidas. Três requisições ao PostgREST por tela, com 1, 10 ou 50 páginas.
+- **Links de relatório:** tabela `report_links` (conta, página, hash do token, período de 7, 30 ou 90 dias completos, validade obrigatória de até 90 dias, anotação opcional, quem criou e quem cancelou). RLS: proprietário e administrador leem; ninguém lê `token_hash`; escrita só pelas RPCs `create_report_link` e `revoke_report_link`.
+- **Leitura anônima:** `get_shared_report(token, cliente)` é `security definer`, com `search_path` vazio, concedida a `anon`. Devolve `{"status":"unavailable"}` ou a lista fechada de campos do ADR 0013 (nome da conta, nome e endereço públicos da página, período, série diária, origens e blocos com o título publicado). Nenhum identificador, nada do rascunho, nenhum valor de UTM.
+- **Rota `/r/[token]`:** dinâmica, lida a cada requisição (sem ISR), sem sessão e sem cookie, com `Cache-Control: private, no-store`, `Referrer-Policy: no-referrer` e `X-Robots-Tag: noindex` aplicados pelo `next.config.ts` também ao 404. Todo token que não abre relatório recebe o mesmo 404. A rota não monta o coletor de visitas.
+- **Tentativas:** `report_lookup_failures` guarda um hash diário do endereço (nunca o endereço) por 24 horas; 20 falhas em 10 minutos bloqueiam aquele cliente. É redutor de custo, não fronteira de segurança.
+- **Módulos:** `analytics` (consolidado) e `reports` (regras dos links, token, serviço, leitura pública, componentes).
+- **Fora desta sprint:** envio de relatório por e-mail, PDF no servidor, relatório de várias páginas, limite global na frente de `/r/` (Sprint 9), expurgo agendado de links terminados (Sprint 9).

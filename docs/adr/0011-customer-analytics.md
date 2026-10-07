@@ -126,7 +126,7 @@ Filtered events are **dropped** by the Route Handler (not stored with a flag) an
 - **`analytics_day_status`**: the watermark. One row per reporting day with when it was aggregated and whether it is final.
 - **`analytics_rate_hits`**: counters for the cross-page limit: `client_hash`, a 10-minute window and a count. Deleted after two days.
 - **`analytics_settings`**: one row with the reporting timezone, the day collection started and the capacity guard (`max_raw_events`).
-- **Sprint 7:** the consolidated dashboard sums `analytics_daily` by `workspace_id` and day (index `(workspace_id, day)`); the read-only report link reads the same function for one page through a token-scoped RPC. Neither needs raw events.
+- **Sprint 7 (resolved in ADR 0013):** the consolidated dashboard reads `get_workspace_analytics`, which sums `analytics_daily` by `workspace_id` and day (index `(workspace_id, day)`); the read-only report link reads `get_shared_report`, which calls `private.profile_analytics`, the body `get_profile_analytics` now delegates to. Both read raw events only for days that are not final yet, exactly like the per-page read.
 
 ### Aggregation and freshness
 

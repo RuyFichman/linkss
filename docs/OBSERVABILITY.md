@@ -103,6 +103,18 @@ Sem alerta novo nesta parte: nenhum desses sinais exige ação imediata. `not_de
 - Métricas exibidas ao cliente têm reconciliação separada da telemetria interna.
 - Sampling só pode reduzir volume depois de preservar erros e eventos de segurança.
 
+## Sinais do painel consolidado e dos links de relatório (Sprint 7, parte 2)
+
+| Evento | Campos | Leitura |
+|---|---|---|
+| `report.read` | `outcome` (`ok`, `unavailable`, `error`), `errorCode` | Leituras do relatório público. `unavailable` é qualquer link que não abre relatório (não se distingue o motivo, de propósito). `error` é o banco sem responder: página 404 genérica para quem abriu, **ação nossa** |
+| `reports.create_link`, `reports.revoke_link` | `outcome` | Gestão de links. `not_in_plan` e `too_many_active` são esperados; `not_deployed` em produção é migração não aplicada |
+| `analytics.workspace_export` | `outcome`, `rows` | Exportação do consolidado |
+
+Nenhuma linha contém token, caminho de relatório, endereço ou anotação do link. Tentativas em massa aparecem como muitos `report.read` com `unavailable` em pouco tempo e como linhas em `report_lookup_failures` (`select count(*) from public.report_lookup_failures where created_at > now() - interval '10 minutes'`).
+
+Limiares propostos (sem alerta automático até o provisionamento): `report.read` com `error` acima de 1% em 15 minutos → runbook `REPORTS.md`, item 1; mais de 1.000 `unavailable` em 10 minutos → runbook, item 4. Dono: founder; severidade: média (o relatório fica indisponível, as páginas públicas não são afetadas).
+
 ## Provisionamento pendente
 
 O health endpoint está implementado. Sentry, uptime monitor e dashboards dependem das contas/credenciais dos ambientes e devem ser provisionados antes da Sprint 10. Até lá, os nomes de variáveis já estão documentados em `.env.example`.

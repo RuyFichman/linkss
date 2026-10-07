@@ -108,6 +108,13 @@ Se a mídia vier do Supabase Storage:
 
 São aproximações decimais e não incluem cache misses, API, uploads ou outros consumidores. Servir HTML no edge não elimina o egress das imagens.
 
+## Painel consolidado e links de relatório (Sprint 7)
+
+- **Sem tabela de agregados nova.** O consolidado lê `analytics_daily`, que já existia. Medido no stack local (`apps/web/scripts/agency-scale.mjs`): com 50 páginas e 30 dias a leitura agrega 8.700 linhas em cerca de 29 ms de banco; com 10 páginas, cerca de 8 ms. Três requisições por tela em qualquer tamanho.
+- **`report_links`:** uma linha por link, da ordem de 300 bytes com índices. No teto de 100 links ativos por conta mais 90 dias de terminados, fica abaixo de 100 KB por conta. Irrelevante para a cota.
+- **`report_lookup_failures`:** no máximo 5.000 linhas por 10 minutos e 24 horas de retenção: teto teórico de 720 mil linhas (cerca de 60 MB) sob ataque contínuo o dia inteiro. É o motivo do teto por janela; o limite global da Sprint 9 reduz isso na origem.
+- **Egress:** o relatório é HTML renderizado no servidor, sem imagens.
+
 ## Faixa prática
 
 - **Desenvolvimento:** confortável.

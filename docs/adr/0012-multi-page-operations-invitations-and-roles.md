@@ -167,6 +167,8 @@ An editor edits and publishes but does not archive, duplicate, invite or manage 
 
 Every Server Action re-derives the role with `requireWorkspaceAccess` before calling the database; the RPC checks it again; a hidden button is presentation only.
 
+**Extended by ADR 0013 (part 2).** The rows for the consolidated dashboard, its export, report links and the public report are in ADR 0013, "AC1". The rows above were re-run against the code at the end of the sprint (pgTAP 040 and 150; Vitest `identity`, `invitations`, `member-actions`, `profiles/service`) and hold. Report links are not copied by duplication, as this ADR anticipated, and a removed member's links keep working because a link belongs to the workspace.
+
 ## Error contract (extends ADR 0004)
 
 `LK070` the page is archived; `LK081` the address already belongs to an active member; `LK082` too many invitations; `LK010` with detail `team_members`. Invitation acceptance and lookup return a `state` instead of raising, so each refusal maps to exactly one screen (`modules/identity/invitations.ts`).
