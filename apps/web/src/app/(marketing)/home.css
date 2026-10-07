@@ -1,0 +1,155 @@
+/* Marketing home. Unlayered on purpose: the element rules in globals.css (`a { color: inherit }`,
+   `button { font: inherit }`) are unlayered too and would win over Tailwind utilities. */
+.home { --home-ink: #1d1d28; --home-muted: #5b6072; --home-line: #e6e7ee; --home-display: var(--font-home-display), "Arial Black", Arial, sans-serif; position: relative; overflow: clip; padding-top: 1rem; color: var(--home-ink); background: #ffffff; }
+.home-shell { width: min(1152px, calc(100% - 2.5rem)); margin-inline: auto; }
+.home-display { font-family: var(--home-display); font-weight: 800; letter-spacing: -0.03em; }
+
+/* Pastel wash behind the hero and the closing call to action. */
+.home-wash { background:
+  radial-gradient(60rem 34rem at 8% 0%, rgb(205 198 255 / 0.75), transparent 62%),
+  radial-gradient(44rem 30rem at 96% 12%, rgb(186 219 255 / 0.8), transparent 60%),
+  radial-gradient(40rem 26rem at 4% 96%, rgb(255 196 222 / 0.75), transparent 62%),
+  radial-gradient(44rem 28rem at 92% 100%, rgb(214 190 255 / 0.8), transparent 62%),
+  #f4f3fb; }
+
+/* Header: a floating glass bar, as wide as the content. */
+.home-header { position: sticky; z-index: 40; top: 1rem; display: flex; min-height: 64px; align-items: center; gap: 1.5rem; border: 1px solid rgb(255 255 255 / 0.7); border-radius: 999px; background: rgb(255 255 255 / 0.6); padding: 0.5rem 0.5rem 0.5rem 1.5rem; box-shadow: 0 10px 30px rgb(40 30 90 / 0.08); backdrop-filter: blur(16px); }
+.home-brand { display: inline-flex; min-height: 44px; align-items: center; font-family: var(--home-display); font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em; text-decoration: none; white-space: nowrap; }
+.home-nav { display: none; flex: 1; align-items: center; gap: 0.25rem; }
+.home-nav a, .home-signin { display: inline-flex; min-height: 44px; align-items: center; border-radius: 999px; padding: 0 0.85rem; font-weight: 500; text-decoration: none; }
+.home-nav a:hover, .home-signin:hover { background: rgb(29 29 40 / 0.06); }
+.home-header-actions { display: flex; align-items: center; gap: 0.25rem; margin-left: auto; }
+@media (min-width: 860px) { .home-nav { display: flex; } }
+
+.home-cta { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; border-radius: 999px; color: #ffffff; background: var(--home-ink); padding: 0 1.5rem; font-family: var(--home-display); font-weight: 800; text-decoration: none; white-space: nowrap; transition: transform var(--duration-fast) var(--ease-product), background var(--duration-fast) var(--ease-product); }
+.home-cta:hover { background: #33334a; transform: translateY(-1px); }
+.home-cta-block { width: 100%; }
+
+/* Hero. The wash slides under the sticky header (64px bar + 16px offset). */
+.home-hero-wash { margin-top: -5rem; padding-top: 5rem; }
+.home-hero { display: grid; align-items: center; gap: 3rem; padding-block: clamp(3rem, 8vw, 6.5rem) clamp(3rem, 7vw, 5rem); }
+.home-badge { display: inline-flex; min-height: 44px; align-items: center; gap: 0.6rem; border-radius: 999px; color: var(--home-muted); background: rgb(255 255 255 / 0.7); padding: 0.4rem 1.1rem 0.4rem 0.9rem; font-size: 0.9375rem; box-shadow: 0 2px 10px rgb(40 30 90 / 0.06); }
+.home-badge-dot { width: 0.6rem; height: 0.6rem; flex: none; border-radius: 50%; background: #1fa971; }
+.home-hero h1 { margin: 1.75rem 0 0; font-size: clamp(2.9rem, 9vw, 4.75rem); line-height: 1.05; }
+.home-hero-lead { max-width: 30rem; margin: 1.5rem 0 0; font-size: 1.125rem; line-height: 1.6; }
+.home-claim { display: flex; max-width: 31rem; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 2rem; border-radius: 2rem; background: #ffffff; padding: 0.5rem 0.5rem 0.5rem 1.5rem; box-shadow: 0 10px 30px rgb(40 30 90 / 0.1); }
+.home-claim-address { flex: 1 1 12rem; min-width: 0; overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.home-claim-address span { color: #8b90a0; font-weight: 400; }
+.home-claim .home-cta { flex: 1 0 auto; }
+@media (min-width: 960px) { .home-hero { grid-template-columns: 1fr 1fr; } .home-claim .home-cta { flex: none; } }
+
+.home-fan { position: relative; height: 30rem; }
+.home-fan .home-phone { position: absolute; top: 50%; left: 50%; }
+.home-fan .home-phone:nth-child(1) { z-index: 1; transform: translate(-108%, -46%) rotate(-9deg); }
+.home-fan .home-phone:nth-child(2) { z-index: 2; transform: translate(-50%, -52%); }
+.home-fan .home-phone:nth-child(3) { z-index: 0; transform: translate(4%, -50%) rotate(7deg); }
+@media (min-width: 960px) { .home-fan { height: 36rem; } .home-fan .home-phone { --phone-width: 16.5rem; } }
+
+/* Phone mock-up of a public page. Colors come from inline custom properties. */
+.home-phone { --phone-width: 13.5rem; display: flex; width: var(--phone-width); aspect-ratio: 9 / 18.5; flex: none; flex-direction: column; overflow: hidden; border: 5px solid #ffffff; border-radius: 1.9rem; color: var(--phone-text); background: var(--phone-bg); box-shadow: 0 24px 60px rgb(40 30 90 / 0.22); font-size: 0.75rem; font-weight: 400; letter-spacing: normal; text-align: center; text-transform: none; }
+.home-phone-cover { height: 27%; flex: none; background: var(--phone-cover); }
+.home-phone-avatar { display: grid; width: 4rem; height: 4rem; flex: none; place-items: center; margin: -2rem auto 0; border: 3px solid var(--phone-bg); border-radius: 50%; color: var(--phone-button-text); background: var(--phone-button); font-size: 1.125rem; font-weight: 800; }
+.home-phone-body { display: grid; align-content: start; gap: 0.6rem; padding: 0.75rem 0.9rem 1rem; }
+.home-phone-name { margin: 0; font-size: 1rem; font-weight: 800; line-height: 1.2; }
+.home-phone-bio { margin: 0; color: var(--phone-muted); line-height: 1.4; }
+.home-phone-socials { display: flex; justify-content: center; gap: 0.5rem; }
+.home-phone-socials i { width: 1.1rem; height: 1.1rem; border-radius: 0.35rem; background: var(--phone-text); opacity: 0.85; }
+.home-phone-button { border: 2px solid var(--phone-button); border-radius: var(--phone-radius); color: var(--phone-button-text); background: var(--phone-button); padding: 0.6rem 0.5rem; font-weight: 800; line-height: 1.2; }
+.home-phone-button[data-outline] { color: var(--phone-text); background: transparent; }
+.home-phone-media { height: 5.5rem; border-radius: 0.75rem; background: var(--phone-cover); opacity: 0.9; }
+
+/* Feature strip */
+.home-marquee { overflow: hidden; border-block: 1px solid var(--home-line); background: #ffffff; }
+.home-marquee-track { display: flex; width: max-content; animation: home-marquee 45s linear infinite; }
+.home-marquee:hover .home-marquee-track { animation-play-state: paused; }
+.home-marquee ul { display: flex; flex: none; margin: 0; padding: 0; list-style: none; }
+.home-marquee li { display: flex; align-items: center; gap: 2.5rem; padding: 1.4rem 0 1.4rem 2.5rem; color: var(--home-muted); font-size: 0.8125rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; }
+.home-marquee li::after { color: #b9bccb; content: "✦"; }
+@keyframes home-marquee { to { transform: translateX(-50%); } }
+
+/* Sections */
+.home-section { padding-block: clamp(4rem, 9vw, 7rem); scroll-margin-top: 5rem; }
+.home-heading { max-width: 44rem; margin-inline: auto; text-align: center; }
+.home-heading h2 { margin: 0; font-size: clamp(2rem, 5.5vw, 3rem); line-height: 1.1; }
+.home-heading p { margin: 1rem auto 0; max-width: 38rem; color: var(--home-muted); font-size: 1.125rem; line-height: 1.6; }
+.home-center { margin-top: 2.5rem; text-align: center; }
+
+/* Templates rail */
+.home-rail { display: flex; gap: 1.5rem; margin: 3rem 0 0; overflow-x: auto; padding: 0 1.25rem 2.5rem; list-style: none; scroll-snap-type: x mandatory; }
+.home-rail li { display: grid; flex: none; justify-items: center; gap: 1rem; scroll-snap-align: center; }
+.home-rail-name { font-weight: 700; }
+@media (min-width: 1240px) { .home-rail { justify-content: center; overflow: visible; } }
+
+/* Editor mock-up */
+.home-editor { display: grid; gap: 1.5rem; margin-top: 3rem; border: 1px solid var(--home-line); border-radius: 1.75rem; background: #f6f6fb; padding: 1.25rem; box-shadow: 0 30px 80px rgb(120 90 220 / 0.18), 0 10px 30px rgb(255 150 200 / 0.14); }
+.home-editor-panel { border: 1px solid var(--home-line); border-radius: 1.25rem; background: #ffffff; padding: 1.25rem; }
+.home-editor-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.home-editor-bar b { font-size: 1.125rem; }
+.home-editor-status { display: flex; align-items: center; gap: 0.75rem; color: var(--home-muted); font-size: 0.875rem; }
+.home-editor-publish { border-radius: 999px; color: #ffffff; background: var(--home-ink); padding: 0.45rem 1rem; font-weight: 700; }
+.home-editor-blocks { display: grid; gap: 0.6rem; margin: 1.25rem 0 0; padding: 0; list-style: none; }
+.home-editor-blocks li { display: flex; min-height: 3.25rem; align-items: center; gap: 0.85rem; border: 1px solid var(--home-line); border-radius: 0.9rem; padding: 0 1rem; font-weight: 700; }
+.home-editor-blocks li::before { color: #a3a8b8; content: "⋮⋮"; letter-spacing: -0.2em; }
+.home-editor-blocks li:first-child { border-color: var(--home-ink); box-shadow: 0 0 0 3px rgb(29 29 40 / 0.08); }
+.home-editor-preview { display: grid; justify-items: center; gap: 0.75rem; padding-block: 0.5rem 1rem; color: var(--home-muted); font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+@media (min-width: 860px) { .home-editor { grid-template-columns: 1.15fr 0.85fr; align-items: center; padding: 2rem; } }
+
+/* Features: phone on one side, the list on the other. */
+.home-features { display: grid; gap: 3rem; margin-top: 3.5rem; }
+.home-features-phone { display: grid; justify-items: center; }
+.home-features-list { display: grid; gap: 2rem; margin: 0; padding: 0; list-style: none; }
+.home-features-list li { border-left: 3px solid var(--home-line); padding-left: 1.5rem; }
+.home-features-list li:first-child { border-left-color: var(--home-ink); }
+.home-features-list h3 { margin: 0; font-size: clamp(1.4rem, 3.4vw, 1.75rem); line-height: 1.2; }
+.home-features-list p { margin: 0.5rem 0 0; color: var(--home-muted); font-size: 1.0625rem; line-height: 1.6; }
+@media (min-width: 860px) { .home-features { grid-template-columns: 0.9fr 1.1fr; align-items: center; } .home-features-phone .home-phone { --phone-width: 17rem; } }
+
+/* Plans */
+.home-plans { display: grid; gap: 1.5rem; margin-top: 3rem; }
+.home-plan { display: flex; flex-direction: column; border: 1px solid var(--home-line); border-radius: 1.5rem; background: #ffffff; padding: 1.75rem; }
+.home-plan[data-featured] { border-color: transparent; box-shadow: 0 24px 60px rgb(150 110 240 / 0.22), 0 0 0 2px var(--home-ink); }
+.home-plan-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.home-plan h3 { margin: 0; font-size: 1.5rem; }
+.home-plan-tag { border-radius: 999px; padding: 0.25rem 0.75rem; font-size: 0.75rem; font-weight: 800; }
+.home-plan-tag[data-kind="available"] { color: #0f5a39; background: #dff5ea; }
+.home-plan-tag[data-kind="soon"] { color: #4a4f63; background: #eeeef5; }
+.home-plan-price { margin: 1rem 0 0; font-size: 2.5rem; line-height: 1; }
+.home-plan-description { margin: 1rem 0 0; color: var(--home-muted); line-height: 1.5; }
+.home-plan ul { display: grid; gap: 0.7rem; margin: 1.5rem 0 2rem; padding: 0; list-style: none; }
+.home-plan li { display: flex; gap: 0.65rem; line-height: 1.4; }
+.home-plan li::before { display: grid; width: 1.25rem; height: 1.25rem; flex: none; place-items: center; border-radius: 50%; color: #0f5a39; background: #c9f0dc; font-size: 0.75rem; font-weight: 800; content: "✓"; }
+.home-plan .home-cta { margin-top: auto; }
+@media (min-width: 860px) { .home-plans { grid-template-columns: repeat(3, 1fr); align-items: stretch; } }
+
+/* FAQ */
+.home-faq { display: grid; align-items: start; gap: 1rem; margin-top: 3rem; }
+.home-faq details { border: 1px solid var(--home-line); border-radius: 1rem; background: #ffffff; box-shadow: 0 6px 18px rgb(40 30 90 / 0.05); }
+.home-faq summary { display: flex; min-height: 3.5rem; align-items: center; justify-content: space-between; gap: 1rem; border-radius: 1rem; padding: 0.75rem 1.25rem; font-family: var(--home-display); font-size: 1.0625rem; font-weight: 700; cursor: pointer; list-style: none; }
+.home-faq summary::-webkit-details-marker { display: none; }
+.home-faq summary::after { width: 0.55rem; height: 0.55rem; flex: none; border-right: 2px solid currentcolor; border-bottom: 2px solid currentcolor; content: ""; transform: translateY(-25%) rotate(45deg); transition: transform var(--duration-fast) var(--ease-product); }
+.home-faq details[open] summary::after { transform: translateY(15%) rotate(225deg); }
+.home-faq details p { margin: 0; padding: 0 1.25rem 1.25rem; color: var(--home-muted); line-height: 1.6; }
+@media (min-width: 860px) { .home-faq { grid-template-columns: 1fr 1fr; } }
+
+/* Closing call to action and footer */
+.home-closing { padding-block: clamp(4rem, 9vw, 6.5rem) 1.25rem; }
+.home-closing .home-claim { margin-inline: auto; }
+.home-footer { display: grid; gap: 2.5rem; margin-top: clamp(3rem, 7vw, 5rem); border-radius: 2rem; background: #ffffff; padding: clamp(1.75rem, 5vw, 3.5rem); }
+.home-footer-about p { max-width: 18rem; margin: 0.5rem 0 0; color: var(--home-muted); line-height: 1.5; }
+.home-footer h2 { margin: 0 0 0.5rem; font-size: 0.8125rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+.home-footer ul { margin: 0; padding: 0; list-style: none; }
+.home-footer li a { display: inline-flex; min-height: 44px; align-items: center; color: var(--home-muted); }
+.home-footer li a:hover { color: var(--home-ink); }
+@media (min-width: 720px) { .home-footer { grid-template-columns: 1.4fr repeat(3, 1fr); } }
+
+@media (prefers-reduced-motion: reduce) { .home-marquee-track { animation: none; } }
+
+/* Narrow phones: the brand, sign-in and sign-up must fit the bar without clipping. */
+@media (max-width: 480px) {
+  .home-header { gap: 0.25rem; padding-left: 1rem; }
+  .home-header .home-brand { font-size: 1.0625rem; }
+  .home-header .home-signin { padding: 0 0.6rem; }
+  .home-header .home-cta { min-height: 44px; padding: 0 1rem; font-size: 0.9375rem; }
+}
+/* Below 360px the sign-in link stays in the footer only. */
+@media (max-width: 359px) { .home-header .home-signin { display: none; } }
