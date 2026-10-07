@@ -16,13 +16,13 @@ export default async function WorkspaceLayout({ children, params }: { children: 
   return (
     <>
       {workspace ? (
-        <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-app-muted">
+        <div data-app-chrome="" className="mb-6 flex flex-wrap items-center gap-2 text-sm text-app-muted">
           <span>{workspace.kind === "personal" ? APP_COPY.workspace.personalLabel : APP_COPY.workspace.agencyLabel}</span>
           {workspace.kind === "agency" ? <><span aria-hidden="true">•</span><b className="text-app-text">{workspaceLabel(workspace)}</b><Badge tone="accent">{APP_COPY.roles[workspace.role]}</Badge></> : null}
         </div>
       ) : null}
       {workspace ? (
-        <nav aria-label={APP_COPY.nav.workspace} className="mb-6 flex flex-wrap gap-x-5 border-b border-app-border">
+        <nav data-app-chrome="" aria-label={APP_COPY.nav.workspace} className="mb-6 flex flex-wrap gap-x-5 border-b border-app-border">
           <Link className="inline-flex min-h-11 items-center font-bold text-app-accent underline" href={`/app/w/${workspaceId}`}>{APP_COPY.nav.pages}</Link>
           <Link className="inline-flex min-h-11 items-center font-bold text-app-accent underline" href={`/app/w/${workspaceId}/resultados`}>{APP_COPY.nav.results}</Link>
           <Link className="inline-flex min-h-11 items-center font-bold text-app-accent underline" href={`/app/w/${workspaceId}/membros`}>{APP_COPY.nav.members}</Link>

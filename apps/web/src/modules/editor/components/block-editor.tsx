@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Schibsted_Grotesk } from "next/font/google";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import { APP_COPY, BLOCKS_COPY, EDITOR_COPY, MEDIA_COPY, PUBLISHING_COPY, THEME_COPY } from "@/content/pt-BR";
 import type { FormState } from "@/lib/form-state";
 import { BLOCK_TYPES, MAX_BLOCKS, type BlockField, type BlockType, type DraftBlock } from "@/modules/blocks";
@@ -19,12 +21,23 @@ import { Badge, Button, Dialog, DialogActions, EmptyState, TextAreaField, TextFi
 import type { AutosaveSnapshot, SaveFailure } from "../draft/autosave";
 import { checkDraft, editorReducer, type DraftCheck, editorStateFromDraft, isStructuralAction, isViewOnlyAction, previewDraft, type EditorAction, type EditorState, type MoveTarget } from "../draft/state";
 import { AppearancePanel } from "./appearance-panel";
-import { BlockCard } from "./block-card";
+import { BlockCard, BlockEditView } from "./block-card";
 import { ImageUploader } from "./image-uploader";
 import { StorageUsage } from "./storage-usage";
+import { StudioIcon } from "./studio-icons";
 import { useAutosave } from "./use-autosave";
+import "./studio.css";
+
+const displayFont = Schibsted_Grotesk({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-studio-display", display: "swap" });
 
 type PublishAction = (previous: FormState, formData: FormData) => Promise<FormState>;
+
+export interface StudioNavLink {
+  href: string;
+  label: string;
+  icon: "results" | "contacts" | "preview" | "external";
+  newTab?: boolean;
+}
 
 export interface BlockEditorProps {
   profileId: string;
@@ -34,11 +47,25 @@ export interface BlockEditorProps {
   canPublish: boolean;
   publishAction: PublishAction;
   showBadge: boolean;
+  /** Public address without the scheme, shown next to the title and on the preview frame. */
+  address: string;
+  nav: { backHref: string; backLabel: string; links: readonly StudioNavLink[] };
+  /** Server-rendered notices for the top of the content list (draft, copy review). */
+  notices?: ReactNode;
+  /** Server-rendered page settings (publishing history, address, archive, delete) for the "Página" tab. */
+  settings: ReactNode;
 }
+
+type StudioTab = "content" | "styles" | "page";
 
 const UNDO_WINDOW_MS = 10_000;
 const HEADER_FRESH_KEY = "header";
 const AVATAR_UPLOAD_KEY = "avatar";
+const STUDIO_TABS: readonly StudioTab[] = ["content", "styles", "page"];
+const EDIT_TITLE_ID = "editor-edit-title";
+const HEADER_TOGGLE_ID = "editor-header-toggle";
+const HEADER_BACK_ID = "editor-header-back";
+const PICKER_BACK_ID = "editor-add-back";
 
 const STATUS_TONE = { saved: "success", dirty: "warning", invalid: "warning", saving: "neutral", retrying: "warning", error: "danger", conflict: "danger" } as const;
 const PUBLICATION_TONE = { never: "neutral", live_current: "success", live_outdated: "warning", offline: "warning" } as const;
@@ -74,8 +101,12 @@ function publishBlockedReason(status: AutosaveSnapshot["status"], uploading: boo
  * Block editor (Sprint 4 and 5, ADR 0008/0010). Business rules live in modules/editor/draft (reducer, draft
  * check, autosave) and modules/blocks (validation); this component wires them to the page, manages
  * focus and announcements, and renders the live preview with the public renderer.
+ *
+ * Layout (UX-072): a full-viewport workspace with a navigation bar, a panel that shows one view at
+ * a time (the lists, then the form of what was opened) and the preview always on screen: a framed
+ * phone beside the panel on wide screens, the page itself above a bottom sheet on phones.
  */
-export function BlockEditor({ profileId, initial, livePublicationId, publications, canPublish, publishAction, showBadge }: BlockEditorProps) {
+export function BlockEditor({ profileId, initial, livePublicationId, publications, canPublish, publishAction, showBadge, address, nav, notices, settings }: BlockEditorProps) {
   const [state, setState] = useState<EditorState>(() => editorStateFromDraft(initial));
   const stateRef = useRef(state);
   const { autosave, snapshot } = useAutosave(profileId, initial.revision);
@@ -85,7 +116,10 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
   const [freshIds, setFreshIds] = useState<ReadonlySet<string>>(() => new Set());
   const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [mode, setMode] = useState<"edit" | "preview">("edit");
+  const [headerOpen, setHeaderOpen] = useState(false);
+  const [tab, setTab] = useState<StudioTab>("content");
+  const [sheet, setSheet] = useState<"half" | "full">("half");
+  const [device, setDevice] = useState<"phone" | "desktop">("phone");
   const [announcement, setAnnouncement] = useState({ text: "", n: 0 });
   const [confirming, setConfirming] = useState<"load" | "keep" | null>(null);
   const [conflictBusy, setConflictBusy] = useState(false);
@@ -97,7 +131,8 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
   const uploadingRef = useRef(uploading);
   const pendingFocus = useRef<string | null>(null);
   const focusAfterUndo = useRef<string>("editor-add");
-  const scrollByMode = useRef<Record<"edit" | "preview", number>>({ edit: 0, preview: 0 });
+  const previewRef = useRef<HTMLDivElement>(null);
+  const revealed = useRef<string | null>(null);
 
   const check = useMemo(() => checkDraft(state), [state]);
   const preview = useMemo(() => documentFromDraft(previewDraft(state), EDITOR_COPY.preview.untitled), [state]);
@@ -170,6 +205,24 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
 
   useEffect(() => { uploadingRef.current = uploading; }, [uploading]);
 
+  // Marks what is being edited in the preview and brings it into view once, when it is opened.
+  const currentKey = openId ?? (headerOpen && tab === "content" ? HEADER_FRESH_KEY : null);
+  useEffect(() => {
+    if (!currentKey) {
+      revealed.current = null;
+      return;
+    }
+    const selector = currentKey === HEADER_FRESH_KEY ? "article > header" : `[data-block-id="${CSS.escape(currentKey)}"]`;
+    const node = previewRef.current?.querySelector(selector);
+    if (!node) return;
+    node.setAttribute("data-studio-current", "");
+    if (revealed.current !== currentKey) {
+      revealed.current = currentKey;
+      node.scrollIntoView({ block: "nearest" });
+    }
+    return () => node.removeAttribute("data-studio-current");
+  }, [currentKey, preview]);
+
   const setUploadBusy = useCallback((key: string, busy: boolean) => {
     setBusyUploads((previous) => {
       if (previous.has(key) === busy) return previous;
@@ -198,6 +251,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
     setFreshIds((previous) => new Set(previous).add(id));
     setOpenId(id);
     setPickerOpen(false);
+    setHeaderOpen(false);
     focusLater(`${id}-first`);
     announce(EDITOR_COPY.announce.added(BLOCKS_COPY.types[type].label, positionOf(next, id), next.blocks.length));
   }
@@ -207,7 +261,9 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
     const position = positionOf(next, id);
     const atTop = position === 1;
     const atBottom = position === next.blocks.length;
-    if (to === "up" || to === "top") focusLater(atTop ? (to === "top" ? `${id}-toggle` : `${id}-down`) : `${id}-up`);
+    // In the block's own view only "top" and "bottom" exist, and the one just used is now disabled.
+    if (openId === id) focusLater(to === "top" || to === "up" ? `${id}-bottom` : `${id}-top`);
+    else if (to === "up" || to === "top") focusLater(atTop ? (to === "top" ? `${id}-toggle` : `${id}-down`) : `${id}-up`);
     else focusLater(atBottom ? (to === "bottom" ? `${id}-toggle` : `${id}-up`) : `${id}-down`);
     announce(EDITOR_COPY.announce.moved(position, next.blocks.length));
   }
@@ -217,7 +273,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
     const next = apply({ type: "duplicate", id, newId });
     if (next.blocks.every((block) => block.id !== newId)) return;
     setOpenId(newId);
-    focusLater(`${newId}-toggle`);
+    focusLater(EDIT_TITLE_ID);
     announce(EDITOR_COPY.announce.duplicated(positionOf(next, newId), next.blocks.length));
   }
 
@@ -290,11 +346,41 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
     }
   }
 
-  function switchMode(next: "edit" | "preview") {
-    if (next === mode) return;
-    scrollByMode.current[mode] = window.scrollY;
-    setMode(next);
-    requestAnimationFrame(() => window.scrollTo({ top: scrollByMode.current[next] }));
+  function openBlock(id: string, focusId: string) {
+    if (openId && openId !== id) apply({ type: "normalize", id: openId });
+    setTab("content");
+    setPickerOpen(false);
+    setHeaderOpen(false);
+    setOpenId(id);
+    focusLater(focusId);
+  }
+
+  function closeBlock(id: string) {
+    apply({ type: "normalize", id });
+    setOpenId(null);
+    focusLater(`${id}-toggle`);
+  }
+
+  function openHeader(focusId: string) {
+    if (openId) apply({ type: "normalize", id: openId });
+    setTab("content");
+    setPickerOpen(false);
+    setOpenId(null);
+    setHeaderOpen(true);
+    focusLater(focusId);
+  }
+
+  function closePicker() {
+    setPickerOpen(false);
+    focusLater(openId ? `${openId}-add-after` : "editor-add");
+  }
+
+  /** Clicking the preview opens what was clicked. The lists in the panel are the keyboard path. */
+  function pickInPreview(event: ReactMouseEvent<HTMLDivElement>) {
+    const target = event.target as Element;
+    const id = target.closest("[data-block-id]")?.getAttribute("data-block-id");
+    if (id && stateRef.current.blocks.some((block) => block.id === id)) openBlock(id, EDIT_TITLE_ID);
+    else if (target.closest("article > header")) openHeader(HEADER_BACK_ID);
   }
 
   async function resolveConflict(choice: "load" | "keep") {
@@ -322,6 +408,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
     lastNotified.current = serializeCheck(checkDraft(next));
     autosave.reset(result.draft.revision);
     setOpenId(null);
+    setPickerOpen(false);
     setFreshIds(new Set());
     setTouched(new Set());
     announce(EDITOR_COPY.announce.loadedLatest);
@@ -334,17 +421,173 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
 
   const statusText = snapshot.status === "error" ? `${EDITOR_COPY.status.error} ${failureMessage(snapshot.failure)}` : EDITOR_COPY.status[snapshot.status];
 
-  return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
-      <div role="group" aria-label={EDITOR_COPY.view.label} className="flex rounded-xl bg-app-surface-soft p-1 lg:hidden">
-        <button type="button" className={`ui-button flex-1 ${mode === "edit" ? "ui-button-primary" : "ui-button-ghost"}`} aria-pressed={mode === "edit"} onClick={() => switchMode("edit")}>{EDITOR_COPY.view.edit}</button>
-        <button type="button" className={`ui-button flex-1 ${mode === "preview" ? "ui-button-primary" : "ui-button-ghost"}`} aria-pressed={mode === "preview"} onClick={() => switchMode("preview")}>{EDITOR_COPY.view.preview}</button>
-      </div>
+  const openIndex = openId ? state.blocks.findIndex((block) => block.id === openId) : -1;
+  const openedBlock = openIndex >= 0 ? state.blocks[openIndex] : undefined;
+  const canAdd = total < MAX_BLOCKS;
+  const [addressHost, ...addressPath] = address.split("/");
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
-        <div className={`${mode === "preview" ? "hidden lg:grid" : "grid"} min-w-0 grid-cols-[minmax(0,1fr)] gap-6`}>
+  const picker = (
+    <div id="editor-add-picker" className="grid grid-cols-[minmax(0,1fr)] gap-3" role="group" aria-labelledby="editor-add-title">
+      <button type="button" id={PICKER_BACK_ID} className="studio-back" aria-label={EDITOR_COPY.studio.back(EDITOR_COPY.addBlock)} onClick={closePicker}>
+        <StudioIcon name="back" size={18} />{EDITOR_COPY.addBlock}
+      </button>
+      <h2 id="editor-add-title" className="studio-heading">{EDITOR_COPY.addBlockTitle}</h2>
+      <p className="studio-lead">{openedBlock ? EDITOR_COPY.studio.addLeadAfter : EDITOR_COPY.studio.addLeadEnd}</p>
+      <ul className="studio-list">
+        {BLOCK_TYPES.map((type, index) => (
+          <li key={type} className="studio-row">
+            <button type="button" id={index === 0 ? "editor-add-first" : undefined} className="studio-row-main" onClick={() => addBlock(type)}>
+              <span className="studio-row-icon"><StudioIcon name={type} /></span>
+              <span className="studio-row-text">
+                <span className="studio-row-label">{BLOCKS_COPY.types[type].label}</span>
+                <span className="studio-row-note">{BLOCKS_COPY.types[type].description}</span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+
+  const headerView = (
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4" role="group" aria-labelledby="editor-header-title">
+      <button type="button" id={HEADER_BACK_ID} className="studio-back" aria-label={EDITOR_COPY.studio.back(EDITOR_COPY.headerSection)} onClick={() => { setHeaderOpen(false); focusLater(HEADER_TOGGLE_ID); }}>
+        <StudioIcon name="back" size={18} /><span id="editor-header-title">{EDITOR_COPY.headerSection}</span>
+      </button>
+      <section className="studio-group" aria-labelledby="editor-header-text">
+        <h3 id="editor-header-text" className="studio-group-head">{EDITOR_COPY.studio.groups.text}</h3>
+        <div className="studio-group-body">
+          <TextField id="editor-title" label={APP_COPY.profileForm.title} hint={APP_COPY.profileForm.titleHint} value={state.title} maxLength={120} error={showHeaderError("title") ? headerErrors.title : undefined} onChange={(event) => apply({ type: "set_header", field: "title", value: event.target.value })} onBlur={() => markTouched(`${HEADER_FRESH_KEY}:title`)} />
+          <TextAreaField id="editor-bio" label={APP_COPY.profileForm.bio} hint={APP_COPY.profileForm.bioHint(Math.max(0, BIO_MAX_LENGTH - state.bio.trim().length))} value={state.bio} rows={3} error={showHeaderError("bio") ? headerErrors.bio : undefined} onChange={(event) => apply({ type: "set_header", field: "bio", value: event.target.value })} onBlur={() => markTouched(`${HEADER_FRESH_KEY}:bio`)} />
+        </div>
+      </section>
+      <section className="studio-group" aria-labelledby="editor-avatar-title">
+        <h3 id="editor-avatar-title" className="studio-group-head">{MEDIA_COPY.avatar.title}</h3>
+        <div className="studio-group-body">
+          <p className="ui-hint">{MEDIA_COPY.avatar.hint}</p>
+          <div className="flex flex-wrap items-center gap-4">
+            {state.avatarPath ? (
+              <picture className="block h-20 w-20 shrink-0">
+                <img {...avatarSources(state.avatarPath)} className="h-20 w-20 rounded-full border border-app-border object-cover" width={80} height={80} alt={MEDIA_COPY.avatar.current} />
+              </picture>
+            ) : (
+              <span aria-hidden="true" className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-app-accent text-2xl font-bold text-white">{initialsFor(state.title)}</span>
+            )}
+            {state.avatarPath ? <Button type="button" variant="secondary" id="editor-avatar-remove" onClick={removeAvatar}>{MEDIA_COPY.avatar.remove}</Button> : null}
+          </div>
+          <ImageUploader id="editor-avatar" pickId="editor-avatar-pick" profileId={profileId} kind="avatar" hasImage={state.avatarPath !== null} labels={{ pick: MEDIA_COPY.avatar.upload, replace: MEDIA_COPY.avatar.replace }} onUploaded={avatarUploaded} onBusyChange={(busy) => setUploadBusy(AVATAR_UPLOAD_KEY, busy)} />
+          <StorageUsage profileId={profileId} refreshKey={usageKey} />
+        </div>
+      </section>
+    </div>
+  );
+
+  const contentList = (
+    <>
+      {notices}
+      <ul className="studio-list">
+        <li className="studio-row">
+          <button type="button" id={HEADER_TOGGLE_ID} className="studio-row-main" onClick={() => openHeader("editor-title")}>
+            <span className="studio-row-icon"><StudioIcon name="header" /></span>
+            <span className="studio-row-text">
+              <span className="sr-only">{EDITOR_COPY.actions.editPrefix} </span>
+              <span className="studio-row-label">{EDITOR_COPY.headerSection}</span>
+              <span className="studio-row-note" data-clip="">{state.title.trim() || EDITOR_COPY.preview.untitled}</span>
+            </span>
+            <span className="studio-row-icon"><StudioIcon name="chevron" size={18} /></span>
+          </button>
+        </li>
+      </ul>
+
+      <section className="grid grid-cols-[minmax(0,1fr)] gap-3" aria-labelledby="editor-blocks-title">
+        <div className="grid gap-1">
+          <h2 id="editor-blocks-title" className="studio-heading">{EDITOR_COPY.blocksSection}</h2>
+          <p className="studio-lead">{EDITOR_COPY.blocksLead}</p>
+        </div>
+
+        {total === 0 ? (
+          <EmptyState title={EDITOR_COPY.emptyTitle} description={EDITOR_COPY.emptyDescription} />
+        ) : (
+          <ol className="studio-list">
+            {state.blocks.map((block, index) => (
+              <BlockCard key={block.id} block={block} position={index + 1} total={total} check={check.blocks[block.id]} onOpen={() => openBlock(block.id, `${block.id}-first`)} onMove={(to) => move(block.id, to)} />
+            ))}
+          </ol>
+        )}
+
+        {canAdd ? (
+          <Button type="button" id="editor-add" className="w-full" onClick={() => { setPickerOpen(true); focusLater("editor-add-first"); }}>
+            <StudioIcon name="plus" size={18} />{EDITOR_COPY.addBlock}
+          </Button>
+        ) : (
+          <p className="studio-lead">{EDITOR_COPY.blockLimit}</p>
+        )}
+        {!check.ok && check.limit === "too_large" ? <p role="alert" className="m-0 font-bold text-app-danger">{EDITOR_COPY.payloadLimit}</p> : null}
+      </section>
+    </>
+  );
+
+  return (
+    <div className={`studio ${displayFont.variable}`}>
+      <nav className="studio-nav" aria-label={EDITOR_COPY.studio.nav}>
+        <Link className="studio-nav-link" href={nav.backHref} aria-label={nav.backLabel} title={nav.backLabel}><StudioIcon name="back" size={22} /></Link>
+        <span className="studio-nav-divider" aria-hidden="true" />
+        {nav.links.map((link) => (
+          <Link key={link.href} className="studio-nav-link studio-nav-extra" href={link.href} aria-label={link.label} title={link.label} {...(link.newTab ? { target: "_blank", rel: "noopener", prefetch: false } : {})}>
+            <StudioIcon name={link.icon} size={22} />
+          </Link>
+        ))}
+      </nav>
+
+      <header className="studio-head">
+        <div className="studio-title">
+          <h1>{state.title.trim() || EDITOR_COPY.preview.untitled}</h1>
+          <p className="studio-address">{address}</p>
+          <div className="studio-status">
+            <p role="status" aria-live="polite" className="m-0 flex flex-wrap items-center gap-2">
+              <span aria-hidden="true"><Badge tone={STATUS_TONE[snapshot.status]}>{EDITOR_COPY.status[snapshot.status]}</Badge></span>
+              <span className="sr-only">{statusText}</span>
+              {snapshot.status === "error" ? <span className="studio-status-detail" aria-hidden="true">{failureMessage(snapshot.failure)}</span> : null}
+            </p>
+            {/* On phones the publish button already says this; it stays when there is no button. */}
+            <span className={canPublish ? "studio-publication" : undefined}><Badge tone={PUBLICATION_TONE[publication]}>{PUBLISHING_COPY.badge[publication]}</Badge></span>
+          </div>
+        </div>
+        {snapshot.status === "error" ? <Button type="button" variant="secondary" onClick={() => autosave.flush()}>{EDITOR_COPY.status.retry}</Button> : null}
+        {canPublish ? (
+          <PublishForm action={publishAction} draftRevision={snapshot.revision} upToDate={publication === "live_current" && snapshot.status === "saved" && !uploading} hasPublished={publications.length > 0} blockedReason={blockedReason} />
+        ) : null}
+      </header>
+
+      <section className="studio-panel" data-size={sheet} aria-label={EDITOR_COPY.studio.panel}>
+        <button type="button" className="studio-handle" aria-expanded={sheet === "full"} aria-label={sheet === "full" ? EDITOR_COPY.studio.shrink : EDITOR_COPY.studio.expand} onClick={() => setSheet(sheet === "full" ? "half" : "full")} />
+
+        {openedBlock ? (
+          pickerOpen ? null : (
+            <div className="studio-edit-head">
+              <div>
+                <p className="studio-eyebrow">{EDITOR_COPY.studio.editing(openIndex + 1, total)}</p>
+                <h2 id={EDIT_TITLE_ID} tabIndex={-1}>{BLOCKS_COPY.types[openedBlock.input.type].label}</h2>
+              </div>
+              <button type="button" id={`${openedBlock.id}-delete`} className="studio-icon-button" data-tone="danger" aria-label={EDITOR_COPY.actions.deleteLabel(EDITOR_COPY.blockName(BLOCKS_COPY.types[openedBlock.input.type].label, openIndex + 1))} title={EDITOR_COPY.actions.delete} onClick={() => remove(openedBlock.id)}>
+                <StudioIcon name="trash" />
+              </button>
+              <Button type="button" id={`${openedBlock.id}-done`} onClick={() => closeBlock(openedBlock.id)}>{EDITOR_COPY.actions.done}</Button>
+            </div>
+          )
+        ) : (
+          <div className="studio-panel-top">
+            <div className="studio-tabs" role="group" aria-label={EDITOR_COPY.studio.tabsLabel}>
+              {STUDIO_TABS.map((item) => (
+                <button key={item} type="button" className="studio-tab" aria-pressed={tab === item} onClick={() => { setTab(item); setPickerOpen(false); }}>{EDITOR_COPY.studio.tabs[item]}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="studio-scroll">
           {snapshot.status === "conflict" ? (
-            <section className="grid gap-3 rounded-2xl border border-app-danger/40 bg-app-danger/10 p-4 sm:p-5" aria-labelledby="conflict-title">
+            <section className="grid gap-3 rounded-lg border border-app-danger/40 bg-app-danger/10 p-3" aria-labelledby="conflict-title">
               <h2 id="conflict-title" className="m-0 text-lg font-bold">{EDITOR_COPY.conflict.title}</h2>
               <p className="m-0">{EDITOR_COPY.conflict.lead}</p>
               <div className="flex flex-wrap gap-2">
@@ -356,141 +599,60 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
             </section>
           ) : null}
 
-          <section className="surface-card grid gap-4 p-4 sm:p-6" aria-labelledby="editor-header-title">
-            <h2 id="editor-header-title" className="m-0 text-xl font-bold">{EDITOR_COPY.headerSection}</h2>
-            <TextField id="editor-title" label={APP_COPY.profileForm.title} hint={APP_COPY.profileForm.titleHint} value={state.title} maxLength={120} error={showHeaderError("title") ? headerErrors.title : undefined} onChange={(event) => apply({ type: "set_header", field: "title", value: event.target.value })} onBlur={() => markTouched(`${HEADER_FRESH_KEY}:title`)} />
-            <div className="grid gap-3" role="group" aria-labelledby="editor-avatar-title">
-              <div className="grid gap-1">
-                <p id="editor-avatar-title" className="ui-label m-0">{MEDIA_COPY.avatar.title}</p>
-                <p className="ui-hint">{MEDIA_COPY.avatar.hint}</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-4">
-                {state.avatarPath ? (
-                  <picture className="block h-20 w-20 shrink-0">
-                    <img {...avatarSources(state.avatarPath)} className="h-20 w-20 rounded-full border border-app-border object-cover" width={80} height={80} alt={MEDIA_COPY.avatar.current} />
-                  </picture>
-                ) : (
-                  <span aria-hidden="true" className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-app-accent text-2xl font-bold text-white">{initialsFor(state.title)}</span>
-                )}
-                {state.avatarPath ? <Button type="button" variant="secondary" id="editor-avatar-remove" onClick={removeAvatar}>{MEDIA_COPY.avatar.remove}</Button> : null}
-              </div>
-              <ImageUploader id="editor-avatar" pickId="editor-avatar-pick" profileId={profileId} kind="avatar" hasImage={state.avatarPath !== null} labels={{ pick: MEDIA_COPY.avatar.upload, replace: MEDIA_COPY.avatar.replace }} onUploaded={avatarUploaded} onBusyChange={(busy) => setUploadBusy(AVATAR_UPLOAD_KEY, busy)} />
-              <StorageUsage profileId={profileId} refreshKey={usageKey} />
-            </div>
-            <TextAreaField id="editor-bio" label={APP_COPY.profileForm.bio} hint={APP_COPY.profileForm.bioHint(Math.max(0, BIO_MAX_LENGTH - state.bio.trim().length))} value={state.bio} rows={3} error={showHeaderError("bio") ? headerErrors.bio : undefined} onChange={(event) => apply({ type: "set_header", field: "bio", value: event.target.value })} onBlur={() => markTouched(`${HEADER_FRESH_KEY}:bio`)} />
-          </section>
-
-          <section className="grid grid-cols-[minmax(0,1fr)] gap-4" aria-labelledby="editor-blocks-title">
-            <div className="grid gap-1">
-              <h2 id="editor-blocks-title" className="m-0 text-xl font-bold">{EDITOR_COPY.blocksSection}</h2>
-              <p className="m-0 text-app-muted">{EDITOR_COPY.blocksLead}</p>
-            </div>
-
-            {total === 0 ? (
-              <EmptyState title={EDITOR_COPY.emptyTitle} description={EDITOR_COPY.emptyDescription} />
-            ) : (
-              <ol className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-3 p-0">
-                {state.blocks.map((block, index) => (
-                  <BlockCard
-                    key={block.id}
-                    block={block}
-                    profileId={profileId}
-                    position={index + 1}
-                    total={total}
-                    open={openId === block.id}
-                    check={check.blocks[block.id]}
-                    showError={showErrorFor(block.id)}
-                    canDuplicate={total < MAX_BLOCKS}
-                    onToggleOpen={() => {
-                      const opening = openId !== block.id;
-                      setOpenId(opening ? block.id : null);
-                      if (opening) focusLater(`${block.id}-first`);
-                      else apply({ type: "normalize", id: block.id });
-                    }}
-                    onEdit={(field, value) => apply({ type: "edit", id: block.id, field, value })}
-                    onEditSocial={(network, value) => apply({ type: "edit_social", id: block.id, network, value })}
-                    onSetInput={(input) => apply({ type: "set_input", id: block.id, input })}
-                    onUploadBusy={(busy) => setUploadBusy(block.id, busy)}
-                    onImageUploaded={(media) => imageUploaded(block.id, media)}
-                    onBlur={(field) => {
-                      markTouched(`${block.id}:${field}`);
-                      apply({ type: "normalize", id: block.id });
-                    }}
-                    onMove={(to) => move(block.id, to)}
-                    onDuplicate={() => duplicate(block.id)}
-                    onToggleVisible={() => toggleVisible(block.id)}
-                    onDelete={() => remove(block.id)}
-                  />
-                ))}
-              </ol>
-            )}
-
-            {total < MAX_BLOCKS ? (
-              <div className="grid gap-3">
-                <Button type="button" id="editor-add" variant="secondary" className="w-full sm:w-fit" aria-expanded={pickerOpen} aria-controls="editor-add-picker" onClick={() => setPickerOpen((open) => !open)}>
-                  + {EDITOR_COPY.addBlock}
-                </Button>
-                {pickerOpen ? (
-                  <div id="editor-add-picker" role="group" aria-labelledby="editor-add-title" className="surface-card grid gap-3 p-4">
-                    <p id="editor-add-title" className="m-0 font-bold">{EDITOR_COPY.addBlockTitle}</p>
-                    <p className="m-0 text-sm text-app-muted">{EDITOR_COPY.addBlockLead}</p>
-                    <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
-                      {BLOCK_TYPES.map((type, index) => (
-                        <li key={type}>
-                          <button type="button" id={index === 0 ? "editor-add-first" : undefined} className="grid min-h-11 w-full gap-1 rounded-xl border border-app-border p-3 text-left hover:border-app-accent hover:bg-app-accent-soft" onClick={() => addBlock(type)}>
-                            <span className="font-bold">{BLOCKS_COPY.types[type].label}</span>
-                            <span className="text-sm text-app-muted">{BLOCKS_COPY.types[type].description}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <p className="m-0 text-app-muted">{EDITOR_COPY.blockLimit}</p>
-            )}
-            {!check.ok && check.limit === "too_large" ? <p role="alert" className="m-0 font-bold text-app-danger">{EDITOR_COPY.payloadLimit}</p> : null}
-          </section>
-
-          <AppearancePanel theme={state.theme} hasBlocks={total > 0} lastTemplate={state.lastTemplate} onSetTheme={setTheme} onApplyTemplate={applyTemplate} onUndoTemplate={undoTemplate} />
+          {openedBlock ? (
+            pickerOpen ? picker : (
+              <BlockEditView
+                key={openedBlock.id}
+                block={openedBlock}
+                profileId={profileId}
+                position={openIndex + 1}
+                total={total}
+                check={check.blocks[openedBlock.id]}
+                showError={showErrorFor(openedBlock.id)}
+                canAdd={canAdd}
+                onEdit={(field, value) => apply({ type: "edit", id: openedBlock.id, field, value })}
+                onEditSocial={(network, value) => apply({ type: "edit_social", id: openedBlock.id, network, value })}
+                onSetInput={(input) => apply({ type: "set_input", id: openedBlock.id, input })}
+                onUploadBusy={(busy) => setUploadBusy(openedBlock.id, busy)}
+                onImageUploaded={(media) => imageUploaded(openedBlock.id, media)}
+                onBlur={(field) => {
+                  markTouched(`${openedBlock.id}:${field}`);
+                  apply({ type: "normalize", id: openedBlock.id });
+                }}
+                onMove={(to) => move(openedBlock.id, to)}
+                onDuplicate={() => duplicate(openedBlock.id)}
+                onToggleVisible={() => toggleVisible(openedBlock.id)}
+                onAddAfter={() => { setPickerOpen(true); focusLater("editor-add-first"); }}
+              />
+            )
+          ) : tab === "content" ? (
+            pickerOpen ? picker : headerOpen ? headerView : contentList
+          ) : tab === "styles" ? (
+            <AppearancePanel theme={state.theme} hasBlocks={total > 0} lastTemplate={state.lastTemplate} onSetTheme={setTheme} onApplyTemplate={applyTemplate} onUndoTemplate={undoTemplate} />
+          ) : settings}
         </div>
+      </section>
 
-        <aside className={`${mode === "edit" ? "hidden lg:grid" : "grid"} gap-3 lg:sticky lg:top-4`} aria-labelledby="editor-preview-title">
-          <h2 id="editor-preview-title" className="m-0 text-lg font-bold">{EDITOR_COPY.preview.title}</h2>
-          <p className="m-0 rounded-xl border border-app-warning/30 bg-app-warning/10 p-3 text-sm font-bold text-app-warning">{EDITOR_COPY.preview.banner}</p>
-          <div className="overflow-hidden rounded-[2rem] border-8 border-app-text bg-app-bg shadow-raised">
-            <div className="max-h-[70vh] overflow-y-auto lg:max-h-[calc(100vh-12rem)]" tabIndex={0} role="region" aria-label={EDITOR_COPY.preview.title}>
-              <PublicPageView as="div" document={preview} showBadge={showBadge} interactive={false} />
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      <div className="sticky bottom-0 z-30 -mx-4 border-t border-app-border bg-app-surface px-4 py-3 shadow-raised sm:mx-0 sm:rounded-t-2xl">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="grid min-h-11 min-w-0 flex-1 content-center gap-1">
-            <p role="status" aria-live="polite" className="m-0 flex flex-wrap items-center gap-2">
-              <span aria-hidden="true"><Badge tone={STATUS_TONE[snapshot.status]}>{EDITOR_COPY.status[snapshot.status]}</Badge></span>
-              <span className="sr-only">{statusText}</span>
-              {snapshot.status === "error" ? <span className="text-sm font-bold text-app-danger" aria-hidden="true">{failureMessage(snapshot.failure)}</span> : null}
-            </p>
-            <span className="flex flex-wrap items-center gap-2 text-sm text-app-muted">
-              <Badge tone={PUBLICATION_TONE[publication]}>{PUBLISHING_COPY.badge[publication]}</Badge>
-            </span>
-          </div>
-          {snapshot.status === "error" ? <Button type="button" variant="secondary" onClick={() => autosave.flush()}>{EDITOR_COPY.status.retry}</Button> : null}
-          {canPublish ? (
-            <PublishForm action={publishAction} draftRevision={snapshot.revision} upToDate={publication === "live_current" && snapshot.status === "saved" && !uploading} hasPublished={publications.length > 0} blockedReason={blockedReason} />
-          ) : null}
+      <aside className="studio-stage" data-device={device} aria-labelledby="editor-preview-title">
+        <h2 id="editor-preview-title" className="sr-only">{EDITOR_COPY.preview.title}</h2>
+        <div className="studio-stage-tools" role="group" aria-label={EDITOR_COPY.studio.device.label}>
+          <button type="button" className="studio-device" aria-pressed={device === "phone"} aria-label={EDITOR_COPY.studio.device.phone} title={EDITOR_COPY.studio.device.phone} onClick={() => setDevice("phone")}><StudioIcon name="phone" /></button>
+          <button type="button" className="studio-device" aria-pressed={device === "desktop"} aria-label={EDITOR_COPY.studio.device.desktop} title={EDITOR_COPY.studio.device.desktop} onClick={() => setDevice("desktop")}><StudioIcon name="desktop" /></button>
         </div>
-      </div>
+        <p className="studio-stage-note">{EDITOR_COPY.preview.banner}</p>
+        <div className="studio-frame">
+          <p className="studio-frame-bar m-0" aria-hidden="true">{addressHost}{addressPath.length > 0 ? <>/<b>{addressPath.join("/")}</b></> : null}</p>
+          <div ref={previewRef} className="studio-frame-view" data-pick="" tabIndex={0} role="region" aria-label={EDITOR_COPY.preview.title} onClick={pickInPreview}>
+            <PublicPageView as="div" document={preview} showBadge={showBadge} interactive={false} />
+          </div>
+        </div>
+      </aside>
 
       <p aria-live="polite" className="sr-only"><span key={announcement.n}>{announcement.text}</span></p>
 
       {state.lastDeleted ? (
-        <div className="fixed inset-x-4 bottom-28 z-40 flex items-center justify-between gap-3 rounded-xl border border-app-border bg-app-surface p-3 shadow-raised sm:inset-x-auto sm:right-6 sm:w-96" onMouseEnter={() => setUndoPaused(true)} onMouseLeave={() => setUndoPaused(false)} onFocus={() => setUndoPaused(true)} onBlur={() => setUndoPaused(false)} onKeyDown={(event) => { if (event.key === "Escape") { apply({ type: "dismiss_undo" }); focusLater(focusAfterUndo.current); } }}>
-          <span className="font-bold">{EDITOR_COPY.undo.deleted}</span>
+        <div className="studio-undo" onMouseEnter={() => setUndoPaused(true)} onMouseLeave={() => setUndoPaused(false)} onFocus={() => setUndoPaused(true)} onBlur={() => setUndoPaused(false)} onKeyDown={(event) => { if (event.key === "Escape") { apply({ type: "dismiss_undo" }); focusLater(focusAfterUndo.current); } }}>
+          <span>{EDITOR_COPY.undo.deleted}</span>
           <Button type="button" id="editor-undo" variant="secondary" onClick={undo}>{EDITOR_COPY.undo.action}</Button>
         </div>
       ) : null}

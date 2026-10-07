@@ -19,7 +19,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
       <a className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-app-surface focus:p-3" href="#conteudo">{APP_COPY.nav.skipToContent}</a>
-      <header className="border-b border-app-border bg-app-surface">
+      {/* `data-app-chrome` steps aside while the page editor fills the viewport (studio.css). */}
+      <header data-app-chrome="" className="border-b border-app-border bg-app-surface">
         <div className="app-shell flex min-h-16 flex-wrap items-center justify-between gap-3 py-2">
           <div className="flex min-w-0 items-center gap-3">
             <Link className="inline-flex min-h-11 items-center font-bold" href="/app">{PRODUCT.codename}</Link>

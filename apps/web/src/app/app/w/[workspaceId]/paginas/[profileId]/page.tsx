@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ANALYTICS_COPY, APP_COPY, EDITOR_COPY, LEADS_COPY } from "@/content/pt-BR";
-import { publicAddressLabel } from "@/lib/app-url";
+import { ANALYTICS_COPY, APP_COPY, EDITOR_COPY, LEADS_COPY, PUBLISHING_COPY } from "@/content/pt-BR";
+import { publicAddressLabel, publicPageUrl } from "@/lib/app-url";
 import { BlockEditor } from "@/modules/editor/components/block-editor";
 import { isUuid } from "@/modules/identity/guard";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
@@ -28,9 +28,10 @@ export const metadata: Metadata = { title: "Editar página" };
 const STATUS_TONE = { draft: "neutral", published: "success", archived: "warning" } as const;
 
 /**
- * Page editor: block editor with autosave, uploads, appearance and live preview, then publishing history,
- * address and deletion. Every command re-authorizes on the server; this page only decides what to
- * show for the caller's role.
+ * Page editor. Who can edit gets the editor workspace (UX-072): block editor with autosave, uploads,
+ * appearance and live preview, with publishing history, address and deletion in its "Página" tab.
+ * Everyone else (and archived pages) gets a read-only preview above the same settings. Every command
+ * re-authorizes on the server; this page only decides what to show for the caller's role.
  */
 export default async function ProfileEditorPage({ params, searchParams }: { params: Promise<{ workspaceId: string; profileId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { workspaceId, profileId } = await params;
@@ -59,6 +60,104 @@ export default async function ProfileEditorPage({ params, searchParams }: { para
   const canPublish = can(access.role, "profile.publish") && !archived;
   const showBadge = !entitlements.features.remove_badge;
   const basePath = `/app/w/${workspaceId}/paginas/${profile.id}`;
+  const live = profile.livePublicationId !== null;
+
+  const copyReview = reviewKinds && !archived ? (
+    <section className="grid gap-2 rounded-2xl border border-app-warning/40 bg-app-warning/10 p-4 sm:p-5" aria-labelledby="copy-review-title">
+      <h2 id="copy-review-title" className="text-lg font-bold">{APP_COPY.duplicate.review.title}</h2>
+      {reviewKinds.length > 0 ? (
+        <>
+          <p className="m-0">{APP_COPY.duplicate.review.lead}</p>
+          <ul className="m-0 grid list-disc gap-1 pl-5 font-bold">{reviewKinds.map((kind) => <li key={kind}>{APP_COPY.duplicate.review.items[kind]}</li>)}</ul>
+        </>
+      ) : <p className="m-0">{APP_COPY.duplicate.review.generic}</p>}
+      <p className="m-0 text-sm text-app-muted">{APP_COPY.duplicate.review.until}</p>
+    </section>
+  ) : null;
+
+  const settings = (
+    <>
+      {archived ? null : (
+        <PublishPanel
+          target={{ id: profile.id, workspaceId: profile.workspaceId, slug: profile.slug, draftRevision: profile.draftRevision, livePublicationId: profile.livePublicationId, publishedAt: profile.publishedAt }}
+          publications={publications}
+          previewHref={`${basePath}/previa`}
+          canPublish={canPublish}
+          editorManaged={canEdit}
+        />
+      )}
+
+      <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="results-title">
+        <h2 id="results-title" className="text-xl font-bold">{ANALYTICS_COPY.title}</h2>
+        <p className="m-0 text-app-muted">{ANALYTICS_COPY.lead}</p>
+        <div><Link className="ui-button ui-button-secondary" href={`${basePath}/resultados`}>{ANALYTICS_COPY.open}</Link></div>
+      </section>
+
+      <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="leads-title">
+        <h2 id="leads-title" className="text-xl font-bold">{LEADS_COPY.title}</h2>
+        <p className="m-0 text-app-muted">{LEADS_COPY.lead}</p>
+        <div><Link className="ui-button ui-button-secondary" href={`${basePath}/contatos`}>{LEADS_COPY.open}</Link></div>
+      </section>
+
+      <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="address-title">
+        <h2 id="address-title" className="text-xl font-bold">{APP_COPY.profileForm.slug}</h2>
+        <p className="m-0 break-all font-bold">{publicAddressLabel(profile.slug)}</p>
+        {canChangeSlug ? <div><ChangeSlugDialog action={changeProfileSlugAction.bind(null, profile.id)} currentSlug={profile.slug} workspaceId={workspaceId} /></div> : <p className="m-0 text-app-muted">{APP_COPY.slugChange.forbidden}</p>}
+      </section>
+
+      {canDuplicate || (canArchive && !archived) ? (
+        <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="manage-title">
+          <h2 id="manage-title" className="text-xl font-bold">{APP_COPY.manage.title}</h2>
+          <p className="m-0 text-app-muted">{APP_COPY.manage.lead}</p>
+          <div className="flex flex-wrap gap-2">
+            {canDuplicate ? <Link className="ui-button ui-button-secondary" href={`${basePath}/duplicar`}>{APP_COPY.duplicate.open}</Link> : null}
+            {canArchive && !archived ? <ArchiveControl page={profile} /> : null}
+          </div>
+        </section>
+      ) : null}
+
+      {canDelete ? (
+        <section className="grid gap-3 rounded-2xl border border-app-danger/30 p-5 sm:p-8" aria-labelledby="danger-title">
+          <h2 id="danger-title" className="text-xl font-bold">{APP_COPY.deletePage.open}</h2>
+          <p className="m-0 text-app-muted">{APP_COPY.deletePage.warning}</p>
+          <div><DeleteProfileDialog action={deleteProfileAction.bind(null, profile.id)} title={profile.title} /></div>
+        </section>
+      ) : null}
+    </>
+  );
+
+  if (canEdit) {
+    return (
+      <BlockEditor
+        profileId={profile.id}
+        initial={{ title: profile.title, bio: profile.bio, avatarPath: profile.avatarPath, theme: profile.theme, blocks: profile.blocks, revision: profile.draftRevision }}
+        livePublicationId={profile.livePublicationId}
+        publications={publications}
+        canPublish={canPublish}
+        publishAction={publishProfileAction.bind(null, profile.id)}
+        showBadge={showBadge}
+        address={publicAddressLabel(profile.slug)}
+        nav={{
+          backHref: `/app/w/${workspaceId}`,
+          backLabel: EDITOR_COPY.studio.backToPages,
+          links: [
+            { href: `${basePath}/resultados`, label: ANALYTICS_COPY.open, icon: "results" },
+            { href: `${basePath}/contatos`, label: LEADS_COPY.open, icon: "contacts" },
+            { href: `${basePath}/previa`, label: PUBLISHING_COPY.preview, icon: "preview" },
+            ...(live ? [{ href: publicPageUrl(profile.slug), label: `${PUBLISHING_COPY.openPublic} (${PUBLISHING_COPY.openPublicHint})`, icon: "external", newTab: true } as const] : []),
+          ],
+        }}
+        notices={
+          <>
+            {justDuplicated ? <Notice tone="success">{APP_COPY.duplicate.created}</Notice> : null}
+            {copyReview}
+            <p className="studio-lead">{APP_COPY.draft.notice}</p>
+          </>
+        }
+        settings={settings}
+      />
+    );
+  }
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
@@ -84,88 +183,17 @@ export default async function ProfileEditorPage({ params, searchParams }: { para
         </section>
       ) : null}
 
-      {reviewKinds && !archived ? (
-        <section className="grid gap-2 rounded-2xl border border-app-warning/40 bg-app-warning/10 p-4 sm:p-5" aria-labelledby="copy-review-title">
-          <h2 id="copy-review-title" className="text-lg font-bold">{APP_COPY.duplicate.review.title}</h2>
-          {reviewKinds.length > 0 ? (
-            <>
-              <p className="m-0">{APP_COPY.duplicate.review.lead}</p>
-              <ul className="m-0 grid list-disc gap-1 pl-5 font-bold">{reviewKinds.map((kind) => <li key={kind}>{APP_COPY.duplicate.review.items[kind]}</li>)}</ul>
-            </>
-          ) : <p className="m-0">{APP_COPY.duplicate.review.generic}</p>}
-          <p className="m-0 text-sm text-app-muted">{APP_COPY.duplicate.review.until}</p>
-        </section>
-      ) : null}
+      {copyReview}
 
-      {canEdit ? (
-        <>
-          <p className="m-0 rounded-xl border border-app-border bg-app-surface-soft p-3 font-bold">{APP_COPY.draft.notice}</p>
-          <BlockEditor
-            profileId={profile.id}
-            initial={{ title: profile.title, bio: profile.bio, avatarPath: profile.avatarPath, theme: profile.theme, blocks: profile.blocks, revision: profile.draftRevision }}
-            livePublicationId={profile.livePublicationId}
-            publications={publications}
-            canPublish={canPublish}
-            publishAction={publishProfileAction.bind(null, profile.id)}
-            showBadge={showBadge}
-          />
-        </>
-      ) : (
-        <section className="grid gap-3" aria-label={EDITOR_COPY.preview.title}>
-          {archived ? null : <p className="m-0 text-app-muted">{EDITOR_COPY.readOnly}</p>}
-          <div className="overflow-hidden rounded-2xl border border-app-border">
-            <PublicPageView as="div" document={documentFromDraft(profile)} showBadge={showBadge} interactive={false} />
-          </div>
-        </section>
-      )}
+      <section className="grid gap-3" aria-label={EDITOR_COPY.preview.title}>
+        {archived ? null : <p className="m-0 text-app-muted">{EDITOR_COPY.readOnly}</p>}
+        <div className="overflow-hidden rounded-2xl border border-app-border">
+          <PublicPageView as="div" document={documentFromDraft(profile)} showBadge={showBadge} interactive={false} />
+        </div>
+      </section>
 
       <div className="mx-auto grid w-full max-w-3xl gap-6">
-        {archived ? null : (
-          <PublishPanel
-            target={{ id: profile.id, workspaceId: profile.workspaceId, slug: profile.slug, draftRevision: profile.draftRevision, livePublicationId: profile.livePublicationId, publishedAt: profile.publishedAt }}
-            publications={publications}
-            previewHref={`${basePath}/previa`}
-            canPublish={canPublish}
-            editorManaged={canEdit}
-          />
-        )}
-
-        <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="results-title">
-          <h2 id="results-title" className="text-xl font-bold">{ANALYTICS_COPY.title}</h2>
-          <p className="m-0 text-app-muted">{ANALYTICS_COPY.lead}</p>
-          <div><Link className="ui-button ui-button-secondary" href={`${basePath}/resultados`}>{ANALYTICS_COPY.open}</Link></div>
-        </section>
-
-        <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="leads-title">
-          <h2 id="leads-title" className="text-xl font-bold">{LEADS_COPY.title}</h2>
-          <p className="m-0 text-app-muted">{LEADS_COPY.lead}</p>
-          <div><Link className="ui-button ui-button-secondary" href={`${basePath}/contatos`}>{LEADS_COPY.open}</Link></div>
-        </section>
-
-        <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="address-title">
-          <h2 id="address-title" className="text-xl font-bold">{APP_COPY.profileForm.slug}</h2>
-          <p className="m-0 break-all font-bold">{publicAddressLabel(profile.slug)}</p>
-          {canChangeSlug ? <div><ChangeSlugDialog action={changeProfileSlugAction.bind(null, profile.id)} currentSlug={profile.slug} workspaceId={workspaceId} /></div> : <p className="m-0 text-app-muted">{APP_COPY.slugChange.forbidden}</p>}
-        </section>
-
-        {canDuplicate || (canArchive && !archived) ? (
-          <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="manage-title">
-            <h2 id="manage-title" className="text-xl font-bold">{APP_COPY.manage.title}</h2>
-            <p className="m-0 text-app-muted">{APP_COPY.manage.lead}</p>
-            <div className="flex flex-wrap gap-2">
-              {canDuplicate ? <Link className="ui-button ui-button-secondary" href={`${basePath}/duplicar`}>{APP_COPY.duplicate.open}</Link> : null}
-              {canArchive && !archived ? <ArchiveControl page={profile} /> : null}
-            </div>
-          </section>
-        ) : null}
-
-        {canDelete ? (
-          <section className="grid gap-3 rounded-2xl border border-app-danger/30 p-5 sm:p-8" aria-labelledby="danger-title">
-            <h2 id="danger-title" className="text-xl font-bold">{APP_COPY.deletePage.open}</h2>
-            <p className="m-0 text-app-muted">{APP_COPY.deletePage.warning}</p>
-            <div><DeleteProfileDialog action={deleteProfileAction.bind(null, profile.id)} title={profile.title} /></div>
-          </section>
-        ) : null}
+        {settings}
       </div>
     </div>
   );
