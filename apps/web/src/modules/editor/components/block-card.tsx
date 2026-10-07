@@ -7,16 +7,62 @@ import { Badge, Button } from "@/ui";
 import type { BlockCheck, EditorBlock, MoveTarget, TextBlockField } from "../draft/state";
 import { blockSummary } from "../draft/summary";
 import { BlockFields } from "./block-fields";
+import { StudioIcon } from "./studio-icons";
 
 export interface BlockCardProps {
+  block: EditorBlock;
+  position: number;
+  total: number;
+  check: BlockCheck | undefined;
+  onOpen: () => void;
+  onMove: (to: MoveTarget) => void;
+}
+
+/**
+ * One block in the editor list: type, summary, state badges and move buttons (the accessible
+ * alternative to dragging). Opening it shows `BlockEditView`. Element ids follow
+ * `${block.id}-<action>` so the editor can restore focus.
+ */
+export function BlockCard({ block, position, total, check, onOpen, onMove }: BlockCardProps) {
+  const typeLabel = BLOCKS_COPY.types[block.input.type].label;
+  const name = EDITOR_COPY.blockName(typeLabel, position);
+  const invalid = check !== undefined && !check.valid;
+
+  return (
+    <li className="studio-row" data-hidden={block.visible ? undefined : ""} data-block-card={block.id}>
+      <button type="button" id={`${block.id}-toggle`} className="studio-row-main" onClick={onOpen}>
+        <span className="studio-row-icon"><StudioIcon name={block.input.type} /></span>
+        <span className="studio-row-text">
+          {/* The visible text stays part of the accessible name (WCAG 2.5.3 label in name). */}
+          <span className="sr-only">{EDITOR_COPY.actions.editPrefix} </span>
+          <span className="studio-row-label">{blockSummary(block.input)}</span>
+          <span className="studio-row-note flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span>{position}. {typeLabel}</span>
+            {!block.visible ? <Badge tone="neutral">{EDITOR_COPY.hiddenBadge}</Badge> : null}
+            {invalid ? <Badge tone="danger">{EDITOR_COPY.invalidBadge}</Badge> : null}
+          </span>
+        </span>
+      </button>
+      <div className="studio-row-actions">
+        <button type="button" id={`${block.id}-up`} className="studio-icon-button" aria-label={EDITOR_COPY.actions.moveUp(name)} title={EDITOR_COPY.actions.moveUp(name)} disabled={position === 1} onClick={() => onMove("up")}>
+          <StudioIcon name="up" />
+        </button>
+        <button type="button" id={`${block.id}-down`} className="studio-icon-button" aria-label={EDITOR_COPY.actions.moveDown(name)} title={EDITOR_COPY.actions.moveDown(name)} disabled={position === total} onClick={() => onMove("down")}>
+          <StudioIcon name="down" />
+        </button>
+      </div>
+    </li>
+  );
+}
+
+export interface BlockEditViewProps {
   block: EditorBlock;
   profileId: string;
   position: number;
   total: number;
-  open: boolean;
   check: BlockCheck | undefined;
   showError: (field: BlockField) => boolean;
-  onToggleOpen: () => void;
+  canAdd: boolean;
   onEdit: (field: TextBlockField, value: string) => void;
   onEditSocial: (network: SocialNetwork, value: string) => void;
   onSetInput: (input: BlockInput) => void;
@@ -26,63 +72,26 @@ export interface BlockCardProps {
   onMove: (to: MoveTarget) => void;
   onDuplicate: () => void;
   onToggleVisible: () => void;
-  onDelete: () => void;
-  canDuplicate: boolean;
+  onAddAfter: () => void;
 }
 
-function Arrow({ direction }: { direction: "up" | "down" }) {
-  return (
-    <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden focusable={false} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-      {direction === "up" ? <path d="M12 19V5M5 12l7-7 7 7" /> : <path d="M12 5v14M5 12l7 7 7-7" />}
-    </svg>
-  );
-}
-
-/**
- * One block in the editor list. Collapsed: type, summary, state badges and move buttons (the
- * accessible alternative to dragging). Open: the form plus duplicate, hide/show, move to top/bottom
- * and delete. Element ids follow `${block.id}-<action>` so the editor can restore focus.
- */
-export function BlockCard(props: BlockCardProps) {
-  const { block, position, total, open, check } = props;
-  const typeLabel = BLOCKS_COPY.types[block.input.type].label;
-  const name = EDITOR_COPY.blockName(typeLabel, position);
+/** The form of the open block plus duplicate, hide/show, move to top/bottom and add after. */
+export function BlockEditView(props: BlockEditViewProps) {
+  const { block, position, total, check } = props;
+  const name = EDITOR_COPY.blockName(BLOCKS_COPY.types[block.input.type].label, position);
   const invalid = check !== undefined && !check.valid;
-  const isFirst = position === 1;
-  const isLast = position === total;
 
   return (
-    <li className={`surface-card grid grid-cols-[minmax(0,1fr)] gap-3 p-3 sm:p-4 ${block.visible ? "" : "border-dashed bg-app-surface-soft"}`} data-block-card={block.id}>
-      <div className="flex items-start gap-2">
-        <button
-          type="button"
-          id={`${block.id}-toggle`}
-          className="flex min-h-11 min-w-0 flex-1 flex-col items-start gap-1 rounded-lg px-2 py-1 text-left hover:bg-app-surface-soft"
-          aria-expanded={open}
-          aria-controls={`${block.id}-panel`}
-          onClick={props.onToggleOpen}
-        >
-          {/* The visible text stays part of the accessible name (WCAG 2.5.3 label in name). */}
-          <span className="sr-only">{EDITOR_COPY.actions.editPrefix} </span>
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-extrabold uppercase tracking-wide text-app-muted">{position}. {typeLabel}</span>
-            {!block.visible ? <Badge tone="neutral">{EDITOR_COPY.hiddenBadge}</Badge> : null}
-            {invalid ? <Badge tone="danger">{EDITOR_COPY.invalidBadge}</Badge> : null}
-          </span>
-          <span className="w-full truncate font-bold">{blockSummary(block.input)}</span>
-        </button>
-        <div className="flex shrink-0 gap-1">
-          <button type="button" id={`${block.id}-up`} className="ui-button ui-button-secondary ui-icon-button" aria-label={EDITOR_COPY.actions.moveUp(name)} title={EDITOR_COPY.actions.moveUp(name)} disabled={isFirst} onClick={() => props.onMove("up")}>
-            <Arrow direction="up" />
-          </button>
-          <button type="button" id={`${block.id}-down`} className="ui-button ui-button-secondary ui-icon-button" aria-label={EDITOR_COPY.actions.moveDown(name)} title={EDITOR_COPY.actions.moveDown(name)} disabled={isLast} onClick={() => props.onMove("down")}>
-            <Arrow direction="down" />
-          </button>
-        </div>
-      </div>
-
-      {open ? (
-        <div id={`${block.id}-panel`} className="grid gap-4 border-t border-app-border pt-4" role="group" aria-label={name}>
+    <div id={`${block.id}-panel`} className="grid grid-cols-[minmax(0,1fr)] gap-4" role="group" aria-label={name}>
+      {!block.visible || invalid ? (
+        <p className="m-0 flex flex-wrap gap-2">
+          {!block.visible ? <Badge tone="neutral">{EDITOR_COPY.hiddenBadge}</Badge> : null}
+          {invalid ? <Badge tone="danger">{EDITOR_COPY.invalidBadge}</Badge> : null}
+        </p>
+      ) : null}
+      <section className="studio-group" aria-labelledby={`${block.id}-content-title`}>
+        <h3 id={`${block.id}-content-title`} className="studio-group-head">{EDITOR_COPY.studio.groups.content}</h3>
+        <div className="studio-group-body">
           <BlockFields
             blockId={block.id}
             profileId={props.profileId}
@@ -97,16 +106,20 @@ export function BlockCard(props: BlockCardProps) {
             onImageUploaded={props.onImageUploaded}
             onBlur={props.onBlur}
           />
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="secondary" id={`${block.id}-duplicate`} aria-label={EDITOR_COPY.actions.duplicateLabel(name)} disabled={!props.canDuplicate} onClick={props.onDuplicate}>{EDITOR_COPY.actions.duplicate}</Button>
+        </div>
+      </section>
+      <section className="studio-group" aria-labelledby={`${block.id}-arrange-title`}>
+        <h3 id={`${block.id}-arrange-title`} className="studio-group-head">{EDITOR_COPY.studio.groups.arrange}</h3>
+        <div className="studio-group-body">
+          <div className="studio-group-actions">
+            <Button type="button" variant="secondary" id={`${block.id}-duplicate`} aria-label={EDITOR_COPY.actions.duplicateLabel(name)} disabled={!props.canAdd} onClick={props.onDuplicate}>{EDITOR_COPY.actions.duplicate}</Button>
             <Button type="button" variant="secondary" id={`${block.id}-visibility`} aria-label={block.visible ? EDITOR_COPY.actions.hideLabel(name) : EDITOR_COPY.actions.showLabel(name)} onClick={props.onToggleVisible}>{block.visible ? EDITOR_COPY.actions.hide : EDITOR_COPY.actions.show}</Button>
-            <Button type="button" variant="secondary" id={`${block.id}-top`} disabled={isFirst} onClick={() => props.onMove("top")}>{EDITOR_COPY.actions.moveTop}</Button>
-            <Button type="button" variant="secondary" id={`${block.id}-bottom`} disabled={isLast} onClick={() => props.onMove("bottom")}>{EDITOR_COPY.actions.moveBottom}</Button>
-            <Button type="button" variant="danger" id={`${block.id}-delete`} aria-label={EDITOR_COPY.actions.deleteLabel(name)} onClick={props.onDelete}>{EDITOR_COPY.actions.delete}</Button>
-            <Button type="button" variant="ghost" onClick={props.onToggleOpen}>{EDITOR_COPY.actions.done}</Button>
+            <Button type="button" variant="secondary" id={`${block.id}-top`} disabled={position === 1} onClick={() => props.onMove("top")}>{EDITOR_COPY.actions.moveTop}</Button>
+            <Button type="button" variant="secondary" id={`${block.id}-bottom`} disabled={position === total} onClick={() => props.onMove("bottom")}>{EDITOR_COPY.actions.moveBottom}</Button>
+            {props.canAdd ? <Button type="button" variant="secondary" id={`${block.id}-add-after`} onClick={props.onAddAfter}>{EDITOR_COPY.studio.addAfter}</Button> : null}
           </div>
         </div>
-      ) : null}
-    </li>
+      </section>
+    </div>
   );
 }
