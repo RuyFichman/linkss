@@ -103,9 +103,9 @@ Stack local: `ANALYTICS_SIGNING_SECRET` em `apps/web/.env.local` e o mesmo valor
 
 ## Passos de deploy da Sprint 7
 
-Estado em 06/10/2026: o founder informou que as duas migrações da parte 1 (`202610060001`, `202610060002`) foram aplicadas em staging. As duas da parte 2 **não** foram. A branch `feat/sprint-7-agency` não foi enviada ao remoto.
+Estado em 06/10/2026: o founder informou que as duas migrações da parte 1 (`202610060001`, `202610060002`) foram aplicadas em staging. Em 07/10/2026 ele informou que as duas da parte 2 (`202610060003`, `202610060004`) também foram aplicadas (informado por ele; não conferido a partir deste repositório), e a branch `feat/sprint-7-agency` foi enviada com o PR aberto. Faltam o merge (passo 3) e a conferência (passo 4).
 
-Ordem recomendada para o que falta:
+Ordem recomendada:
 
 1. `npx supabase db push` com a CLI logada na conta dona do projeto de staging (outra conta recebe 403). Deve listar `202610060003_sprint7_report_enum_values` e `202610060004_consolidated_analytics_and_report_links`. Só acrescentam objetos; a única função existente que muda é `get_profile_analytics`, substituída por uma versão que devolve a mesma resposta.
 2. Nenhum segredo novo e nenhuma variável nova na Vercel. O limite de tentativas do relatório reutiliza `VISITOR_HASH_SALT`, que já existe.
