@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { PRODUCT } from "@/lib/product";
+import { BRAND_CLASS } from "@/ui/brand-font";
 
 export const metadata: Metadata = {
   title: `Privacidade — versão provisória | ${PRODUCT.codename}`,
@@ -17,10 +18,10 @@ const P = "mt-3 leading-7";
  */
 export default function PrivacyPage() {
   return (
-    <main className="app-shell py-16">
-      <article className="mx-auto max-w-3xl surface-card p-6 sm:p-10">
+    <main className={`${BRAND_CLASS} py-8 sm:py-16`}>
+      <article className="app-shell max-w-3xl surface-card p-5 sm:p-10">
         <span className="ui-badge ui-badge-warning">Versão provisória — 02/10/2026</span>
-        <h1 className="mt-5 text-4xl font-bold">Aviso de privacidade</h1>
+        <h1 className="mt-5 text-3xl font-bold sm:text-4xl">Aviso de privacidade</h1>
         <p className="mt-5 leading-7 text-app-muted">
           Este aviso cobre o formulário da lista de espera e a contagem de visitas das páginas públicas criadas com o {PRODUCT.codename}. Ele será revisado antes do piloto externo e não substitui os documentos jurídicos do produto final.
         </p>

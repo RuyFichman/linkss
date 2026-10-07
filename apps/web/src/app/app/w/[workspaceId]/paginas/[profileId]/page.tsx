@@ -187,7 +187,7 @@ export default async function ProfileEditorPage({ params, searchParams }: { para
 
       <section className="grid gap-3" aria-label={EDITOR_COPY.preview.title}>
         {archived ? null : <p className="m-0 text-app-muted">{EDITOR_COPY.readOnly}</p>}
-        <div className="overflow-hidden rounded-2xl border border-app-border">
+        <div className="page-canvas overflow-hidden rounded-2xl border border-app-border">
           <PublicPageView as="div" document={documentFromDraft(profile)} showBadge={showBadge} interactive={false} />
         </div>
       </section>
