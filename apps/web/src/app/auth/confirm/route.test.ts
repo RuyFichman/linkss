@@ -21,9 +21,9 @@ vi.mock("@/modules/audit/record", () => ({ recordAuthEvent: mocks.recordAuthEven
 
 const { GET } = await import("./route");
 
-async function landing(query: string): Promise<string> {
+async function landing(query: string, cookie?: string): Promise<string> {
   try {
-    await GET(new NextRequest(`https://exemplo.test/auth/confirm?${query}`));
+    await GET(new NextRequest(`https://exemplo.test/auth/confirm?${query}`, cookie ? { headers: { cookie } } : undefined));
   } catch (error) {
     if (error instanceof RedirectSignal) return error.location;
     throw error;
@@ -40,6 +40,14 @@ describe("/auth/confirm", () => {
     mocks.verifyOtp.mockResolvedValue({ error: null });
     mocks.exchangeCodeForSession.mockResolvedValue({ error: null });
     mocks.ensurePersonalWorkspace.mockResolvedValue("workspace-id");
+  });
+
+  it("returns to the invitation a sign-up started from, and to nothing else a cookie may name", async () => {
+    const invitation = `/app/convite/${"A".repeat(43)}`;
+    expect(await landing("token_hash=abc&type=email&next=/app", `lnk_after_confirm=${invitation}`)).toBe(invitation);
+    expect(await landing("token_hash=abc&type=email&next=/app", "lnk_after_confirm=https%3A%2F%2Fevil.test%2F")).toBe("/app");
+    expect(await landing("token_hash=abc&type=email&next=/app", "lnk_after_confirm=/app/w/outra")).toBe("/app");
+    expect(await landing("token_hash=abc&type=recovery&next=/redefinir-senha", `lnk_after_confirm=${invitation}`)).toBe("/redefinir-senha");
   });
 
   it("signs in and goes to the app when the PKCE code is exchanged", async () => {

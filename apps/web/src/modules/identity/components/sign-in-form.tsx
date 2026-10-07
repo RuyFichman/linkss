@@ -8,7 +8,7 @@ import { Button, FormStatus, TextField } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
 import { signInAction } from "../actions";
 
-export function SignInForm({ next }: { next: string }) {
+export function SignInForm({ next, signUpHref = "/cadastro" }: { next: string; signUpHref?: string }) {
   const [state, action, pending] = useActionState(signInAction, IDLE_FORM_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   useFocusFirstError(formRef, state);
@@ -23,7 +23,7 @@ export function SignInForm({ next }: { next: string }) {
       <Button type="submit" loading={pending}>{AUTH_COPY.signIn.submit}</Button>
       <div className="flex flex-wrap justify-between gap-3">
         <Link className="inline-flex min-h-11 items-center font-bold text-app-accent underline" href="/recuperar-acesso">{AUTH_COPY.signIn.forgot}</Link>
-        <p className="m-0 inline-flex min-h-11 items-center gap-1 text-app-muted">{AUTH_COPY.signIn.noAccount} <Link className="font-bold text-app-accent underline" href="/cadastro">{AUTH_COPY.signIn.signUpLink}</Link></p>
+        <p className="m-0 inline-flex min-h-11 items-center gap-1 text-app-muted">{AUTH_COPY.signIn.noAccount} <Link className="font-bold text-app-accent underline" href={signUpHref}>{AUTH_COPY.signIn.signUpLink}</Link></p>
       </div>
     </form>
   );

@@ -81,6 +81,20 @@ Os eventos carregam resultado e contagens — nunca o payload, o hash do visitan
 
 Atraso de agregação: `lastFinalDay` deve ser o dia anterior depois da execução da madrugada. Capacidade: tamanho de `analytics_events` no painel do Supabase (limiares em `docs/SUPABASE_CAPACITY.md`).
 
+## Sinais de páginas, convites e membros (Sprint 7, parte 1)
+
+Logs estruturados com `correlationId` e `outcome`. **Nunca** contêm e-mail, token, caminho de convite nem conteúdo de página.
+
+| Evento | Quando | `outcome` | O que observar |
+|---|---|---|---|
+| `profile.archive`, `profile.unarchive` | Arquivar e desarquivar | `ok`, `forbidden`, `not_found`, `not_deployed`, `unavailable` | `forbidden` repetido da mesma conta: interface desatualizada ou tentativa direta |
+| `profile.duplicate` | Duplicar | os mesmos, mais `limit_reached`, `slug_taken`, `content_invalid`, `validation` | `content_invalid`: a origem tem bloco que o validador recusa |
+| `members.invite` | Criar convite | `ok`, `invalid_email`, `already_member`, `rate_limited`, `limit_reached`, `forbidden`, `not_found`, `not_deployed`, `unavailable` | `rate_limited`: possível abuso; ver runbook de acesso |
+| `members.revoke_invitation`, `members.change_role`, `members.remove` | Gestão de membros | `ok`, `left` (a pessoa saiu), `last_owner`, `forbidden`, `not_found`, `unavailable` | `last_owner`: a conta ficaria sem proprietário |
+| `members.accept_invitation` | Aceitar convite | `accepted`, `invalid`, `wrong_account`, `already_member`, `limit_reached`, `unavailable` | Pico de `invalid`: links vencidos em circulação ou varredura; pico de `wrong_account`: pessoas entrando com outro e-mail |
+
+Sem alerta novo nesta parte: nenhum desses sinais exige ação imediata. `not_deployed` em produção significa migração da Sprint 7 não aplicada.
+
 ## Regras
 
 - Logs estruturados incluem request/correlation ID, módulo, ambiente e resultado.
@@ -88,6 +102,18 @@ Atraso de agregação: `lastFinalDay` deve ser o dia anterior depois da execuç�
 - Alertas precisam de owner, severidade, runbook e ação esperada.
 - Métricas exibidas ao cliente têm reconciliação separada da telemetria interna.
 - Sampling só pode reduzir volume depois de preservar erros e eventos de segurança.
+
+## Sinais do painel consolidado e dos links de relatório (Sprint 7, parte 2)
+
+| Evento | Campos | Leitura |
+|---|---|---|
+| `report.read` | `outcome` (`ok`, `unavailable`, `error`), `errorCode` | Leituras do relatório público. `unavailable` é qualquer link que não abre relatório (não se distingue o motivo, de propósito). `error` é o banco sem responder: página 404 genérica para quem abriu, **ação nossa** |
+| `reports.create_link`, `reports.revoke_link` | `outcome` | Gestão de links. `not_in_plan` e `too_many_active` são esperados; `not_deployed` em produção é migração não aplicada |
+| `analytics.workspace_export` | `outcome`, `rows` | Exportação do consolidado |
+
+Nenhuma linha contém token, caminho de relatório, endereço ou anotação do link. Tentativas em massa aparecem como muitos `report.read` com `unavailable` em pouco tempo e como linhas em `report_lookup_failures` (`select count(*) from public.report_lookup_failures where created_at > now() - interval '10 minutes'`).
+
+Limiares propostos (sem alerta automático até o provisionamento): `report.read` com `error` acima de 1% em 15 minutos → runbook `REPORTS.md`, item 1; mais de 1.000 `unavailable` em 10 minutos → runbook, item 4. Dono: founder; severidade: média (o relatório fica indisponível, as páginas públicas não são afetadas).
 
 ## Provisionamento pendente
 

@@ -87,10 +87,24 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 
 ## Sprint 7 — agência
 
-- [ ] P0 Gerenciar, buscar, arquivar e duplicar perfis.
-- [ ] P0 Convites e papéis Owner/Admin/Editor.
-- [ ] P0 Dashboard consolidado.
-- [ ] P1 Relatório público revogável e com expiração.
+**Concluída no stack local em 06/10/2026** (pgTAP + Vitest + navegador), na branch `feat/sprint-7-agency`. Em staging: as migrações da parte 1 foram aplicadas pelo founder; as da parte 2 e o merge estão pendentes. Relatório: `docs/SPRINT_7_REPORT.md`.
+
+- [x] P0 Gerenciar, buscar, arquivar e duplicar perfis (ADR 0012).
+- [x] P0 Convites e papéis Owner/Admin/Editor (ADR 0012).
+- [x] P0 Dashboard consolidado, com exportação CSV (ADR 0013).
+- [x] P1 Relatório público revogável e com expiração (ADR 0013).
+- [x] P0 Medir a criação da décima página e a lista com 1, 10 e 50 páginas (AC5; `apps/web/scripts/agency-scale.mjs`).
+- [ ] P0 Fechar a Sprint 7 em staging: `supabase db push` das duas migrações da parte 2 (`202610060003`, `202610060004`), enviar a branch, abrir e fazer o merge do PR, pôr a conta de teste no plano Agência por SQL e conferir um link de relatório de ponta a ponta (passos em `docs/ENVIRONMENTS.md`).
+- [ ] P1 Limite global (firewall/rate limit) na frente de `/r/` e da RPC do relatório (Sprint 9; hoje só o limite por endereço no banco).
+- [ ] P1 Expurgo agendado de links de relatório terminados há mais de 90 dias e dos contadores de tentativas (Sprint 9; hoje acontece na criação seguinte e na falha seguinte).
+- [ ] P1 Incluir `report_links` na exportação e na exclusão de conta (Sprint 9).
+- [ ] P2 Conferir no celular real e imprimir o relatório do cliente (nesta sprint: larguras de 360 a 768 px por medição para as telas da conta; o relatório só em desktop, com as regras de impressão presentes na folha de estilo).
+- [ ] P2 Página 404 do relatório sem JavaScript fica em branco (o framework renderiza o estado no cliente); avaliar uma resposta estática.
+- [ ] P2 Relatório com intervalo fixo de datas ("setembro") e campanha (UTM), se as agências do piloto pedirem.
+- [ ] P1 Lembrar a última conta usada em `/app` — cortado na parte 1 (UX-060).
+- [ ] P1 Levar o `next` do convite no modelo de e-mail de confirmação do Auth, para o cadastro por convite funcionar em outro aparelho (hoje só no mesmo, por cookie).
+- [ ] P2 Expurgo agendado de convites terminados há mais de 30 dias e limite global nas ações de convite (Sprint 9; hoje o expurgo acontece no convite seguinte da conta).
+- [ ] P2 Verificar no navegador o que a parte 1 só cobriu por teste: cadastro novo a partir de convite, alterar papel e sair pela interface, aplicação contra banco sem a migração, leitor de tela.
 
 ## Sprint 8 — comercialização
 
@@ -111,7 +125,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 ## Débito/decisões abertas
 
 - [ ] Rate limit próprio para Server Actions sensíveis (além dos limites do Supabase Auth) — Sprint 9.
-- [ ] Confirmar decisões provisórias UX-013 a UX-019 (retenção de slug, papéis, limites).
+- [ ] Confirmar decisões provisórias UX-013 a UX-018 (retenção de slug, papéis, limites). A UX-019 foi confirmada em 06/10/2026.
 
 - [ ] Selecionar nome público após busca de marca, domínio e redes.
 - [ ] Comparar gateway por recorrência, Pix, cartão, webhooks, split, chargeback e conciliação.
@@ -119,5 +133,11 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [ ] Confirmar decisões provisórias UX-033 a UX-042 (limites de imagem, cotas, tema, modelos, Pix sem QR, retenção de leads).
 - [ ] Definir datastore analítico após medir eventos/dia e custo no Postgres (custo por evento medido na Sprint 6: 329 bytes; falta o volume real).
 - [ ] Confirmar decisões provisórias UX-043 a UX-050 (o que conta como resultado, regra de visita, fuso, períodos, limites e retenção, exclusões, exportação).
+- [x] Confirmar UX-019 e UX-051 a UX-059 (arquivamento, o que a duplicação copia, validade e regra de e-mail do convite, convite sem envio de e-mail, lugares, tela Membros, lista de páginas): confirmadas pelo founder em 06/10/2026.
+- [ ] Decidir a UX-060 (lembrar a última conta usada em `/app`, cortado na parte 1).
+- [ ] Confirmar decisões provisórias UX-061 a UX-071 (painel da conta, relatório do cliente, validade e papéis dos links, sem registro de abertura) e os limites do ADR 0013 (5 links ativos por página, 30 criações por dia, retenção de 90 dias).
+- [ ] Decidir na Sprint 8 o texto e o comportamento do rebaixamento para relatórios: hoje os links param de abrir e são mantidos; `analytics_days` menor encurta o período dos relatórios existentes.
+- [ ] Decidir na Sprint 8 o que acontece, num rebaixamento de plano, com páginas além de `max_profiles` e pessoas e convites além de `team_members` (hoje nada é removido; só o que é novo é recusado).
+- [ ] `npm audit`: 5 avisos altos em ferramentas de desenvolvimento (`eslint-config-next` → `braces`), sem correção compatível em 06/10/2026; rever a cada atualização do Next.
 - [ ] Rate limit global e firewall na frente de `/api/events` (Sprint 9; hoje só há limites no banco).
 - [ ] Contratar revisão jurídica/contábil antes do beta pago.

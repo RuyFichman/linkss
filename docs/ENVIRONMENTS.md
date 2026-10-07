@@ -101,6 +101,31 @@ Rollback da aplicação para a Sprint 5 depois da migração: suportado. O códi
 
 Stack local: `ANALYTICS_SIGNING_SECRET` em `apps/web/.env.local` e o mesmo valor no Vault local (`select vault.create_secret('<valor>', 'analytics_signing_secret');`). Sem `x-forwarded-for` (o `next start` local não tem proxy), o hash do visitante fica ausente: toda visita conta e todos dividem um limite por página. O teste de precisão (`apps/web/scripts/analytics-accuracy.mjs`) envia o cabeçalho ele mesmo.
 
+## Passos de deploy da Sprint 7
+
+Estado em 06/10/2026: o founder informou que as duas migrações da parte 1 (`202610060001`, `202610060002`) foram aplicadas em staging. Em 07/10/2026 ele informou que as duas da parte 2 (`202610060003`, `202610060004`) também foram aplicadas (informado por ele; não conferido a partir deste repositório), e a branch `feat/sprint-7-agency` foi enviada com o PR aberto. Faltam o merge (passo 3) e a conferência (passo 4).
+
+Ordem recomendada:
+
+1. `npx supabase db push` com a CLI logada na conta dona do projeto de staging (outra conta recebe 403). Deve listar `202610060003_sprint7_report_enum_values` e `202610060004_consolidated_analytics_and_report_links`. Só acrescentam objetos; a única função existente que muda é `get_profile_analytics`, substituída por uma versão que devolve a mesma resposta.
+2. Nenhum segredo novo e nenhuma variável nova na Vercel. O limite de tentativas do relatório reutiliza `VISITOR_HASH_SALT`, que já existe.
+3. Enviar a branch e abrir o PR; depois do merge a `main` publica em staging.
+4. Conferir: `/app/w/<conta>/resultados` abre; na tela de resultados de uma página aparece "Relatório para o cliente"; um link criado abre em janela anônima e deixa de abrir depois de cancelado.
+
+**Ordem inversa também é segura.** Se a aplicação chegar antes das migrações da parte 2: o painel de cada página continua como na Sprint 6, o painel da conta diz "Resultados ainda não disponíveis", a seção de relatório diz que o recurso ainda não está disponível neste ambiente e `/r/<token>` mostra "Relatório não disponível". Se chegar antes das da parte 1, vale o que a parte 1 documentou: lista sem busca, e arquivar, duplicar e *Membros* respondendo "ainda não disponível".
+
+**Rollback da aplicação para a Sprint 6 depois das migrações:** suportado. O código antigo não conhece as tabelas e funções novas e continua lendo `get_profile_analytics` com a mesma assinatura. Links de relatório já criados deixam de abrir (a rota some) e voltam a abrir quando a aplicação voltar.
+
+**Plano Agência em staging antes da cobrança (Sprint 8).** Toda conta nasce no plano Free (1 página, 1 pessoa, sem relatório compartilhável) e `workspaces.plan_id` não tem interface nem `grant`: só muda por SQL. Para testar várias páginas, convites, 90 dias de histórico e links de relatório, depois de criar a conta da agência pela interface, rode no *SQL Editor* do projeto de staging:
+
+```sql
+update public.workspaces set plan_id = 'agency' where id = '<id da conta, o que aparece na URL /app/w/...>';
+```
+
+Isso é um passo manual do founder, não uma migração. A Sprint 8 substitui por cobrança.
+
+**Stack local.** `node scripts/agency-scale.mjs` (em `apps/web`, com um `next start -p 3100` rodando) mede lista, consolidado e criação com 1, 10 e 50 páginas e deixa no banco a conta `qa-ac5-escala@example.test`; `--cleanup` remove tudo o que ele criou.
+
 ## Checklist de Auth para projetos hospedados (não aplicado)
 
 Configurar em staging e produção **antes** de convidar usuários externos, espelhando `supabase/config.toml`. Nenhuma destas mudanças foi aplicada no projeto hospedado.

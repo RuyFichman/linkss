@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { NextRequest } from "next/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { recordAuthEvent } from "@/modules/audit/record";
+import { AFTER_CONFIRM_COOKIE, afterConfirmPath } from "@/modules/identity/after-confirm";
 import { emailLinkFailurePath, parseLinkType } from "@/modules/identity/auth-outcomes";
 import { safeNextPath } from "@/modules/identity/redirects";
 import { ensurePersonalWorkspace, getSupabase } from "@/modules/identity/session";
@@ -42,5 +43,6 @@ export async function GET(request: NextRequest) {
   // Creates the personal workspace right after verification; the /app layout retries on failure.
   const workspaceId = await ensurePersonalWorkspace(supabase);
   if (!workspaceId) logEvent("error", "identity.personal_workspace_failed", { correlationId });
-  redirect(safeNextPath(params.get("next")));
+  // A sign-up that started from an invitation link goes back to it (same device only).
+  redirect(afterConfirmPath(request.cookies.get(AFTER_CONFIRM_COOKIE)?.value, safeNextPath(params.get("next"))));
 }

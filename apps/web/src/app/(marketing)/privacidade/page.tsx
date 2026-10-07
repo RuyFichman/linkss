@@ -41,7 +41,7 @@ export default function PrivacyPage() {
           <li><b>O que não guardamos:</b> seu endereço IP, o endereço completo do site de onde você veio, a identificação detalhada do seu navegador ou aparelho, e nenhum cookie ou identificador no seu navegador para esta contagem.</li>
           <li><b>Como evitamos contar a mesma visita duas vezes:</b> calculamos um código a partir do seu endereço IP e do seu navegador, misturado com um segredo nosso. O código muda todo dia, é diferente em cada página e não permite saber quem você é nem acompanhar você de uma página para outra.</li>
           <li><b>Por quanto tempo:</b> os registros detalhados são apagados depois de 7 dias. Depois disso ficam só totais por dia (por exemplo, &quot;12 visitas vindas do Instagram&quot;), por até 100 dias.</li>
-          <li><b>Quem usa:</b> a dona ou o dono da página vê apenas os totais. Não vendemos esses dados nem os usamos para publicidade.</li>
+          <li><b>Quem usa:</b> a dona ou o dono da página e as pessoas que ela ou ele convidou para a conta veem apenas os totais. Quem administra a página também pode criar um link de relatório, com prazo de validade, para mostrar esses totais a outra pessoa (por exemplo, o cliente de uma agência); o relatório mostra só totais e nunca identifica visitantes. Não vendemos esses dados nem os usamos para publicidade.</li>
         </ul>
         <p className={P}>
           Quem bloqueia scripts no navegador não é contado, e a página funciona normalmente. O que você escreve num formulário de uma página é enviado a quem criou a página, que é responsável pelo uso desses dados; vídeos e músicas de YouTube, Vimeo e Spotify só são carregados depois do seu toque, e a partir daí o serviço escolhido recebe dados da sua visita.

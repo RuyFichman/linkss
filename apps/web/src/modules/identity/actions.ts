@@ -1,6 +1,6 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AUTH_COPY } from "@/content/pt-BR";
 import { appUrl } from "@/lib/app-url";
@@ -9,6 +9,8 @@ import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observabi
 import { recordAuthEvent } from "@/modules/audit/record";
 import { passwordUpdateOutcome, recoveryOutcome, signInOutcome, signUpOutcome } from "./auth-outcomes";
 import { validateEmailOnly, validateNewPassword, validateSignIn, validateSignUp } from "./auth-validation";
+import { AFTER_CONFIRM_COOKIE, AFTER_CONFIRM_MAX_AGE_SECONDS } from "./after-confirm";
+import { isInvitationPath } from "./invitations";
 import { safeNextPath } from "./redirects";
 import { ensurePersonalWorkspace, getCurrentUserId, getSupabase } from "./session";
 import { NEUTRAL_RESPONSE_MIN_MS, withMinimumDuration } from "./timing";
@@ -38,6 +40,13 @@ export async function signUpAction(_previous: FormState, formData: FormData): Pr
   );
   const outcome = signUpOutcome(error);
   logEvent(outcome === "unavailable" ? "error" : "info", "auth.sign_up", { correlationId: await correlationId(), outcome, errorCode: error?.code ?? null });
+
+  // Someone signing up from an invitation link: remember it across the e-mail confirmation on this
+  // device (ADR 0012). Only an exact invitation path is ever stored, and only /auth reads it.
+  const next = stringField(formData, "next");
+  if (outcome === "check-email" && isInvitationPath(next)) {
+    (await cookies()).set(AFTER_CONFIRM_COOKIE, next, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/auth", maxAge: AFTER_CONFIRM_MAX_AGE_SECONDS });
+  }
 
   switch (outcome) {
     case "check-email": return { status: "success", message: AUTH_COPY.signUp.checkEmail };
@@ -131,12 +140,16 @@ export async function updatePasswordAction(_previous: FormState, formData: FormD
   redirect("/entrar?senha=atualizada");
 }
 
-/** POST-only by construction (Server Action). */
-export async function signOutAction(): Promise<void> {
+/**
+ * POST-only by construction (Server Action). A form may carry `next` to come back to an invitation
+ * after signing in with another account; nothing else is accepted there.
+ */
+export async function signOutAction(formData?: FormData): Promise<void> {
   const supabase = await getSupabase();
   const userId = await getCurrentUserId();
   if (userId) await recordAuthEvent(supabase, "auth.sign_out", { correlation_id: await correlationId() });
   const { error } = await supabase.auth.signOut({ scope: "local" });
   if (error) logEvent("warn", "auth.sign_out_failed", { errorCode: error.code ?? null });
-  redirect("/entrar?saiu=1");
+  const next = formData instanceof FormData ? stringField(formData, "next") : "";
+  redirect(isInvitationPath(next) ? `/entrar?next=${encodeURIComponent(next)}` : "/entrar?saiu=1");
 }

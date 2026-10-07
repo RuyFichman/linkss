@@ -101,6 +101,23 @@ export function createSupabaseProfileRepository(supabase: SupabaseServerClient):
       return error ? { ok: false, error: profileErrorFromDatabase(error) } : { ok: true, value: null };
     },
 
+    async archive(profileId) {
+      const { data, error } = await supabase.rpc("archive_profile", { p_profile_id: profileId }).single();
+      return error ? { ok: false, error: profileErrorFromDatabase(error) } : { ok: true, value: { slug: data.slug, wasPublished: data.was_published } };
+    },
+
+    async unarchive(profileId) {
+      const { error } = await supabase.rpc("unarchive_profile", { p_profile_id: profileId });
+      return error ? { ok: false, error: profileErrorFromDatabase(error) } : { ok: true, value: null };
+    },
+
+    async duplicate(profileId, title, slug) {
+      const { data, error } = await supabase.rpc("duplicate_profile", { p_profile_id: profileId, p_title: title, p_slug: slug });
+      // 23514 here is the name check (the address has its own codes); the service validated both already.
+      if (error) return { ok: false, error: error.code === "23514" ? "content_invalid" : profileErrorFromDatabase(error) };
+      return { ok: true, value: data };
+    },
+
     async checkSlug(slug, workspaceId) {
       const { data, error } = await supabase.rpc("check_slug_availability", workspaceId ? { p_slug: slug, p_workspace_id: workspaceId } : { p_slug: slug }).single();
       return error ? { ok: false, error: profileErrorFromDatabase(error) } : { ok: true, value: data };

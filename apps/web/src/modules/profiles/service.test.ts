@@ -30,6 +30,9 @@ function fakeRepository(visibleWorkspaces: string[], live = 0, plan: "free" | "a
     updateDraft: vi.fn(async (id: string, revision: number, draft) => ({ ok: true as const, value: { ...page(id, WS_A, "pagina-a"), ...draft, draftRevision: revision + 1 } })),
     changeSlug: vi.fn(async (_id: string, slug: string) => ({ ok: true as const, value: slug })),
     softDelete: vi.fn(async () => ({ ok: true as const, value: null })),
+    archive: vi.fn(async () => ({ ok: true as const, value: { slug: "pagina-a", wasPublished: true } })),
+    unarchive: vi.fn(async () => ({ ok: true as const, value: null })),
+    duplicate: vi.fn(async () => ({ ok: true as const, value: "dddddddd-dddd-4ddd-8ddd-dddddddddddd" })),
     checkSlug: vi.fn(async (slug: string) => ({ ok: true as const, value: { normalized: slug, status: "available" } })),
   };
   return repository;
@@ -212,5 +215,85 @@ describe("draft autosave command", () => {
   it("loads the saved draft with its revision for conflict recovery", async () => {
     const result = await createProfileService(owner(), fakeRepository([WS_A])).loadDraft(PAGE_A);
     expect(result).toEqual({ ok: true, value: { title: "Página", bio: "", avatarPath: null, theme: null, blocks: [], revision: 1 } });
+  });
+});
+
+describe("archive, unarchive and duplicate: server-side authorization (ADR 0012)", () => {
+  const copy = { title: "Cópia de Página", slug: "Página A Cópia" };
+
+  it("lets owners and admins archive and reports whether the page was on the air", async () => {
+    for (const role of ["owner", "admin"] as const) {
+      const repository = fakeRepository([WS_A]);
+      const result = await createProfileService(identity("u1", { [WS_A]: role }), repository).archive(PAGE_A);
+      expect(result).toEqual({ ok: true, value: { workspaceId: WS_A, slug: "pagina-a", wasPublished: true } });
+      expect(repository.archive).toHaveBeenCalledWith(PAGE_A);
+      expect(await createProfileService(identity("u1", { [WS_A]: role }), repository).unarchive(PAGE_A)).toEqual({ ok: true, value: { workspaceId: WS_A } });
+    }
+  });
+
+  it.each([
+    ["an editor", "u1", { [WS_A]: "editor" as const }, [WS_A], PAGE_A, "forbidden"],
+    ["a member of another workspace", "u1", { [WS_B]: "owner" as const }, [WS_B], PAGE_A, "not_found"],
+    ["a signed-in non-member", "u1", {}, [], PAGE_A, "not_found"],
+    ["an anonymous caller", null, {}, [], PAGE_A, "unauthenticated"],
+    ["a malformed page id", "u1", { [WS_A]: "owner" as const }, [WS_A], "not-a-uuid", "not_found"],
+  ])("refuses archive, unarchive and duplicate from %s without touching the database", async (_who, userId, roles, visible, profileId, error) => {
+    const repository = fakeRepository(visible, 0, "agency");
+    const service = createProfileService(identity(userId, roles), repository);
+    expect(await service.archive(profileId)).toMatchObject({ ok: false, error });
+    expect(await service.unarchive(profileId)).toMatchObject({ ok: false, error });
+    expect(await service.duplicate(profileId, copy)).toMatchObject({ ok: false, error });
+    expect(repository.archive).not.toHaveBeenCalled();
+    expect(repository.unarchive).not.toHaveBeenCalled();
+    expect(repository.duplicate).not.toHaveBeenCalled();
+  });
+
+  it("duplicates into the source's own workspace with a validated name and a normalized address", async () => {
+    const repository = fakeRepository([WS_A, WS_B], 1, "agency");
+    const result = await createProfileService(identity("u1", { [WS_A]: "admin", [WS_B]: "owner" }), repository).duplicate(PAGE_A, { title: "  Padaria   Jatobá ", slug: "Padaria Jatobá" });
+    expect(result).toEqual({ ok: true, value: { workspaceId: WS_A, profileId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd" } });
+    expect(repository.duplicate).toHaveBeenCalledWith(PAGE_A, "Padaria Jatobá", "padaria-jatoba");
+    expect(repository.countLive).toHaveBeenCalledWith(WS_A);
+  });
+
+  it("validates the copy's name and address before the database", async () => {
+    const repository = fakeRepository([WS_A], 0, "agency");
+    const service = createProfileService(identity("u1", { [WS_A]: "owner" }), repository);
+    expect(await service.duplicate(PAGE_A, { title: "", slug: "ok-slug" })).toMatchObject({ ok: false, error: "validation", fieldErrors: { title: expect.any(String) } });
+    expect(await service.duplicate(PAGE_A, { title: "Cópia", slug: "app" })).toMatchObject({ ok: false, error: "validation", fieldErrors: { slug: expect.any(String) } });
+    expect(await service.duplicate(PAGE_A, { title: 42, slug: null })).toMatchObject({ ok: false, error: "validation" });
+    expect(repository.duplicate).not.toHaveBeenCalled();
+  });
+
+  it("does not let duplication go around max_profiles", async () => {
+    const repository = fakeRepository([WS_A], 1, "free");
+    const result = await createProfileService(identity("u1", { [WS_A]: "owner" }), repository).duplicate(PAGE_A, copy);
+    expect(result).toMatchObject({ ok: false, error: "limit_reached" });
+    expect(repository.duplicate).not.toHaveBeenCalled();
+  });
+
+  it("maps the database answers of the new commands", async () => {
+    expect(profileErrorFromDatabase({ code: "LK070" })).toBe("archived");
+    expect(profileErrorFromDatabase({ code: "PGRST202" })).toBe("not_deployed");
+    expect(profileErrorFromDatabase({ code: "42703" })).toBe("not_deployed");
+    const repository = fakeRepository([WS_A], 0, "agency");
+    vi.mocked(repository.duplicate).mockResolvedValue({ ok: false, error: "slug_taken" });
+    vi.mocked(repository.archive).mockResolvedValue({ ok: false, error: "not_deployed" });
+    const service = createProfileService(identity("u1", { [WS_A]: "owner" }), repository);
+    expect(await service.duplicate(PAGE_A, copy)).toMatchObject({ ok: false, error: "slug_taken", fieldErrors: { slug: expect.any(String) } });
+    const archived = await service.archive(PAGE_A);
+    expect(archived).toMatchObject({ ok: false, error: "not_deployed" });
+    expect(archived.ok === false && archived.message).toContain("ainda não está disponível");
+  });
+
+  it("refuses the next command of someone removed from the workspace", async () => {
+    const repository = fakeRepository([WS_A], 0, "agency");
+    const roles: Record<string, WorkspaceRole> = { [WS_A]: "editor" };
+    const service = createProfileService(identity("u1", roles), repository);
+    const draft = { expectedRevision: 1, title: "Página", bio: "", avatarPath: null, theme: null, blocks: [] };
+    expect((await service.saveDraft(PAGE_A, draft)).ok).toBe(true);
+    delete roles[WS_A];
+    expect(await service.saveDraft(PAGE_A, draft)).toMatchObject({ ok: false, error: "not_found" });
+    expect(repository.updateDraft).toHaveBeenCalledTimes(1);
   });
 });

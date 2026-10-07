@@ -1,7 +1,8 @@
 import { APP_COPY } from "@/content/pt-BR";
+import { isMissingSchemaError } from "@/lib/supabase/missing-schema";
 import { slugMessage } from "./slug";
 
-export type ProfileErrorKind = "slug_invalid" | "slug_reserved" | "slug_held" | "slug_taken" | "limit_reached" | "conflict" | "content_invalid" | "forbidden" | "not_found" | "unavailable";
+export type ProfileErrorKind = "slug_invalid" | "slug_reserved" | "slug_held" | "slug_taken" | "limit_reached" | "conflict" | "content_invalid" | "archived" | "forbidden" | "not_found" | "not_deployed" | "unavailable";
 
 export interface DatabaseErrorLike {
   code?: string | null;
@@ -9,6 +10,7 @@ export interface DatabaseErrorLike {
 
 /** Maps the SQLSTATE contract of ADR 0004 to domain errors. */
 export function profileErrorFromDatabase(error: DatabaseErrorLike): ProfileErrorKind {
+  if (isMissingSchemaError(error)) return "not_deployed";
   switch (error.code) {
     case "LK001": return "slug_invalid";
     case "LK002": return "slug_reserved";
@@ -16,6 +18,7 @@ export function profileErrorFromDatabase(error: DatabaseErrorLike): ProfileError
     case "23505": return "slug_taken";
     case "LK010": return "limit_reached";
     case "LK040": return "content_invalid";
+    case "LK070": return "archived";
     case "42501": return "forbidden";
     case "P0002":
     case "PGRST116": return "not_found";
@@ -37,6 +40,8 @@ export function profileErrorMessage(kind: ProfileErrorKind, context: { slug?: st
     case "limit_reached": return APP_COPY.pages.limitReached(context.limit ?? 1);
     case "conflict": return APP_COPY.draft.conflict;
     case "content_invalid": return APP_COPY.draft.invalid;
+    case "archived": return APP_COPY.archive.archivedError;
+    case "not_deployed": return APP_COPY.errors.notDeployed;
     case "forbidden": return APP_COPY.errors.forbidden;
     case "not_found": return APP_COPY.errors.notFound;
     case "unavailable": return APP_COPY.errors.unavailable;

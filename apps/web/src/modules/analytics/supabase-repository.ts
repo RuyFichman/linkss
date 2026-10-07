@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseServerClient } from "@/lib/supabase/server";
 import type { AnalyticsErrorKind, AnalyticsRepository } from "./service";
+import type { WorkspaceAnalyticsRepository } from "./workspace-service";
 
 // PostgREST: the function is not in the schema cache, that is, the migration is not applied yet.
 const FUNCTION_MISSING = new Set(["PGRST202", "42883"]);
@@ -32,6 +33,23 @@ export function createSupabaseAnalyticsRepository(supabase: SupabaseServerClient
 
     async recordExport(profileId, from, to, rows) {
       const { error } = await supabase.rpc("record_analytics_export", { p_profile_id: profileId, p_from: from, p_to: to, p_rows: rows });
+      return error ? { ok: false, error: analyticsError(error) } : { ok: true };
+    },
+  };
+}
+
+/** Consolidated read of a workspace (ADR 0013). Runs as the signed-in user: the RPCs re-check membership. */
+export function createSupabaseWorkspaceAnalyticsRepository(supabase: SupabaseServerClient): WorkspaceAnalyticsRepository {
+  return {
+    async readWorkspaceReport(workspaceId, from, to) {
+      const { data, error } = await supabase.rpc("get_workspace_analytics", { p_workspace_id: workspaceId, p_from: from, p_to: to });
+      if (!error) return { kind: "report", data };
+      if (error.code && FUNCTION_MISSING.has(error.code)) return { kind: "not_deployed" };
+      return { kind: "error", error: analyticsError(error) };
+    },
+
+    async recordWorkspaceExport(workspaceId, from, to, rows) {
+      const { error } = await supabase.rpc("record_workspace_analytics_export", { p_workspace_id: workspaceId, p_from: from, p_to: to, p_rows: rows });
       return error ? { ok: false, error: analyticsError(error) } : { ok: true };
     },
   };

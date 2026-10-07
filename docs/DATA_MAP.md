@@ -132,6 +132,40 @@ O job da Sprint 9 deverá, em transação e com trilha própria:
 
 O purge de analytics **já está agendado** (Sprint 6): o job diário `/api/jobs/analytics` apaga eventos brutos com mais de 7 dias, agregados com mais de 100 dias e contadores de limite com mais de 2 dias. Apagar a página no passo 1 leva junto, em cascata, os eventos e agregados dela.
 
+## Dados adicionados na Sprint 7, parte 1 (convites e operação de várias páginas)
+
+### `public.workspace_invitations`
+
+O e-mail convidado é dado pessoal de **alguém que talvez nunca crie conta**. Controlador: o produto (gestão de acesso à conta do cliente). Base proposta: execução do contrato com a conta que convida e legítimo interesse em controlar o acesso; a confirmar na revisão jurídica.
+
+| Campo | Conteúdo | Finalidade | Retenção |
+|---|---|---|---|
+| `email` | Endereço convidado, normalizado (minúsculas, sem espaços) | Conferir que quem aceita é a pessoa convidada; mostrar o convite a quem administra a conta | Até 30 dias depois de o convite terminar (aceito, cancelado ou expirado) |
+| `role` | `admin` ou `editor` | Papel concedido na aceitação | Idem |
+| `token_hash` | SHA-256 do token. O token nunca é guardado | Localizar o convite a partir do link | Idem |
+| `invited_by`, `revoked_by`, `accepted_by` | Ids de usuários (ficam nulos se a pessoa for excluída) | Mostrar quem convidou; trilha | Idem |
+| `created_at`, `expires_at`, `revoked_at`, `accepted_at` | Datas | Validade e estado | Idem |
+
+- **Quem lê:** proprietários e administradores da conta (RLS), sem a coluna `token_hash`. Editores, outras contas e `anon` não leem nada. A pessoa convidada vê só o nome da conta, o papel e o nome de quem convidou, e só com um convite válido para o e-mail dela.
+- **Exclusão:** convites terminados há mais de 30 dias são apagados quando a conta cria o convite seguinte. **Purge agendado para contas que não convidam mais: pendente (Sprint 9)**, junto com os demais purges.
+- **Exportação e exclusão de conta (Sprint 9):** alcançar por `email` (pedido de um convidado sem conta), por `invited_by` e `accepted_by` (pedido de um usuário) e por `workspace_id` (exclusão da conta; já em cascata).
+- **Trilha de auditoria:** `invitation.created`, `invitation.revoked` e `invitation.accepted` guardam papel e ids, **nunca** o endereço nem algo derivado do token.
+- **Nenhum e-mail é enviado** pelo produto: nenhum subprocessador novo.
+
+### E-mail de membros na tela "Membros"
+
+`list_workspace_members` lê `auth.users.email` e o devolve **só** a proprietários e administradores da mesma conta (e a cada pessoa, o próprio). Editores veem nome e papel. Finalidade: identificar quem tem acesso. Nada novo é guardado.
+
+### Cookie `lnk_after_confirm`
+
+Definido só quando alguém se cadastra a partir de um link de convite: guarda o caminho do convite por 1 hora, `HttpOnly`, `SameSite=Lax`, restrito a `/auth`. Finalidade: voltar ao convite depois da confirmação de e-mail no mesmo aparelho. Não identifica a pessoa e não é lido por nenhuma outra rota.
+
+### Outros
+
+- `profiles.duplicated_from`: id da página de origem de uma cópia. Não é dado pessoal.
+- `media_asset_shares`: quais páginas podem usar uma imagem de outra página da mesma conta. Não é dado pessoal. As imagens em si seguem o que já está descrito na Sprint 5; uma imagem compartilhada só é apagada quando nenhuma página a usa.
+- **Duplicar copia dados que podem ser pessoais** (chave Pix, número de WhatsApp) para outra página da mesma conta. Não há novo destinatário: os dois rascunhos pertencem à mesma conta.
+
 ## Regras
 
 - Não coletar dado sem finalidade e owner.
@@ -140,3 +174,30 @@ O purge de analytics **já está agendado** (Sprint 6): o job diário `/api/jobs
 - Separar analytics do cliente de telemetria interna.
 - Permitir exportação e exclusão; registrar exceções legais.
 - Formalizar controladores/operadores e transferência internacional antes do beta pago.
+
+## Dados adicionados na Sprint 7, parte 2 (links de relatório)
+
+Um link de relatório é uma **divulgação de dados da conta a um terceiro escolhido pela própria conta** (em geral, o cliente de uma agência). O que é divulgado são totais de uma página; nenhum dado de visitante existe nos agregados.
+
+### `report_links`
+
+| Campo | Conteúdo | Dado pessoal? | Quem lê |
+|---|---|---|---|
+| `id`, `workspace_id`, `profile_id` | Identificadores da conta e da página | não | proprietário e administrador da conta |
+| `token_hash` | SHA-256 do token; o token não é guardado | não | ninguém pela API |
+| `period_days`, `expires_at`, `created_at`, `revoked_at` | Período, validade e datas | não | proprietário e administrador |
+| `label` | Anotação livre de quem criou (até 80 caracteres); pode conter o nome de um cliente | possivelmente | proprietário e administrador; **não** aparece no relatório nem na trilha de auditoria |
+| `created_by`, `revoked_by` | Membro que criou e que cancelou | sim (membro) | proprietário e administrador |
+
+- **Finalidade:** permitir que a conta preste contas de uma página a quem não tem acesso ao produto. **Base legal proposta:** execução do contrato com a conta; depende da revisão jurídica já pendente.
+- **Retenção:** enquanto o link estiver ativo e por 90 dias depois de expirar ou ser cancelado (provisório); o expurgo acontece na criação seguinte de link na conta, e o expurgo agendado fica para a Sprint 9. A exclusão da página ou da conta apaga as linhas pela chave estrangeira.
+- **Nenhum registro de leitura:** não guardamos quem abriu, quando, nem quantas vezes.
+- **Exportação e exclusão (Sprint 9):** a exportação da conta inclui as linhas, sem `token_hash`; a exclusão já as alcança.
+
+### `report_lookup_failures`
+
+`client_hash` (hash diário do endereço de quem tentou um link inexistente, com segredo do servidor; nunca o endereço) e `created_at`. Sem token, sem página. Apagado depois de 24 horas, na falha seguinte. Finalidade: reduzir tentativas em massa.
+
+### O que o relatório mostra a quem tem o link
+
+Nome da conta, nome e endereço público da página, período, visitas, resultados e a taxa, a série por dia, origens por categoria e os blocos com o texto que já é público na página. Não mostra: identificadores, plano, membros, outras páginas, contatos recebidos, valores de UTM, aparelhos, países, rascunho, nem a anotação do link. Lista completa no ADR 0013.
