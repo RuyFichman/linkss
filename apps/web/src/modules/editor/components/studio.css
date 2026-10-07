@@ -5,7 +5,7 @@
 body:has(.studio) [data-app-chrome] { display: none; }
 body:has(.studio) #conteudo { width: 100%; padding-block: 0; }
 
-.studio { --studio-ink: #1d1d28; --studio-muted: #5b6072; --studio-line: #e1e3ea; --studio-soft: #f4f4f7; --studio-display: var(--font-studio-display), Arial, Helvetica, sans-serif; --radius-control: 0.5rem; display: grid; height: 100vh; height: 100dvh; min-height: 30rem; grid-template: "nav head" auto "stage stage" minmax(0, 1fr) "panel panel" auto / auto minmax(0, 1fr); color: var(--studio-ink); background: var(--studio-soft); }
+.studio { --studio-ink: #1d1d28; --studio-muted: #5b6072; --studio-line: #e1e3ea; --studio-soft: #f4f4f7; --studio-display: var(--font-studio-display), Arial, Helvetica, sans-serif; --radius-control: 0.5rem; --radius-button: 0.5rem; display: grid; height: 100vh; height: 100dvh; min-height: 30rem; grid-template: "nav head" auto "stage stage" minmax(0, 1fr) "panel panel" auto / auto minmax(0, 1fr); color: var(--studio-ink); background: var(--studio-soft); }
 
 /* Navigation: a dark top bar on phones, an icon rail on wide screens. */
 .studio-nav { display: flex; grid-area: nav; align-items: center; gap: 0.25rem; color: #ffffff; background: var(--studio-ink); padding: 0.25rem 0 0.25rem 0.25rem; }

@@ -29,7 +29,7 @@ export function WorkspaceSwitcher({ workspaces }: { workspaces: SwitcherWorkspac
 
   return (
     <details ref={detailsRef} className="relative">
-      <summary className="ui-button ui-button-secondary max-w-[60vw] cursor-pointer list-none">
+      <summary className="ui-button ui-button-secondary max-w-[46vw] cursor-pointer sm:max-w-xs list-none">
         <span className="sr-only">{APP_COPY.workspace.switcherLabel}: </span>
         <span className="truncate">{current ? workspaceLabel(current) : APP_COPY.workspace.switcherLabel}</span>
         <span aria-hidden="true">▾</span>

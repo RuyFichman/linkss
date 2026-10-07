@@ -27,7 +27,7 @@ export default async function DraftPreviewPage({ params }: { params: Promise<{ w
         <span>{PUBLISHING_COPY.previewBanner}</span>
         <Link className="underline" href={`/app/w/${workspaceId}/paginas/${profile.id}`}>{PUBLISHING_COPY.previewBack}</Link>
       </div>
-      <div className="overflow-hidden rounded-2xl">
+      <div className="page-canvas overflow-hidden rounded-2xl">
         <PublicPageView as="div" document={documentFromDraft(profile)} showBadge={false} />
       </div>
     </div>

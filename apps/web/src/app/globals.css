@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-app-bg: #f5f6fa;
+  --color-app-bg: #f4f3fb;
   --color-app-surface: #ffffff;
-  --color-app-surface-soft: #eef1f7;
-  --color-app-text: #171a22;
-  --color-app-muted: #596171;
-  --color-app-border: #d7dce5;
+  --color-app-surface-soft: #f0f0f6;
+  --color-app-text: #1d1d28;
+  --color-app-muted: #5b6072;
+  --color-app-border: #e1e3ea;
   --color-app-accent: #3156d3;
   --color-app-accent-strong: #2442aa;
   --color-app-success: #176b45;
@@ -27,18 +27,20 @@
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
-  --shadow-soft: 0 12px 34px rgb(23 26 34 / 0.08);
-  --shadow-raised: 0 18px 50px rgb(23 26 34 / 0.14);
+  --shadow-soft: 0 10px 30px rgb(40 30 90 / 0.07);
+  --shadow-raised: 0 24px 60px rgb(40 30 90 / 0.16);
   --ease-product: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 :root {
-  --app-bg: #f5f6fa;
+  --app-bg: #f4f3fb;
   --app-surface: #ffffff;
-  --app-surface-soft: #eef1f7;
-  --app-text: #171a22;
-  --app-muted: #596171;
-  --app-border: #d7dce5;
+  --app-surface-soft: #f0f0f6;
+  --app-text: #1d1d28;
+  --app-ink: #1d1d28;
+  --app-ink-hover: #33334a;
+  --app-muted: #5b6072;
+  --app-border: #e1e3ea;
   --app-accent: #3156d3;
   --app-accent-hover: #2442aa;
   --app-accent-soft: #e8edff;
@@ -58,10 +60,11 @@
   --space-8: 2rem;
   --space-10: 2.5rem;
   --radius-control: 0.75rem;
-  --radius-card: 1rem;
+  --radius-button: 999px;
+  --radius-card: 1.25rem;
   --radius-panel: 1.5rem;
-  --shadow-soft: 0 12px 34px rgb(23 26 34 / 0.08);
-  --shadow-raised: 0 18px 50px rgb(23 26 34 / 0.14);
+  --shadow-soft: 0 10px 30px rgb(40 30 90 / 0.07);
+  --shadow-raised: 0 24px 60px rgb(40 30 90 / 0.16);
   --duration-fast: 120ms;
   --duration-normal: 200ms;
   --ease-product: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -76,16 +79,35 @@ button, a, input, select, textarea, summary { outline: none; }
 :focus-visible { outline: 3px solid var(--app-focus); outline-offset: 3px; }
 ::selection { color: #ffffff; background: var(--app-accent); }
 .app-shell { width: min(1180px, calc(100% - 2rem)); margin-inline: auto; }
+
+/* Product look shared with the marketing home: pastel wash, display face on headings. A layout
+   opts in with `brand` plus the font variable (ui/brand-font.ts). */
+.brand { --brand-display: var(--font-brand-display), "Arial Black", Arial, sans-serif; min-height: 100vh; background:
+  radial-gradient(48rem 26rem at 0% 0%, rgb(205 198 255 / 0.55), transparent 62%),
+  radial-gradient(40rem 24rem at 100% 0%, rgb(186 219 255 / 0.6), transparent 60%),
+  var(--app-bg); background-repeat: no-repeat; }
+.brand :is(h1, h2, h3), .brand-display { font-family: var(--brand-display); letter-spacing: -0.02em; }
+/* A rendered customer page keeps the fonts of its own theme. */
+.page-canvas :is(h1, h2, h3), .studio-frame-view :is(h1, h2, h3) { font-family: inherit; letter-spacing: normal; }
+
+/* Account header: a floating glass bar, as on the home. It wraps on narrow phones. */
+.app-header { display: flex; width: min(1180px, calc(100% - 1.5rem)); min-height: 60px; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin: 0.75rem auto 0; border: 1px solid rgb(255 255 255 / 0.8); border-radius: 1.75rem; background: rgb(255 255 255 / 0.7); padding: 0.4rem 0.5rem 0.4rem 1.1rem; box-shadow: var(--shadow-soft); backdrop-filter: blur(16px); }
+.app-brand { display: inline-flex; min-height: 44px; align-items: center; font-family: var(--brand-display); font-size: 1.125rem; font-weight: 800; letter-spacing: -0.03em; text-decoration: none; white-space: nowrap; }
+.app-tabs { display: flex; width: fit-content; max-width: 100%; gap: 0.25rem; overflow-x: auto; border: 1px solid rgb(255 255 255 / 0.8); border-radius: 999px; background: rgb(255 255 255 / 0.7); padding: 0.25rem; box-shadow: var(--shadow-soft); }
+.app-tab { display: inline-flex; min-height: 44px; flex: none; align-items: center; border-radius: 999px; padding: 0 1.1rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.app-tab:hover { background: rgb(29 29 40 / 0.06); }
+.app-tab[aria-current="page"] { color: #ffffff; background: var(--app-ink); }
+.app-tab:focus-visible { outline-offset: -3px; }
 .surface-card { border: 1px solid var(--app-border); border-radius: var(--radius-card); background: var(--app-surface); box-shadow: var(--shadow-soft); }
 
-.ui-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid transparent; border-radius: var(--radius-control); padding: 0.7rem 1rem; font-weight: 700; line-height: 1.2; cursor: pointer; transition: background var(--duration-fast) var(--ease-product), border-color var(--duration-fast) var(--ease-product), transform var(--duration-fast) var(--ease-product); }
+.ui-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid transparent; border-radius: var(--radius-button); padding: 0.7rem 1.15rem; font-weight: 700; text-decoration: none; line-height: 1.2; cursor: pointer; transition: background var(--duration-fast) var(--ease-product), border-color var(--duration-fast) var(--ease-product), transform var(--duration-fast) var(--ease-product); }
 .ui-button:hover:not(:disabled) { transform: translateY(-1px); }
 .ui-button:active:not(:disabled) { transform: translateY(0); }
 .ui-button:disabled { cursor: not-allowed; opacity: 0.55; }
-.ui-button-primary { color: #ffffff; background: var(--app-accent); }
-.ui-button-primary:hover:not(:disabled) { background: var(--app-accent-hover); }
+.ui-button-primary { color: #ffffff; background: var(--app-ink); }
+.ui-button-primary:hover:not(:disabled) { background: var(--app-ink-hover); }
 .ui-button-secondary { color: var(--app-text); border-color: var(--app-border); background: var(--app-surface); }
-.ui-button-secondary:hover:not(:disabled) { border-color: var(--app-accent); background: var(--app-accent-soft); }
+.ui-button-secondary:hover:not(:disabled) { border-color: var(--app-ink); background: var(--app-surface-soft); }
 .ui-button-ghost { color: var(--app-accent); background: transparent; }
 .ui-button-danger { color: #ffffff; background: var(--app-danger); }
 .ui-icon-button { width: 44px; min-width: 44px; padding: 0; }
@@ -120,7 +142,7 @@ button, a, input, select, textarea, summary { outline: none; }
 .ui-dialog { margin: auto; width: min(560px, calc(100% - 2rem)); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid var(--app-border); border-radius: var(--radius-panel); color: var(--app-text); background: var(--app-surface); padding: 1.5rem; box-shadow: var(--shadow-raised); }
 .ui-dialog::backdrop { background: rgb(16 20 30 / 0.62); backdrop-filter: blur(3px); }
 .ui-toast { position: fixed; z-index: 70; right: 1rem; bottom: 1rem; display: flex; max-width: min(420px, calc(100% - 2rem)); align-items: center; gap: 1rem; border: 1px solid var(--app-border); border-radius: var(--radius-control); color: var(--app-text); background: var(--app-surface); padding: 0.8rem 1rem; box-shadow: var(--shadow-raised); }
-.ui-empty { display: grid; justify-items: center; gap: 0.75rem; border: 1px dashed var(--app-border); border-radius: var(--radius-card); color: var(--app-muted); padding: 2rem 1rem; text-align: center; }
+.ui-empty { display: grid; justify-items: center; gap: 0.75rem; border: 1px dashed #c9ccd8; background: rgb(255 255 255 / 0.6); border-radius: var(--radius-card); color: var(--app-muted); padding: 2rem 1rem; text-align: center; }
 .ui-skeleton { border-radius: 0.5rem; background: linear-gradient(90deg, #e7eaf0 25%, #f5f6f9 50%, #e7eaf0 75%); background-size: 200% 100%; animation: skeleton 1.4s infinite linear; }
 @keyframes skeleton { to { background-position-x: -200%; } }
 
