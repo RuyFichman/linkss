@@ -1,3 +1,5 @@
+import { resolveBillingMode } from "@/modules/billing/mode";
+import { upgradeHref } from "@/modules/billing/presentation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -136,6 +138,7 @@ export default async function ProfileEditorPage({ params, searchParams }: { para
         canPublish={canPublish}
         publishAction={publishProfileAction.bind(null, profile.id)}
         showBadge={showBadge}
+        plansHref={upgradeHref(resolveBillingMode().mode, access.role, workspaceId)}
         address={publicAddressLabel(profile.slug)}
         nav={{
           backHref: `/app/w/${workspaceId}`,

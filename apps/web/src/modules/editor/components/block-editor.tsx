@@ -50,6 +50,8 @@ export interface BlockEditorProps {
   /** Public address without the scheme, shown next to the title and on the preview frame. */
   address: string;
   nav: { backHref: string; backLabel: string; links: readonly StudioNavLink[] };
+  /** Where a full image quota sends who can buy a larger plan; null keeps the sentence alone (ADR 0014). */
+  plansHref?: string | null;
   /** Server-rendered notices for the top of the content list (draft, copy review). */
   notices?: ReactNode;
   /** Server-rendered page settings (publishing history, address, archive, delete) for the "Página" tab. */
@@ -106,7 +108,7 @@ function publishBlockedReason(status: AutosaveSnapshot["status"], uploading: boo
  * a time (the lists, then the form of what was opened) and the preview always on screen: a framed
  * phone beside the panel on wide screens, the page itself above a bottom sheet on phones.
  */
-export function BlockEditor({ profileId, initial, livePublicationId, publications, canPublish, publishAction, showBadge, address, nav, notices, settings }: BlockEditorProps) {
+export function BlockEditor({ profileId, initial, livePublicationId, publications, canPublish, publishAction, showBadge, address, nav, notices, settings, plansHref = null }: BlockEditorProps) {
   const [state, setState] = useState<EditorState>(() => editorStateFromDraft(initial));
   const stateRef = useRef(state);
   const { autosave, snapshot } = useAutosave(profileId, initial.revision);
@@ -476,7 +478,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
             {state.avatarPath ? <Button type="button" variant="secondary" id="editor-avatar-remove" onClick={removeAvatar}>{MEDIA_COPY.avatar.remove}</Button> : null}
           </div>
           <ImageUploader id="editor-avatar" pickId="editor-avatar-pick" profileId={profileId} kind="avatar" hasImage={state.avatarPath !== null} labels={{ pick: MEDIA_COPY.avatar.upload, replace: MEDIA_COPY.avatar.replace }} onUploaded={avatarUploaded} onBusyChange={(busy) => setUploadBusy(AVATAR_UPLOAD_KEY, busy)} />
-          <StorageUsage profileId={profileId} refreshKey={usageKey} />
+          <StorageUsage profileId={profileId} refreshKey={usageKey} plansHref={plansHref} />
         </div>
       </section>
     </div>

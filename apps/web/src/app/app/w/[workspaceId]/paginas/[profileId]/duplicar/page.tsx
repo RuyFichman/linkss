@@ -1,3 +1,4 @@
+import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -43,7 +44,7 @@ export default async function DuplicateProfilePage({ params }: { params: Promise
     <div className="mx-auto max-w-2xl">
       {heading}
       <p className="mb-6 text-app-muted">{copy.lead(source.title)}</p>
-      {usage.reached ? <Notice tone="warning">{APP_COPY.pages.limitReached(usage.limit)}</Notice> : (
+      {usage.reached ? <div className="grid gap-2"><Notice tone="warning">{APP_COPY.pages.limitReached(usage.limit)}</Notice><UpgradeLink workspaceId={workspaceId} role={access.role} reason="max_profiles" /></div> : (
         <div className="grid gap-6">
           <section className="surface-card grid gap-4 p-5 sm:grid-cols-2 sm:p-8" aria-label={copy.pageTitle}>
             <div>

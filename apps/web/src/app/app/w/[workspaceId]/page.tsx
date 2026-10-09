@@ -1,3 +1,4 @@
+import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { APP_COPY, TEAM_COPY, WORKSPACE_ANALYTICS_COPY } from "@/content/pt-BR";
@@ -65,7 +66,7 @@ export default async function WorkspaceHomePage({ params, searchParams }: { para
         </div>
       </header>
 
-      {mayCreate && usage.reached ? <Notice tone="warning">{copy.limitReached(usage.limit)}</Notice> : null}
+      {mayCreate && usage.reached ? <><Notice tone="warning">{copy.limitReached(usage.limit)}</Notice><UpgradeLink workspaceId={workspaceId} role={access.role} reason="max_profiles" /></> : null}
       {!mayCreate ? <p className="m-0 text-app-muted">{copy.createForbidden}</p> : null}
 
       {list.total === 0 ? (

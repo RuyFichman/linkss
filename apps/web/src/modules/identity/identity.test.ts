@@ -42,6 +42,8 @@ describe("permission matrix (mirrors docs/adr/0004 and RLS)", () => {
       "reports.view": ["owner", "admin"],
       "reports.create": ["owner", "admin"],
       "reports.revoke": ["owner", "admin"],
+      "billing.view": ["owner", "admin"],
+      "billing.manage": ["owner"],
       "audit.view": ["owner", "admin"],
     });
   });

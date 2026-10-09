@@ -6,7 +6,7 @@ export type WorkspaceKind = Database["public"]["Enums"]["workspace_kind"];
 export const WORKSPACE_ROLES = ["owner", "admin", "editor"] as const satisfies readonly WorkspaceRole[];
 
 /**
- * Application mirror of the database role matrix (docs/adr/0004, 0012 and 0013). RLS and the RPCs enforce the
+ * Application mirror of the database role matrix (docs/adr/0004, 0012, 0013 and 0014). RLS and the RPCs enforce the
  * same rules; pgTAP and Vitest cover both sides. Change them together.
  */
 export const PERMISSIONS = {
@@ -43,6 +43,10 @@ export const PERMISSIONS = {
   "reports.view": ["owner", "admin"],
   "reports.create": ["owner", "admin"],
   "reports.revoke": ["owner", "admin"],
+  // Money: owners and admins see the plan and its limits; only the owner pays, changes the plan and
+  // cancels. Editors see nothing about payment (ADR 0014).
+  "billing.view": ["owner", "admin"],
+  "billing.manage": ["owner"],
   "audit.view": ["owner", "admin"],
 } as const satisfies Record<string, readonly WorkspaceRole[]>;
 
