@@ -1,14 +1,13 @@
 "use server";
 
-import { refresh } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { BILLING_COPY } from "@/content/pt-BR";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { revalidatePublicPage } from "@/modules/publishing/cache";
-import { isPlanId } from "./catalog";
 import { getBillingService } from "./server";
+import { billingHomePath } from "./service";
 import type { BillingErrorKind } from "./service";
 
 /** Outcome only: never a provider id, an address of a checkout or anything about the payment. */
@@ -20,6 +19,14 @@ async function logCommand(event: string, outcome: string): Promise<void> {
 
 function failure(error: BillingErrorKind): FormState {
   return { status: "error", message: BILLING_COPY.errors[error], code: error };
+}
+
+/**
+ * After a change the person goes back to the plan screen, which says what happened and shows the
+ * new state. Staying on the confirmation would re-render it for a state it no longer applies to.
+ */
+function done(workspaceId: string, notice: "cancelada" | "mantida" | "alterada" | "agendada"): never {
+  redirect(`${billingHomePath(workspaceId)}?aviso=${notice}`);
 }
 
 /** A plan change reaches pages that are already published: their cached copies are dropped. */
@@ -45,8 +52,7 @@ export async function cancelSubscriptionAction(workspaceId: string): Promise<For
   await logCommand("billing.cancel", result.ok ? "ok" : result.error);
   if (!result.ok) return failure(result.error);
   revalidatePages(result.value.slugs);
-  refresh();
-  return { status: "success", message: BILLING_COPY.confirm.canceled };
+  done(workspaceId, "cancelada");
 }
 
 export async function resumeSubscriptionAction(workspaceId: string): Promise<FormState> {
@@ -54,8 +60,7 @@ export async function resumeSubscriptionAction(workspaceId: string): Promise<For
   await logCommand("billing.resume", result.ok ? "ok" : result.error);
   if (!result.ok) return failure(result.error);
   revalidatePages(result.value.slugs);
-  refresh();
-  return { status: "success", message: BILLING_COPY.actions.resumed };
+  done(workspaceId, "mantida");
 }
 
 export async function changePlanAction(workspaceId: string, planId: string): Promise<FormState> {
@@ -63,9 +68,7 @@ export async function changePlanAction(workspaceId: string, planId: string): Pro
   await logCommand("billing.change_plan", result.ok ? "ok" : result.error);
   if (!result.ok) return failure(result.error);
   revalidatePages(result.value.slugs);
-  refresh();
-  const name = isPlanId(planId) ? BILLING_COPY.planNames[planId] : "";
-  return { status: "success", message: result.value.effective === "now" ? BILLING_COPY.confirm.changedNow(name) : BILLING_COPY.confirm.changedLater(name) };
+  done(workspaceId, result.value.effective === "now" ? "alterada" : "agendada");
 }
 
 /** Sends the owner to the provider's own page for the card and the receipts. */

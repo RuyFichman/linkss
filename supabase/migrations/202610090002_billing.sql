@@ -732,9 +732,11 @@ $$;
 
 -- Checked before a checkout is opened at the provider. Refuses a second subscription and a plan
 -- that is not for sale; the amount itself comes from the server's catalogue and is matched against
--- plan_prices when the provider reports the charge.
+-- plan_prices when the provider reports the charge. Returns how many subscriptions the workspace has
+-- had: the server puts it in the checkout's idempotency key, so a retry reuses the open checkout and
+-- a new attempt after a subscription (paid, pending or ended) opens a new one.
 create function public.begin_billing_checkout(p_workspace_id uuid, p_plan_id text, p_interval public.billing_interval)
-returns void
+returns integer
 language plpgsql
 security definer
 set search_path = ''
@@ -761,6 +763,7 @@ begin
 
   perform private.write_audit_event(p_workspace_id, 'billing.checkout_started', 'workspace', p_workspace_id,
     jsonb_build_object('plan', p_plan_id, 'interval', p_interval));
+  return (select count(*)::integer from public.billing_subscriptions s where s.workspace_id = p_workspace_id);
 end;
 $$;
 

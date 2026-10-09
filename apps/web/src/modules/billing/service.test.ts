@@ -36,7 +36,7 @@ function world(start = new Date("2026-10-09T12:00:00.000Z")) {
     async beginCheckout(workspaceId) {
       if (ledger.liveSubscription(workspaceId)) return { ok: false, error: "already_subscribed" };
       checkoutsBegun += 1;
-      return { ok: true, value: null };
+      return { ok: true, value: ledger.subscriptionsOf(workspaceId).length };
     },
     findCustomerId: async (workspaceId) => ledger.customerOf(workspaceId),
     async registerCustomer(workspaceId, customerId) {

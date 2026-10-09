@@ -1321,8 +1321,8 @@ export const BILLING_COPY = {
     confirmChange: (plan: string) => `Mudar para o ${plan}`,
     keep: "Não mudar nada",
     canceled: "Assinatura cancelada. O plano continua valendo até o fim do período pago.",
-    changedNow: (plan: string) => `Plano alterado para ${plan}.`,
-    changedLater: (plan: string) => `Mudança para o plano ${plan} agendada para o fim do período pago.`,
+    changedNow: "Plano alterado. A mudança já está valendo.",
+    changedLater: "Mudança de plano agendada para o fim do período já pago.",
     notAvailable: "Esta mudança não está disponível para a situação atual da assinatura.",
   },
   impact: {

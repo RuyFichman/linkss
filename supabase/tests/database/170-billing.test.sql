@@ -141,7 +141,7 @@ select throws_ok(format('select public.begin_billing_checkout(%L, %L, %L)', test
 select tests.authenticate_as(tests.id('ana'));
 select throws_ok(format('select public.begin_billing_checkout(%L, %L, %L)', tests.id('w1'), 'free', 'month'), '22023', null, 'a plan without a price cannot be bought');
 select throws_ok(format('select public.begin_billing_checkout(%L, %L, %L)', tests.id('w1'), 'enterprise', 'year'), '22023', null, 'an unknown plan cannot be bought');
-select lives_ok(format('select public.begin_billing_checkout(%L, %L, %L)', tests.id('w1'), 'pro', 'month'), 'the owner starts a checkout');
+select is(public.begin_billing_checkout(tests.id('w1'), 'pro', 'month'), 0, 'the owner starts a checkout; the workspace has had no subscription');
 select throws_ok(format('select public.register_billing_customer(%L, %L, %L)', tests.id('w1'), 'cus_w1', repeat('0', 64)), 'LK060', null, 'a forged signature does not bind a customer');
 select throws_ok(format('select public.register_billing_customer(%L, %L, %L)', tests.id('w1'), 'cus_w1',
   pg_temp.sign('lnk-billing-customer:v1:' || tests.id('w2') || ':stripe:cus_w1')), 'LK060', null, 'a signature made for another workspace does not bind a customer');

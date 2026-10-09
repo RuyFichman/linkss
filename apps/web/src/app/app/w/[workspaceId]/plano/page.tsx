@@ -29,8 +29,13 @@ const STATE_TONE: Record<BillingViewState["kind"], "neutral" | "success" | "warn
  * every command re-authorizes on the server and in the database. With billing off, or before the
  * migration, the screen shows the plan and the catalogue and offers nothing to buy.
  */
-export default async function PlanPage({ params }: { params: Promise<{ workspaceId: string }> }) {
+const NOTICES = { cancelada: BILLING_COPY.confirm.canceled, mantida: BILLING_COPY.actions.resumed, alterada: BILLING_COPY.confirm.changedNow, agendada: BILLING_COPY.confirm.changedLater } as const;
+
+export default async function PlanPage({ params, searchParams }: { params: Promise<{ workspaceId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { workspaceId } = await params;
+  const asked = (await searchParams).aviso;
+  // Only a known word becomes a sentence; the address decides nothing else.
+  const notice = typeof asked === "string" && asked in NOTICES ? NOTICES[asked as keyof typeof NOTICES] : null;
   const copy = BILLING_COPY;
   const access = await authorizeWorkspacePage(workspaceId, "billing.view");
   if (!access) {
@@ -73,6 +78,7 @@ export default async function PlanPage({ params }: { params: Promise<{ workspace
         <p className="m-0 text-app-muted">{copy.lead}</p>
       </header>
 
+      {notice ? <Notice tone="success">{notice}</Notice> : null}
       {mode === "sandbox" ? <Notice tone="warning">{copy.sandbox}</Notice> : null}
       {!billing.deployed ? <Notice>{copy.notDeployed}</Notice> : mode === "off" ? <Notice>{copy.off}</Notice> : null}
       {suspended ? <Notice tone="warning">{copy.suspended}</Notice> : null}
@@ -81,7 +87,7 @@ export default async function PlanPage({ params }: { params: Promise<{ workspace
         <div className="flex flex-wrap items-center gap-3">
           <h2 id="current-plan-title" className="text-xl font-bold">{copy.current.title}</h2>
           <Badge tone="accent">{copy.planNames[currentPlan]}</Badge>
-          <Badge tone={STATE_TONE[state.kind]}>{copy.statusLabel[state.kind]}</Badge>
+          {state.kind === "free" ? null : <Badge tone={STATE_TONE[state.kind]}>{copy.statusLabel[state.kind]}</Badge>}
         </div>
         <p className="m-0">{billingStateSentence(state, billing.amountCents)}</p>
         {isOwner ? (

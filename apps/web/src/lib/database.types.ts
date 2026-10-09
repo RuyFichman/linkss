@@ -583,7 +583,7 @@ isOneToOne: false
             }[]
                            },
 "begin_billing_checkout":
-{ Args: { "p_interval": Database["public"]['Enums']["billing_interval"],"p_plan_id": string,"p_workspace_id": string }; Returns: undefined
+{ Args: { "p_interval": Database["public"]['Enums']["billing_interval"],"p_plan_id": string,"p_workspace_id": string }; Returns: number
                            },
 "change_member_role":
 { Args: { "p_membership_id": string,"p_role": Database["public"]['Enums']["workspace_role"] }; Returns: undefined

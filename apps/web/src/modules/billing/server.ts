@@ -64,8 +64,8 @@ export function createSupabaseBillingRepository(supabase: SupabaseServerClient):
     },
 
     async beginCheckout(workspaceId, planId, interval) {
-      const { error } = await supabase.rpc("begin_billing_checkout", { p_workspace_id: workspaceId, p_plan_id: planId, p_interval: interval });
-      return error ? { ok: false, error: billingErrorFromDatabase(error) } : { ok: true, value: null };
+      const { data, error } = await supabase.rpc("begin_billing_checkout", { p_workspace_id: workspaceId, p_plan_id: planId, p_interval: interval });
+      return error ? { ok: false, error: billingErrorFromDatabase(error) } : { ok: true, value: typeof data === "number" ? data : 0 };
     },
 
     async findCustomerId(workspaceId) {

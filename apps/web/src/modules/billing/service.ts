@@ -57,6 +57,9 @@ export interface SyncDeps {
 /** Reads what the provider says now about one customer's subscription and hands it, signed, to the database. */
 export async function syncFromProvider(deps: SyncDeps, input: { eventId: string; reason: SnapshotReason; customerId: string; subscriptionId: string | null }): Promise<ApplyOutcome> {
   const subscription = input.subscriptionId ? await deps.adapter.fetchSubscription(input.subscriptionId) : await deps.adapter.findCustomerSubscription(input.customerId);
+  // A subscription that belongs to another customer than the one the event names: somebody paired
+  // one workspace's customer with another's subscription. Nothing is read further or written.
+  if (subscription && subscription.customerId !== input.customerId) return { status: "customer_mismatch", planChanged: false, slugs: [] };
   const invoices = subscription ? await deps.adapter.listInvoices(subscription.id, MAX_SNAPSHOT_INVOICES) : [];
   // The clock is read after the provider answered: "observed at" is when the state was true.
   const payload = serializeBillingSnapshot({ provider: deps.adapter.provider, eventId: input.eventId, reason: input.reason, observedAt: deps.now(), customerId: input.customerId, subscription, invoices });
@@ -209,7 +212,8 @@ export interface SubscriptionHandle {
 /** Persistence port. The Supabase implementation runs as the signed-in user: RLS and the RPCs check the role again. */
 export interface BillingRepository {
   workspaceName(workspaceId: string): Promise<string | null>;
-  beginCheckout(workspaceId: string, planId: PlanId, interval: BillingInterval): Promise<BillingRepositoryResult<null>>;
+  /** Authorizes the checkout and answers how many subscriptions the workspace has had so far. */
+  beginCheckout(workspaceId: string, planId: PlanId, interval: BillingInterval): Promise<BillingRepositoryResult<number>>;
   findCustomerId(workspaceId: string): Promise<string | null>;
   registerCustomer(workspaceId: string, customerId: string, signature: string): Promise<BillingRepositoryResult<string>>;
   beginChange(workspaceId: string, kind: "cancel" | "resume" | "change_plan", planId: PlanId | null): Promise<BillingRepositoryResult<SubscriptionHandle>>;
@@ -236,10 +240,14 @@ export function billingHomePath(workspaceId: string): string {
   return `/app/w/${workspaceId}/plano`;
 }
 
-/** Same workspace, plan and interval inside ten minutes: the same checkout, not a second one. */
-export function checkoutIdempotencyKey(workspaceId: string, planId: string, interval: string, now: Date): string {
+/**
+ * Same workspace, plan and interval inside ten minutes: the same checkout, not a second one (a double
+ * click, a retry, two tabs). `generation` is how many subscriptions the workspace has had, so a new
+ * attempt after one that was paid, left pending or ended never gets a finished checkout back.
+ */
+export function checkoutIdempotencyKey(workspaceId: string, planId: string, interval: string, now: Date, generation = 0): string {
   const bucket = Math.floor(now.getTime() / 600_000);
-  return `lnk-co-${createHash("sha256").update(`${workspaceId}:${planId}:${interval}:${bucket}`).digest("hex").slice(0, 40)}`;
+  return `lnk-co-${createHash("sha256").update(`${workspaceId}:${planId}:${interval}:${generation}:${bucket}`).digest("hex").slice(0, 40)}`;
 }
 
 function fromProvider(error: unknown): BillingErrorKind {
@@ -302,7 +310,7 @@ export function createBillingService(deps: BillingServiceDeps) {
           workspaceId: authorized.value, customerId, productKey: planId, productName: deps.productName(planId),
           amountCents: price.amountCents, currency: price.currency, interval,
           successUrl: deps.appUrl(billingReturnPath(authorized.value, "sucesso")), cancelUrl: deps.appUrl(billingReturnPath(authorized.value, "cancelado")),
-          idempotencyKey: checkoutIdempotencyKey(authorized.value, planId, interval, now()),
+          idempotencyKey: checkoutIdempotencyKey(authorized.value, planId, interval, now(), begun.value),
         });
         return { ok: true, value: checkout };
       } catch (error) {

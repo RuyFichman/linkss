@@ -443,6 +443,9 @@ describe("reads and parsing", () => {
     expect(checkoutIdempotencyKey("w2", "pro", "month", new Date("2026-10-09T12:00:00Z"))).not.toBe(key);
     expect(checkoutIdempotencyKey("w1", "agency", "month", new Date("2026-10-09T12:00:00Z"))).not.toBe(key);
     expect(checkoutIdempotencyKey("w1", "pro", "year", new Date("2026-10-09T12:00:00Z"))).not.toBe(key);
+    // A workspace that has had a subscription gets a new checkout, even inside the same ten minutes.
+    expect(checkoutIdempotencyKey("w1", "pro", "month", new Date("2026-10-09T12:00:00Z"), 1)).not.toBe(key);
+    expect(checkoutIdempotencyKey("w1", "pro", "month", new Date("2026-10-09T12:00:00Z"), 0)).toBe(key);
     expect(key).toMatch(/^lnk-co-[0-9a-f]{40}$/);
   });
 });
