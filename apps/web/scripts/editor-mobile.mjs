@@ -108,7 +108,26 @@ try {
   check(fieldBox.y >= 0 && fieldBox.y + fieldBox.height <= 460, "Focused field stays above keyboard");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForFunction(() => !document.querySelector(".studio")?.hasAttribute("data-keyboard"));
+
+  // Safari can keep reporting the keyboard-sized visual viewport after the field blurs.
+  await page.evaluate(() => {
+    Object.defineProperty(window.visualViewport, "height", { configurable: true, value: 420 });
+    Object.defineProperty(window.visualViewport, "offsetTop", { configurable: true, value: 120 });
+    window.visualViewport.dispatchEvent(new Event("resize"));
+  });
+  await page.waitForFunction(() => document.querySelector(".studio")?.hasAttribute("data-keyboard"));
+  check(await page.locator(".studio").evaluate((node) => node.style.getPropertyValue("--studio-visible-height") === "420px"), "Delayed visual viewport reproduces the keyboard layout");
   await page.getByRole("button", { name: "Concluir", exact: true }).click();
+  await page.waitForFunction(() => !document.querySelector(".studio")?.style.getPropertyValue("--studio-visible-height"));
+  const restoredBox = await page.locator(".studio").boundingBox();
+  check(restoredBox.y <= 1 && restoredBox.height > 800, "Concluir restores the editor while Safari reports a stale keyboard viewport");
+  await page.screenshot({ animations: "disabled", path: resolve(output, "after-conclude-390.png") });
+  await page.evaluate(() => {
+    delete window.visualViewport.height;
+    delete window.visualViewport.offsetTop;
+    window.visualViewport.dispatchEvent(new Event("resize"));
+  });
+
   await page.locator("#editor-add").click();
   check(await page.locator(".studio-picker-grid > li").count() === 9, "All nine block types remain available");
   await page.screenshot({ animations: "disabled", path: resolve(output, "picker-390.png") });
