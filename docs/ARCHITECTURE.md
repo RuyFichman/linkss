@@ -114,6 +114,8 @@ Editor (client) ── estado + reducer (modules/editor/draft) ── autosave (
 - **Snapshot versão 2:** só `blocks` (sem `visible`, sem blocos ocultos nem redes vazias); o renderer lê as versões 1 e 2. `data-block-id`/`data-block-type` ficam no HTML para os cliques da Sprint 6.
 - **Módulos:** `blocks` (modelo, validação, URL, WhatsApp, redes), `editor/draft` (reducer, verificação do rascunho, autosave), `editor/components` (UI cliente). `editor/model` e `editor/templates` seguem sendo só do protótipo da Sprint 1.
 
+- **Interface mobile (UX-085, 09/10/2026):** a prévia e o formulário alternam a visibilidade sem desmontar o formulário. O ajuste ao teclado é restrito ao editor e não muda o viewport das demais rotas. Nenhuma alteração no reducer, persistência, autenticação ou renderer; revisão em `docs/ux/MOBILE_EDITOR_REVIEW.md`.
+
 ## Mídia, tema e novos blocos — implementado na Sprint 5
 
 Decisões: `docs/adr/0009-media-and-storage-adapter.md` e `docs/adr/0010-themes-templates-and-new-blocks.md`.
