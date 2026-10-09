@@ -63,6 +63,7 @@ export interface BlockEditViewProps {
   check: BlockCheck | undefined;
   showError: (field: BlockField) => boolean;
   canAdd: boolean;
+  uploading: boolean;
   onEdit: (field: TextBlockField, value: string) => void;
   onEditSocial: (network: SocialNetwork, value: string) => void;
   onSetInput: (input: BlockInput) => void;
@@ -112,11 +113,11 @@ export function BlockEditView(props: BlockEditViewProps) {
         <h3 id={`${block.id}-arrange-title`} className="studio-group-head">{EDITOR_COPY.studio.groups.arrange}</h3>
         <div className="studio-group-body">
           <div className="studio-group-actions">
-            <Button type="button" variant="secondary" id={`${block.id}-duplicate`} aria-label={EDITOR_COPY.actions.duplicateLabel(name)} disabled={!props.canAdd} onClick={props.onDuplicate}>{EDITOR_COPY.actions.duplicate}</Button>
-            <Button type="button" variant="secondary" id={`${block.id}-visibility`} aria-label={block.visible ? EDITOR_COPY.actions.hideLabel(name) : EDITOR_COPY.actions.showLabel(name)} onClick={props.onToggleVisible}>{block.visible ? EDITOR_COPY.actions.hide : EDITOR_COPY.actions.show}</Button>
-            <Button type="button" variant="secondary" id={`${block.id}-top`} disabled={position === 1} onClick={() => props.onMove("top")}>{EDITOR_COPY.actions.moveTop}</Button>
-            <Button type="button" variant="secondary" id={`${block.id}-bottom`} disabled={position === total} onClick={() => props.onMove("bottom")}>{EDITOR_COPY.actions.moveBottom}</Button>
-            {props.canAdd ? <Button type="button" variant="secondary" id={`${block.id}-add-after`} onClick={props.onAddAfter}>{EDITOR_COPY.studio.addAfter}</Button> : null}
+            <Button type="button" variant="secondary" id={`${block.id}-duplicate`} aria-label={EDITOR_COPY.actions.duplicateLabel(name)} disabled={!props.canAdd || props.uploading} onClick={props.onDuplicate}>{EDITOR_COPY.actions.duplicate}</Button>
+            <Button type="button" variant="secondary" id={`${block.id}-visibility`} aria-label={block.visible ? EDITOR_COPY.actions.hideLabel(name) : EDITOR_COPY.actions.showLabel(name)} disabled={props.uploading} onClick={props.onToggleVisible}>{block.visible ? EDITOR_COPY.actions.hide : EDITOR_COPY.actions.show}</Button>
+            <Button type="button" variant="secondary" id={`${block.id}-top`} disabled={position === 1 || props.uploading} onClick={() => props.onMove("top")}>{EDITOR_COPY.actions.moveTop}</Button>
+            <Button type="button" variant="secondary" id={`${block.id}-bottom`} disabled={position === total || props.uploading} onClick={() => props.onMove("bottom")}>{EDITOR_COPY.actions.moveBottom}</Button>
+            {props.canAdd ? <Button type="button" variant="secondary" id={`${block.id}-add-after`} disabled={props.uploading} onClick={props.onAddAfter}>{EDITOR_COPY.studio.addAfter}</Button> : null}
           </div>
         </div>
       </section>

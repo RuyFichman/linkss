@@ -26,6 +26,7 @@ import { ImageUploader } from "./image-uploader";
 import { StorageUsage } from "./storage-usage";
 import { StudioIcon } from "./studio-icons";
 import { useAutosave } from "./use-autosave";
+import { useStudioViewport } from "./use-studio-viewport";
 import "./studio.css";
 
 const displayFont = Schibsted_Grotesk({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-studio-display", display: "swap" });
@@ -104,9 +105,9 @@ function publishBlockedReason(status: AutosaveSnapshot["status"], uploading: boo
  * check, autosave) and modules/blocks (validation); this component wires them to the page, manages
  * focus and announcements, and renders the live preview with the public renderer.
  *
- * Layout (UX-072): a full-viewport workspace with a navigation bar, a panel that shows one view at
- * a time (the lists, then the form of what was opened) and the preview always on screen: a framed
- * phone beside the panel on wide screens, the page itself above a bottom sheet on phones.
+ * Layout (UX-085): mobile dedicates the viewport to editing or preview, with a bottom navigation.
+ * Switching to preview keeps the form mounted, including pending uploads and unfinished fields.
+ * Wide screens keep the panel and framed preview side by side (UX-072).
  */
 export function BlockEditor({ profileId, initial, livePublicationId, publications, canPublish, publishAction, showBadge, address, nav, notices, settings, plansHref = null }: BlockEditorProps) {
   const [state, setState] = useState<EditorState>(() => editorStateFromDraft(initial));
@@ -120,7 +121,10 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
   const [pickerOpen, setPickerOpen] = useState(false);
   const [headerOpen, setHeaderOpen] = useState(false);
   const [tab, setTab] = useState<StudioTab>("content");
-  const [sheet, setSheet] = useState<"half" | "full">("half");
+  const [mobilePreview, setMobilePreview] = useState(false);
+  const studioRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useStudioViewport(studioRef);
   const [device, setDevice] = useState<"phone" | "desktop">("phone");
   const [announcement, setAnnouncement] = useState({ text: "", n: 0 });
   const [confirming, setConfirming] = useState<"load" | "keep" | null>(null);
@@ -162,11 +166,17 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
 
   const focusLater = (id: string) => { pendingFocus.current = id; };
 
+  // Start a newly opened form at its beginning, then focus the requested field or list row.
+  const panelView = pickerOpen ? "picker" : openId ?? (headerOpen && tab === "content" ? "header" : tab);
+  useEffect(() => { scrollRef.current?.scrollTo({ top: 0, behavior: "instant" }); }, [panelView]);
+
   useEffect(() => {
     const id = pendingFocus.current;
     if (!id) return;
     pendingFocus.current = null;
-    document.getElementById(id)?.focus();
+    const target = document.getElementById(id);
+    if (target?.getClientRects().length) target.focus();
+    else document.getElementById("editor-screen-title")?.focus();
   });
 
   // Warn before closing the tab, reloading or following an in-app link with unsaved changes.
@@ -218,12 +228,12 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
     const node = previewRef.current?.querySelector(selector);
     if (!node) return;
     node.setAttribute("data-studio-current", "");
-    if (revealed.current !== currentKey) {
+    if (revealed.current !== currentKey && node.getClientRects().length > 0) {
       revealed.current = currentKey;
       node.scrollIntoView({ block: "nearest" });
     }
     return () => node.removeAttribute("data-studio-current");
-  }, [currentKey, preview]);
+  }, [currentKey, preview, mobilePreview]);
 
   const setUploadBusy = useCallback((key: string, busy: boolean) => {
     setBusyUploads((previous) => {
@@ -251,6 +261,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
     const next = apply({ type: "add", blockType: type, id, afterId: openId });
     if (next.blocks.every((block) => block.id !== id)) return;
     setFreshIds((previous) => new Set(previous).add(id));
+    setMobilePreview(false);
     setOpenId(id);
     setPickerOpen(false);
     setHeaderOpen(false);
@@ -349,7 +360,9 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
   }
 
   function openBlock(id: string, focusId: string) {
+    if (uploading) { setMobilePreview(false); focusLater(openId ? EDIT_TITLE_ID : HEADER_BACK_ID); return; }
     if (openId && openId !== id) apply({ type: "normalize", id: openId });
+    setMobilePreview(false);
     setTab("content");
     setPickerOpen(false);
     setHeaderOpen(false);
@@ -364,12 +377,37 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
   }
 
   function openHeader(focusId: string) {
+    if (uploading) { setMobilePreview(false); focusLater(openId ? EDIT_TITLE_ID : HEADER_BACK_ID); return; }
+    setMobilePreview(false);
     if (openId) apply({ type: "normalize", id: openId });
     setTab("content");
     setPickerOpen(false);
     setOpenId(null);
     setHeaderOpen(true);
     focusLater(focusId);
+  }
+
+  function selectTab(next: StudioTab) {
+    // Preview keeps the form mounted; returning to the same tab resumes the unfinished edit.
+    if (mobilePreview && tab === next) {
+      setMobilePreview(false);
+      focusLater(openId ? EDIT_TITLE_ID : headerOpen ? HEADER_BACK_ID : "editor-screen-title");
+      return;
+    }
+    if (uploading) return;
+    if (openId) apply({ type: "normalize", id: openId });
+    setOpenId(null);
+    setHeaderOpen(false);
+    setPickerOpen(false);
+    setTab(next);
+    setMobilePreview(false);
+    focusLater("editor-screen-title");
+  }
+
+  function showMobilePreview() {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    setMobilePreview(true);
+    focusLater("editor-preview-resume");
   }
 
   function closePicker() {
@@ -435,7 +473,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
       </button>
       <h2 id="editor-add-title" className="studio-heading">{EDITOR_COPY.addBlockTitle}</h2>
       <p className="studio-lead">{openedBlock ? EDITOR_COPY.studio.addLeadAfter : EDITOR_COPY.studio.addLeadEnd}</p>
-      <ul className="studio-list">
+      <ul className="studio-list studio-picker-grid">
         {BLOCK_TYPES.map((type, index) => (
           <li key={type} className="studio-row">
             <button type="button" id={index === 0 ? "editor-add-first" : undefined} className="studio-row-main" onClick={() => addBlock(type)}>
@@ -452,8 +490,8 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
   );
 
   const headerView = (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-4" role="group" aria-labelledby="editor-header-title">
-      <button type="button" id={HEADER_BACK_ID} className="studio-back" aria-label={EDITOR_COPY.studio.back(EDITOR_COPY.headerSection)} onClick={() => { setHeaderOpen(false); focusLater(HEADER_TOGGLE_ID); }}>
+    <div className="studio-header-view grid grid-cols-[minmax(0,1fr)] gap-4" role="group" aria-labelledby="editor-header-title">
+      <button type="button" id={HEADER_BACK_ID} className="studio-back" disabled={uploading} aria-label={EDITOR_COPY.studio.back(EDITOR_COPY.headerSection)} onClick={() => { setHeaderOpen(false); focusLater(HEADER_TOGGLE_ID); }}>
         <StudioIcon name="back" size={18} /><span id="editor-header-title">{EDITOR_COPY.headerSection}</span>
       </button>
       <section className="studio-group" aria-labelledby="editor-header-text">
@@ -475,7 +513,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
             ) : (
               <span aria-hidden="true" className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-app-accent text-2xl font-bold text-white">{initialsFor(state.title)}</span>
             )}
-            {state.avatarPath ? <Button type="button" variant="secondary" id="editor-avatar-remove" onClick={removeAvatar}>{MEDIA_COPY.avatar.remove}</Button> : null}
+            {state.avatarPath ? <Button type="button" variant="secondary" id="editor-avatar-remove" disabled={uploading} onClick={removeAvatar}>{MEDIA_COPY.avatar.remove}</Button> : null}
           </div>
           <ImageUploader id="editor-avatar" pickId="editor-avatar-pick" profileId={profileId} kind="avatar" hasImage={state.avatarPath !== null} labels={{ pick: MEDIA_COPY.avatar.upload, replace: MEDIA_COPY.avatar.replace }} onUploaded={avatarUploaded} onBusyChange={(busy) => setUploadBusy(AVATAR_UPLOAD_KEY, busy)} />
           <StorageUsage profileId={profileId} refreshKey={usageKey} plansHref={plansHref} />
@@ -504,7 +542,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
       <section className="grid grid-cols-[minmax(0,1fr)] gap-3" aria-labelledby="editor-blocks-title">
         <div className="grid gap-1">
           <h2 id="editor-blocks-title" className="studio-heading">{EDITOR_COPY.blocksSection}</h2>
-          <p className="studio-lead">{EDITOR_COPY.blocksLead}</p>
+          <p className="studio-lead studio-blocks-lead">{EDITOR_COPY.blocksLead}</p>
         </div>
 
         {total === 0 ? (
@@ -517,20 +555,22 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
           </ol>
         )}
 
-        {canAdd ? (
-          <Button type="button" id="editor-add" className="w-full" onClick={() => { setPickerOpen(true); focusLater("editor-add-first"); }}>
-            <StudioIcon name="plus" size={18} />{EDITOR_COPY.addBlock}
-          </Button>
-        ) : (
-          <p className="studio-lead">{EDITOR_COPY.blockLimit}</p>
-        )}
+        <div className="studio-add-slot">
+          {canAdd ? (
+            <Button type="button" id="editor-add" className="w-full" onClick={() => { setPickerOpen(true); focusLater("editor-add-first"); }}>
+              <StudioIcon name="plus" size={18} />{EDITOR_COPY.addBlock}
+            </Button>
+          ) : (
+            <p className="studio-lead">{EDITOR_COPY.blockLimit}</p>
+          )}
+        </div>
         {!check.ok && check.limit === "too_large" ? <p role="alert" className="m-0 font-bold text-app-danger">{EDITOR_COPY.payloadLimit}</p> : null}
       </section>
     </>
   );
 
   return (
-    <div className={`studio ${displayFont.variable}`}>
+    <div ref={studioRef} className={`studio ${displayFont.variable}`} data-mobile-view={mobilePreview ? "preview" : "edit"}>
       <nav className="studio-nav" aria-label={EDITOR_COPY.studio.nav}>
         <Link className="studio-nav-link" href={nav.backHref} aria-label={nav.backLabel} title={nav.backLabel}><StudioIcon name="back" size={22} /></Link>
         <span className="studio-nav-divider" aria-hidden="true" />
@@ -555,39 +595,52 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
             <span className={canPublish ? "studio-publication" : undefined}><Badge tone={PUBLICATION_TONE[publication]}>{PUBLISHING_COPY.badge[publication]}</Badge></span>
           </div>
         </div>
-        {snapshot.status === "error" ? <Button type="button" variant="secondary" onClick={() => autosave.flush()}>{EDITOR_COPY.status.retry}</Button> : null}
+        {snapshot.status === "error" ? <Button type="button" className="studio-retry" variant="secondary" onClick={() => autosave.flush()}>{EDITOR_COPY.status.retry}</Button> : null}
         {canPublish ? (
           <PublishForm action={publishAction} draftRevision={snapshot.revision} upToDate={publication === "live_current" && snapshot.status === "saved" && !uploading} hasPublished={publications.length > 0} blockedReason={blockedReason} />
         ) : null}
+        {snapshot.status === "error" ? <p className="studio-mobile-error">{failureMessage(snapshot.failure)}</p> : null}
       </header>
 
-      <section className="studio-panel" data-size={sheet} aria-label={EDITOR_COPY.studio.panel}>
-        <button type="button" className="studio-handle" aria-expanded={sheet === "full"} aria-label={sheet === "full" ? EDITOR_COPY.studio.shrink : EDITOR_COPY.studio.expand} onClick={() => setSheet(sheet === "full" ? "half" : "full")} />
+      <section id="editor-panel" className="studio-panel" data-view={panelView} aria-label={EDITOR_COPY.studio.panel}>
+        <div className="studio-mobile-heading">
+          {openedBlock || headerOpen || pickerOpen ? (
+            <button type="button" className="studio-icon-button" disabled={uploading} aria-label={EDITOR_COPY.studio.mobile.back} onClick={() => {
+              if (pickerOpen) closePicker();
+              else if (openedBlock) closeBlock(openedBlock.id);
+              else { setHeaderOpen(false); focusLater(HEADER_TOGGLE_ID); }
+            }}><StudioIcon name="back" /></button>
+          ) : null}
+          <h2 id="editor-screen-title" tabIndex={-1}>{pickerOpen ? EDITOR_COPY.addBlock : openedBlock ? BLOCKS_COPY.types[openedBlock.input.type].label : headerOpen ? EDITOR_COPY.headerSection : EDITOR_COPY.studio.tabs[tab]}</h2>
+          <button type="button" className="studio-icon-button" aria-label={EDITOR_COPY.studio.mobile.preview} onClick={showMobilePreview}><StudioIcon name="preview" /></button>
+        </div>
 
         {openedBlock ? (
           pickerOpen ? null : (
             <div className="studio-edit-head">
+              <button type="button" className="studio-icon-button studio-mobile-back" disabled={uploading} aria-label={EDITOR_COPY.studio.mobile.back} onClick={() => closeBlock(openedBlock.id)}><StudioIcon name="back" /></button>
               <div>
                 <p className="studio-eyebrow">{EDITOR_COPY.studio.editing(openIndex + 1, total)}</p>
                 <h2 id={EDIT_TITLE_ID} tabIndex={-1}>{BLOCKS_COPY.types[openedBlock.input.type].label}</h2>
               </div>
-              <button type="button" id={`${openedBlock.id}-delete`} className="studio-icon-button" data-tone="danger" aria-label={EDITOR_COPY.actions.deleteLabel(EDITOR_COPY.blockName(BLOCKS_COPY.types[openedBlock.input.type].label, openIndex + 1))} title={EDITOR_COPY.actions.delete} onClick={() => remove(openedBlock.id)}>
+              <button type="button" id={`${openedBlock.id}-delete`} className="studio-icon-button" data-tone="danger" aria-label={EDITOR_COPY.actions.deleteLabel(EDITOR_COPY.blockName(BLOCKS_COPY.types[openedBlock.input.type].label, openIndex + 1))} title={EDITOR_COPY.actions.delete} disabled={uploading} onClick={() => remove(openedBlock.id)}>
                 <StudioIcon name="trash" />
               </button>
-              <Button type="button" id={`${openedBlock.id}-done`} onClick={() => closeBlock(openedBlock.id)}>{EDITOR_COPY.actions.done}</Button>
+              <Button type="button" id={`${openedBlock.id}-done`} disabled={uploading} onClick={() => closeBlock(openedBlock.id)}>{EDITOR_COPY.actions.done}</Button>
             </div>
           )
         ) : (
           <div className="studio-panel-top">
             <div className="studio-tabs" role="group" aria-label={EDITOR_COPY.studio.tabsLabel}>
               {STUDIO_TABS.map((item) => (
-                <button key={item} type="button" className="studio-tab" aria-pressed={tab === item} onClick={() => { setTab(item); setPickerOpen(false); }}>{EDITOR_COPY.studio.tabs[item]}</button>
+                <button key={item} type="button" className="studio-tab" disabled={uploading} aria-pressed={tab === item} onClick={() => selectTab(item)}>{EDITOR_COPY.studio.tabs[item]}</button>
               ))}
             </div>
           </div>
         )}
 
-        <div className="studio-scroll">
+        <div ref={scrollRef} className="studio-scroll">
+          {!openedBlock && !headerOpen && !pickerOpen && tab !== "content" ? <p className="studio-mobile-lead">{EDITOR_COPY.studio.mobile[tab === "styles" ? "stylesLead" : "pageLead"]}</p> : null}
           {snapshot.status === "conflict" ? (
             <section className="grid gap-3 rounded-lg border border-app-danger/40 bg-app-danger/10 p-3" aria-labelledby="conflict-title">
               <h2 id="conflict-title" className="m-0 text-lg font-bold">{EDITOR_COPY.conflict.title}</h2>
@@ -612,6 +665,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
                 check={check.blocks[openedBlock.id]}
                 showError={showErrorFor(openedBlock.id)}
                 canAdd={canAdd}
+                uploading={uploading}
                 onEdit={(field, value) => apply({ type: "edit", id: openedBlock.id, field, value })}
                 onEditSocial={(network, value) => apply({ type: "edit_social", id: openedBlock.id, network, value })}
                 onSetInput={(input) => apply({ type: "set_input", id: openedBlock.id, input })}
@@ -635,7 +689,12 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
         </div>
       </section>
 
-      <aside className="studio-stage" data-device={device} aria-labelledby="editor-preview-title">
+      <aside id="editor-preview" className="studio-stage" data-device={device} aria-labelledby="editor-preview-title">
+        <div className="studio-preview-toolbar">
+          <span>{EDITOR_COPY.studio.mobile.preview}</span>
+          <button type="button" id="editor-preview-resume" className="studio-preview-resume" onClick={() => selectTab(tab)}><StudioIcon name="edit" size={18} />{EDITOR_COPY.studio.mobile.resume}</button>
+        </div>
+        <p className="studio-preview-hint">{EDITOR_COPY.studio.mobile.previewHint}</p>
         <h2 id="editor-preview-title" className="sr-only">{EDITOR_COPY.preview.title}</h2>
         <div className="studio-stage-tools" role="group" aria-label={EDITOR_COPY.studio.device.label}>
           <button type="button" className="studio-device" aria-pressed={device === "phone"} aria-label={EDITOR_COPY.studio.device.phone} title={EDITOR_COPY.studio.device.phone} onClick={() => setDevice("phone")}><StudioIcon name="phone" /></button>
@@ -649,6 +708,18 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
           </div>
         </div>
       </aside>
+
+      <nav className="studio-mobile-nav" aria-label={EDITOR_COPY.studio.tabsLabel}>
+        {STUDIO_TABS.map((item) => (
+          <button key={item} type="button" disabled={uploading && (tab !== item || !mobilePreview)} aria-pressed={!mobilePreview && tab === item} aria-controls="editor-panel" onClick={() => selectTab(item)}>
+            <StudioIcon name={item === "content" ? "templates" : item === "styles" ? "colors" : "pages"} size={22} />
+            <span>{EDITOR_COPY.studio.tabs[item]}</span>
+          </button>
+        ))}
+        <button type="button" aria-pressed={mobilePreview} aria-controls="editor-preview" onClick={showMobilePreview}>
+          <StudioIcon name="preview" size={22} /><span>{EDITOR_COPY.studio.mobile.preview}</span>
+        </button>
+      </nav>
 
       <p aria-live="polite" className="sr-only"><span key={announcement.n}>{announcement.text}</span></p>
 
