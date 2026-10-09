@@ -1,6 +1,6 @@
 -- Structural guarantees: RLS everywhere, no anon privileges, hardened functions, seeded catalogue.
 begin;
-select plan(39);
+select plan(44);
 
 select has_table('public', 'user_accounts', 'user_accounts exists');
 select has_table('public', 'workspaces', 'workspaces exists');
@@ -24,6 +24,11 @@ select has_table('public', 'workspace_invitations', 'workspace_invitations exist
 select has_table('public', 'media_asset_shares', 'media_asset_shares exists');
 select has_table('public', 'report_links', 'report_links exists');
 select has_table('public', 'report_lookup_failures', 'report_lookup_failures exists');
+select has_table('public', 'plan_prices', 'plan_prices exists');
+select has_table('public', 'billing_customers', 'billing_customers exists');
+select has_table('public', 'billing_subscriptions', 'billing_subscriptions exists');
+select has_table('public', 'billing_events', 'billing_events exists');
+select has_table('public', 'billing_invoices', 'billing_invoices exists');
 
 select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -66,7 +71,8 @@ select is(
      'run_analytics_maintenance', 'get_profile_analytics', 'record_analytics_export',
      'archive_profile', 'unarchive_profile', 'duplicate_profile', 'list_workspace_profiles',
      'create_workspace_invitation', 'revoke_workspace_invitation', 'get_workspace_invitation',
-     'accept_workspace_invitation', 'list_workspace_members')
+     'accept_workspace_invitation', 'list_workspace_members',
+     'begin_billing_checkout', 'register_billing_customer', 'begin_billing_change', 'run_billing_maintenance')
      and has_function_privilege('anon', p.oid, 'execute')),
   0,
   'anon cannot execute any tenancy RPC'
@@ -84,8 +90,8 @@ select is(
 select is(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname in ('public', 'private') and has_function_privilege('anon', p.oid, 'execute')),
-  array['get_public_page', 'get_shared_report', 'ingest_analytics_events', 'submit_form_lead'],
-  'anon can execute only the public page lookup, the shared report read, the form submission and the attested event ingestion'
+  array['apply_billing_snapshot', 'get_public_page', 'get_shared_report', 'ingest_analytics_events', 'submit_form_lead'],
+  'anon can execute only the public page lookup, the shared report read, the form submission and the two attested writes (analytics events, billing snapshots)'
 );
 
 select is(
