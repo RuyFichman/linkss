@@ -129,7 +129,8 @@ export interface MaintenanceTick {
   purgedEvents: number;
   pending: number;
   slugs: string[];
-  candidates: Array<{ subscriptionId: string; customerId: string }>;
+  /** `subscriptionId` null: a customer who started a checkout and has no paying subscription on record. */
+  candidates: Array<{ subscriptionId: string | null; customerId: string }>;
 }
 
 export function parseMaintenanceTick(raw: unknown): MaintenanceTick {
@@ -145,7 +146,8 @@ export function parseMaintenanceTick(raw: unknown): MaintenanceTick {
     slugs: Array.isArray(row.slugs) ? row.slugs.filter((slug): slug is string => typeof slug === "string" && SLUG.test(slug)) : [],
     candidates: candidates.flatMap((item) => {
       const entry = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
-      return typeof entry.subscription_id === "string" && typeof entry.customer_id === "string" ? [{ subscriptionId: entry.subscription_id, customerId: entry.customer_id }] : [];
+      const subscriptionId = typeof entry.subscription_id === "string" ? entry.subscription_id : entry.subscription_id === null ? null : undefined;
+      return subscriptionId !== undefined && typeof entry.customer_id === "string" ? [{ subscriptionId, customerId: entry.customer_id }] : [];
     }),
   };
 }
@@ -175,10 +177,11 @@ export async function runBillingMaintenance(deps: { tick: () => Promise<Maintena
   if (!deps.sync) return { ...report, pending: tick.pending + tick.candidates.length };
   for (const candidate of tick.candidates) {
     try {
-      const outcome = await syncFromProvider(deps.sync, { eventId: `reconcile:${candidate.subscriptionId}:${deps.sync.now().toISOString()}`, reason: "reconciliation", customerId: candidate.customerId, subscriptionId: candidate.subscriptionId });
+      const outcome = await syncFromProvider(deps.sync, { eventId: `reconcile:${candidate.subscriptionId ?? candidate.customerId}:${deps.sync.now().toISOString()}`, reason: "reconciliation", customerId: candidate.customerId, subscriptionId: candidate.subscriptionId });
       report.checked += 1;
       if (outcome.status === "applied") report.corrected += 1;
-      else if (outcome.status !== "unchanged") report.failed += 1;
+      // `ignored`: the provider has no subscription for that customer (a checkout nobody paid).
+      else if (outcome.status !== "unchanged" && outcome.status !== "ignored") report.failed += 1;
       if (outcome.planChanged) report.planChanges += 1;
       report.slugs.push(...outcome.slugs);
     } catch {

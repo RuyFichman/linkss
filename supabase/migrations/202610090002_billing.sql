@@ -639,6 +639,7 @@ declare
   v_slugs jsonb := '[]'::jsonb;
   v_purged integer;
   v_candidates jsonb;
+  v_unseen jsonb;
   v_pending integer;
 begin
   for v_row in
@@ -683,6 +684,26 @@ begin
     limit v_limit
   ) t;
 
+  -- A subscription whose first webhook never arrived has no row to read again. A workspace that
+  -- started a checkout in the last three days and has no paying subscription is asked about by
+  -- customer instead (subscription_id null: the job reads the customer's latest subscription).
+  select coalesce(jsonb_agg(jsonb_build_object('subscription_id', null, 'customer_id', t.provider_customer_id)), '[]'::jsonb)
+  into v_unseen
+  from (
+    select c.provider_customer_id
+    from public.billing_customers c
+    where exists (
+        select 1 from public.audit_events a
+        where a.workspace_id = c.workspace_id and a.action = 'billing.checkout_started'
+          and a.created_at > p_now - interval '3 days' and a.created_at <= p_now)
+      and not exists (
+        select 1 from public.billing_subscriptions s
+        where s.workspace_id = c.workspace_id and s.status in ('active', 'past_due'))
+    order by c.created_at
+    limit v_limit
+  ) t;
+  v_candidates := v_candidates || v_unseen;
+
   select count(*)::integer into v_pending
   from public.billing_subscriptions s
   where s.status <> 'ended' and s.observed_at < p_now - interval '20 hours';
@@ -693,7 +714,7 @@ begin
     'plan_changes', v_plan_changes,
     'purged_events', v_purged,
     'candidates', v_candidates,
-    'pending', greatest(v_pending - jsonb_array_length(v_candidates), 0),
+    'pending', greatest(v_pending - (jsonb_array_length(v_candidates) - jsonb_array_length(v_unseen)), 0),
     'slugs', v_slugs);
 end;
 $$;

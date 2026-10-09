@@ -497,6 +497,23 @@ describe("maintenance job: reconciliation repairs a lost webhook", () => {
     expect(await runBillingMaintenance({ tick, sync: null })).toMatchObject({ graceExpired: 2, checked: 0, corrected: 0, failed: 0, pending: 7 });
   });
 
+  it("finds a new subscription whose first webhook never arrived, by asking about the customer", async () => {
+    const w = world();
+    // Paid at the provider; no delivery ever reaches the product.
+    await w.subscribe(W1, "pro", "month");
+    const customerId = w.ledger.customerOf(W1) as string;
+    expect(w.ledger.planOf(W1)).toBe("free");
+    const tick = async () => ({ graceExpired: 0, holdsReleased: 0, planChanges: 0, purgedEvents: 0, pending: 0, slugs: [], candidates: [{ subscriptionId: null, customerId }] });
+    expect(await runBillingMaintenance({ tick, sync: w.sync })).toMatchObject({ checked: 1, corrected: 1, failed: 0, planChanges: 1 });
+    expect(w.ledger.planOf(W1)).toBe("pro");
+    // A checkout nobody paid is not a failure.
+    const other = await w.fake.adapter.createCustomer({ workspaceId: W2, workspaceName: "x" });
+    w.ledger.registerCustomer(W2, other.customerId);
+    w.advance(1000);
+    const unpaid = async () => ({ graceExpired: 0, holdsReleased: 0, planChanges: 0, purgedEvents: 0, pending: 0, slugs: [], candidates: [{ subscriptionId: null, customerId: other.customerId }] });
+    expect(await runBillingMaintenance({ tick: unpaid, sync: w.sync })).toMatchObject({ checked: 1, corrected: 0, failed: 0 });
+  });
+
   it("uses the fake webhook secret only to verify fake deliveries", () => {
     expect(FAKE_WEBHOOK_SECRET.startsWith("whsec_")).toBe(true);
   });

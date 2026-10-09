@@ -5,7 +5,7 @@
 -- attestation.ts); the signing secret and the signature vector below are the ones
 -- billing.test.ts computes (drift guard).
 begin;
-select plan(158);
+select plan(160);
 
 do $$
 begin
@@ -460,6 +460,16 @@ select is(public.run_billing_maintenance(pg_temp.t0() + interval '153 days' + in
   jsonb_build_array(jsonb_build_object('subscription_id', 'sub_w1', 'customer_id', 'cus_w1'), jsonb_build_object('subscription_id', 'sub_w2_b', 'customer_id', 'cus_w2')),
   'the repair list is every subscription that is not over, oldest read first; ended ones are never on it');
 select tests.clear_authentication();
+-- A checkout started recently with no paying subscription on record: its first webhook may have
+-- been lost, so the job asks the provider about the customer.
+select tests.authenticate_as(tests.id('bia'));
+select is(public.begin_billing_checkout(tests.id('w3'), 'pro', 'month'), 1, 'a workspace that has had one subscription starts another checkout');
+select tests.authenticate_service();
+select is(public.run_billing_maintenance(now() + interval '1 minute') -> 'candidates',
+  jsonb_build_array(jsonb_build_object('subscription_id', null, 'customer_id', 'cus_w3')),
+  'a recent checkout without a paying subscription is on the repair list by customer; a workspace that has one is not');
+select tests.clear_authentication();
+
 delete from public.billing_events;
 insert into public.billing_events (provider, provider_event_id, reason, outcome, observed_at, received_at) values
   ('stripe', 'evt_ancient', 'webhook', 'ignored', now() - interval '91 days', now() - interval '91 days'),

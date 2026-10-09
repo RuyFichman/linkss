@@ -431,8 +431,8 @@ describe("reads and parsing", () => {
     expect(parseApplyOutcome(null)).toEqual({ status: "invalid", planChanged: false, slugs: [] });
     expect(parseApplyOutcome({ status: "granted", plan_changed: "yes", slugs: "ana" })).toEqual({ status: "invalid", planChanged: false, slugs: [] });
     expect(parseApplyOutcome({ status: "applied", plan_changed: true, slugs: ["ana-lima", "../admin", 7, "cafe-ipe"] })).toEqual({ status: "applied", planChanged: true, slugs: ["ana-lima", "cafe-ipe"] });
-    expect(parseMaintenanceTick({ grace_expired: 1, holds_released: 2, plan_changes: 3, purged_events: 4, pending: 5, slugs: ["ana-lima"], candidates: [{ subscription_id: "sub_1", customer_id: "cus_1" }, { subscription_id: 3 }] }))
-      .toEqual({ graceExpired: 1, holdsReleased: 2, planChanges: 3, purgedEvents: 4, pending: 5, slugs: ["ana-lima"], candidates: [{ subscriptionId: "sub_1", customerId: "cus_1" }] });
+    expect(parseMaintenanceTick({ grace_expired: 1, holds_released: 2, plan_changes: 3, purged_events: 4, pending: 5, slugs: ["ana-lima"], candidates: [{ subscription_id: "sub_1", customer_id: "cus_1" }, { subscription_id: 3 }, { subscription_id: null, customer_id: "cus_2" }] }))
+      .toEqual({ graceExpired: 1, holdsReleased: 2, planChanges: 3, purgedEvents: 4, pending: 5, slugs: ["ana-lima"], candidates: [{ subscriptionId: "sub_1", customerId: "cus_1" }, { subscriptionId: null, customerId: "cus_2" }] });
     expect(parseMaintenanceTick("nope")).toMatchObject({ graceExpired: 0, candidates: [] });
   });
 
