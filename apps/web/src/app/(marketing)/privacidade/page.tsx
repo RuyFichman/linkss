@@ -48,6 +48,11 @@ export default function PrivacyPage() {
           Quem bloqueia scripts no navegador não é contado, e a página funciona normalmente. O que você escreve num formulário de uma página é enviado a quem criou a página, que é responsável pelo uso desses dados; vídeos e músicas de YouTube, Vimeo e Spotify só são carregados depois do seu toque, e a partir daí o serviço escolhido recebe dados da sua visita.
         </p>
 
+        <h2 className={H2} id="pagamentos">Quem assina um plano pago</h2>
+        <p className={P}>
+          Os planos pagos, quando estiverem à venda, são pagos na página de um provedor de pagamento (Stripe). Os dados do cartão e os dados que o provedor pedir para a cobrança são digitados lá e ficam com ele: não passam por nós e não são guardados aqui. Nós enviamos ao provedor o nome e o identificador da conta e o plano escolhido, e guardamos os identificadores da assinatura no provedor, o plano, o valor, a situação da assinatura, as datas e o link do recibo, enquanto a conta existir. Cancelar ou deixar de pagar não apaga páginas, contatos nem resultados.
+        </p>
+
         <h2 className={H2}>Retenção e operadores</h2>
         <p className={P}>
           A proposta inicial é manter o cadastro da lista durante a pesquisa e o piloto, com revisão em até 12 meses. Hospedagem e banco de dados poderão operar dados em infraestrutura internacional; contratos e fornecedores serão formalizados antes do beta pago.

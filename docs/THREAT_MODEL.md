@@ -182,3 +182,32 @@ Decisões em `docs/adr/0013-consolidated-analytics-and-report-links.md`. O link 
 | Relatório aberto contando como visita | A rota não monta o coletor; teste garante que só `/[slug]` o importa; conferido que abrir o relatório não grava evento | implementado |
 
 Pendente: limite global e CAPTCHA (Sprint 9), expurgo agendado de links e contadores (Sprint 9), incluir os links na exportação e na exclusão de conta (Sprint 9), revisão jurídica do texto do relatório.
+
+## Controles adicionados na Sprint 8, parte 1 (planos, assinatura e cobrança)
+
+Decisões em `docs/adr/0014-payments-subscriptions-and-webhooks.md`. O webhook é o primeiro endpoint em que um terceiro escreve no nosso estado sem sessão. Verificado no stack local contra um emulador da API da Stripe; **não verificado contra a Stripe**.
+
+| Ameaça | Controle | Estado |
+|---|---|---|
+| Webhook forjado (qualquer pessoa chama a rota) | Assinatura HMAC-SHA256 sobre o **corpo bruto** conferida antes de qualquer parse, em tempo constante; sem assinatura válida a rota responde 400 e não lê a Stripe nem o banco | implementado + verificado (Vitest, script: sem assinatura, outro segredo, corpo alterado) |
+| Webhook verdadeiro reenviado depois (replay) | Tolerância de 5 minutos no carimbo assinado; e, passando disso, o id do evento já está no ledger e não muda nada | implementado + verificado |
+| Mesmo evento entregue duas vezes, ou ao mesmo tempo | Chave primária do ledger no id do evento, na mesma transação da mudança: a segunda entrega espera a primeira e vira `duplicate`. Uma linha de assinatura, uma mudança de plano, uma entrada de auditoria | implementado + verificado (pgTAP 170; script: cada entrega 3 vezes em paralelo) |
+| Eventos fora de ordem (o antigo chega depois do novo) | O conteúdo do evento não é usado: o servidor lê o estado atual na Stripe. Duas leituras em corrida são ordenadas por `observed_at`; a mais antiga vira `stale` | implementado + verificado |
+| Adulterar preço ou plano pelo navegador | A ação recebe conta, plano e intervalo; o valor vem do catálogo no servidor. O plano concedido é derivado, no banco, do valor que a Stripe diz ter cobrado; valor fora do catálogo não concede nada (`price_mismatch`) | implementado + verificado (campos extras no formulário ignorados; valor trocado no provedor) |
+| Checkout iniciado para a conta de outra pessoa | Só o proprietário (serviço + RPC); a conta vem da URL e é conferida contra a participação; o cliente do provedor só é ligado à conta com assinatura do servidor (`register_billing_customer`) | implementado + verificado (formulário do proprietário reenviado com sessão de administrador, editor, outra conta e sem sessão) |
+| Abrir o endereço de "sucesso" sem pagar | A página de retorno não concede nada e ignora o que está na URL: mostra o que o banco tem, e o banco só muda por retrato assinado | implementado + verificado |
+| Evento da conta A mudar a conta B | O cliente do provedor pertence a uma conta (única); a conta que a Stripe guardou na assinatura tem de ser a do cliente; assinatura de outro cliente é recusada antes do banco (`customer_mismatch`) | implementado + verificado (pgTAP 170; script com duas contas) |
+| Escrever assinatura, evento, fatura ou plano direto pela API | Nenhum papel de cliente tem `insert`/`update`/`delete` nas tabelas de cobrança nem em `workspaces.plan_id`; `apply_billing_snapshot` exige a assinatura do servidor (segredo no Vault) | implementado + verificado |
+| Vazamento do segredo de assinatura de retratos | O segredo permite forjar mudança de plano e nada mais: não lê dado nenhum. Rotação no runbook | risco aceito e delimitado |
+| Vazamento da chave da Stripe | Chave só no servidor, nunca em log (o adapter só propaga o código de erro, nunca a mensagem). Recomendada chave restrita | implementado; **a chave restrita é passo do founder** |
+| Conseguir o plano pago e contestar a cobrança (chargeback) | Na contestação o produto cancela a assinatura na Stripe e o plano cai na hora; nada do cliente é apagado | implementado + verificado no emulador |
+| Duas assinaturas pagas para a mesma conta (dois checkouts abertos) | Chave de idempotência por conta, plano, intervalo e geração; índice único parcial no banco; a segunda nunca é gravada como ativa e é cancelada na Stripe | implementado + verificado. **O reembolso da segunda é manual** |
+| Assinatura que sobrevive à conta excluída | Excluir conta com assinatura em curso é recusado (`LK102`) até cancelar | implementado + verificado (pgTAP). **Pendente (Sprint 9):** a exclusão de conta do titular precisa cancelar na Stripe antes do expurgo |
+| Rebaixamento ou falta de pagamento destruir conteúdo | Nenhum caminho de cobrança apaga página, pessoa, contato, link, imagem ou agregado; a tela lista o que fica bloqueado antes de confirmar | implementado + verificado (AC3) |
+| Dados de pagamento em log | Logs levam só evento, tópico e desfecho. Conferido no log real do ciclo de vida: nenhuma linha com id do provedor, segredo, assinatura ou e-mail | implementado + verificado |
+| Receber link de recibo malicioso do provedor e renderizá-lo | Só `https://` é aceito, no adapter, no banco e na tela | implementado + verificado |
+| Apontar o adapter para outro host (SSRF por configuração) | `STRIPE_API_BASE_URL` só vale em `sandbox` e só para endereço de loopback; qualquer outro valor desliga a cobrança | implementado + verificado |
+| Flood no webhook (custo de função; cada entrega válida custa chamadas à Stripe) | Corpo de até 256 KiB; entrega sem assinatura válida não custa nada além da função | **risco residual**: sem limite global nem firewall até a Sprint 9. A Stripe publica os IPs de origem; a lista de permissões é passo da Sprint 9 |
+| Abuso de checkouts (criar sessões em massa) | 10 por conta por hora no banco (`LK101`) | implementado; limite global é da Sprint 9 |
+
+Exposto até a Sprint 9: limite global e allowlist de IPs na frente de `/api/billing/webhook`; exportação e exclusão de conta alcançando as tabelas de cobrança; revisão jurídica (lista no ADR 0014).
