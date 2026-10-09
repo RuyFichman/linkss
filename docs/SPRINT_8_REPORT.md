@@ -6,7 +6,7 @@
 **Resultado desta parte:** o proprietário de uma conta no plano Gratuito chega a um limite, vê o que cada plano dá e quanto custa em reais, paga mensal ou anual na página do provedor e volta para uma conta com os limites novos, sem ninguém rodar SQL. Quando um pagamento falha, a conta tem 7 dias para regularizar. Ao cancelar ou mudar para um plano menor, a pessoa vê antes, com os números da própria conta, o que deixa de funcionar, e nada do que ela criou é apagado.
 **Provedor integrado de verdade?** **Não.** O adapter da Stripe está escrito (a partir da documentação oficial) e roda de ponta a ponta contra um **emulador local** da API da Stripe que vive neste repositório. **Nenhuma linha deste código falou com a Stripe.** O que o emulador prova é que o produto é coerente com a nossa leitura da documentação; não prova que a Stripe se comporta assim.
 **Data:** 09/10/2026
-**Branch:** `feat/sprint-8-billing`, criada a partir da `main` (`2a3d701`, que já contém o PR #22 do `feat/app-design`). Commits: `3ef0f35` (banco), `23a8b36` (módulo, rotas e telas), `80d3d33` (script de ciclo de vida e correções), `a21c848` (reconciliação do primeiro webhook perdido), `dbc1766` (ADR e documentação) e o commit que inclui este relatório. **Sem push e sem PR.**
+**Branch:** `feat/sprint-8-billing`, criada a partir da `main` (`2a3d701`, que já contém o PR #22 do `feat/app-design`). Commits: `3ef0f35` (banco), `7d6cd58` (módulo, rotas e telas), `e8b42ed` (script de ciclo de vida e correções), `a2badc0` (reconciliação do primeiro webhook perdido), `782c4cb` (ADR e documentação) e o commit que inclui este relatório. **Sem push e sem PR.**
 
 ## Como a sprint foi executada
 
