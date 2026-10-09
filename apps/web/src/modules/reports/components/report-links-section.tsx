@@ -1,3 +1,4 @@
+import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import { REPORTS_COPY } from "@/content/pt-BR";
 import { formatDateTime } from "@/lib/format-date";
 import type { WorkspaceRole } from "@/modules/identity/permissions";
@@ -47,8 +48,8 @@ export async function ReportLinksSection({ workspaceId, profileId, role }: { wor
       {inPlan && periods.length > 0 && can(role, "reports.create") ? (
         <ReportLinkForm action={createReportLinkAction.bind(null, profileId, entitlements.limits.analytics_days)} periods={periods} />
       ) : (
-        // The reason in words, with no upgrade flow: plans are assigned by the product until billing exists.
-        <Notice>{copy.notInPlan}</Notice>
+        // The reason in words; the way to a plan that has it only for who can buy, and only when plans are for sale.
+        <><Notice>{copy.notInPlan}</Notice>{inPlan ? null : <UpgradeLink workspaceId={workspaceId} role={role} reason="shareable_reports" />}</>
       )}
 
       <div className="grid gap-3">

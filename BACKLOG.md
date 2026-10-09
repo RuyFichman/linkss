@@ -108,11 +108,23 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 
 ## Sprint 8 — comercialização
 
-- [ ] P0 Registrar ADR do provedor de pagamento.
-- [ ] P0 Implementar `PaymentsAdapter` e webhooks idempotentes.
-- [ ] P0 Criar planos/entitlements e estados de assinatura.
-- [ ] P1 Domínio próprio com prova de controle.
-- [ ] P1 Integrações Meta Pixel e GA sem scripts arbitrários.
+**Parte 1 (planos, assinatura e cobrança) concluída no stack local em 09/10/2026**, na branch `feat/sprint-8-billing`, contra um emulador local da API da Stripe. **Nada rodou contra a Stripe e nada foi aplicado em staging.** Parte 2 (domínio próprio e pixels) não iniciada. Relatório: `docs/SPRINT_8_REPORT.md`.
+
+- [x] P0 Registrar ADR do provedor de pagamento (ADR 0014; Stripe, decisão do founder em 09/10/2026).
+- [x] P0 Implementar `PaymentsAdapter` e webhooks idempotentes (adapter da Stripe por `fetch` e fake; verificado contra o emulador, **não** contra a Stripe).
+- [x] P0 Criar planos/entitlements e estados de assinatura (catálogo de preços, máquina de estados, tolerância de 7 dias, regras de rebaixamento).
+- [x] P0 Área de cobrança, tela de planos, confirmação de cancelamento/mudança e pontos de entrada nas telas de limite.
+- [ ] P0 Abrir a conta Stripe em modo de teste e aplicar a parte 1 em staging (passos em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 8, parte 1"); rodar o roteiro de conferência e **comparar o comportamento real com o do emulador**.
+- [ ] P0 Atualizar o Next para 16.4.0 em PR próprio (`npm audit`: aviso alto novo em `next` 16.0.0–16.3.7, de produção).
+- [ ] P1 Domínio próprio com prova de controle (parte 2).
+- [ ] P1 Integrações Meta Pixel e GA sem scripts arbitrários (parte 2).
+- [ ] P1 Trocar entre mensal e anual numa assinatura em curso — cortado na parte 1 (UX-079).
+- [ ] P1 Aviso por e-mail de pagamento que falhou e de renovação (depende do SMTP; hoje só na tela, e pelos e-mails da própria Stripe se forem ligados).
+- [ ] P1 Plano de migração para mudança de preço com assinaturas em curso (hoje o valor antigo viraria `price_mismatch`).
+- [ ] P1 Limite global e lista de IPs da Stripe na frente de `/api/billing/webhook` (Sprint 9).
+- [ ] P1 Incluir as tabelas de cobrança na exportação da conta; na exclusão da conta do titular, cancelar no provedor antes do expurgo (Sprint 9).
+- [ ] P2 Reembolso automático da segunda assinatura paga por engano (hoje o cancelamento é automático e o reembolso é manual).
+- [ ] P2 Conferir no navegador o que a parte 1 só cobriu por teste ou HTTP: diálogo "Manter a assinatura", telas como administrador e editor, aplicação contra banco sem a migração, celular real e leitor de tela.
 
 ## Sprint 9 — hardening
 
@@ -128,7 +140,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [ ] Confirmar decisões provisórias UX-013 a UX-018 (retenção de slug, papéis, limites). A UX-019 foi confirmada em 06/10/2026.
 
 - [ ] Selecionar nome público após busca de marca, domínio e redes.
-- [ ] Comparar gateway por recorrência, Pix, cartão, webhooks, split, chargeback e conciliação.
+- [x] Escolher o gateway: Stripe, decisão do founder em 09/10/2026 (ADR 0014). A comparação com provedores brasileiros **não** foi refeita com documentação atual; se Pix recorrente virar requisito da nossa cobrança, ela precisa ser feita (conta Stripe brasileira não tem Pix em assinatura).
 - [ ] Definir momento de mover mídia para R2 com base em custo real (o `StorageAdapter` e a URL base configurável já existem; ADR 0009).
 - [ ] Confirmar decisões provisórias UX-033 a UX-042 (limites de imagem, cotas, tema, modelos, Pix sem QR, retenção de leads).
 - [ ] Definir datastore analítico após medir eventos/dia e custo no Postgres (custo por evento medido na Sprint 6: 329 bytes; falta o volume real).
@@ -136,8 +148,8 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [x] Confirmar UX-019 e UX-051 a UX-059 (arquivamento, o que a duplicação copia, validade e regra de e-mail do convite, convite sem envio de e-mail, lugares, tela Membros, lista de páginas): confirmadas pelo founder em 06/10/2026.
 - [ ] Decidir a UX-060 (lembrar a última conta usada em `/app`, cortado na parte 1).
 - [ ] Confirmar decisões provisórias UX-061 a UX-071 (painel da conta, relatório do cliente, validade e papéis dos links, sem registro de abertura) e os limites do ADR 0013 (5 links ativos por página, 30 criações por dia, retenção de 90 dias).
-- [ ] Decidir na Sprint 8 o texto e o comportamento do rebaixamento para relatórios: hoje os links param de abrir e são mantidos; `analytics_days` menor encurta o período dos relatórios existentes.
-- [ ] Decidir na Sprint 8 o que acontece, num rebaixamento de plano, com páginas além de `max_profiles` e pessoas e convites além de `team_members` (hoje nada é removido; só o que é novo é recusado).
-- [ ] `npm audit`: 5 avisos altos em ferramentas de desenvolvimento (`eslint-config-next` → `braces`), sem correção compatível em 06/10/2026; rever a cada atualização do Next.
+- [x] Rebaixamento para relatórios, páginas, pessoas e convites: decidido na Sprint 8, parte 1 (ADR 0014, UX-077): nada é removido, só o que é novo é recusado, nada mais é bloqueado, e a tela lista o impacto com os números da conta antes de confirmar. **Provisório — founder confirmar.**
+- [ ] Confirmar decisões provisórias UX-074 a UX-084 (tela de planos, papéis na cobrança, tolerância de 7 dias, rebaixamento, quando cada mudança vale, retorno do checkout, link nas telas de limite, ambiente de teste e home, plano manual, chargeback e reembolso).
+- [ ] `npm audit`: 5 avisos altos em ferramentas de desenvolvimento (`eslint-config-next` → `braces`), sem correção compatível em 06/10/2026; rever a cada atualização do Next. Em 09/10/2026 apareceu um sexto, **de produção**, no próprio `next` (item na Sprint 8).
 - [ ] Rate limit global e firewall na frente de `/api/events` (Sprint 9; hoje só há limites no banco).
-- [ ] Contratar revisão jurídica/contábil antes do beta pago.
+- [ ] Contratar revisão jurídica/contábil antes do beta pago. A lista do que ela precisa resolver para a cobrança está no ADR 0014 ("For the legal and accounting review").

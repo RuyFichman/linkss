@@ -26,6 +26,7 @@ O limite de dois projetos Free permite staging e uma produção inicial privada.
 - Secret/service key existe apenas no runtime servidor.
 - Ambientes nunca compartilham secrets ou webhooks.
 - `.env.example` documenta nomes, não valores.
+- Cobrança (Sprint 8): `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` e `BILLING_SIGNING_SECRET` são só do servidor; staging usa chave e endpoint de **teste**, produção usa os **live**, e os dois nunca se misturam (uma chave que não combina com `BILLING_MODE` desliga a cobrança).
 - Rotação obrigatória após vazamento ou saída de colaborador.
 
 ## Rollback
@@ -116,15 +117,48 @@ Ordem recomendada:
 
 **Rollback da aplicação para a Sprint 6 depois das migrações:** suportado. O código antigo não conhece as tabelas e funções novas e continua lendo `get_profile_analytics` com a mesma assinatura. Links de relatório já criados deixam de abrir (a rota some) e voltam a abrir quando a aplicação voltar.
 
-**Plano Agência em staging antes da cobrança (Sprint 8).** Toda conta nasce no plano Free (1 página, 1 pessoa, sem relatório compartilhável) e `workspaces.plan_id` não tem interface nem `grant`: só muda por SQL. Para testar várias páginas, convites, 90 dias de histórico e links de relatório, depois de criar a conta da agência pela interface, rode no *SQL Editor* do projeto de staging:
+**Plano de uma conta em staging.** Toda conta nasce no plano Free. Desde a Sprint 8 (parte 1) o plano muda por assinatura (seção "Passos de deploy da Sprint 8, parte 1"). **Enquanto a cobrança não estiver ligada no ambiente**, ou para uma conta de teste que não deve passar por checkout, o plano ainda pode ser definido à mão no *SQL Editor*:
 
 ```sql
 update public.workspaces set plan_id = 'agency' where id = '<id da conta, o que aparece na URL /app/w/...>';
 ```
 
-Isso é um passo manual do founder, não uma migração. A Sprint 8 substitui por cobrança.
+Uma conta assim aparece na tela *Plano* como "Definido manualmente" e não é tocada pelo job de cobrança. **Não faça isso numa conta que tem assinatura:** a próxima leitura da Stripe desfaz a mudança (`docs/runbooks/BILLING.md`).
 
 **Stack local.** `node scripts/agency-scale.mjs` (em `apps/web`, com um `next start -p 3100` rodando) mede lista, consolidado e criação com 1, 10 e 50 páginas e deixa no banco a conta `qa-ac5-escala@example.test`; `--cleanup` remove tudo o que ele criou.
+
+## Passos de deploy da Sprint 8, parte 1 (cobrança em modo de teste)
+
+**Nada disto foi aplicado.** A Sprint 8 (parte 1) foi verificada só no stack local, contra um emulador da API da Stripe; não existe conta Stripe. Os passos abaixo são para o founder, em staging, com a Stripe em **modo de teste (sandbox)**. Cobrança real fica fora até a revisão jurídica e contábil (ADR 0014).
+
+A ordem recomendada é esta, mas **qualquer ordem é segura**: enquanto faltar a migração, um segredo ou o modo, a aplicação se comporta como antes (sem botão de compra, telas de limite com a frase de sempre, nenhum erro). A coluna da direita diz o que a aplicação faz depois de cada passo.
+
+| # | Passo | Depois dele |
+|---|---|---|
+| 1 | **Conta Stripe** (sandbox). Criar a conta, ficar no modo de teste. Em *Settings → Payment methods*, deixar **cartão**. (Pix em assinatura não existe para conta brasileira: ADR 0014.) Em *Billing → Revenue recovery*, deixar as novas tentativas automáticas ligadas e, ao esgotá-las, **cancelar a assinatura**. Em *Billing → Customer portal*, ativar o portal permitindo **só** atualizar a forma de pagamento e ver faturas (desligar "trocar de plano" e "cancelar": isso é feito na tela do produto) | nada muda |
+| 2 | **Merge do PR** em `main` (publica em staging). O deploy registra o terceiro Vercel Cron: `GET /api/jobs/billing`, todo dia às 05:00 UTC | a tela *Plano* aparece para proprietário e administrador e diz que a área ainda não está disponível; o job responde 503 `not_deployed`; o resto é igual |
+| 3 | **Migrações:** `npx supabase db push` com a CLI logada na conta dona do projeto. Deve listar `202610090001_sprint8_enum_values` e `202610090002_billing`. Só acrescentam objetos; a única função existente que muda é `soft_delete_workspace` (passa a recusar conta com assinatura em curso) | a tela *Plano* mostra o plano e os três planos com preço e diz "Os planos pagos ainda não estão à venda"; o job responde `ok` |
+| 4 | **Segredo no Vault**, pelo SQL Editor: `select vault.create_secret(encode(extensions.gen_random_bytes(32), 'hex'), 'billing_signing_secret');`. Para copiar: `select decrypted_secret from vault.decrypted_secrets where name = 'billing_signing_secret';` | nada muda |
+| 5 | **Webhook na Stripe** (Workbench → Webhooks → *Criar destino de evento*, formato **Snapshot**): URL `https://linkss-black.vercel.app/api/billing/webhook`; eventos `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`, `charge.dispute.created`, `charge.refunded`. Copiar o segredo `whsec_…` | a Stripe começa a entregar; a rota responde 503 (cobrança desligada) e a Stripe repete depois |
+| 6 | **Variáveis na Vercel** (Production e Preview, todas *Sensitive*): `STRIPE_SECRET_KEY` (chave **de teste**, de preferência restrita), `STRIPE_WEBHOOK_SECRET` (do passo 5), `BILLING_SIGNING_SECRET` (**o mesmo valor** do passo 4), `BILLING_MODE=sandbox`. **Não** definir `STRIPE_API_BASE_URL`. Novo deploy | a tela *Plano* mostra "Ambiente de teste" e os botões de assinar para o proprietário; as telas de limite ganham o link "Ver planos…" para o proprietário; a home continua dizendo "em breve" |
+
+**Conferência de ponta a ponta em staging (o founder roda):**
+
+1. Com uma conta no plano Gratuito e uma página criada, abrir *Páginas*: aparece o limite e o link "Ver planos com mais páginas".
+2. Em *Plano*: os quatro preços (R$ 14,90, R$ 149,00, R$ 57,90, R$ 579,00) e o aviso de ambiente de teste.
+3. **Assinar Pro mensal** → página da Stripe em português, valor R$ 14,90 → pagar com o cartão de teste `4242 4242 4242 4242` → voltar → "Pagamento confirmado". Em *Plano*: "Plano Pro, cobrança mensal. Próxima cobrança: R$ 14,90 em …" e o pagamento no histórico com "Ver recibo".
+4. No dashboard da Stripe, a entrega do webhook com 200. No SQL Editor: `select outcome, count(*) from public.billing_events group by 1;`.
+5. **Mudar para o Agência** (confirmação → mudar): o plano muda na hora; criar a segunda página.
+6. **Falha de pagamento:** na Stripe, trocar o cartão do cliente pelo cartão de teste que falha (`4000 0000 0000 0341`) e avançar a assinatura com um *test clock*, ou esperar a renovação. A conta mostra o aviso com a data. *(Não verificado: depende de como o sandbox real se comporta.)*
+7. **Cancelar** pela tela: a confirmação lista o que fica acima do limite; depois, "Assinatura cancelada… continua valendo até …".
+8. `curl -X POST https://linkss-black.vercel.app/api/jobs/billing -H "Authorization: Bearer <CRON_SECRET>"` deve responder `{"ok":true,…}` com `failed: 0`.
+9. **Comparar com o emulador:** qualquer diferença entre o que a Stripe real fez e o que este roteiro esperava é um achado para corrigir no adapter (`apps/web/src/modules/billing/stripe-adapter.ts`) e no emulador.
+
+**Rollback da aplicação para antes da Sprint 8 depois das migrações:** suportado. O código antigo não conhece as tabelas novas. Assinaturas já criadas na Stripe continuam sendo cobradas lá e os webhooks falham (404) até a aplicação voltar; ao voltar, o job diário põe as cópias em dia. `soft_delete_workspace` continua recusando conta com assinatura em curso, que o código antigo mostra como erro genérico.
+
+**Para cobrança real (não fazer agora):** conta Stripe ativada (dados do negócio; o que a Stripe pede para conta brasileira não foi confirmado), domínio do produto em `NEXT_PUBLIC_APP_URL` (https), um endpoint de webhook **live** com o seu próprio segredo, chave **live**, `BILLING_MODE=live`, projeto Supabase de produção com as migrações e o segredo no Vault, e a revisão jurídica e contábil da lista do ADR 0014. Com `live`, a home passa a mostrar os preços (o valor entra no build: novo deploy).
+
+**Stack local.** `node scripts/billing-lifecycle.mjs` em `apps/web` (depois de `NEXT_PUBLIC_APP_URL=http://127.0.0.1:3100 npm run build --workspace=@lnk/web`) sobe o emulador e a aplicação e percorre o ciclo de vida; `--serve` deixa no ar para o navegador; `--cleanup` remove as contas `qa-billing-*@example.test`. Ele cria o segredo `billing_signing_secret` no Vault local se não existir. Detalhes no cabeçalho do arquivo.
 
 ## Checklist de Auth para projetos hospedados (não aplicado)
 

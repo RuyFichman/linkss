@@ -54,6 +54,30 @@ select vault.create_secret('<mesmo valor de ANALYTICS_SIGNING_SECRET>', 'analyti
 
 Sem isso as páginas públicas funcionam, os eventos são descartados e o painel mostra "Resultados ainda não disponíveis". Quem está com a conta aberta no mesmo navegador não é contado: teste numa guia anônima. O teste de precisão (AC5) roda contra um `next start` local: `node scripts/analytics-accuracy.mjs` em `apps/web` (instruções no cabeçalho do arquivo).
 
+## Rotas da Sprint 8 (parte 1: planos e cobrança)
+
+- `/app/w/[workspaceId]/plano` — plano atual e situação da assinatura, os três planos com preços mensal e anual, histórico de pagamentos (proprietário), assinar, mudar de plano, cancelar e manter. Administrador vê o plano sem ações; editor não vê a tela.
+- `/app/w/[workspaceId]/plano/confirmar` — o passo antes de cancelar ou mudar de plano: lista, com os números da conta, o que continua, o que fica acima do limite e o que deixa de funcionar.
+- `/app/w/[workspaceId]/plano/retorno` — volta do checkout: mostra o que o banco diz e espera sozinha pela confirmação do provedor.
+- `/api/billing/webhook` — recebe os eventos do provedor de pagamento (assinatura conferida sobre o corpo bruto; 200, 400 ou 503).
+- `/api/jobs/billing` — job diário de cobrança (`GET` pelo Vercel Cron às 05:00 UTC ou `POST` à mão, com `Authorization: Bearer <CRON_SECRET>`): encerra prazos vencidos e relê no provedor o que não foi lido há um dia.
+
+Nenhuma rota nova de nível superior. A cobrança fica **desligada** (`BILLING_MODE=off`, o padrão) até existirem a conta no provedor e os segredos: sem isso a tela *Plano* mostra o plano e os preços e não oferece nada. Decisões em `docs/adr/0014-payments-subscriptions-and-webhooks.md`; operação em `docs/runbooks/BILLING.md`.
+
+### Cobrança no ambiente local
+
+Não existe sandbox que chame `localhost`, então o ambiente local usa um emulador da API da Stripe que mora no repositório:
+
+```bash
+NEXT_PUBLIC_APP_URL=http://127.0.0.1:3100 npm run build --workspace=@lnk/web
+cd apps/web
+node scripts/billing-lifecycle.mjs            # sobe emulador + aplicação, percorre o ciclo de vida inteiro e sai
+node scripts/billing-lifecycle.mjs --serve    # deixa os dois no ar para usar no navegador (imprime as contas de teste)
+node scripts/billing-lifecycle.mjs --cleanup  # remove as contas qa-billing-*@example.test
+```
+
+O script cria, se não existir, o segredo `billing_signing_secret` no Vault local e inicia a aplicação com as variáveis de cobrança; não é preciso mexer no `.env.local`. O emulador segue a documentação da Stripe, não a Stripe.
+
 ## Rotas da Sprint 7
 
 - `/app/w/[workspaceId]` — lista de páginas com busca por nome ou endereço, filtro por situação, ordem e paginação na URL (`?q=`, `?situacao=`, `?ordem=`, `?pagina=`), uso do plano e as ações Editar, Resultados, Duplicar e Arquivar conforme o papel.
@@ -64,7 +88,7 @@ Sem isso as páginas públicas funcionam, os eventos são descartados e o painel
 - `/app/w/[workspaceId]/paginas/[profileId]/resultados` — ganhou a seção "Relatório para o cliente": proprietário e administrador criam um link (período, validade, anotação), copiam uma vez e cancelam.
 - `/r/[token]` — relatório somente leitura de uma página, sem conta; todo link que não abre relatório recebe o mesmo 404.
 
-Para testar localmente com mais de uma página e mais de uma pessoa, coloque a conta no plano Agência: `update public.workspaces set plan_id = 'agency' where id = '<id da conta>';` (não há cobrança até a Sprint 8). Links de relatório e 90 dias de histórico também dependem desse plano. Decisões em `docs/adr/0012-multi-page-operations-invitations-and-roles.md` e `docs/adr/0013-consolidated-analytics-and-report-links.md`. A medição da décima página roda contra um `next start` local: `node scripts/agency-scale.mjs` em `apps/web` (instruções no cabeçalho; `--cleanup` remove o que ele cria).
+Para testar localmente com mais de uma página e mais de uma pessoa, coloque a conta no plano Agência: `update public.workspaces set plan_id = 'agency' where id = '<id da conta>';` (um plano definido assim aparece na tela *Plano* como "Definido manualmente"; o caminho normal, desde a Sprint 8, é a assinatura). Links de relatório e 90 dias de histórico também dependem desse plano. Decisões em `docs/adr/0012-multi-page-operations-invitations-and-roles.md` e `docs/adr/0013-consolidated-analytics-and-report-links.md`. A medição da décima página roda contra um `next start` local: `node scripts/agency-scale.mjs` em `apps/web` (instruções no cabeçalho; `--cleanup` remove o que ele cria).
 
 ## Rotas da Sprint 6
 
@@ -170,7 +194,7 @@ apps/web/src/prototype/        store local, cenários e instrumentação
 apps/web/src/ui/               componentes acessíveis que graduam
 apps/web/src/app/(auth)/       autenticação
 apps/web/src/app/app/          área autenticada
-apps/web/src/modules/          identity, profiles, blocks, editor, publishing, entitlements, audit, waitlist
+apps/web/src/modules/          identity, profiles, blocks, editor, publishing, media, themes, leads, analytics, reports, billing, entitlements, audit, waitlist
 apps/web/src/lib/supabase/     clientes Supabase (server, browser, proxy)
 docs/ux/                       jornadas, wireframes, tokens e decisões
 docs/research/                 entrevistas e teste de usabilidade

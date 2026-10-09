@@ -156,7 +156,7 @@ Textos em `content/pt-BR.ts` (`APP_COPY.pages`, `APP_COPY.archive`, `APP_COPY.du
 | Último proprietário | "A conta precisa de pelo menos um proprietário. Torne outra pessoa proprietária antes." | |
 | Recurso antes da migração | "Este recurso ainda não está disponível nesta conta. Tente novamente mais tarde." | Sem prometer data |
 
-Vocabulário: **membros** (pessoas com acesso), **convite**, **papel** (Proprietário, Administrador, Editor), **lugar**, **arquivar/desarquivar**, **duplicar** (o resultado é uma **cópia**). "Cancelar convite", não "revogar". Sem botão de compra nem preço nas telas de limite: a cobrança é da Sprint 8.
+Vocabulário: **membros** (pessoas com acesso), **convite**, **papel** (Proprietário, Administrador, Editor), **lugar**, **arquivar/desarquivar**, **duplicar** (o resultado é uma **cópia**). "Cancelar convite", não "revogar". **Telas de limite (regra atual, Sprint 8):** a frase do limite continua igual; o proprietário, com a venda ligada, vê também um link "Ver planos com …" para a tela *Plano*. Nunca um preço nem um botão de pagamento dentro do aviso; nunca um link para quem não pode comprar.
 
 ## Resultados da conta e relatório do cliente (Sprint 7)
 
@@ -172,13 +172,35 @@ Textos do produto em `content/pt-BR.ts` (`WORKSPACE_ANALYTICS_COPY`, `REPORTS_CO
 | Link criado | "Link criado. Copie agora: por segurança, ele não será mostrado de novo." | Mesmo padrão do convite |
 | Situação do link | "Ativo: funciona até <data>" · "Expirado em <data>" · "Cancelado em <data>" | Em palavras, com data |
 | Cancelar link | "O link para de funcionar imediatamente. Quem abrir o endereço verá que o relatório não está disponível. Esta ação não pode ser desfeita." | "Cancelar", não "revogar" |
-| Sem o recurso no plano | "Relatórios compartilháveis não estão disponíveis no plano desta conta." | Sem preço, sem botão de compra |
+| Sem o recurso no plano | "Relatórios compartilháveis não estão disponíveis no plano desta conta." | Sem preço; para o proprietário, com a venda ligada, o link "Ver planos com relatório para o cliente" |
 | Relatório: frase principal | "Neste período a página recebeu 1.240 visitas e gerou 87 resultados." | Singular e plural corretos; sem adjetivos |
 | Relatório: período | "De 06/09/2026 a 05/10/2026 (30 dias completos)." | Sempre dias completos |
 | Relatório: rodapé | "Relatório somente leitura. Este link funciona até 9 de novembro de 2026." | A data por extenso |
 | Link que não abre | "Relatório não disponível" + "Este link não abre um relatório. Ele pode ter expirado ou sido cancelado, ou o endereço pode estar incompleto. Peça um novo link a quem enviou." | **Um só texto** para todo motivo |
 
 Vocabulário: **resultados da conta** (o painel de todas as páginas), **relatório** (o que o cliente lê), **link de relatório**, **anotação** (o rótulo interno do link), **cancelar** um link. Para o cliente: "visitas", "resultados", "cliques"; nunca "eventos", "token", "conta de agência" ou "plano".
+
+## Plano e cobrança (Sprint 8)
+
+Textos em `content/pt-BR.ts` (`BILLING_COPY`). Decisões: UX-074 a UX-084 (provisórias). Nada disto vai para `content/public-page.ts`.
+
+| Situação | Texto | Regra |
+|---|---|---|
+| Preço | "R$ 14,90 por mês" · "R$ 149,00 por ano" · "No anual você paga R$ 29,80 a menos do que em 12 meses do mensal." | Sempre em reais, com o intervalo; a economia em reais, nunca em percentual nem "2 meses grátis" |
+| Plano ativo | "Plano Pro, cobrança mensal. Próxima cobrança: R$ 14,90 em 08/11/2026." | Plano, intervalo, valor e data na mesma frase |
+| Pagamento falhou | "Não conseguimos cobrar o último pagamento. O plano Pro continua valendo até 16/10/2026. Atualize a forma de pagamento até essa data para não perder o plano." | Dizer o que aconteceu, até quando o plano vale e o que fazer; começa com "Aviso:" no banner |
+| Prazo vencido | "O pagamento do plano Pro não foi regularizado até 16/10/2026, e a conta voltou aos limites do plano Gratuito. Suas páginas, contatos e resultados continuam guardados. Regularize o pagamento para o plano voltar." | Dizer sempre que nada foi apagado |
+| Cancelamento agendado | "Assinatura cancelada. O plano Pro continua valendo até 08/11/2026. Depois dessa data a conta volta para o plano Gratuito, sem nova cobrança. Nada do que você criou é apagado." | A data em que o acesso muda vem antes de qualquer outra coisa |
+| Confirmação | "2 de 3 páginas ficam acima do limite de 1. Todas continuam no ar e editáveis; só não será possível criar ou duplicar páginas enquanto a conta estiver acima do limite." | Números da conta; cada linha começa com "Continua igual", "Fica acima do limite" ou "Deixa de funcionar" em palavras; termina com "Nada é apagado…" |
+| Retorno do pagamento | "Aguardando a confirmação do pagamento" → "Pagamento confirmado. O plano Pro já está valendo nesta conta." | Nunca "pago" antes de o plano mudar; nunca um prazo ("em 1 minuto") |
+| Saiu do checkout | "Você saiu da página de pagamento antes de concluir. Nada foi cobrado e o plano não mudou." | |
+| Falha do provedor | "O provedor de pagamento não respondeu. Nada foi cobrado nem alterado. Tente novamente em alguns minutos." | Toda falha diz se algo foi cobrado |
+| Ambiente de teste | "Ambiente de teste. Nenhuma cobrança real é feita aqui: o pagamento usa os dados de teste do provedor." | Em toda tela de cobrança enquanto o modo for de teste |
+| Venda desligada | "Os planos pagos ainda não estão à venda. O plano Gratuito continua disponível." | Sem data, sem "em breve" dentro do produto |
+| Quem pode | "Só o proprietário desta conta pode contratar, alterar ou cancelar o plano." | Para o administrador; o editor não vê a tela |
+| Plano manual | "Esta conta está no plano Agência, definido manualmente pela equipe do produto. Não há assinatura nem cobrança associada." | |
+
+Vocabulário: **plano**, **assinatura**, **cobrança**, **pagamento**, **recibo**, **forma de pagamento**, **regularizar**, **provedor de pagamento** (nunca o nome do provedor na interface). "Assinar", "mudar para o", "cancelar a assinatura", "manter a assinatura". Nunca: "upgrade", "downgrade", "trial", "fatura", "inadimplente", "premium". Nunca dizer que os dados do cartão estão "seguros conosco": eles não passam por nós, e é isso que a tela diz.
 
 ## Padrões de erro
 
@@ -200,7 +222,8 @@ Autenticação e lista de espera usam respostas neutras: nunca confirmar se dete
 - “Exclusivo para agências” ou qualquer mensagem que feche o ICP.
 - Resultados garantidos, aumento de vendas ou ROI sem evidência.
 - Depoimentos, clientes, logos ou métricas fictícias.
-- Preços como compromisso antes da validação.
+- Preços na home pública, ou qualquer convite a comprar, enquanto a cobrança real não estiver ligada (dentro da conta, em modo de teste, os preços aparecem com o aviso de ambiente de teste).
+- "Pagamento confirmado" antes de o plano ter mudado; prazos para a confirmação de um pagamento.
 - Checkout próprio, custódia de Pix, CRM, IA central, app nativo ou outras funções fora do MVP.
 - "Pagamento confirmado", "Pix recebido" ou QR code de Pix: o bloco só mostra a chave e um link.
 - Chamar `Projeto LNK` de marca definitiva.

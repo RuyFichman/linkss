@@ -34,7 +34,7 @@ Eventos brutos ── retenção curta ── agregados diários ── dashboar
 | Analytics do produto | eventos próprios ou PostHog com minimização | manter separado dos números exibidos ao cliente |
 | Jobs | outbox no Postgres + worker agendado | fila dedicada quando throughput/retries exigirem |
 | E-mail | adapter; Resend é candidato inicial | trocar provedor sem alterar domínio |
-| Pagamentos | `PaymentsAdapter`; decisão adiada até spike | provedor brasileiro/Stripe conforme recorrência e conciliação |
+| Pagamentos | Stripe atrás do `PaymentsAdapter` (ADR 0014), por `fetch`, sem SDK | trocar de provedor é reescrever um arquivo; Pix recorrente exigiria outro provedor |
 | Erros | Sentry antes do piloto externo | traces/amostragem e log drain no plano pago |
 | CI/CD | GitHub Actions + previews + staging | proteção de branch e deploy com aprovação em produção |
 
@@ -225,3 +225,32 @@ Decisões em `docs/adr/0013-consolidated-analytics-and-report-links.md`. Verific
 - **Tentativas:** `report_lookup_failures` guarda um hash diário do endereço (nunca o endereço) por 24 horas; 20 falhas em 10 minutos bloqueiam aquele cliente. É redutor de custo, não fronteira de segurança.
 - **Módulos:** `analytics` (consolidado) e `reports` (regras dos links, token, serviço, leitura pública, componentes).
 - **Fora desta sprint:** envio de relatório por e-mail, PDF no servidor, relatório de várias páginas, limite global na frente de `/r/` (Sprint 9), expurgo agendado de links terminados (Sprint 9).
+
+## Planos, assinatura e cobrança — implementado na Sprint 8, parte 1
+
+Decisões em `docs/adr/0014-payments-subscriptions-and-webhooks.md`. Verificado no stack local, contra um emulador local da API da Stripe; **nada rodou contra a Stripe** (não existe conta).
+
+```text
+Proprietário ── /app/w/…/plano ── Server Action ── modules/billing/service (billing.manage)
+   │                                   ├─ begin_billing_checkout / begin_billing_change (RPC: papel, estado, auditoria)
+   │                                   ├─ PaymentsAdapter (Stripe): cliente, checkout hospedado, cancelar, mudar plano
+   │                                   └─ lê a Stripe de novo ─► snapshot assinado ─► apply_billing_snapshot
+   └─ checkout na página da Stripe ── volta para …/plano/retorno (mostra o que o banco diz; não concede nada)
+
+Stripe ── POST /api/billing/webhook ── assinatura sobre o corpo bruto ── "olhe de novo":
+              lê a assinatura atual na Stripe ─► snapshot assinado (HMAC, segredo no Vault) ─► apply_billing_snapshot
+                                                     └─ ledger por id do evento ─► billing_subscriptions ─► billing_sync_plan ─► workspaces.plan_id
+
+Vercel Cron diário ── GET /api/jobs/billing (CRON_SECRET) ── run_billing_maintenance
+   └─ encerra prazos vencidos, aplica plano menor ao fim do período pago, expurga o ledger, relê na Stripe o que não foi lido há um dia
+```
+
+- **Um só caminho até o plano.** `private.billing_sync_plan` é o único comando que escreve `workspaces.plan_id`. Ele só é alcançado por um retrato do estado do provedor que o servidor assinou; nenhum papel de cliente escreve cliente, assinatura, evento, fatura ou plano.
+- **O webhook é só um aviso.** O conteúdo do evento não decide nada: o servidor lê a assinatura na Stripe e grava o que ela diz agora. Entrega repetida para no ledger (id do evento); leitura mais antiga que a guardada é descartada.
+- **O plano vem do valor cobrado.** `plan_prices` é única por (intervalo, valor, moeda); o valor que a Stripe informa identifica o plano. O catálogo em `modules/billing/catalog.ts` (derivado de `lib/product.ts`) é o que vai para a Stripe; um teste de divergência compara os dois.
+- **Estados:** sem assinatura, `incomplete`, `active`, `past_due` (com `grace_until`), `ended`. A máquina de estados existe em TypeScript (`subscription.ts`, para as telas) e em SQL (a verdade), com os mesmos casos nos dois testes.
+- **Tabelas:** `plan_prices`, `billing_customers`, `billing_subscriptions`, `billing_events` (ledger, sem policy), `billing_invoices`. RLS: proprietário e administrador leem a assinatura; só o proprietário lê pagamentos e o cliente do provedor.
+- **Modo de cobrança** (`BILLING_MODE`): `off` (padrão: o produto se comporta como antes), `sandbox` (chave de teste; telas marcadas) e `live` (chave live). Chave que não combina com o modo desliga a cobrança.
+- **Selo:** `remove_badge` é lido a cada requisição; quando o plano muda, o banco devolve os endereços das páginas no ar e o servidor invalida o cache delas (o limite, sem isso, é a janela de 60 s do ISR).
+- **Módulo:** `billing` (catálogo, máquina de estados, impacto do rebaixamento, modo, adapter + Stripe + fake, atestação, serviço, leitura, apresentação, ações, componentes; `testing/` com o emulador e o ledger em memória, nunca importados pela aplicação).
+- **Fora desta parte:** domínio próprio e pixels (parte 2), cobrança real, nota fiscal, e-mails de cobrança, troca mensal↔anual numa assinatura em curso, limite global na frente do webhook (Sprint 9).

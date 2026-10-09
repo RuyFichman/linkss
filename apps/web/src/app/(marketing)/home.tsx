@@ -1,3 +1,6 @@
+import { formatMoney } from "@/modules/billing/catalog";
+import { paidPlansAreOnSale } from "@/modules/billing/marketing";
+import { resolveBillingMode } from "@/modules/billing/mode";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Schibsted_Grotesk } from "next/font/google";
@@ -66,18 +69,19 @@ function ClaimBar() {
   );
 }
 
-function PlanCard({ name, description, items, price, featured = false }: { name: string; description: string; items: readonly string[]; price?: string; featured?: boolean }) {
+function PlanCard({ name, description, items, price, priceNote, featured = false, available = featured, cta }: { name: string; description: string; items: readonly string[]; price?: string; priceNote?: string; featured?: boolean; available?: boolean; cta?: string }) {
   const copy = HOME_COPY.plans;
   return (
     <article className="home-plan" data-featured={featured ? "" : undefined}>
       <div className="home-plan-head">
         <h3 className="home-display">{name}</h3>
-        <span className="home-plan-tag" data-kind={featured ? "available" : "soon"}>{featured ? copy.available : copy.soon}</span>
+        <span className="home-plan-tag" data-kind={available ? "available" : "soon"}>{available ? copy.available : copy.soon}</span>
       </div>
       {price ? <p className="home-plan-price home-display">{price}</p> : null}
+      {priceNote ? <p className="home-plan-description">{priceNote}</p> : null}
       <p className="home-plan-description">{description}</p>
       <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
-      {featured ? <Link className="home-cta home-cta-block" href={SIGN_UP_PATH}>{copy.free.cta}</Link> : null}
+      {featured || cta ? <Link className="home-cta home-cta-block" href={SIGN_UP_PATH}>{cta ?? copy.free.cta}</Link> : null}
     </article>
   );
 }
@@ -86,6 +90,10 @@ export function Home() {
   const copy = HOME_COPY;
   const { free, pro, agency } = PRODUCT.plans;
   const item = copy.plans.items;
+  // Paid plans are offered here only when a visitor can actually buy them. Read at build time:
+  // changing the billing mode needs a redeploy, like every other value this static page shows.
+  const selling = paidPlansAreOnSale(resolveBillingMode().mode);
+  const paid = (planId: "pro" | "agency") => (selling ? { available: true, price: copy.plans.perMonth(formatMoney(PRODUCT.plans[planId].monthlyPriceInCents)), priceNote: copy.plans.orPerYear(formatMoney(PRODUCT.plans[planId].yearlyPriceInCents)), cta: copy.plans.paidCta } : {});
   return (
     <div className={`home ${displayFont.variable}`}>
       <header className="home-shell home-header">
@@ -174,12 +182,12 @@ export function Home() {
       <section className="home-section home-shell" id="planos" aria-labelledby="planos-titulo">
         <div className="home-heading">
           <h2 className="home-display" id="planos-titulo">{copy.plans.title}</h2>
-          <p>{copy.plans.lead}</p>
+          <p>{selling ? copy.plans.leadSelling : copy.plans.lead}</p>
         </div>
         <div className="home-plans">
           <PlanCard featured name={copy.plans.free.name} price={copy.plans.free.price} description={copy.plans.free.description} items={[item.profiles(free.includedProfiles), item.allBlocks, item.leads, item.analyticsDays(free.analyticsDays), item.storage(free.storageMb)]} />
-          <PlanCard name={copy.plans.pro.name} description={copy.plans.pro.description} items={[item.profiles(pro.includedProfiles), item.analyticsDays(pro.analyticsDays), item.storage(pro.storageMb)]} />
-          <PlanCard name={copy.plans.agency.name} description={copy.plans.agency.description} items={[item.profiles(agency.includedProfiles), item.teamMembers(agency.teamMembers), item.consolidated, item.reports, item.analyticsDays(agency.analyticsDays), item.storage(agency.storageMb)]} />
+          <PlanCard {...paid("pro")} name={copy.plans.pro.name} description={copy.plans.pro.description} items={[item.profiles(pro.includedProfiles), item.analyticsDays(pro.analyticsDays), item.storage(pro.storageMb)]} />
+          <PlanCard {...paid("agency")} name={copy.plans.agency.name} description={copy.plans.agency.description} items={[item.profiles(agency.includedProfiles), item.teamMembers(agency.teamMembers), item.consolidated, item.reports, item.analyticsDays(agency.analyticsDays), item.storage(agency.storageMb)]} />
         </div>
       </section>
 
@@ -190,7 +198,7 @@ export function Home() {
         </div>
         <div className="home-faq">
           {copy.faq.items.map((entry) => (
-            <details key={entry.question}><summary>{entry.question}</summary><p>{entry.answer}</p></details>
+            <details key={entry.question}><summary>{entry.question}</summary><p>{selling && "answerSelling" in entry ? entry.answerSelling : entry.answer}</p></details>
           ))}
         </div>
       </section>

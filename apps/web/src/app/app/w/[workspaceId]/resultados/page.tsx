@@ -1,3 +1,4 @@
+import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ANALYTICS_COPY, APP_COPY, WORKSPACE_ANALYTICS_COPY } from "@/content/pt-BR";
@@ -127,6 +128,7 @@ export default async function WorkspaceAnalyticsPage({ params, searchParams }: {
     <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
       {header}
       <PeriodNav basePath={resultsPath} current={period} historyDays={report.historyDays} />
+      {report.historyDays < 90 ? <UpgradeLink workspaceId={workspaceId} role={access.role} reason="analytics_days" /> : null}
       {period !== requested ? <Notice>{ANALYTICS_COPY.historyNote(report.historyDays)}</Notice> : null}
 
       {/* What the numbers below refer to: announced when the period changes. */}

@@ -79,9 +79,9 @@ Failure behavior: if the call fails, the user remains signed in, the app shows a
 - `plans(id)` + `plan_entitlements(plan_id, key, int_value | bool_value)`, with a check constraint binding each key to its value type. Keys: `max_profiles`, `analytics_days`, `team_members` (integers) and `custom_domain`, `remove_badge`, `shareable_reports` (booleans).
 - Seed values mirror `apps/web/src/lib/product.ts`; a Vitest drift test parses the migration and compares.
 - `private.entitlement_int(workspace_id, key)` resolves the workspace's plan value. A `BEFORE INSERT` trigger on `profiles` locks the workspace row and rejects inserts beyond `max_profiles` (all non-deleted pages count, archived included, so archive/unarchive cannot bypass the limit — *provisional*). `team_members` is enforced by a membership trigger (prepared for Sprint 7 invitations).
-- `workspaces.plan_id` is not user-writable (no column grant). Sprint 8 billing changes it through a server-side, webhook-driven path.
+- `workspaces.plan_id` is not user-writable (no column grant). Sprint 8 billing changes it through a server-side, webhook-driven path. **Resolved in ADR 0014:** the only statement that writes it is `private.billing_sync_plan`, reached from a snapshot of the provider's state that the server signed; a plan set by hand for a workspace without a subscription is still possible and is left alone.
 - Application code calls `assertEntitlement(...)` from `modules/entitlements`; plan names are never compared in business logic.
-- Abuse guard: a user may own at most three live agency workspaces (*provisional*), otherwise free workspaces would multiply free pages. Revisit when billing defines agency plans.
+- Abuse guard: a user may own at most three live agency workspaces (*provisional*), otherwise free workspaces would multiply free pages. Revisit when billing defines agency plans. **Reviewed in ADR 0014 and kept** (*provisional*): every workspace still starts on the free plan and is billed separately, so the guard still does its job.
 
 ### Slugs
 
@@ -107,3 +107,4 @@ RPCs and triggers raise stable SQLSTATEs the app maps to pt-BR copy: `LK001` inv
 - Column-level grants mean new user-editable columns need an explicit grant in their migration.
 - Invitations for people without an account need a separate `workspace_invitations` table (token hash, email, expiry, revocation); memberships already carry `invited` status and `invited_by`. **Resolved in Sprint 7 (ADR 0012):** the table exists, a pending invitation lives only there, a membership is created `active` at acceptance, and the `invited` status is not written.
 - The role matrix above gained `profile.archive`, `profile.duplicate`, `members.invite`, `invitations.view` and `invitations.revoke` (owners and admins) in ADR 0012. The `max_profiles` rule for archived pages (*provisional* above) was kept.
+- The role matrix gained `billing.view` (owners and admins) and `billing.manage` (owners only) in ADR 0014, and `soft_delete_workspace` now refuses a workspace that is still being charged (`LK102`). New SQLSTATEs: `LK100` to `LK103`.

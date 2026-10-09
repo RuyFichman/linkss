@@ -197,5 +197,5 @@ Every Server Action re-derives the role with `requireWorkspaceAccess` before cal
 - `private.media_is_referenced` now costs one extra existence check per share of an asset.
 - The Sprint 9 purge of soft-deleted pages must run `claim_media_cleanup` before deleting page rows, as before; re-homing happens there.
 - Account deletion and export (Sprint 9) must reach `workspace_invitations` by `email`, `invited_by` and `accepted_by`.
-- Sprint 8 decides what happens to members and open invitations above `team_members`, and to pages above `max_profiles`, after a downgrade. Today nothing is removed: existing members keep access and new invitations and pages are refused.
+- Sprint 8 decides what happens to members and open invitations above `team_members`, and to pages above `max_profiles`, after a downgrade. Today nothing is removed: existing members keep access and new invitations and pages are refused. **Resolved in ADR 0014:** that behaviour is kept as the rule, nothing else is blocked (publishing stays allowed above the limit), and the cancellation and plan-change screens list it with the workspace's real numbers before the person confirms.
 - Part 2 reads analytics per workspace: archived pages keep their aggregates and their `profile_id`; a duplicated page starts with none.

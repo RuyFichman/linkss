@@ -1,3 +1,4 @@
+import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { APP_COPY } from "@/content/pt-BR";
@@ -23,7 +24,7 @@ export default async function NewProfilePage({ params }: { params: Promise<{ wor
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="mb-6 text-3xl font-bold">{APP_COPY.pages.create}</h1>
-      {usage.reached ? <Notice tone="warning">{APP_COPY.pages.limitReached(usage.limit)}</Notice> : (
+      {usage.reached ? <div className="grid gap-2"><Notice tone="warning">{APP_COPY.pages.limitReached(usage.limit)}</Notice><UpgradeLink workspaceId={workspaceId} role={access.role} reason="max_profiles" /></div> : (
         <section className="surface-card p-5 sm:p-8">
           <CreateProfileForm action={createProfileAction.bind(null, workspaceId)} workspaceId={workspaceId} submitLabel={APP_COPY.pages.create} />
         </section>

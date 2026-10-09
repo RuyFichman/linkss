@@ -7,7 +7,7 @@
 | Perfil público | nome, avatar, bio, links | publicação solicitada pelo cliente | até remoção/despublicação e cache expirar |
 | Leads | campos escolhidos pelo cliente | encaminhar contato ao controlador do perfil | 90 dias (provisório), exportável; ver Sprint 5 abaixo |
 | Analytics | categoria de origem (nunca a URL ou o host do referrer), UTM, classe de aparelho, país, hash diário do visitante | medir desempenho | bruto 7 dias; agregados 100 dias, visíveis conforme o plano; ver Sprint 6 abaixo |
-| Cobrança | IDs do provedor, status, faturas | assinatura e obrigações legais | prazo fiscal/contratual aplicável |
+| Cobrança | IDs do provedor, status da assinatura, valor, datas e link do recibo; **nunca** cartão, CPF/CNPJ ou endereço | assinatura e obrigações legais | vida da conta; prazo fiscal em aberto (ver Sprint 8 abaixo) |
 | Segurança | IP truncado/hash quando necessário, logs e auditoria | fraude, abuso e incidentes | janela curta baseada em risco |
 | Suporte | mensagens e anexos | atendimento | prazo publicado e minimizado |
 | Lista de espera | nome, e-mail, WhatsApp opcional, segmento, quantidade de perfis, ferramenta atual, faixa de preço, interesse no piloto, consentimento, UTM/referrer | recrutar pesquisa/piloto e validar ICP, mensagem e preço | pesquisa e piloto; revisão e exclusão de cadastros inativos em até 12 meses |
@@ -201,3 +201,24 @@ Um link de relatório é uma **divulgação de dados da conta a um terceiro esco
 ### O que o relatório mostra a quem tem o link
 
 Nome da conta, nome e endereço público da página, período, visitas, resultados e a taxa, a série por dia, origens por categoria e os blocos com o texto que já é público na página. Não mostra: identificadores, plano, membros, outras páginas, contatos recebidos, valores de UTM, aparelhos, países, rascunho, nem a anotação do link. Lista completa no ADR 0013.
+
+## Dados adicionados na Sprint 8, parte 1 (planos, assinatura e cobrança)
+
+Decisão: ADR 0014. **Novo subprocessador: Stripe** (processamento de pagamentos e assinatura), com tratamento fora do Brasil. Ele só passa a receber dados quando o founder abrir a conta e ligar o modo de cobrança; até lá (modo `off`) nada sai do produto. **Antes de qualquer cobrança real:** contrato/DPA com a Stripe, menção na política de privacidade e base para a transferência internacional (lista para os revisores no ADR 0014).
+
+**O que o produto envia à Stripe:** o nome da conta (workspace) e o id da conta, como metadado do cliente e da assinatura; o plano escolhido (nome do produto, valor, intervalo); os endereços de retorno. **O que a pessoa digita na página da Stripe** (e-mail, nome, cartão e, se a Stripe pedir, CPF/CNPJ e endereço) vai direto para a Stripe: o produto não recebe, não pede e não guarda.
+
+| Store / tabela | Conteúdo | Dado pessoal? | Finalidade | Quem lê | Retenção |
+|---|---|---|---|---|---|
+| `plan_prices` | plano, intervalo, valor em centavos, moeda | não | catálogo de preços | quem tem sessão | permanente |
+| `billing_customers` | conta → id do cliente na Stripe, quem iniciou (`created_by`), data | identificador indireto (liga a conta a um pagador na Stripe) | saber de quem é um evento | o proprietário | vida da conta (cascata) |
+| `billing_subscriptions` | ids da assinatura e do cliente na Stripe, plano, intervalo, valor, situação, fim do período, cancelamento agendado, prazo de regularização, plano mantido até o fim do período, quando foi lido | não identifica uma pessoa; descreve a relação comercial da conta | conceder o plano e explicar a situação | proprietário e administrador | vida da conta (cascata) |
+| `billing_invoices` | id da fatura na Stripe, valor, moeda, situação, datas, **link do recibo hospedado pela Stripe** | o recibo, na Stripe, tem os dados do pagador; aqui só o link | histórico de pagamentos | o proprietário | vida da conta (cascata). **Em aberto:** obrigação de guarda fiscal × exclusão da conta |
+| `billing_events` | id do evento na Stripe, conta, motivo, desfecho, datas. **Nunca o conteúdo do evento** | não | idempotência do webhook e diagnóstico | nenhum papel de cliente | 90 dias (expurgo pelo job diário) |
+| `audit_events` (`billing.*`) | quem iniciou checkout ou pediu mudança; de/para de situação e de plano; motivo | id do ator, como nas demais ações | trilha de mudanças de plano | proprietário e administrador | 1 ano (provisório) |
+| Vault `billing_signing_secret`; variáveis `BILLING_SIGNING_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | segredos | não | atestar retratos; falar com a Stripe; conferir webhooks | servidor | rotação em `docs/runbooks/BILLING.md` |
+| Logs `billing.webhook`, `billing.maintenance`, `billing.checkout`, `billing.cancel`, `billing.resume`, `billing.change_plan`, `billing.self_service` | evento, tópico, desfecho, duração, correlation id | não: **nunca** conteúdo do evento, assinatura, id do provedor, valor, e-mail ou documento | operação | retenção do provedor de logs |
+
+- **CPF/CNPJ:** o produto não coleta. Se a Stripe exigir do pagador, o dado fica na Stripe, sob o contrato dela com o founder. Se um dia o produto precisar dele (nota fiscal), é uma coleta nova: finalidade, base e retenção têm de ser definidas antes.
+- **Exportação e exclusão (Sprint 9):** a exportação da conta deve incluir `billing_subscriptions` e `billing_invoices` (sem os ids internos do provedor, se a revisão assim decidir). A exclusão de uma conta com assinatura em curso é **recusada** até o cancelamento (`LK102`); a exclusão de conta do titular precisa cancelar na Stripe e só depois expurgar. O que fica na Stripe (cliente, faturas, recibos) segue a retenção da Stripe e as obrigações fiscais do founder: **exceção legal a registrar** depois da revisão contábil.
+- **Rebaixamento, falta de pagamento e cancelamento não apagam dado nenhum** do cliente.

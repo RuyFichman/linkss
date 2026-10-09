@@ -107,6 +107,100 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"billing_customers": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"provider": string,"provider_customer_id": string,"workspace_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"provider": string,"provider_customer_id": string,"workspace_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"provider"?: string,"provider_customer_id"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "billing_customers_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: true
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"billing_events": {
+                  Row: {
+                    "observed_at": string,"outcome": string,"provider": string,"provider_event_id": string,"reason": string,"received_at": string,"workspace_id": string | null
+                  }
+                  Insert: {
+                    "observed_at": string,"outcome": string,"provider": string,"provider_event_id": string,"reason": string,"received_at"?: string,"workspace_id"?: string | null
+                  }
+                  Update: {
+                    "observed_at"?: string,"outcome"?: string,"provider"?: string,"provider_event_id"?: string,"reason"?: string,"received_at"?: string,"workspace_id"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"billing_invoices": {
+                  Row: {
+                    "amount_cents": number,"created_at": string,"currency": string,"id": string,"issued_at": string,"paid_at": string | null,"provider": string,"provider_invoice_id": string,"receipt_url": string | null,"status": string,"subscription_id": string,"updated_at": string,"workspace_id": string
+                  }
+                  Insert: {
+                    "amount_cents": number,"created_at"?: string,"currency": string,"id"?: string,"issued_at": string,"paid_at"?: string | null,"provider": string,"provider_invoice_id": string,"receipt_url"?: string | null,"status": string,"subscription_id": string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "amount_cents"?: number,"created_at"?: string,"currency"?: string,"id"?: string,"issued_at"?: string,"paid_at"?: string | null,"provider"?: string,"provider_invoice_id"?: string,"receipt_url"?: string | null,"status"?: string,"subscription_id"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "billing_invoices_subscription_id_fkey"
+      columns: ["subscription_id"]
+isOneToOne: false
+      referencedRelation: "billing_subscriptions"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "billing_invoices_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"billing_subscriptions": {
+                  Row: {
+                    "amount_cents": number,"billing_interval": Database["public"]['Enums']["billing_interval"],"cancel_at_period_end": boolean,"created_at": string,"currency": string,"current_period_end": string | null,"ended_at": string | null,"grace_expired_at": string | null,"grace_until": string | null,"granted_plan_id": string | null,"held_plan_id": string | null,"held_until": string | null,"id": string,"observed_at": string,"plan_id": string,"provider": string,"provider_customer_id": string,"provider_subscription_id": string,"status": Database["public"]['Enums']["billing_subscription_status"],"updated_at": string,"workspace_id": string
+                  }
+                  Insert: {
+                    "amount_cents": number,"billing_interval": Database["public"]['Enums']["billing_interval"],"cancel_at_period_end"?: boolean,"created_at"?: string,"currency": string,"current_period_end"?: string | null,"ended_at"?: string | null,"grace_expired_at"?: string | null,"grace_until"?: string | null,"granted_plan_id"?: string | null,"held_plan_id"?: string | null,"held_until"?: string | null,"id"?: string,"observed_at": string,"plan_id": string,"provider": string,"provider_customer_id": string,"provider_subscription_id": string,"status": Database["public"]['Enums']["billing_subscription_status"],"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "amount_cents"?: number,"billing_interval"?: Database["public"]['Enums']["billing_interval"],"cancel_at_period_end"?: boolean,"created_at"?: string,"currency"?: string,"current_period_end"?: string | null,"ended_at"?: string | null,"grace_expired_at"?: string | null,"grace_until"?: string | null,"granted_plan_id"?: string | null,"held_plan_id"?: string | null,"held_until"?: string | null,"id"?: string,"observed_at"?: string,"plan_id"?: string,"provider"?: string,"provider_customer_id"?: string,"provider_subscription_id"?: string,"status"?: Database["public"]['Enums']["billing_subscription_status"],"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "billing_subscriptions_granted_plan_id_fkey"
+      columns: ["granted_plan_id"]
+isOneToOne: false
+      referencedRelation: "plans"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "billing_subscriptions_held_plan_id_fkey"
+      columns: ["held_plan_id"]
+isOneToOne: false
+      referencedRelation: "plans"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "billing_subscriptions_plan_id_fkey"
+      columns: ["plan_id"]
+isOneToOne: false
+      referencedRelation: "plans"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "billing_subscriptions_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"form_leads": {
                   Row: {
                     "block_id": string,"consent_given": boolean,"consent_required": boolean,"consent_text": string,"consent_version": string,"consented_at": string | null,"created_at": string,"dedupe_key": string,"email": string | null,"id": string,"message": string | null,"name": string | null,"phone": string | null,"profile_id": string,"publication_version": number,"purge_after": string,"workspace_id": string
@@ -220,6 +314,25 @@ isOneToOne: false
                   Relationships: [
                     {
       foreignKeyName: "plan_entitlements_plan_id_fkey"
+      columns: ["plan_id"]
+isOneToOne: false
+      referencedRelation: "plans"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"plan_prices": {
+                  Row: {
+                    "amount_cents": number,"billing_interval": Database["public"]['Enums']["billing_interval"],"created_at": string,"currency": string,"plan_id": string
+                  }
+                  Insert: {
+                    "amount_cents": number,"billing_interval": Database["public"]['Enums']["billing_interval"],"created_at"?: string,"currency": string,"plan_id": string
+                  }
+                  Update: {
+                    "amount_cents"?: number,"billing_interval"?: Database["public"]['Enums']["billing_interval"],"created_at"?: string,"currency"?: string,"plan_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "plan_prices_plan_id_fkey"
       columns: ["plan_id"]
 isOneToOne: false
       referencedRelation: "plans"
@@ -456,10 +569,21 @@ isOneToOne: false
 "activate_media_asset":
 { Args: { "p_media_id": string,"p_signature": string }; Returns: undefined
                            },
+"apply_billing_snapshot":
+{ Args: { "p_payload": string,"p_signature": string }; Returns: Json
+                           },
 "archive_profile":
 { Args: { "p_profile_id": string }; Returns: {
               "slug": string,"was_published": boolean
             }[]
+                           },
+"begin_billing_change":
+{ Args: { "p_kind": string,"p_plan_id"?: string,"p_workspace_id": string }; Returns: {
+              "amount_cents": number,"billing_interval": Database["public"]['Enums']["billing_interval"],"plan_id": string,"provider_customer_id": string,"provider_subscription_id": string
+            }[]
+                           },
+"begin_billing_checkout":
+{ Args: { "p_interval": Database["public"]['Enums']["billing_interval"],"p_plan_id": string,"p_workspace_id": string }; Returns: number
                            },
 "change_member_role":
 { Args: { "p_membership_id": string,"p_role": Database["public"]['Enums']["workspace_role"] }; Returns: undefined
@@ -554,6 +678,9 @@ isOneToOne: false
 "record_workspace_analytics_export":
 { Args: { "p_from": string,"p_rows": number,"p_to": string,"p_workspace_id": string }; Returns: undefined
                            },
+"register_billing_customer":
+{ Args: { "p_customer_id": string,"p_signature": string,"p_workspace_id": string }; Returns: string
+                           },
 "register_media_asset":
 { Args: { "p_height": number,"p_kind": Database["public"]['Enums']["media_kind"],"p_media_id": string,"p_profile_id": string,"p_signature": string,"p_variants": Json,"p_width": number }; Returns: undefined
                            },
@@ -571,6 +698,9 @@ isOneToOne: false
                            },
 "run_analytics_maintenance":
 { Args: { "p_day"?: string }; Returns: Json
+                           },
+"run_billing_maintenance":
+{ Args: { "p_limit"?: number,"p_now"?: string }; Returns: Json
                            },
 "soft_delete_profile":
 { Args: { "p_profile_id": string }; Returns: undefined
@@ -594,7 +724,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "analytics_device": "mobile"|"tablet"|"desktop"|"unknown","analytics_dimension": "total"|"block"|"source"|"utm"|"device"|"country","analytics_event_type": "page_view"|"link_click"|"social_click"|"embed_load"|"whatsapp_click"|"pix_copy"|"pix_pay_click"|"form_submit"|"badge_click","analytics_source": "direct"|"instagram"|"facebook"|"whatsapp"|"tiktok"|"youtube"|"x"|"linkedin"|"telegram"|"google"|"search"|"other","audit_action": "auth.sign_in"|"auth.sign_out"|"auth.password_reset_completed"|"workspace.created"|"workspace.deleted"|"membership.role_changed"|"membership.removed"|"profile.slug_changed"|"profile.deleted"|"profile.published"|"profile.unpublished"|"profile.publication_restored"|"lead.deleted"|"lead.exported"|"analytics.exported"|"profile.archived"|"profile.unarchived"|"profile.duplicated"|"invitation.created"|"invitation.revoked"|"invitation.accepted"|"report_link.created"|"report_link.revoked","entitlement_key": "max_profiles"|"analytics_days"|"team_members"|"custom_domain"|"remove_badge"|"shareable_reports"|"storage_mb","media_kind": "avatar"|"image","media_status": "pending"|"ready"|"failed"|"deleting","membership_status": "invited"|"active"|"revoked","profile_status": "draft"|"published"|"archived","slug_release_reason": "changed"|"deleted","workspace_kind": "personal"|"agency","workspace_role": "owner"|"admin"|"editor","workspace_status": "active"|"suspended"
+            "analytics_device": "mobile"|"tablet"|"desktop"|"unknown","analytics_dimension": "total"|"block"|"source"|"utm"|"device"|"country","analytics_event_type": "page_view"|"link_click"|"social_click"|"embed_load"|"whatsapp_click"|"pix_copy"|"pix_pay_click"|"form_submit"|"badge_click","analytics_source": "direct"|"instagram"|"facebook"|"whatsapp"|"tiktok"|"youtube"|"x"|"linkedin"|"telegram"|"google"|"search"|"other","audit_action": "auth.sign_in"|"auth.sign_out"|"auth.password_reset_completed"|"workspace.created"|"workspace.deleted"|"membership.role_changed"|"membership.removed"|"profile.slug_changed"|"profile.deleted"|"profile.published"|"profile.unpublished"|"profile.publication_restored"|"lead.deleted"|"lead.exported"|"analytics.exported"|"profile.archived"|"profile.unarchived"|"profile.duplicated"|"invitation.created"|"invitation.revoked"|"invitation.accepted"|"report_link.created"|"report_link.revoked"|"billing.checkout_started"|"billing.change_requested"|"billing.subscription_changed"|"billing.plan_changed","billing_interval": "month"|"year","billing_subscription_status": "incomplete"|"active"|"past_due"|"ended","entitlement_key": "max_profiles"|"analytics_days"|"team_members"|"custom_domain"|"remove_badge"|"shareable_reports"|"storage_mb","media_kind": "avatar"|"image","media_status": "pending"|"ready"|"failed"|"deleting","membership_status": "invited"|"active"|"revoked","profile_status": "draft"|"published"|"archived","slug_release_reason": "changed"|"deleted","workspace_kind": "personal"|"agency","workspace_role": "owner"|"admin"|"editor","workspace_status": "active"|"suspended"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -710,7 +840,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "analytics_device": ["mobile", "tablet", "desktop", "unknown"],"analytics_dimension": ["total", "block", "source", "utm", "device", "country"],"analytics_event_type": ["page_view", "link_click", "social_click", "embed_load", "whatsapp_click", "pix_copy", "pix_pay_click", "form_submit", "badge_click"],"analytics_source": ["direct", "instagram", "facebook", "whatsapp", "tiktok", "youtube", "x", "linkedin", "telegram", "google", "search", "other"],"audit_action": ["auth.sign_in", "auth.sign_out", "auth.password_reset_completed", "workspace.created", "workspace.deleted", "membership.role_changed", "membership.removed", "profile.slug_changed", "profile.deleted", "profile.published", "profile.unpublished", "profile.publication_restored", "lead.deleted", "lead.exported", "analytics.exported", "profile.archived", "profile.unarchived", "profile.duplicated", "invitation.created", "invitation.revoked", "invitation.accepted", "report_link.created", "report_link.revoked"],"entitlement_key": ["max_profiles", "analytics_days", "team_members", "custom_domain", "remove_badge", "shareable_reports", "storage_mb"],"media_kind": ["avatar", "image"],"media_status": ["pending", "ready", "failed", "deleting"],"membership_status": ["invited", "active", "revoked"],"profile_status": ["draft", "published", "archived"],"slug_release_reason": ["changed", "deleted"],"workspace_kind": ["personal", "agency"],"workspace_role": ["owner", "admin", "editor"],"workspace_status": ["active", "suspended"]
+            "analytics_device": ["mobile", "tablet", "desktop", "unknown"],"analytics_dimension": ["total", "block", "source", "utm", "device", "country"],"analytics_event_type": ["page_view", "link_click", "social_click", "embed_load", "whatsapp_click", "pix_copy", "pix_pay_click", "form_submit", "badge_click"],"analytics_source": ["direct", "instagram", "facebook", "whatsapp", "tiktok", "youtube", "x", "linkedin", "telegram", "google", "search", "other"],"audit_action": ["auth.sign_in", "auth.sign_out", "auth.password_reset_completed", "workspace.created", "workspace.deleted", "membership.role_changed", "membership.removed", "profile.slug_changed", "profile.deleted", "profile.published", "profile.unpublished", "profile.publication_restored", "lead.deleted", "lead.exported", "analytics.exported", "profile.archived", "profile.unarchived", "profile.duplicated", "invitation.created", "invitation.revoked", "invitation.accepted", "report_link.created", "report_link.revoked", "billing.checkout_started", "billing.change_requested", "billing.subscription_changed", "billing.plan_changed"],"billing_interval": ["month", "year"],"billing_subscription_status": ["incomplete", "active", "past_due", "ended"],"entitlement_key": ["max_profiles", "analytics_days", "team_members", "custom_domain", "remove_badge", "shareable_reports", "storage_mb"],"media_kind": ["avatar", "image"],"media_status": ["pending", "ready", "failed", "deleting"],"membership_status": ["invited", "active", "revoked"],"profile_status": ["draft", "published", "archived"],"slug_release_reason": ["changed", "deleted"],"workspace_kind": ["personal", "agency"],"workspace_role": ["owner", "admin", "editor"],"workspace_status": ["active", "suspended"]
           }
         }
 } as const

@@ -118,3 +118,20 @@ Limiares propostos (sem alerta automático até o provisionamento): `report.read
 ## Provisionamento pendente
 
 O health endpoint está implementado. Sentry, uptime monitor e dashboards dependem das contas/credenciais dos ambientes e devem ser provisionados antes da Sprint 10. Até lá, os nomes de variáveis já estão documentados em `.env.example`.
+
+## Sinais de cobrança (Sprint 8, parte 1)
+
+Os eventos carregam tópico, desfecho e contagens — nunca o conteúdo de um evento do provedor, uma assinatura, um id do provedor, um valor, um e-mail ou um documento. Owner de todos: founder técnico. Runbook: `docs/runbooks/BILLING.md`. Limiares propostos; sem alerta automático até o provisionamento (Sentry / log drain).
+
+| Evento | Significado | Sinal / limiar proposto e ação |
+|---|---|---|
+| `billing.webhook` com `outcome` em `applied`, `unchanged`, `duplicate`, `ignored`, `stale` (`topic`, `planChanged`, `durationMs`) | uma entrega processada | informativo. `durationMs` p95 > 5 s → a Stripe pode desistir da entrega (P2: provedor ou banco lentos) |
+| `billing.webhook` com `bad_signature`, `missing_signature`, `stale_timestamp`, `too_large`, `malformed` (400) | entrega recusada antes de ler qualquer coisa | `bad_signature` > 3 em 15 min → o segredo do endpoint não é o configurado (P1 se as entregas reais estiverem falhando: runbook §2 e §4). Os demais em rajada → alguém sondando a rota (P3) |
+| `billing.webhook` com `unavailable`, `forbidden`, `not_configured`, `not_deployed`, `billing_off` (503) | nada foi gravado; a Stripe vai repetir | qualquer um sustentado por 15 min com cobrança ligada → P1 (clientes pagam e o plano não muda: runbook §2) |
+| `billing.webhook` com `price_mismatch`, `conflict`, `customer_mismatch` (nível `error`) | cobrança fora do catálogo; segunda assinatura paga; cliente de outra conta | **cada ocorrência** → P1, ação humana: `conflict` exige reembolso manual (runbook §3); `price_mismatch` exige corrigir o preço na Stripe |
+| `billing.webhook` com `topic=dispute` ou `topic=refund` (nível `warn`) | contestação (o plano já caiu) ou reembolso (o plano não muda sozinho) | cada ocorrência → P2: responder à contestação; conferir se o reembolso veio com o cancelamento |
+| `billing.webhook` com `unknown_customer`, `expired`, `invalid` | evento de cliente que não é nosso; retrato fora da janela; formato inesperado | `invalid` → P2: o adapter e o banco discordam do formato (mudança de API?) |
+| `billing.maintenance` (`outcome`: `ok`, `partial`, `not_configured`, `unauthorized`, `not_deployed`, `unavailable`; `graceExpired`, `holdsReleased`, `planChanges`, `purgedEvents`, `checked`, `corrected`, `failed`, `pending`) | uma execução do job diário | nenhuma execução `ok` em 36 h → P2 (prazos não vencem, cópias não são conferidas); **`corrected` > 0** → um webhook se perdeu (P2: runbook §2); `failed` > 0 em dois dias seguidos → P2; `pending` > 0 sustentado → mais de 50 assinaturas por dia para reler: aumentar o limite; `graceExpired` > 0 → contas perderam o plano hoje (acompanhar, não é incidente) |
+| `billing.checkout`, `billing.cancel`, `billing.resume`, `billing.change_plan`, `billing.self_service` (`outcome`) | ações do proprietário | `provider_unavailable` ou `provider_rejected` > 2% em 15 min → P1 (ninguém consegue assinar: runbook §5); `forbidden`/`not_found` em rajada da mesma sessão → tentativa direta por quem não é proprietário; `rate_limited` → possível abuso de checkouts |
+
+Assinaturas entrando no prazo de regularização: `select count(*) from public.billing_subscriptions where status = 'past_due' and grace_expired_at is null;` (acompanhar semanalmente; cada uma é um cliente a ponto de perder o plano e **não há e-mail nosso avisando**). Eventos esperando demais: o dashboard da Stripe mostra entregas pendentes; do nosso lado, `corrected` do job é a medida.

@@ -97,7 +97,7 @@ The copy lives in `apps/web/src/content/shared-report.ts`. The route is server-r
 | Page soft-deleted | Stops resolving. If the page is restored within its retention, the link resolves again |
 | Page or workspace purged | The row is deleted by the foreign key |
 | Workspace suspended or soft-deleted | Stops resolving |
-| `shareable_reports` lost (downgrade) | Stops resolving; the rows are kept, so the links work again if the entitlement returns. The management screen says why and offers no upgrade flow (Sprint 8) |
+| `shareable_reports` lost (downgrade) | Stops resolving; the rows are kept, so the links work again if the entitlement returns. The management screen says why; since ADR 0014 it also links the owner to the plans screen when plans are for sale, and the downgrade confirmation says how many active links will stop |
 | Creator leaves the workspace | Nothing: the link belongs to the workspace |
 | Page duplicated | Links are not copied (ADR 0012) |
 | Expiry, revocation | Unavailable from the next request on |
@@ -170,5 +170,5 @@ The part 1 rows of ADR 0012 were re-run against the code as it stands (pgTAP 040
 - An agency has one screen for all its pages and one link per client report, and the numbers on the three surfaces are the same by construction and by test.
 - Report links add a public, token-addressed read to the threat model (`docs/THREAT_MODEL.md`). Its safety rests on entropy, expiry, revocation and the closed field list, not on rate limiting.
 - The consolidated read's cost grows with the rows aggregated (pages × days), not with the number of requests: 3 PostgREST requests per render at 1, 10 and 50 pages (`apps/web/scripts/agency-scale.mjs`).
-- Sprint 8 switches `shareable_reports` and `analytics_days` with the plan; both are read at request time, so a plan change needs no data migration. Sprint 9 must add the scheduled purge of finished links and lookup counters, the platform rate limit, and report links to export and deletion.
+- Sprint 8 switches `shareable_reports` and `analytics_days` with the plan; both are read at request time, so a plan change needs no data migration. **Done in ADR 0014**, with no change to this ADR's functions. Sprint 9 must add the scheduled purge of finished links and lookup counters, the platform rate limit, and report links to export and deletion.
 - Without JavaScript the generic 404 is an empty page with the right status and headers: the framework renders not-found states on the client. The report itself is complete HTML.
