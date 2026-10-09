@@ -47,7 +47,7 @@ Verificado localmente (pgTAP + `next start` de produção + Lighthouse); nada pr
 - [x] P0 Validar URLs e bloquear esquemas perigosos.
 - [x] P1 Undo de exclusão recente.
 - [x] P1 Melhorar a edição no celular (pedido do founder em 09/10/2026, UX-085): navegação inferior, formulários em tela cheia, prévia preservando o formulário e ajuste ao teclado; revisão em `docs/ux/MOBILE_EDITOR_REVIEW.md`.
-- [ ] P1 Conferir a UX-085 em iOS/Android reais e navegadores embutidos; publicar e validar em staging.
+- [ ] P1 Conferir a UX-085 em iOS/Android reais e navegadores embutidos; validar novamente em staging. O primeiro uso no iPhone após a PR #24 revelou o editor preso na área reduzida pelo teclado ao tocar em Concluir; a correção precisa de reteste no aparelho.
 - [ ] P1 Validar com usuários reais (AC5: cinco blocos em < 10 min) — só proxy interno feito; depende das sessões de `docs/research/USABILITY_TEST_PLAN.md`.
 - [ ] P2 Arrastar e soltar para reordenar (alternativa por botões já existe; UX-029).
 - [ ] P2 Limpeza da coluna legada `profiles.social_links` (precisa de aprovação do founder).
