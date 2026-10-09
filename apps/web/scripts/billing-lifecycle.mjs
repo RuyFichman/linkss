@@ -81,6 +81,7 @@ function sql(statement) {
 function cleanup() {
   // Media, pages and billing rows cascade from the workspaces; the ledger has no foreign key.
   sql(`
+    delete from public.billing_events where provider_event_id like 'evt_emu%' or provider_event_id like 'reconcile:%_emu%' or provider_event_id in ('evt_unknown_customer', 'evt_crossed');
     delete from public.billing_events where workspace_id in (select w.id from public.workspaces w join auth.users u on u.id = w.created_by where u.email like '${EMAIL_PREFIX}%@example.test');
     delete from public.profiles where workspace_id in (select w.id from public.workspaces w join auth.users u on u.id = w.created_by where u.email like '${EMAIL_PREFIX}%@example.test');
     delete from public.slug_history where slug like '${SLUG_PREFIX}%';
