@@ -245,6 +245,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"legal_acceptances": {
+                  Row: {
+                    "accepted_at": string,"document_id": string,"document_sha256": string,"user_id": string
+                  }
+                  Insert: {
+                    "accepted_at"?: string,"document_id": string,"document_sha256": string,"user_id": string
+                  }
+                  Update: {
+                    "accepted_at"?: string,"document_id"?: string,"document_sha256"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "legal_acceptances_document_id_fkey"
+      columns: ["document_id"]
+isOneToOne: false
+      referencedRelation: "legal_documents"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"legal_documents": {
+                  Row: {
+                    "activated_at": string | null,"body": string,"body_sha256": string | null,"created_at": string,"id": string,"kind": string,"status": string,"version": string
+                  }
+                  Insert: {
+                    "activated_at"?: string | null,"body": string,"body_sha256"?: never,"created_at"?: string,"id"?: string,"kind": string,"status"?: string,"version": string
+                  }
+                  Update: {
+                    "activated_at"?: string | null,"body"?: string,"body_sha256"?: never,"created_at"?: string,"id"?: string,"kind"?: string,"status"?: string,"version"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"media_asset_shares": {
                   Row: {
                     "created_at": string,"media_id": string,"profile_id": string,"workspace_id": string
@@ -301,6 +333,19 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"moderation_reports": {
+                  Row: {
+                    "created_at": string,"detail": string | null,"id": string,"profile_id": string,"reason": string,"reported_day": string,"reporter_hash": string,"review_reason": string | null,"reviewed_at": string | null,"reviewed_by": string | null,"slug": string,"status": string,"workspace_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"detail"?: string | null,"id"?: string,"profile_id": string,"reason": string,"reported_day"?: string,"reporter_hash": string,"review_reason"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"slug": string,"status"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"detail"?: string | null,"id"?: string,"profile_id"?: string,"reason"?: string,"reported_day"?: string,"reporter_hash"?: string,"review_reason"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"slug"?: string,"status"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"plan_entitlements": {
                   Row: {
                     "bool_value": boolean | null,"created_at": string,"int_value": number | null,"key": Database["public"]['Enums']["entitlement_key"],"plan_id": string
@@ -352,6 +397,51 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"platform_admins": {
+                  Row: {
+                    "created_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"privacy_request_events": {
+                  Row: {
+                    "actor_user_id": string | null,"created_at": string,"from_status": string | null,"id": number,"reason_code": string | null,"request_id": string,"to_status": string
+                  }
+                  Insert: {
+                    "actor_user_id"?: string | null,"created_at"?: string,"from_status"?: string | null,"id"?: never,"reason_code"?: string | null,"request_id": string,"to_status": string
+                  }
+                  Update: {
+                    "actor_user_id"?: string | null,"created_at"?: string,"from_status"?: string | null,"id"?: never,"reason_code"?: string | null,"request_id"?: string,"to_status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "privacy_request_events_request_id_fkey"
+      columns: ["request_id"]
+isOneToOne: false
+      referencedRelation: "privacy_requests"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"privacy_requests": {
+                  Row: {
+                    "created_at": string,"evidence_reference": string | null,"id": string,"kind": string,"reason_code": string | null,"reviewed_at": string | null,"reviewed_by": string | null,"status": string,"updated_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"evidence_reference"?: string | null,"id"?: string,"kind": string,"reason_code"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status": string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"evidence_reference"?: string | null,"id"?: string,"kind"?: string,"reason_code"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"profile_publications": {
                   Row: {
                     "created_at": string,"document": NonNullable<Json>,"id": string,"profile_id": string,"published_by": string | null,"schema_version": number,"source_revision": number,"version": number,"workspace_id": string
@@ -379,13 +469,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "avatar_path": string | null,"bio": string,"blocks": NonNullable<Json>,"created_at": string,"created_by": string | null,"deleted_at": string | null,"draft_revision": number,"duplicated_from": string | null,"id": string,"live_publication_id": string | null,"published_at": string | null,"purge_after": string | null,"slug": string,"social_links": NonNullable<Json>,"status": Database["public"]['Enums']["profile_status"],"theme": Json | null,"title": string,"updated_at": string,"workspace_id": string
+                    "avatar_path": string | null,"bio": string,"blocks": NonNullable<Json>,"created_at": string,"created_by": string | null,"deleted_at": string | null,"draft_revision": number,"duplicated_from": string | null,"id": string,"live_publication_id": string | null,"moderation_status": string,"published_at": string | null,"purge_after": string | null,"slug": string,"social_links": NonNullable<Json>,"status": Database["public"]['Enums']["profile_status"],"theme": Json | null,"title": string,"updated_at": string,"workspace_id": string
                   }
                   Insert: {
-                    "avatar_path"?: string | null,"bio"?: string,"blocks"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"draft_revision"?: number,"duplicated_from"?: string | null,"id"?: string,"live_publication_id"?: string | null,"published_at"?: string | null,"purge_after"?: string | null,"slug": string,"social_links"?: NonNullable<Json>,"status"?: Database["public"]['Enums']["profile_status"],"theme"?: Json | null,"title": string,"updated_at"?: string,"workspace_id": string
+                    "avatar_path"?: string | null,"bio"?: string,"blocks"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"draft_revision"?: number,"duplicated_from"?: string | null,"id"?: string,"live_publication_id"?: string | null,"moderation_status"?: string,"published_at"?: string | null,"purge_after"?: string | null,"slug": string,"social_links"?: NonNullable<Json>,"status"?: Database["public"]['Enums']["profile_status"],"theme"?: Json | null,"title": string,"updated_at"?: string,"workspace_id": string
                   }
                   Update: {
-                    "avatar_path"?: string | null,"bio"?: string,"blocks"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"draft_revision"?: number,"duplicated_from"?: string | null,"id"?: string,"live_publication_id"?: string | null,"published_at"?: string | null,"purge_after"?: string | null,"slug"?: string,"social_links"?: NonNullable<Json>,"status"?: Database["public"]['Enums']["profile_status"],"theme"?: Json | null,"title"?: string,"updated_at"?: string,"workspace_id"?: string
+                    "avatar_path"?: string | null,"bio"?: string,"blocks"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"draft_revision"?: number,"duplicated_from"?: string | null,"id"?: string,"live_publication_id"?: string | null,"moderation_status"?: string,"published_at"?: string | null,"purge_after"?: string | null,"slug"?: string,"social_links"?: NonNullable<Json>,"status"?: Database["public"]['Enums']["profile_status"],"theme"?: Json | null,"title"?: string,"updated_at"?: string,"workspace_id"?: string
                   }
                   Relationships: [
                     {
@@ -561,7 +651,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "accept_workspace_invitation":
+            "accept_current_legal":
+{ Args: { "p_privacy_hash": string,"p_privacy_id": string,"p_terms_hash": string,"p_terms_id": string }; Returns: boolean
+                           },
+"accept_workspace_invitation":
 { Args: { "p_token": string }; Returns: {
               "state": string,"workspace_id": string
             }[]
@@ -623,11 +716,26 @@ isOneToOne: false
 "ensure_personal_workspace":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
+"export_my_data":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"export_workspace_data":
+{ Args: { "p_workspace_id": string }; Returns: Json
+                           },
 "fail_media_asset":
 { Args: { "p_media_id": string }; Returns: undefined
                            },
 "finish_media_cleanup":
 { Args: { "p_media_ids": (string)[] }; Returns: number
+                           },
+"get_legal_status":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"get_my_legal_history":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"get_my_privacy_requests":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "get_profile_analytics":
 { Args: { "p_from": string,"p_profile_id": string,"p_to": string }; Returns: Json
@@ -650,6 +758,12 @@ isOneToOne: false
                            },
 "ingest_analytics_events":
 { Args: { "p_payload": string,"p_signature": string }; Returns: Json
+                           },
+"list_moderation_reports":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"list_privacy_requests":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "list_workspace_members":
 { Args: { "p_workspace_id": string }; Returns: {
@@ -687,8 +801,20 @@ isOneToOne: false
 "remove_workspace_member":
 { Args: { "p_membership_id": string }; Returns: undefined
                            },
+"request_account_deletion":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"request_data_access":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
 "restore_profile_publication":
 { Args: { "p_profile_id": string,"p_publication_id": string }; Returns: number
+                           },
+"review_moderation_report":
+{ Args: { "p_reason": string,"p_report_id": string,"p_status": string }; Returns: string
+                           },
+"review_privacy_request":
+{ Args: { "p_evidence_reference"?: string,"p_reason_code": string,"p_request_id": string,"p_status": string }; Returns: string
                            },
 "revoke_report_link":
 { Args: { "p_link_id": string }; Returns: undefined
@@ -702,6 +828,9 @@ isOneToOne: false
 "run_billing_maintenance":
 { Args: { "p_limit"?: number,"p_now"?: string }; Returns: Json
                            },
+"set_profile_moderation":
+{ Args: { "p_profile_id": string,"p_reason": string,"p_report_id"?: string,"p_suspend": boolean }; Returns: Json
+                           },
 "soft_delete_profile":
 { Args: { "p_profile_id": string }; Returns: undefined
                            },
@@ -710,6 +839,9 @@ isOneToOne: false
                            },
 "submit_form_lead":
 { Args: { "p_block_id": string,"p_client_hash"?: string,"p_consent"?: boolean,"p_fields": Json,"p_honeypot"?: string,"p_slug": string }; Returns: string
+                           },
+"submit_moderation_report":
+{ Args: { "p_signature": string,"p_text": string }; Returns: string
                            },
 "unarchive_profile":
 { Args: { "p_profile_id": string }; Returns: undefined
@@ -724,7 +856,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "analytics_device": "mobile"|"tablet"|"desktop"|"unknown","analytics_dimension": "total"|"block"|"source"|"utm"|"device"|"country","analytics_event_type": "page_view"|"link_click"|"social_click"|"embed_load"|"whatsapp_click"|"pix_copy"|"pix_pay_click"|"form_submit"|"badge_click","analytics_source": "direct"|"instagram"|"facebook"|"whatsapp"|"tiktok"|"youtube"|"x"|"linkedin"|"telegram"|"google"|"search"|"other","audit_action": "auth.sign_in"|"auth.sign_out"|"auth.password_reset_completed"|"workspace.created"|"workspace.deleted"|"membership.role_changed"|"membership.removed"|"profile.slug_changed"|"profile.deleted"|"profile.published"|"profile.unpublished"|"profile.publication_restored"|"lead.deleted"|"lead.exported"|"analytics.exported"|"profile.archived"|"profile.unarchived"|"profile.duplicated"|"invitation.created"|"invitation.revoked"|"invitation.accepted"|"report_link.created"|"report_link.revoked"|"billing.checkout_started"|"billing.change_requested"|"billing.subscription_changed"|"billing.plan_changed","billing_interval": "month"|"year","billing_subscription_status": "incomplete"|"active"|"past_due"|"ended","entitlement_key": "max_profiles"|"analytics_days"|"team_members"|"custom_domain"|"remove_badge"|"shareable_reports"|"storage_mb","media_kind": "avatar"|"image","media_status": "pending"|"ready"|"failed"|"deleting","membership_status": "invited"|"active"|"revoked","profile_status": "draft"|"published"|"archived","slug_release_reason": "changed"|"deleted","workspace_kind": "personal"|"agency","workspace_role": "owner"|"admin"|"editor","workspace_status": "active"|"suspended"
+            "analytics_device": "mobile"|"tablet"|"desktop"|"unknown","analytics_dimension": "total"|"block"|"source"|"utm"|"device"|"country","analytics_event_type": "page_view"|"link_click"|"social_click"|"embed_load"|"whatsapp_click"|"pix_copy"|"pix_pay_click"|"form_submit"|"badge_click","analytics_source": "direct"|"instagram"|"facebook"|"whatsapp"|"tiktok"|"youtube"|"x"|"linkedin"|"telegram"|"google"|"search"|"other","audit_action": "auth.sign_in"|"auth.sign_out"|"auth.password_reset_completed"|"workspace.created"|"workspace.deleted"|"membership.role_changed"|"membership.removed"|"profile.slug_changed"|"profile.deleted"|"profile.published"|"profile.unpublished"|"profile.publication_restored"|"lead.deleted"|"lead.exported"|"analytics.exported"|"profile.archived"|"profile.unarchived"|"profile.duplicated"|"invitation.created"|"invitation.revoked"|"invitation.accepted"|"report_link.created"|"report_link.revoked"|"billing.checkout_started"|"billing.change_requested"|"billing.subscription_changed"|"billing.plan_changed"|"legal.accepted"|"privacy.account_exported"|"privacy.workspace_exported"|"privacy.deletion_requested"|"privacy.data_access_requested"|"privacy.request_reviewed"|"moderation.reported"|"moderation.reviewed"|"moderation.suspended"|"moderation.reactivated","billing_interval": "month"|"year","billing_subscription_status": "incomplete"|"active"|"past_due"|"ended","entitlement_key": "max_profiles"|"analytics_days"|"team_members"|"custom_domain"|"remove_badge"|"shareable_reports"|"storage_mb","media_kind": "avatar"|"image","media_status": "pending"|"ready"|"failed"|"deleting","membership_status": "invited"|"active"|"revoked","profile_status": "draft"|"published"|"archived","slug_release_reason": "changed"|"deleted","workspace_kind": "personal"|"agency","workspace_role": "owner"|"admin"|"editor","workspace_status": "active"|"suspended"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -840,7 +972,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "analytics_device": ["mobile", "tablet", "desktop", "unknown"],"analytics_dimension": ["total", "block", "source", "utm", "device", "country"],"analytics_event_type": ["page_view", "link_click", "social_click", "embed_load", "whatsapp_click", "pix_copy", "pix_pay_click", "form_submit", "badge_click"],"analytics_source": ["direct", "instagram", "facebook", "whatsapp", "tiktok", "youtube", "x", "linkedin", "telegram", "google", "search", "other"],"audit_action": ["auth.sign_in", "auth.sign_out", "auth.password_reset_completed", "workspace.created", "workspace.deleted", "membership.role_changed", "membership.removed", "profile.slug_changed", "profile.deleted", "profile.published", "profile.unpublished", "profile.publication_restored", "lead.deleted", "lead.exported", "analytics.exported", "profile.archived", "profile.unarchived", "profile.duplicated", "invitation.created", "invitation.revoked", "invitation.accepted", "report_link.created", "report_link.revoked", "billing.checkout_started", "billing.change_requested", "billing.subscription_changed", "billing.plan_changed"],"billing_interval": ["month", "year"],"billing_subscription_status": ["incomplete", "active", "past_due", "ended"],"entitlement_key": ["max_profiles", "analytics_days", "team_members", "custom_domain", "remove_badge", "shareable_reports", "storage_mb"],"media_kind": ["avatar", "image"],"media_status": ["pending", "ready", "failed", "deleting"],"membership_status": ["invited", "active", "revoked"],"profile_status": ["draft", "published", "archived"],"slug_release_reason": ["changed", "deleted"],"workspace_kind": ["personal", "agency"],"workspace_role": ["owner", "admin", "editor"],"workspace_status": ["active", "suspended"]
+            "analytics_device": ["mobile", "tablet", "desktop", "unknown"],"analytics_dimension": ["total", "block", "source", "utm", "device", "country"],"analytics_event_type": ["page_view", "link_click", "social_click", "embed_load", "whatsapp_click", "pix_copy", "pix_pay_click", "form_submit", "badge_click"],"analytics_source": ["direct", "instagram", "facebook", "whatsapp", "tiktok", "youtube", "x", "linkedin", "telegram", "google", "search", "other"],"audit_action": ["auth.sign_in", "auth.sign_out", "auth.password_reset_completed", "workspace.created", "workspace.deleted", "membership.role_changed", "membership.removed", "profile.slug_changed", "profile.deleted", "profile.published", "profile.unpublished", "profile.publication_restored", "lead.deleted", "lead.exported", "analytics.exported", "profile.archived", "profile.unarchived", "profile.duplicated", "invitation.created", "invitation.revoked", "invitation.accepted", "report_link.created", "report_link.revoked", "billing.checkout_started", "billing.change_requested", "billing.subscription_changed", "billing.plan_changed", "legal.accepted", "privacy.account_exported", "privacy.workspace_exported", "privacy.deletion_requested", "privacy.data_access_requested", "privacy.request_reviewed", "moderation.reported", "moderation.reviewed", "moderation.suspended", "moderation.reactivated"],"billing_interval": ["month", "year"],"billing_subscription_status": ["incomplete", "active", "past_due", "ended"],"entitlement_key": ["max_profiles", "analytics_days", "team_members", "custom_domain", "remove_badge", "shareable_reports", "storage_mb"],"media_kind": ["avatar", "image"],"media_status": ["pending", "ready", "failed", "deleting"],"membership_status": ["invited", "active", "revoked"],"profile_status": ["draft", "published", "archived"],"slug_release_reason": ["changed", "deleted"],"workspace_kind": ["personal", "agency"],"workspace_role": ["owner", "admin", "editor"],"workspace_status": ["active", "suspended"]
           }
         }
 } as const

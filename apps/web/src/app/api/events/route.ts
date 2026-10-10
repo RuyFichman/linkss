@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { appUrl } from "@/lib/app-url";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
+import { readLimitedText } from "@/lib/security/limited-body";
 import { analyticsSigningSecret } from "@/modules/analytics/attestation";
 import { MAX_REQUEST_BYTES } from "@/modules/analytics/contract";
 import { DEFAULT_REPORTING_TIME_ZONE, localDay } from "@/modules/analytics/dates";
@@ -43,11 +44,13 @@ export async function POST(request: Request): Promise<Response> {
   const contentType = (request.headers.get("content-type") ?? "").split(";")[0]?.trim().toLowerCase() ?? "";
   if (!CONTENT_TYPES.includes(contentType)) return drop("invalid");
   const length = Number(request.headers.get("content-length") ?? "0");
-  if (!Number.isFinite(length) || length > MAX_REQUEST_BYTES) return drop("invalid");
+  if (!Number.isFinite(length) || length < 0 || length > MAX_REQUEST_BYTES) return drop("invalid");
 
   let body: string;
   try {
-    body = await request.text();
+    const limited = await readLimitedText(request, MAX_REQUEST_BYTES);
+    if (limited === null) return drop("invalid");
+    body = limited;
   } catch {
     return drop("invalid");
   }

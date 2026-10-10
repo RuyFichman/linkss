@@ -160,6 +160,22 @@ A ordem recomendada é esta, mas **qualquer ordem é segura**: enquanto faltar a
 
 **Stack local.** `node scripts/billing-lifecycle.mjs` em `apps/web` (depois de `NEXT_PUBLIC_APP_URL=http://127.0.0.1:3100 npm run build --workspace=@lnk/web`) sobe o emulador e a aplicação e percorre o ciclo de vida; `--serve` deixa no ar para o navegador; `--cleanup` remove as contas `qa-billing-*@example.test`. Ele cria o segredo `billing_signing_secret` no Vault local se não existir. Detalhes no cabeçalho do arquivo.
 
+## Passos de deploy da Sprint 9 (aceite, privacidade, denúncias, headers)
+
+**Nada disto foi aplicado em staging.** Verificado só no stack local. Qualquer ordem é segura: sem as migrações, `/app` funciona como antes, `/termos` e `/cookies` dizem que o texto está em revisão, `/privacidade` mostra o aviso provisório, *Meus dados* mostra históricos vazios e os botões de exportar e pedir respondem que não está disponível; sem o segredo, `/denunciar` diz que o canal está indisponível e a página pública continua no ar.
+
+| # | Passo | Depois dele |
+|---|---|---|
+| 1 | **Merge do PR** em `main` (publica em staging). Todas as respostas passam a levar CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy` e `Permissions-Policy`; o Next sobe para 16.4.0 | conferir no navegador a página pública (imagens e embed depois do clique), o editor (upload e corte de imagem) e o login: uma violação aparece no console como "Content Security Policy" |
+| 2 | **Migrações:** `npx supabase db push`. Deve listar `202610090003_sprint9_audit_actions`, `202610090004_legal_privacy` e `202610090005_moderation`. Só acrescentam objetos, mais a coluna `profiles.moderation_status` (padrão `active`); mudam duas funções existentes: `get_public_page` (página suspensa responde `suspended`) e `private.lock_profile_for_publishing` (página suspensa não publica) | *Meus dados* exporta e registra pedidos; nenhum texto jurídico fica ativo |
+| 3 | **Segredo no Vault**, pelo SQL Editor: `select vault.create_secret(encode(extensions.gen_random_bytes(32), 'hex'), 'moderation_signing_secret');` e, na Vercel, `MODERATION_SIGNING_SECRET` com **o mesmo valor** (*Sensitive*). Novo deploy | `/denunciar` passa a gravar denúncias |
+| 4 | **Administrador da plataforma**, pelo SQL Editor: `insert into public.platform_admins (user_id) select id from auth.users where email = '<e-mail>';` | essa pessoa abre `/app/administracao/denuncias` e `/app/administracao/privacidade`; para todas as outras as duas rotas respondem 404 |
+| 5 | **Textos jurídicos: só depois da revisão do advogado.** Inserir Termos e Aviso de Privacidade aprovados em `legal_documents` por uma migração nova e ativar **os dois na mesma transação** (`status = 'active'`, `activated_at = now()`) | toda pessoa com sessão é levada a `/aceite` antes de usar `/app`. Ativar só um dos dois bloqueia a área autenticada até corrigir |
+
+**Rollback da aplicação para antes da Sprint 9 depois das migrações:** suportado. O código antigo não conhece as tabelas novas; uma página suspensa continua fora do ar, porque a decisão está em `get_public_page`.
+
+**Stack local.** A denúncia precisa de `MODERATION_SIGNING_SECRET` em `apps/web/.env.local` e do mesmo valor no Vault local, como os outros segredos de assinatura.
+
 ## Checklist de Auth para projetos hospedados (não aplicado)
 
 Configurar em staging e produção **antes** de convidar usuários externos, espelhando `supabase/config.toml`. Nenhuma destas mudanças foi aplicada no projeto hospedado.

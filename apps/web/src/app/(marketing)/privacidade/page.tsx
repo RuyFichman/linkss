@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { PRODUCT } from "@/lib/product";
+import { currentLegalDocuments } from "@/modules/legal/server";
 import { BRAND_CLASS } from "@/ui/brand-font";
 
 export const metadata: Metadata = {
@@ -16,7 +17,22 @@ const P = "mt-3 leading-7";
  * (AGENTS.md §10): the waitlist form and, since Sprint 6, the visit counting on public pages
  * (ADR 0011, docs/DATA_MAP.md). The legal review before external users replaces this text.
  */
-export default function PrivacyPage() {
+export const dynamic = "force-dynamic";
+
+export default async function PrivacyPage() {
+  const active = (await currentLegalDocuments()).find((document) => document.kind === "privacy");
+  if (active) {
+    return (
+      <main className={BRAND_CLASS + " py-8 sm:py-16"}>
+        <article className="app-shell max-w-3xl surface-card p-5 sm:p-10">
+          <h1 className="text-3xl font-bold">Aviso de Privacidade</h1>
+          <p className="mt-3 text-sm text-app-muted">Versão {active.version} · hash {active.sha256.slice(0, 12)}…</p>
+          <div className="mt-6 whitespace-pre-wrap leading-7">{active.body}</div>
+          <Link className="ui-button ui-button-secondary mt-8" href="/">Voltar para a página inicial</Link>
+        </article>
+      </main>
+    );
+  }
   return (
     <main className={`${BRAND_CLASS} py-8 sm:py-16`}>
       <article className="app-shell max-w-3xl surface-card p-5 sm:p-10">
