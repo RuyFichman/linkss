@@ -90,8 +90,8 @@ select is(
 select is(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname in ('public', 'private') and has_function_privilege('anon', p.oid, 'execute')),
-  array['apply_billing_snapshot', 'get_legal_status', 'get_public_page', 'get_shared_report', 'ingest_analytics_events', 'submit_form_lead', 'submit_moderation_report'],
-  'anon can execute only the public page lookup, the shared report read, the active legal text, the form submission and the three attested writes (analytics events, billing snapshots, abuse reports)'
+  array['apply_billing_snapshot', 'get_legal_status', 'get_public_page', 'get_public_page_by_domain', 'get_shared_report', 'ingest_analytics_events', 'submit_form_lead', 'submit_moderation_report'],
+  'anon can execute only the public page lookups (by address and by custom hostname), the shared report read, the active legal text, the form submission and the three attested writes (analytics events, billing snapshots, abuse reports)'
 );
 
 select is(
@@ -109,8 +109,8 @@ select is(
 
 select is(
   (select count(*)::int from public.plan_entitlements),
-  21,
-  'three plans with seven typed entitlements each are seeded'
+  24,
+  'three plans with eight typed entitlements each are seeded'
 );
 
 select is(

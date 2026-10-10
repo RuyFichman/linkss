@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { logEvent } from "@/lib/observability/logger";
+import { isMissingSchemaError } from "@/lib/supabase/missing-schema";
 import { createPublicSupabaseClient } from "@/lib/supabase/public";
 import { getSupabase, supabaseIdentity } from "@/modules/identity/session";
 import { mapPublicPageRow, PublicPageUnavailableError, type PublicPageResult } from "./public-page";
@@ -31,6 +32,24 @@ export const getPublicPage = cache(async (slug: string): Promise<PublicPageResul
     logEvent("error", "public_page.invalid_document", { durationMs: Math.round(performance.now() - startedAt) });
     throw mappingError;
   }
+});
+
+/**
+ * Resolves a custom hostname to its page (ADR 0016). Same contract as `getPublicPage`; a hostname
+ * that is unknown, unproven or out of plan is "not_found", and so is a database that does not have
+ * the migration yet. Hostnames are not logged.
+ */
+export const getPublicPageByDomain = cache(async (hostname: string): Promise<PublicPageResult> => {
+  const startedAt = performance.now();
+  const { data, error } = await createPublicSupabaseClient().rpc("get_public_page_by_domain", { p_hostname: hostname }).maybeSingle();
+  if (error) {
+    if (isMissingSchemaError(error)) return { state: "not_found" };
+    logEvent("error", "public_page.domain_lookup_failed", { errorCode: error.code, durationMs: Math.round(performance.now() - startedAt) });
+    throw new PublicPageUnavailableError("lookup_failed");
+  }
+  const result = mapPublicPageRow(data);
+  logEvent("info", "public_page.resolved", { state: result.state, via: "domain", version: result.state === "published" ? result.version : undefined, durationMs: Math.round(performance.now() - startedAt) });
+  return result;
 });
 
 /** Request-scoped publishing service acting as the signed-in user (RLS and RPC checks apply). */

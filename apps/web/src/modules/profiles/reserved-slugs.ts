@@ -2,7 +2,7 @@
 // route segment under src/app (route test). Add new entries through a new migration as well.
 export const RESERVED_SLUGS = [
   // Sprint 1
-  "admin", "api", "app", "login", "logout", "proto", "p", "r", "suporte", "privacidade", "agencias", "profissionais",
+  "admin", "api", "app", "login", "logout", "proto", "p", "r", "d", "suporte", "privacidade", "agencias", "profissionais",
   // Sprint 2 routes
   "auth", "cadastro", "entrar", "sair", "confirmar-email", "recuperar-acesso", "redefinir-senha",
   // Likely platform pages

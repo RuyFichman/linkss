@@ -9,6 +9,7 @@ import { BillingActionForm } from "@/modules/billing/components/billing-action-f
 import { downgradeImpact, hasImpact, type ImpactItem } from "@/modules/billing/downgrade-impact";
 import { resolveBillingMode } from "@/modules/billing/mode";
 import { formatBillingDate, impactSentence, planFeatureLines } from "@/modules/billing/presentation";
+import { domainsSignerFromEnv } from "@/modules/domains/config";
 import { fetchWorkspaceBilling, fetchWorkspaceUsage } from "@/modules/billing/server";
 import { availableBillingActions, billingViewState } from "@/modules/billing/subscription";
 import { planEntitlementsFromProduct } from "@/modules/entitlements";
@@ -86,7 +87,7 @@ export default async function ConfirmPlanChangePage({ params, searchParams }: { 
       {isUpgrade ? (
         <section className="surface-card grid gap-3 p-5 sm:p-6" aria-labelledby="gains-title">
           <h2 id="gains-title" className="text-xl font-bold">{copy.confirm.gainsTitle}</h2>
-          <ul className="m-0 grid list-disc gap-1 pl-5">{planFeatureLines(target).map((line) => <li key={line}>{line}</li>)}</ul>
+          <ul className="m-0 grid list-disc gap-1 pl-5">{planFeatureLines(target, { customDomains: domainsSignerFromEnv() !== null }).map((line) => <li key={line}>{line}</li>)}</ul>
         </section>
       ) : (
         <section className="surface-card grid gap-4 p-5 sm:p-6" aria-labelledby="impact-title">

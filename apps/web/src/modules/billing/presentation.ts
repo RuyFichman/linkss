@@ -21,8 +21,12 @@ export function formatBillingDate(value: Date | string | null | undefined): stri
   return Number.isNaN(date.getTime()) ? "" : DATE.format(date);
 }
 
-/** What a plan includes, generated from its entitlements (never typed by hand per plan). */
-export function planFeatureLines(planId: PlanId): string[] {
+/**
+ * What a plan includes, generated from its entitlements (never typed by hand per plan).
+ * `customDomains: false` leaves the custom-domain line out: the screen lists what works in this
+ * environment, and custom domains need their own configuration (ADR 0016).
+ */
+export function planFeatureLines(planId: PlanId, options: { customDomains?: boolean } = {}): string[] {
   const { limits, features } = planEntitlementsFromProduct(planId);
   const copy = BILLING_COPY.features;
   return [
@@ -32,7 +36,8 @@ export function planFeatureLines(planId: PlanId): string[] {
     copy.storage_mb(limits.storage_mb),
     features.remove_badge ? copy.remove_badge.on : copy.remove_badge.off,
     features.shareable_reports ? copy.shareable_reports.on : copy.shareable_reports.off,
-    // `custom_domain` is left out until custom domains exist (Sprint 8, part 2): the screen lists what works.
+    ...(options.customDomains === false ? [] : [features.custom_domain ? copy.custom_domain.on : copy.custom_domain.off]),
+    features.tracking_pixels ? copy.tracking_pixels.on : copy.tracking_pixels.off,
   ];
 }
 
@@ -90,6 +95,10 @@ export function impactSentence(item: ImpactItem): string {
       return item.kind === "kept" ? copy.reportsKept : copy.reportsStop(item.activeLinks);
     case "remove_badge":
       return item.kind === "kept" ? copy.badgeKept : copy.badgeStops;
+    case "custom_domain":
+      return item.kind === "kept" ? copy.domainsKept(item.domains) : copy.domainsStop(item.domains);
+    case "tracking_pixels":
+      return item.kind === "kept" ? copy.pixelsKept(item.pages) : copy.pixelsStop(item.pages);
   }
 }
 

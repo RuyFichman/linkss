@@ -140,12 +140,14 @@ export const fetchWorkspaceBilling = cache(async (workspaceId: string, withInvoi
 export async function fetchWorkspaceUsage(workspaceId: string): Promise<WorkspaceUsage> {
   const supabase = await getSupabase();
   const now = new Date().toISOString();
-  const [pages, members, invitations, links, storage] = await Promise.all([
+  const [pages, members, invitations, links, storage, domains, pixels] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
     supabase.from("workspace_memberships").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "active"),
     supabase.from("workspace_invitations").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).is("accepted_at", null).is("revoked_at", null).gt("expires_at", now),
     supabase.from("report_links").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).is("revoked_at", null).gt("expires_at", now),
     supabase.rpc("workspace_storage_usage", { p_workspace_id: workspaceId }).maybeSingle(),
+    supabase.from("profile_domains").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "active"),
+    supabase.from("profile_pixels").select("profile_id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
   ]);
   for (const result of [pages, members, invitations, links, storage]) {
     if (result.error) throw new Error(`Workspace usage lookup failed: ${result.error.code}`);
@@ -153,6 +155,8 @@ export async function fetchWorkspaceUsage(workspaceId: string): Promise<Workspac
   return {
     pages: pages.count ?? 0, members: members.count ?? 0, pendingInvitations: invitations.count ?? 0,
     activeReportLinks: links.count ?? 0, storageBytes: Number(storage.data?.used_bytes ?? 0),
+    // Before the part 2 migration these two tables do not exist: nothing is in use.
+    activeDomains: domains.error ? 0 : domains.count ?? 0, pagesWithPixels: pixels.error ? 0 : pixels.count ?? 0,
   };
 }
 

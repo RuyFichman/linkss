@@ -6,7 +6,7 @@ select tests.remember('ana', tests.create_user('ana@example.test', 'Ana'));
 select tests.authenticate_as(tests.id('ana'));
 select tests.remember('ws', public.ensure_personal_workspace());
 
-select is((select count(*)::int from public.plan_entitlements), 21, 'signed-in users read the entitlement catalogue');
+select is((select count(*)::int from public.plan_entitlements), 24, 'signed-in users read the entitlement catalogue');
 select lives_ok(format('insert into public.profiles (workspace_id, title, slug) values (%L, %L, %L)', tests.id('ws'), 'Primeira', 'primeira-pagina'),
   'Free: the first page is allowed');
 select throws_ok(format('insert into public.profiles (workspace_id, title, slug) values (%L, %L, %L)', tests.id('ws'), 'Segunda', 'segunda-pagina'),

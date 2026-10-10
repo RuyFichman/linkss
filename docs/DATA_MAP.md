@@ -262,3 +262,23 @@ Decisão: ADR 0015. Verificado só no stack local (pgTAP `180-sprint9-privacy-mo
 | `moderation_reports` | **não exportado** (a conta denunciada não lê denúncias) | manual |
 | `waitlist_signups` | JSON pessoal, pelo e-mail da conta | manual |
 | Logs da Vercel e do Supabase, cópias em cache e prévias de link de terceiros | **não exportados** | retenção do fornecedor, não confirmada |
+
+## Dados adicionados na Sprint 8, parte 2 (domínio próprio e pixels)
+
+Decisões: ADR 0016 e ADR 0017. **Fluxos novos para fora do produto, ainda não ligados em nenhum ambiente hospedado:**
+
+- **Vercel (API de domínios):** quando o ambiente tiver `VERCEL_API_TOKEN`, o produto envia à Vercel o **nome do domínio** que o cliente comprovou. A Vercel já é o provedor de hospedagem; o dado novo é a lista de domínios dos clientes.
+- **Resolvedores DNS públicos (Cloudflare `1.1.1.1`, Google `8.8.8.8`):** a cada verificação o servidor consulta o TXT `_linkfav.<domínio>`. Eles recebem o nome consultado e o endereço do servidor; nenhum dado de pessoa.
+- **Meta e Google (pixels):** o **navegador do visitante**, e só depois do aceite, carrega as bibliotecas desses fornecedores e lhes envia a visita (endereço IP, navegador, URL, cookies do fornecedor), na conta do **dono da página**. O produto não recebe nem guarda esses dados. Tratamento fora do Brasil. **Antes de liberar para clientes:** revisão jurídica dos papéis (dono da página × produto), do texto do aviso e da menção nos Termos e na Política de Privacidade (lista no ADR 0017).
+
+| Store / tabela | Conteúdo | Dado pessoal? | Finalidade | Quem lê | Retenção |
+|---|---|---|---|---|---|
+| `profile_domains` | conta, página, nome do domínio, desafio (público, vai para o DNS), situação, roteamento, quem registrou (`created_by`), datas | o nome do domínio pode identificar uma pessoa (ex.: `joaosilva.com.br`); `created_by` é identificador de usuário | abrir a página no endereço do cliente e provar o controle | membros da conta | vida da página (cascata); a linha é apagada ao remover o domínio |
+| `profile_pixels` | conta, página, ID do Meta Pixel, ID de medição do Google Analytics, quem alterou, data | identificadores de contas de anúncios e medição do cliente; `updated_by` é identificador de usuário | carregar as ferramentas do cliente na página pública | membros da conta; a página pública recebe os dois identificadores | vida da página (cascata); a linha é apagada ao limpar os dois códigos |
+| `audit_events` (ações novas) | `domain.claimed`, `domain.verified`, `domain.lapsed`, `domain.removed` com o **nome do domínio**; `pixels.updated` com quais ferramentas estão ligadas (nunca os identificadores) | o nome do domínio, como acima | trilha de mudanças sensíveis | proprietário e administrador | a da trilha (1 ano, provisória) |
+| `plan_entitlements` (`tracking_pixels`) | qual plano inclui pixels | não | catálogo | quem tem sessão | permanente |
+| Navegador do visitante: `localStorage` `lnk_pixel_consent:<endereço da página>` | a escolha (aceito ou recusado) e os identificadores para os quais ela foi dada | não identifica o visitante; fica só no aparelho dele | lembrar a escolha e não perguntar a cada visita | só a própria página | até o visitante limpar os dados do navegador; nova pergunta se os identificadores mudarem |
+
+**O que não é guardado:** o conteúdo do registro TXT além dos valores no formato do desafio; a resposta da Vercel; quem aceitou ou recusou o aviso; qualquer dado que os pixels enviam.
+
+**Exportação e exclusão:** `profile_domains` e `profile_pixels` **ainda não entram** em `export_workspace_data` (pendência registrada no backlog). Na exclusão de uma página ou conta as duas tabelas saem por cascata; o domínio anexado ao projeto na Vercel **não** é removido por essa cascata e precisa entrar no procedimento de exclusão (Sprint 9).

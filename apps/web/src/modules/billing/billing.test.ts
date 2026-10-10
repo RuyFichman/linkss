@@ -204,7 +204,7 @@ describe("user-facing billing state", () => {
 });
 
 describe("downgrade impact (AC3)", () => {
-  const usage = (overrides: Partial<WorkspaceUsage> = {}): WorkspaceUsage => ({ pages: 3, members: 2, pendingInvitations: 0, activeReportLinks: 1, storageBytes: 40 * 1024 * 1024, ...overrides });
+  const usage = (overrides: Partial<WorkspaceUsage> = {}): WorkspaceUsage => ({ pages: 3, members: 2, pendingInvitations: 0, activeReportLinks: 1, storageBytes: 40 * 1024 * 1024, activeDomains: 0, pagesWithPixels: 0, ...overrides });
   const agency = planEntitlementsFromProduct("agency");
   const pro = planEntitlementsFromProduct("pro");
   const free = planEntitlementsFromProduct("free");
@@ -248,9 +248,13 @@ describe("downgrade impact (AC3)", () => {
 
 describe("plan features are generated from the entitlements (AC5)", () => {
   it("lists what each plan includes", () => {
-    expect(planFeatureLines("free")).toEqual(["1 página", "Só você na conta", "Resultados dos últimos 7 dias", "20 MB para imagens", "Selo do produto no rodapé das páginas", "Sem link de relatório para o cliente"]);
-    expect(planFeatureLines("pro")).toEqual(["1 página", "Só você na conta", "Resultados dos últimos 90 dias", "100 MB para imagens", "Páginas e relatórios sem o selo do produto", "Sem link de relatório para o cliente"]);
-    expect(planFeatureLines("agency")).toEqual(["10 páginas", "Equipe de até 5 pessoas", "Resultados dos últimos 90 dias", "500 MB para imagens", "Páginas e relatórios sem o selo do produto", "Link de relatório para o cliente"]);
+    expect(planFeatureLines("free")).toEqual(["1 página", "Só você na conta", "Resultados dos últimos 7 dias", "20 MB para imagens", "Selo do produto no rodapé das páginas", "Sem link de relatório para o cliente", "Endereço no domínio do produto", "Sem Meta Pixel nem Google Analytics"]);
+    expect(planFeatureLines("pro")).toEqual(["1 página", "Só você na conta", "Resultados dos últimos 90 dias", "100 MB para imagens", "Páginas e relatórios sem o selo do produto", "Sem link de relatório para o cliente", "Domínio próprio em cada página", "Meta Pixel e Google Analytics nas páginas"]);
+    expect(planFeatureLines("agency")).toEqual(["10 páginas", "Equipe de até 5 pessoas", "Resultados dos últimos 90 dias", "500 MB para imagens", "Páginas e relatórios sem o selo do produto", "Link de relatório para o cliente", "Domínio próprio em cada página", "Meta Pixel e Google Analytics nas páginas"]);
+  });
+
+  it("leaves custom domains out where they are not configured", () => {
+    expect(planFeatureLines("pro", { customDomains: false })).toEqual(["1 página", "Só você na conta", "Resultados dos últimos 90 dias", "100 MB para imagens", "Páginas e relatórios sem o selo do produto", "Sem link de relatório para o cliente", "Meta Pixel e Google Analytics nas páginas"]);
   });
 
   it("follows product.ts: every plan has a name and a description", () => {

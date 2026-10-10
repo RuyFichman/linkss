@@ -135,3 +135,20 @@ Os eventos carregam tópico, desfecho e contagens — nunca o conteúdo de um ev
 | `billing.checkout`, `billing.cancel`, `billing.resume`, `billing.change_plan`, `billing.self_service` (`outcome`) | ações do proprietário | `provider_unavailable` ou `provider_rejected` > 2% em 15 min → P1 (ninguém consegue assinar: runbook §5); `forbidden`/`not_found` em rajada da mesma sessão → tentativa direta por quem não é proprietário; `rate_limited` → possível abuso de checkouts |
 
 Assinaturas entrando no prazo de regularização: `select count(*) from public.billing_subscriptions where status = 'past_due' and grace_expired_at is null;` (acompanhar semanalmente; cada uma é um cliente a ponto de perder o plano e **não há e-mail nosso avisando**). Eventos esperando demais: o dashboard da Stripe mostra entregas pendentes; do nosso lado, `corrected` do job é a medida.
+
+## Sinais de domínio próprio e pixels (Sprint 8, parte 2)
+
+Os eventos carregam o desfecho e, na verificação, a situação e o roteamento — nunca o nome do domínio, o desafio, um identificador de pixel ou o token do provedor. Owner de todos: founder técnico. Runbook: `docs/runbooks/DOMAINS.md`. Limiares propostos; sem alerta automático até o provisionamento (Sentry / log drain). Nenhum destes sinais foi observado fora do stack local.
+
+| Evento | Significado | Sinal / limiar proposto e ação |
+|---|---|---|
+| `domains.claim` com `outcome` `ok`, `invalid`, `blocked`, `already_set`, `not_in_plan`, `forbidden`, `not_found` | um registro de domínio e por que foi recusado | informativo. `rate_limited` repetido numa conta → alguém testando nomes em série (P3) |
+| `domains.verify` com `outcome=ok` (`status`: `active`, `dns_missing`, `in_use`, `not_in_plan`; `routing`: `ok`, `pending`, `conflict`, `none`; `providerFailed`) | uma verificação concluída | `providerFailed=true` em mais de 3 verificações em 15 min → API do provedor fora do ar ou token inválido (P2: runbook §3 e §6). `status=in_use` → duas contas disputando um nome (olhar a trilha, runbook §4) |
+| `domains.verify` com `not_configured` | falta o segredo de assinatura ou ele difere do Vault | qualquer ocorrência num ambiente com domínios ligados → P2 (ninguém consegue comprovar: runbook §6) |
+| `domains.verify` com `dns_unavailable` | o servidor não conseguiu consultar o DNS | sustentado por 15 min → P2 (runbook §2) |
+| `domains.remove` com `detached=false` | a linha foi apagada, mas o domínio continuou anexado no provedor | com provedor configurado → limpar à mão no painel (P3); não abre nenhuma página |
+| `public_page.resolved` com `via=domain` (`state`, `durationMs`) | uma regeneração da página num domínio próprio | proporção de `not_found` muito alta → domínios apontando para cá sem linha ativa (clientes antigos, ou alguém varrendo Hosts): candidato a limite na borda |
+| `public_page.domain_lookup_failed` (`errorCode`) | o banco não respondeu à leitura por domínio | como `public_page.lookup_failed`: > 1% em 5 min → P1 (o ISR segue servindo a última cópia boa) |
+| `pixels.set` com `ok`, `invalid`, `not_in_plan`, `forbidden` | alteração dos códigos de uma página | informativo |
+
+**O que não tem sinal:** o que acontece no navegador do visitante com os pixels (aceite, recusa, carregamento, bloqueio por CSP). Uma violação de CSP só aparece no console do visitante; não há `report-uri` configurado.

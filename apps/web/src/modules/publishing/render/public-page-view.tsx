@@ -173,7 +173,7 @@ export function priorityImageId(blocks: readonly PublishedBlock[]): string | nul
  * analytics/telemetry script cannot break navigation. `slug` is the published address (forms
  * post to it); the preview passes none.
  */
-export function PublicPageView({ document, showBadge, as: Root = "main", interactive = true, slug = null }: { document: PublishedDocument; showBadge: boolean; as?: "main" | "div"; interactive?: boolean; slug?: string | null }) {
+export function PublicPageView({ document, showBadge, as: Root = "main", interactive = true, slug = null, homeHref = "/" }: { document: PublishedDocument; showBadge: boolean; as?: "main" | "div"; interactive?: boolean; slug?: string | null; /** Where the badge leads: absolute when the page answers on a custom hostname. */ homeHref?: string }) {
   const theme = resolveTheme(document.theme);
   const context: BlockContext = { interactive, slug, priorityImageId: priorityImageId(document.blocks) };
 
@@ -204,7 +204,7 @@ export function PublicPageView({ document, showBadge, as: Root = "main", interac
 
         {showBadge ? (
           <footer className="pt-4 text-xs text-[var(--page-muted)]">
-            {interactive ? <Link className="underline" href="/" prefetch={false} data-analytics="badge">{PUBLIC_PAGE_COPY.badge(PRODUCT.name)}</Link> : <span className="underline">{PUBLIC_PAGE_COPY.badge(PRODUCT.name)}</span>}
+            {interactive ? <Link className="underline" href={homeHref} prefetch={false} data-analytics="badge">{PUBLIC_PAGE_COPY.badge(PRODUCT.name)}</Link> : <span className="underline">{PUBLIC_PAGE_COPY.badge(PRODUCT.name)}</span>}
           </footer>
         ) : null}
       </article>

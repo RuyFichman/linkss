@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
-import { PUBLIC_PAGE_COPY } from "@/content/pt-BR";
 import { PublicPageAnalytics } from "@/modules/analytics/components/public-page-analytics";
 import { PublicPageWebVitals } from "@/modules/publishing/components/web-vitals-reporter";
 import { buildPublicPageMetadata } from "@/modules/publishing/metadata";
-import { PublicPageView } from "@/modules/publishing/render/public-page-view";
+import { PublishedPage, SuspendedPage } from "@/modules/publishing/render/published-page";
 import { resolveRouteSlug } from "@/modules/publishing/route-slug";
 import { getPublicPage } from "@/modules/publishing/server";
 
@@ -37,25 +36,17 @@ export default async function PublicPage({ params }: Props) {
     case "published":
       return (
         <>
-          <PublicPageView document={result.document} showBadge={result.showBadge} slug={result.slug} />
+          <PublishedPage result={result} />
           <PublicPageWebVitals />
-          {/* Customer analytics (ADR 0011): only this route mounts the collector, never the preview. */}
+          {/* Customer analytics (ADR 0011): only the public routes mount the collector, never the preview. */}
           <PublicPageAnalytics slug={result.slug} />
-          <footer className="bg-app-bg px-4 py-5 text-center text-sm"><a className="underline underline-offset-4" href={"/denunciar?pagina=" + encodeURIComponent(result.slug)}>Denunciar esta página</a></footer>
         </>
       );
     case "moved":
       // Temporary on purpose: the owner may take the old address back during its hold.
       redirect(`/${result.slug}`);
     case "suspended":
-      return (
-        <main className="grid min-h-screen place-items-center bg-app-bg px-4 text-center text-app-text">
-          <div className="grid max-w-md gap-3">
-            <h1 className="m-0 text-2xl font-bold">{PUBLIC_PAGE_COPY.suspendedTitle}</h1>
-            <p className="m-0 text-app-muted">{PUBLIC_PAGE_COPY.suspended}</p>
-          </div>
-        </main>
-      );
+      return <SuspendedPage />;
     case "unpublished":
     case "not_found":
       // Same answer for "never existed" and "not published": a real 404 that does not reveal drafts.
