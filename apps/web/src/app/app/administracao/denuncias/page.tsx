@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib/format-date";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUserId, getSupabase } from "@/modules/identity/session";
@@ -52,7 +53,7 @@ export default async function ModerationQueue({ searchParams }: {
               <h2 className="text-xl font-bold">{report.slug}</h2>
               <span className="ui-badge">{report.status} · página {report.moderationStatus ?? "excluída"}</span>
             </div>
-            <p className="mt-2 text-sm text-app-muted">{REASON[report.reason] ?? report.reason} · {new Date(report.createdAt).toLocaleString("pt-BR")}</p>
+            <p className="mt-2 text-sm text-app-muted">{REASON[report.reason] ?? report.reason} · {formatDateTime(report.createdAt)}</p>
             {report.detail ? <p className="mt-3 whitespace-pre-wrap">{report.detail}</p> : null}
             {report.reviewReason ? <p className="mt-3 text-sm">Última análise: {report.reviewReason}</p> : null}
             <form action={reviewReportAction} className="mt-4 grid gap-3 border-t border-app-border pt-4">

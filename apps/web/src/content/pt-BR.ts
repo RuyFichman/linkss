@@ -388,6 +388,7 @@ export const PUBLISHING_COPY = {
   errors: {
     stale: "O rascunho mudou desde que você abriu esta tela. Confira a prévia e publique de novo.",
     forbidden: "Você não tem permissão para publicar nesta conta, ou a conta está suspensa.",
+    suspended: "Esta página foi suspensa pela moderação e não pode ser publicada. Fale com o suporte para saber o motivo.",
     unavailable: "Não foi possível publicar agora. Nada mudou na página no ar. Tente novamente em instantes.",
   },
   previewBanner: "Prévia do rascunho. Visitantes ainda não veem estas alterações.",

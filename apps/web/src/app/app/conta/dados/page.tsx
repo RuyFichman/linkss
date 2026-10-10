@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib/format-date";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requestAccountDeletionAction, requestDataAccessAction } from "@/modules/privacy/actions";
@@ -79,7 +80,7 @@ export default async function MyDataPage({ searchParams }: {
               {requests.map((request) => (
                 <li key={request.id} className="rounded-xl border border-app-border p-3">
                   <b>{request.kind === "account_deletion" ? "Exclusão da conta" : "Acesso aos dados"} — {STATUS[request.status] ?? request.status}</b>
-                  <p className="text-sm text-app-muted">{new Date(request.createdAt).toLocaleString("pt-BR")}</p>
+                  <p className="text-sm text-app-muted">{formatDateTime(request.createdAt)}</p>
                   {request.reason ? <p className="mt-1 text-sm">{REASON[request.reason] ?? "Em análise."}</p> : null}
                 </li>
               ))}
@@ -90,7 +91,7 @@ export default async function MyDataPage({ searchParams }: {
           <h2 className="text-xl font-bold">Histórico de aceites</h2>
           {history.length === 0 ? <p className="mt-2 text-app-muted">Nenhum aceite versionado registrado.</p> : (
             <ul className="mt-3 grid gap-2 text-sm">
-              {history.map((item) => <li key={item.kind + item.version + item.acceptedAt}>{item.kind} {item.version} — {new Date(item.acceptedAt).toLocaleString("pt-BR")} — hash {item.sha256.slice(0, 12)}…</li>)}
+              {history.map((item) => <li key={item.kind + item.version + item.acceptedAt}>{item.kind} {item.version} — {formatDateTime(item.acceptedAt)} — hash {item.sha256.slice(0, 12)}…</li>)}
             </ul>
           )}
         </section>

@@ -1,5 +1,6 @@
 import "server-only";
 import { getSupabase } from "@/modules/identity/session";
+import { acceptancePending } from "./gate";
 
 export interface ActiveLegalDocument {
   id: string;
@@ -28,5 +29,5 @@ export async function currentLegalDocuments(): Promise<ActiveLegalDocument[]> {
 
 export async function legalAcceptanceRequired(): Promise<boolean> {
   const documents = await currentLegalDocuments();
-  return documents.some((document) => (document.kind === "terms" || document.kind === "privacy") && !document.accepted);
+  return acceptancePending(documents);
 }

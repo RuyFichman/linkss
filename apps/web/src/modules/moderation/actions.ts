@@ -29,7 +29,7 @@ export async function submitPublicReportAction(formData: FormData): Promise<void
     p_text: text,
     p_signature: signReport(text, secret),
   });
-  if (error || data === "not_configured") redirect("/denunciar?estado=indisponivel");
+  if (error || data !== "received") redirect("/denunciar?estado=indisponivel");
   redirect("/denunciar?estado=recebido");
 }
 

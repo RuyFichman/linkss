@@ -65,7 +65,22 @@ O objetivo de `PLANO_DE_EXECUCAO.md` é transformar o produto funcional em um MV
 - `npx supabase db lint --level warning`: um aviso, anterior a esta sprint (`private.billing_text_is_timestamp`, da Sprint 8).
 - Build de produção servido em `localhost:3100`: as dez rotas novas e alteradas responderam (200, ou 307 para o login nas que pedem sessão); os cinco headers presentes na página pública, que manteve `s-maxage=60`.
 - Chrome de desktop: a página pública `precisao-analytics` renderizou e hidratou, sem violação de CSP no console. Uma denúncia enviada por `/denunciar` foi gravada com hash de endereço e evento de auditoria. A linha de teste e o segredo temporário do Vault local foram removidos depois.
-- **Não verificado:** o carregamento do embed depois do clique sob o CSP (o clique do teste não abriu o player); as telas com sessão (`/aceite`, *Meus dados*, as duas filas); o editor e o upload de imagem sob o CSP; qualquer coisa em staging.
+- **Não verificado em 09/10:** o carregamento do embed depois do clique sob o CSP; as telas com sessão; o editor e o upload de imagem sob o CSP; qualquer coisa em staging. Os três primeiros foram cobertos na estabilização abaixo.
+
+## Estabilização (10/10/2026, stack local, depois do merge do PR #26)
+
+Revisão do código da sprint e verificação em navegador (Chrome via Playwright, build de produção em `localhost:3100`, contas descartáveis `qa-s9-*@example.test`, removidas ao final). Defeitos encontrados e corrigidos:
+
+- **Horários no fuso do servidor.** *Meus dados* e as duas filas usavam `toLocaleString` sem fuso; na Vercel sairiam em UTC, três horas à frente. Passaram a usar `formatDateTime` (horário de São Paulo).
+- **Publicar página suspensa pedia para tentar de novo.** O erro `LK113` caía em "Não foi possível publicar agora". Agora o dono lê que a página foi suspensa pela moderação.
+- **Denúncia recusada aparecia como recebida.** Uma resposta `invalid` do banco (carga recusada, relógio fora da janela de 5 minutos) levava à confirmação. Agora só `received` confirma; o resto mostra canal indisponível.
+- **Um só texto jurídico ativo travava `/app`.** O portão exigia aceite com apenas Termos ou apenas Privacidade ativo, mas `/aceite` só registra os dois juntos. O portão (`modules/legal/gate.ts`, com teste) agora fecha apenas com os dois ativos.
+
+Verificado no navegador, 27 verificações aprovadas: `/app` sem redirecionar para `/aceite` (nenhum texto ativo); *Meus dados* a 390 px sem rolagem horizontal; download do JSON pessoal (sem campo de credencial) e do JSON da conta; pedidos de acesso e de exclusão no histórico, sem duplicar e sem apagar nada; filas vistas pelo administrador da plataforma e tela de "não encontrada" para conta comum; suspensão pela fila, estado suspenso na página pública logo depois, mensagem ao dono ao publicar e reativação; página pública com o player do YouTube aberto pelo clique, sem violação de CSP. A regressão do editor móvel (`scripts/editor-mobile.mjs`, 45 verificações, inclui envio de imagem) passou sob o CSP.
+
+- `npm run check`: **passou**; Vitest **1.148 testes em 42 arquivos**.
+- **Continua não verificado:** `/aceite` com textos ativos (ativá-los no banco local prenderia as contas de teste do fundador; o fluxo tem só pgTAP); envio de denúncia pelo formulário nesta rodada (a denúncia da fila foi inserida por SQL; o envio foi verificado em 09/10); Vimeo e Spotify; Edge, celular real e staging.
+- **Observações sem correção:** as filas respondem 200 com a tela de "não encontrada" para quem não é administrador (o `loading.tsx` de `/app` inicia a resposta antes), sem expor dados; sem `VISITOR_HASH_SALT` ou sem endereço do visitante, todas as denúncias compartilham o limite de 3 por dia; se a consulta dos textos jurídicos falhar por outro motivo que não a migração ausente, `/app` mostra erro em vez de abrir sem checar o aceite.
 
 ## Segurança, privacidade, acessibilidade, desempenho e operação
 
