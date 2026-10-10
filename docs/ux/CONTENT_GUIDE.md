@@ -226,4 +226,4 @@ Autenticação e lista de espera usam respostas neutras: nunca confirmar se dete
 - "Pagamento confirmado" antes de o plano ter mudado; prazos para a confirmação de um pagamento.
 - Checkout próprio, custódia de Pix, CRM, IA central, app nativo ou outras funções fora do MVP.
 - "Pagamento confirmado", "Pix recebido" ou QR code de Pix: o bloco só mostra a chave e um link.
-- Chamar `Projeto LNK` de marca definitiva.
+- Usar `Projeto LNK` (codinome antigo) em texto visível: o nome do produto é `Linkfav`, sempre vindo de `PRODUCT.name`.

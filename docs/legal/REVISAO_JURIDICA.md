@@ -4,7 +4,7 @@
 
 ## Premissas verificadas
 
-- Projeto LNK é codinome. Razão social, endereço, canal de privacidade e encarregado não foram definidos.
+- O nome do produto é Linkfav e o domínio escolhido é `linkfav.com` (decisão do fundador em 10/10/2026; disponibilidade e registro da marca não foram verificados). Razão social, endereço, canal de privacidade e encarregado não foram definidos.
 - `modules/analytics/collector.ts` não grava cookie ou armazenamento local. Usa `sendBeacon`/`fetch` e hashes diários no servidor. Supabase Auth usa cookies de sessão; `lnk_after_confirm` dura até uma hora. O protótipo usa `localStorage`.
 - O código de billing existe, mas `BILLING_MODE=off` é o padrão. ADR 0014 e `docs/ENVIRONMENTS.md` registram ausência de conta Stripe e de teste real com o provedor. Domínio próprio e pixels não estão implantados nesta branch.
 - Supabase, Vercel e embeds de YouTube/Vimeo/Spotify constam do código/desenho. SMTP próprio, Sentry e monitor externo estão pendentes. Stripe só recebe dados quando a cobrança é ligada. O mapa de dados contém retenções provisórias. Na Sprint 9, `/denunciar?pagina=<slug>` recebe denúncias; `/app/conta/dados` oferece JSON, pedidos e histórico; `/termos` e `/cookies` só mostram texto quando aprovado e ativado; `/privacidade` ainda traz o aviso provisório. O JSON contém inventário de mídia, mas o pacote de arquivos depende de solicitação e conferência. Os testes de banco da Sprint 9 passaram no stack local em 09/10/2026; expurgos agendados e a execução da exclusão não existem.

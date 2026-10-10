@@ -2,7 +2,7 @@
 // prices by the `plan_prices` seed in supabase/migrations; drift tests compare both (ADR 0014).
 // Money is integer cents in `currency`. The yearly price is a separate amount, not a formula.
 export const PRODUCT = {
-  codename: "Projeto LNK",
+  name: "Linkfav",
   market: "BR",
   locale: "pt-BR",
   currency: "BRL",

@@ -1,4 +1,4 @@
-# Product brief — Projeto LNK
+# Product brief — Linkfav
 
 ## Problema
 

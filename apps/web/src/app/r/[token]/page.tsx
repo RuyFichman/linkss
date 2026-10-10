@@ -214,7 +214,7 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
 
         <footer className="grid gap-1 border-t border-app-border pt-5 text-sm text-app-muted">
           <p className="m-0">{copy.readOnly} {copy.expires(EXPIRY.format(new Date(report.expiresAt)))}</p>
-          {report.showBadge ? <p className="m-0">{copy.badge(PRODUCT.codename)}</p> : null}
+          {report.showBadge ? <p className="m-0">{copy.badge(PRODUCT.name)}</p> : null}
         </footer>
       </article>
     </main>

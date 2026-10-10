@@ -1,6 +1,6 @@
-# Projeto LNK
+# Linkfav
 
-Codinome da plataforma brasileira de conversão mobile orientada a páginas profissionais, resultados compreensíveis e operação multi-perfil. O nome ainda não é uma marca aprovada.
+Plataforma brasileira de conversão mobile orientada a páginas profissionais, resultados compreensíveis e operação multi-perfil. O nome Linkfav e o domínio `linkfav.com` foram escolhidos pelo fundador em 10/10/2026; `Projeto LNK` era o codinome anterior e permanece em documentos históricos e identificadores internos.
 
 ## Requisitos e execução
 

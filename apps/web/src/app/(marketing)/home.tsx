@@ -97,7 +97,7 @@ export function Home() {
   return (
     <div className={`home ${displayFont.variable}`}>
       <header className="home-shell home-header">
-          <Link className="home-brand" href="/">{PRODUCT.codename}</Link>
+          <Link className="home-brand" href="/">{PRODUCT.name}</Link>
           <nav className="home-nav" aria-label={copy.nav.label}>
             <a href="#recursos">{copy.nav.features}</a>
             <a href="#modelos">{copy.nav.templates}</a>
@@ -215,9 +215,8 @@ export function Home() {
         </section>
         <footer className="home-shell home-footer">
           <div className="home-footer-about">
-            <span className="home-brand">{PRODUCT.codename}</span>
+            <span className="home-brand">{PRODUCT.name}</span>
             <p>{copy.footer.tagline}</p>
-            <p>{PRODUCT.codename} • {copy.footer.provisional}</p>
           </div>
           <nav aria-labelledby="rodape-produto">
             <h2 id="rodape-produto">{copy.footer.productTitle}</h2>

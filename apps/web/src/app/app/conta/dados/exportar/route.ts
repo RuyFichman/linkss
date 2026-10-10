@@ -29,7 +29,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     status: 200,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": "attachment; filename=lnk-dados.json",
+      "Content-Disposition": "attachment; filename=linkfav-dados.json",
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "no-referrer",

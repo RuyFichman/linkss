@@ -98,7 +98,7 @@ export async function getBillingService() {
     mode: resolveBillingMode().mode,
     sync: configuredSync(),
     appUrl,
-    productName: (planId) => `${PRODUCT.codename} ${BILLING_COPY.planNames[planId]}`,
+    productName: (planId) => `${PRODUCT.name} ${BILLING_COPY.planNames[planId]}`,
     newId: randomUUID,
   });
 }

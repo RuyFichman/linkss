@@ -4,7 +4,7 @@
 
 ## 1. Pessoas e papéis
 
-O produto trata dados de cadastrados e convidados, visitantes de páginas, pessoas que enviam formulários, inscritos na lista de espera e, se a cobrança for ativada, pagadores. [FATO] Para conta, segurança e operação, o Projeto LNK decide finalidades e meios. [PROPOSTA A VALIDAR] Para conteúdo, formulários e métricas da página, o dono do workspace decide a finalidade e o produto atua como operador. Agência e cliente podem ter arranjos distintos; a classificação depende da operação concreta e dos contratos.
+O produto trata dados de cadastrados e convidados, visitantes de páginas, pessoas que enviam formulários, inscritos na lista de espera e, se a cobrança for ativada, pagadores. [FATO] Para conta, segurança e operação, o Linkfav decide finalidades e meios. [PROPOSTA A VALIDAR] Para conteúdo, formulários e métricas da página, o dono do workspace decide a finalidade e o produto atua como operador. Agência e cliente podem ter arranjos distintos; a classificação depende da operação concreta e dos contratos.
 
 ## 2. Dados e finalidades
 

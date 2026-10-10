@@ -30,7 +30,7 @@ export function buildPublicPageMetadata(result: PublicPageResult): Metadata {
     title: { absolute: title },
     description,
     alternates: { canonical: url },
-    openGraph: { type: "profile", url, title, description, siteName: PRODUCT.codename, locale: "pt_BR" },
+    openGraph: { type: "profile", url, title, description, siteName: PRODUCT.name, locale: "pt_BR" },
     twitter: { card: "summary_large_image", title, description },
     robots: { index: true, follow: true },
   };

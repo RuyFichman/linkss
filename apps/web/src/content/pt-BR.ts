@@ -1112,7 +1112,6 @@ export const HOME_COPY = {
     faq: "Dúvidas",
     signIn: "Entrar",
     signUp: "Criar página",
-    provisionalName: "Nome provisório",
   },
   hero: {
     badge: "WhatsApp, Pix e formulários na mesma página",
@@ -1191,7 +1190,6 @@ export const HOME_COPY = {
   },
   footer: {
     tagline: "Páginas para a bio com prova de resultado.",
-    provisional: "codinome provisório",
     productTitle: "Produto",
     audienceTitle: "Para quem",
     accountTitle: "Conta",

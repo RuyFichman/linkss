@@ -23,7 +23,7 @@ export default async function LegalAcceptancePage({ searchParams }: {
     <main className={BRAND_CLASS}>
       <div className="app-shell max-w-3xl py-8 sm:py-12">
         <article className="surface-card p-5 sm:p-8">
-          <h1 className="text-3xl font-bold">Revise os documentos do {PRODUCT.codename}</h1>
+          <h1 className="text-3xl font-bold">Revise os documentos do {PRODUCT.name}</h1>
           <p className="mt-3 text-app-muted">Estas versões estão ativas para a sua conta. Leia os textos antes de continuar.</p>
           {erro ? <p role="alert" className="mt-4 text-red-700">O texto mudou ou o aceite não pôde ser registrado. Releia as versões abaixo e tente novamente.</p> : null}
           {[terms, privacy].map((document) => (
