@@ -5,7 +5,7 @@ import { currentLegalDocuments } from "@/modules/legal/server";
 import { BRAND_CLASS } from "@/ui/brand-font";
 
 export const metadata: Metadata = {
-  title: `Privacidade — versão provisória | ${PRODUCT.codename}`,
+  title: `Privacidade — versão provisória | ${PRODUCT.name}`,
   description: "Aviso provisório de privacidade: lista do piloto e contagem de visitas das páginas públicas.",
 };
 
@@ -39,7 +39,7 @@ export default async function PrivacyPage() {
         <span className="ui-badge ui-badge-warning">Versão provisória — 02/10/2026</span>
         <h1 className="mt-5 text-3xl font-bold sm:text-4xl">Aviso de privacidade</h1>
         <p className="mt-5 leading-7 text-app-muted">
-          Este aviso cobre o formulário da lista de espera e a contagem de visitas das páginas públicas criadas com o {PRODUCT.codename}. Ele será revisado antes do piloto externo e não substitui os documentos jurídicos do produto final.
+          Este aviso cobre o formulário da lista de espera e a contagem de visitas das páginas públicas criadas com o {PRODUCT.name}. Ele será revisado antes do piloto externo e não substitui os documentos jurídicos do produto final.
         </p>
 
         <h2 className={H2}>Lista do piloto: dados e finalidade</h2>
@@ -49,7 +49,7 @@ export default async function PrivacyPage() {
         <h2 className={H2}>Lista do piloto: base e escolha</h2>
         <p className={P}>O envio depende de consentimento marcado por você. Não usamos esses dados para decisões automatizadas nem vendemos a lista.</p>
 
-        <h2 className={H2} id="visitas">Quem visita uma página criada com o {PRODUCT.codename}</h2>
+        <h2 className={H2} id="visitas">Quem visita uma página criada com o {PRODUCT.name}</h2>
         <p className={P}>
           Para que a pessoa ou empresa dona da página saiba quantas visitas e cliques ela recebeu, registramos quando a página é aberta e quando um botão dela é usado (link, WhatsApp, Pix, redes sociais, vídeo ou música, formulário).
         </p>

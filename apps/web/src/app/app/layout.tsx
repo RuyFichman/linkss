@@ -11,7 +11,7 @@ import { legalAcceptanceRequired } from "@/modules/legal/server";
 import { EmptyState } from "@/ui";
 import { BRAND_CLASS } from "@/ui/brand-font";
 
-export const metadata: Metadata = { title: { default: "Painel", template: `%s | ${PRODUCT.codename}` }, robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: { default: "Painel", template: `%s | ${PRODUCT.name}` }, robots: { index: false, follow: false } };
 
 /** Authenticated shell. Identity and workspaces are resolved on the server for every request. */
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <header data-app-chrome="">
         <div className="app-header">
           <div className="flex min-w-0 items-center gap-3">
-            <Link className="app-brand" href="/app">{PRODUCT.codename}</Link>
+            <Link className="app-brand" href="/app">{PRODUCT.name}</Link>
             {account.status === "ready" ? <WorkspaceSwitcher workspaces={account.workspaces.map((workspace) => ({ id: workspace.workspaceId, name: workspace.name, kind: workspace.kind, role: workspace.role }))} /> : null}
           </div>
           <div className="flex items-center gap-3">

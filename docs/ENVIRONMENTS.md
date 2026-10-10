@@ -199,8 +199,8 @@ Configurar em staging e produção **antes** de convidar usuários externos, esp
 | Ambiente | Valor |
 |---|---|
 | local | `http://localhost:3000` (ou a porta usada) |
-| preview/staging | `https://linkss-black.vercel.app` até existir domínio |
-| produção | domínio comprado (previsto para o próximo mês) |
+| preview/staging | `https://linkss-black.vercel.app` |
+| produção | `https://linkfav.com` (domínio escolhido em 10/10/2026; ainda não conectado a nenhum deploy) |
 
 Checklist ao comprar o domínio:
 

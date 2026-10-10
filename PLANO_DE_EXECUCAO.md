@@ -451,7 +451,7 @@ Uma entrega só é considerada pronta quando:
 
 | Dependência | Necessária até | Plano de contingência |
 |---|---|---|
-| Nome e domínio provisórios | Sprint 0 | Usar codinome e domínio técnico até pesquisa de marca |
+| Nome e domínio | Sprint 0 | Codinome e domínio técnico até 10/10/2026, quando o fundador escolheu Linkfav e `linkfav.com` |
 | Provedor de autenticação/e-mail | Sprint 2 | Abstrair pontos de integração e limitar e-mails no piloto |
 | Armazenamento e otimização de mídia | Sprint 5 | Imagens com limites rígidos e transformação assíncrona |
 | Pipeline de eventos | Sprint 6 | Começar com ingestão própria simples e agregação em jobs |

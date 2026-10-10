@@ -204,7 +204,7 @@ export function PublicPageView({ document, showBadge, as: Root = "main", interac
 
         {showBadge ? (
           <footer className="pt-4 text-xs text-[var(--page-muted)]">
-            {interactive ? <Link className="underline" href="/" prefetch={false} data-analytics="badge">{PUBLIC_PAGE_COPY.badge(PRODUCT.codename)}</Link> : <span className="underline">{PUBLIC_PAGE_COPY.badge(PRODUCT.codename)}</span>}
+            {interactive ? <Link className="underline" href="/" prefetch={false} data-analytics="badge">{PUBLIC_PAGE_COPY.badge(PRODUCT.name)}</Link> : <span className="underline">{PUBLIC_PAGE_COPY.badge(PRODUCT.name)}</span>}
           </footer>
         ) : null}
       </article>

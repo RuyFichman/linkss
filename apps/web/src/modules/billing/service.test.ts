@@ -58,7 +58,7 @@ function world(start = new Date("2026-10-09T12:00:00.000Z")) {
   let ids = 0;
   function serviceFor(role: WorkspaceRole | null, signedIn = true, mode: "off" | "sandbox" | "live" = "sandbox") {
     const identity: IdentityPort = { currentUserId: async () => (signedIn ? OWNER : null), roleIn: async () => role };
-    return createBillingService({ identity, repository, mode, sync: mode === "off" ? null : sync, appUrl: (path) => `https://app.example.test${path}`, productName: (planId) => `Projeto LNK ${planId}`, newId: () => `id-${++ids}` });
+    return createBillingService({ identity, repository, mode, sync: mode === "off" ? null : sync, appUrl: (path) => `https://app.example.test${path}`, productName: (planId) => `Linkfav ${planId}`, newId: () => `id-${++ids}` });
   }
 
   /** Owner subscribes and pays; returns the delivery and the provider's subscription id. */

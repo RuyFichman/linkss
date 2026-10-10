@@ -11,7 +11,7 @@
 | Vídeo/música | Conexão direta a YouTube, Vimeo ou Spotify só após clique | carregar conteúdo solicitado | após o clique, o terceiro pode usar suas tecnologias sob regras próprias |
 | Checkout, se habilitado | Redirecionamento ao provedor | pagamento e prevenção de fraude | a Stripe pode usar suas tecnologias; checkout real não está confirmado |
 
-O analytics verificado do Projeto LNK **não usa cookies**. Não se deve publicar banner que diga o contrário. A ausência de cookie não encerra a análise: hashes diários de IP e navegador são tratados no servidor. [VALIDAR] Base legal, transparência e eventual oposição às métricas com advogado.
+O analytics verificado do Linkfav **não usa cookies**. Não se deve publicar banner que diga o contrário. A ausência de cookie não encerra a análise: hashes diários de IP e navegador são tratados no servidor. [VALIDAR] Base legal, transparência e eventual oposição às métricas com advogado.
 
 Apagar os cookies de autenticação no navegador encerra ou interrompe a sessão. Bloquear JavaScript ou a requisição de eventos na página pública não impede a navegação, mas pode impedir a contagem. O carregamento de embeds é iniciado pelo visitante; depois disso o provedor externo determina seu tratamento.
 

@@ -1,10 +1,10 @@
 # Termos de Uso — minuta v0.1
 
-**Preparada em:** 09/10/2026. **Estado:** revisão jurídica pendente; não é contrato aprovado nem parecer. **Produto:** Projeto LNK (codinome). **Prestador:** [RAZÃO SOCIAL/NOME, CNPJ/CPF, ENDEREÇO E CONTATO PENDENTES]. Os campos entre colchetes exigem decisão antes da publicação e do aceite.
+**Preparada em:** 09/10/2026. **Estado:** revisão jurídica pendente; não é contrato aprovado nem parecer. **Produto:** Linkfav. **Prestador:** [RAZÃO SOCIAL/NOME, CNPJ/CPF, ENDEREÇO E CONTATO PENDENTES]. Os campos entre colchetes exigem decisão antes da publicação e do aceite.
 
 ## 1. Serviço e contas
 
-O Projeto LNK permite criar, editar e publicar páginas móveis com blocos, receber contatos de visitantes e acompanhar resultados aproximados. Cada página pertence a um workspace, que pode ter proprietário, administradores e editores com permissões diferentes. Quem publica deve ter autorização para agir em nome do cliente representado e para usar textos, imagens, marcas, contatos, chaves Pix e links. [VALIDAR: elegibilidade etária, representação de clientes e território da oferta.]
+O Linkfav permite criar, editar e publicar páginas móveis com blocos, receber contatos de visitantes e acompanhar resultados aproximados. Cada página pertence a um workspace, que pode ter proprietário, administradores e editores com permissões diferentes. Quem publica deve ter autorização para agir em nome do cliente representado e para usar textos, imagens, marcas, contatos, chaves Pix e links. [VALIDAR: elegibilidade etária, representação de clientes e território da oferta.]
 
 O usuário deve fornecer informações corretas, proteger suas credenciais e respeitar as permissões recebidas. O proprietário administra os membros da conta e o conteúdo publicado. A aplicação mantém trilha mínima de ações sensíveis para segurança e investigação.
 
@@ -12,7 +12,7 @@ O usuário deve fornecer informações corretas, proteger suas credenciais e res
 
 São proibidos phishing, fraude, personificação, malware, spam, violação de direitos, exploração de pessoas, publicação indevida de dados pessoais e conteúdo ilícito. Links, arquivos e embeds estão sujeitos às restrições técnicas do produto. Não se permite JavaScript arbitrário. [VALIDAR: categorias, gradação e reincidência da política de conteúdo.]
 
-O dono da página responde pela oferta, atendimento, entregas e tratamento posterior dos contatos que seus visitantes lhe enviem. Pode direcionar visitantes a WhatsApp, agendas, sites de pagamento e outros serviços. O Projeto LNK não processa nem custodia o Pix exibido nas páginas. Vídeos e músicas de provedores aprovados só começam a carregar depois do clique do visitante.
+O dono da página responde pela oferta, atendimento, entregas e tratamento posterior dos contatos que seus visitantes lhe enviem. Pode direcionar visitantes a WhatsApp, agendas, sites de pagamento e outros serviços. O Linkfav não processa nem custodia o Pix exibido nas páginas. Vídeos e músicas de provedores aprovados só começam a carregar depois do clique do visitante.
 
 ## 3. Denúncias e moderação
 

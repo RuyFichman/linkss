@@ -78,7 +78,7 @@ async function subscribe(driver: Driver, planId = "pro", interval = "month", pai
   const { customerId } = await driver.adapter.createCustomer({ workspaceId: WORKSPACE, workspaceName: "Agência Contrato" });
   const chosen = price(planId, interval);
   const checkout = await driver.adapter.startCheckout({
-    workspaceId: WORKSPACE, customerId, productKey: planId, productName: `Projeto LNK ${planId}`, amountCents: chosen.amountCents, currency: chosen.currency, interval: chosen.interval,
+    workspaceId: WORKSPACE, customerId, productKey: planId, productName: `Linkfav ${planId}`, amountCents: chosen.amountCents, currency: chosen.currency, interval: chosen.interval,
     successUrl: "https://app.example.test/ok", cancelUrl: "https://app.example.test/voltar", idempotencyKey: `key-${planId}-${interval}`,
   });
   return { customerId, checkout, ...driver.pay(checkout.url, paid) };
@@ -96,7 +96,7 @@ describe.each([["fake", fakeDriver], ["stripe", stripeDriver]] as const)("Paymen
   it("opens one checkout for one idempotency key and reports exactly what was asked", async () => {
     const driver = makeDriver();
     const { customerId } = await driver.adapter.createCustomer({ workspaceId: WORKSPACE, workspaceName: "Agência" });
-    const request = { workspaceId: WORKSPACE, customerId, productKey: "agency", productName: "Projeto LNK Agência", amountCents: 57900, currency: "BRL" as const, interval: "year" as const, successUrl: "https://app.example.test/ok", cancelUrl: "https://app.example.test/voltar", idempotencyKey: "same-key" };
+    const request = { workspaceId: WORKSPACE, customerId, productKey: "agency", productName: "Linkfav Agência", amountCents: 57900, currency: "BRL" as const, interval: "year" as const, successUrl: "https://app.example.test/ok", cancelUrl: "https://app.example.test/voltar", idempotencyKey: "same-key" };
     const first = await driver.adapter.startCheckout(request);
     const again = await driver.adapter.startCheckout(request);
     expect(again.url).toBe(first.url);
@@ -156,11 +156,11 @@ describe.each([["fake", fakeDriver], ["stripe", stripeDriver]] as const)("Paymen
   it("changes the plan: the new catalogue amount, the same interval", async () => {
     const driver = makeDriver();
     const { subscriptionId } = await subscribe(driver, "pro", "month");
-    await driver.adapter.changePlan({ subscriptionId, productKey: "agency", productName: "Projeto LNK Agência", amountCents: 5790, currency: "BRL", interval: "month", effective: "now", idempotencyKey: "up" });
+    await driver.adapter.changePlan({ subscriptionId, productKey: "agency", productName: "Linkfav Agência", amountCents: 5790, currency: "BRL", interval: "month", effective: "now", idempotencyKey: "up" });
     expect(await driver.adapter.fetchSubscription(subscriptionId)).toMatchObject({ amountCents: 5790, interval: "month", status: "active" });
     // An upgrade charges the difference at once.
     expect((await driver.adapter.listInvoices(subscriptionId, 12))[0]).toMatchObject({ status: "paid", amountCents: 5790 - 1490 });
-    await driver.adapter.changePlan({ subscriptionId, productKey: "pro", productName: "Projeto LNK Pro", amountCents: 1490, currency: "BRL", interval: "month", effective: "period_end", idempotencyKey: "down" });
+    await driver.adapter.changePlan({ subscriptionId, productKey: "pro", productName: "Linkfav Pro", amountCents: 1490, currency: "BRL", interval: "month", effective: "period_end", idempotencyKey: "down" });
     expect(await driver.adapter.fetchSubscription(subscriptionId)).toMatchObject({ amountCents: 1490 });
     // A downgrade charges and credits nothing now.
     expect(await driver.adapter.listInvoices(subscriptionId, 12)).toHaveLength(2);
@@ -244,7 +244,7 @@ describe("Stripe adapter specifics", () => {
       }) as typeof fetch,
     });
     const { customerId } = await adapter.createCustomer({ workspaceId: WORKSPACE, workspaceName: "Agência" });
-    await adapter.startCheckout({ workspaceId: WORKSPACE, customerId, productKey: "pro", productName: "Projeto LNK Pro", amountCents: 1490, currency: "BRL", interval: "month", successUrl: "https://app.example.test/ok", cancelUrl: "https://app.example.test/voltar", idempotencyKey: "k1" });
+    await adapter.startCheckout({ workspaceId: WORKSPACE, customerId, productKey: "pro", productName: "Linkfav Pro", amountCents: 1490, currency: "BRL", interval: "month", successUrl: "https://app.example.test/ok", cancelUrl: "https://app.example.test/voltar", idempotencyKey: "k1" });
 
     const checkout = seen.find((call) => call.url.endsWith("/v1/checkout/sessions"));
     const form = new URLSearchParams(checkout?.body);

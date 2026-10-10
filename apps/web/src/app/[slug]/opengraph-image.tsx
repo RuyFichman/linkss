@@ -17,7 +17,7 @@ export function generateStaticParams(): Array<{ slug: string }> {
 export default async function OpenGraphImage({ params }: { params: Promise<{ slug: string }> }) {
   const route = resolveRouteSlug((await params).slug);
   const result = route.kind === "canonical" ? await getPublicPage(route.slug) : null;
-  const title = result?.state === "published" ? result.document.title : PRODUCT.codename;
+  const title = result?.state === "published" ? result.document.title : PRODUCT.name;
   const bio = result?.state === "published" ? result.document.bio.replace(/\s+/g, " ").slice(0, 140) : "";
 
   return new ImageResponse(

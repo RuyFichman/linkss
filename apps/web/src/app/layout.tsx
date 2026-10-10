@@ -6,7 +6,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   // Absolute Open Graph/canonical URLs come from configuration, never from the request Host.
   metadataBase: new URL(appUrl()),
-  title: `${PRODUCT.codename} — hub de conversão mobile`,
+  title: `${PRODUCT.name} — hub de conversão mobile`,
   description: "Páginas profissionais, resultados compreensíveis e operação multi-perfil.",
 };
 

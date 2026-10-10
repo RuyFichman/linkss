@@ -78,7 +78,7 @@ describe("/r/[token]", () => {
   it("shows the attribution only when the answer asks for it, and no address for a page that is off the air", async () => {
     mocks.fetchSharedReport.mockResolvedValue(okRead({ show_badge: true, page_slug: null }));
     const html = await render();
-    expect(html).toContain("Relatório gerado com Projeto LNK.");
+    expect(html).toContain("Relatório gerado com Linkfav.");
     expect(html).not.toContain("<a ");
   });
 
