@@ -6,5 +6,5 @@ export const RESERVED_SLUGS = [
   // Sprint 2 routes
   "auth", "cadastro", "entrar", "sair", "confirmar-email", "recuperar-acesso", "redefinir-senha",
   // Likely platform pages
-  "ajuda", "termos", "precos", "planos", "status", "seguranca", "contato", "conta", "contas", "configuracoes", "relatorio", "relatorios", "blog", "www",
+  "ajuda", "aceite", "denunciar", "cookies", "termos", "precos", "planos", "status", "seguranca", "contato", "conta", "contas", "configuracoes", "relatorio", "relatorios", "blog", "www",
 ] as const;

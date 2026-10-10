@@ -117,7 +117,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [x] P0 Criar planos/entitlements e estados de assinatura (catálogo de preços, máquina de estados, tolerância de 7 dias, regras de rebaixamento).
 - [x] P0 Área de cobrança, tela de planos, confirmação de cancelamento/mudança e pontos de entrada nas telas de limite.
 - [ ] P0 Abrir a conta Stripe em modo de teste e aplicar a parte 1 em staging (passos em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 8, parte 1"); rodar o roteiro de conferência e **comparar o comportamento real com o do emulador**.
-- [ ] P0 Atualizar o Next para 16.4.0 em PR próprio (`npm audit`: aviso alto novo em `next` 16.0.0–16.3.7, de produção).
+- [x] P0 Atualizar o Next para 16.4.0 (`npm audit`: aviso alto novo em `next` 16.0.0–16.3.7, de produção). Feito junto com a Sprint 9, não em PR próprio; `npm audit --omit=dev` sem achados em 09/10/2026.
 - [ ] P1 Domínio próprio com prova de controle (parte 2).
 - [ ] P1 Integrações Meta Pixel e GA sem scripts arbitrários (parte 2).
 - [ ] P1 Trocar entre mensal e anual numa assinatura em curso — cortado na parte 1 (UX-079).
@@ -130,11 +130,22 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 
 ## Sprint 9 — hardening
 
+Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 seguem abertos; as partes feitas estão marcadas abaixo de cada um.
+
 - [ ] P0 Exportação/exclusão e aceites versionados.
+  - [x] Aceite versionado com histórico (ADR 0015); nenhum texto ativo até a revisão do advogado.
+  - [x] Exportação JSON da pessoa e da conta (só proprietário), com inventário por store em `docs/DATA_MAP.md`.
+  - [x] Pedido de exclusão e de acesso com estados, fila administrativa e auditoria.
+  - [ ] Execução da exclusão store a store (hoje manual, sem runbook e sem ensaio); exportação dos arquivos de mídia.
+  - [ ] Minutas em `docs/legal/` revisadas pelo advogado e ativadas.
 - [ ] P0 Denúncia, moderação, suspensão e auditoria.
+  - [x] Denúncia pública, fila, suspensão e reativação por página, auditadas.
+  - [ ] Aviso ao dono da página suspensa, canal de contestação e retenção das denúncias.
 - [ ] P0 Headers, CSP, rate limits e revisão de autorização.
-- [ ] P0 Backup/restauração e runbooks.
-- [ ] P0 QA mobile/cross-browser e acessibilidade prioritária.
+  - [x] Headers de segurança e CSP (ainda com `unsafe-inline`); leitura limitada do corpo em `/api/events` e `/api/vitals`; origem com esquema nas rotas com sessão.
+  - [ ] Limites globais na borda (os itens "Sprint 9" espalhados neste arquivo seguem abertos); CAPTCHA; expurgos agendados.
+- [ ] P0 Backup/restauração e runbooks. Não iniciado.
+- [ ] P0 QA mobile/cross-browser e acessibilidade prioritária. Não iniciado (só uma checagem no Chrome de desktop).
 
 ## Débito/decisões abertas
 

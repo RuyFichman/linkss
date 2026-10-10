@@ -222,3 +222,43 @@ Decisão: ADR 0014. **Novo subprocessador: Stripe** (processamento de pagamentos
 - **CPF/CNPJ:** o produto não coleta. Se a Stripe exigir do pagador, o dado fica na Stripe, sob o contrato dela com o founder. Se um dia o produto precisar dele (nota fiscal), é uma coleta nova: finalidade, base e retenção têm de ser definidas antes.
 - **Exportação e exclusão (Sprint 9):** a exportação da conta deve incluir `billing_subscriptions` e `billing_invoices` (sem os ids internos do provedor, se a revisão assim decidir). A exclusão de uma conta com assinatura em curso é **recusada** até o cancelamento (`LK102`); a exclusão de conta do titular precisa cancelar na Stripe e só depois expurgar. O que fica na Stripe (cliente, faturas, recibos) segue a retenção da Stripe e as obrigações fiscais do founder: **exceção legal a registrar** depois da revisão contábil.
 - **Rebaixamento, falta de pagamento e cancelamento não apagam dado nenhum** do cliente.
+
+## Dados adicionados na Sprint 9 (aceite, pedidos de privacidade e denúncias)
+
+Decisão: ADR 0015. Verificado só no stack local (pgTAP `180-sprint9-privacy-moderation`). **Nenhum subprocessador novo.** As retenções abaixo são propostas técnicas: nenhuma tem expurgo agendado e todas dependem da revisão jurídica (`docs/legal/REVISAO_JURIDICA.md`).
+
+| Store / tabela | Conteúdo | Dado pessoal? | Finalidade | Quem lê | Retenção |
+|---|---|---|---|---|---|
+| `legal_documents` | tipo (termos, privacidade, cookies), versão, texto, SHA-256, situação | não | texto exato oferecido para aceite | texto ativo: qualquer pessoa, pela RPC `get_legal_status`; rascunho e aposentado: nenhum papel de cliente | permanente (prova do texto aceito) |
+| `legal_acceptances` | usuário, documento, hash do texto, data | sim (id do usuário) | provar qual texto foi aceito, por quem e quando | a própria pessoa | vida da conta (cascata de `auth.users`). **Em aberto:** guardar a prova depois da exclusão |
+| `privacy_requests` | usuário, tipo (exclusão, acesso), situação, motivo codificado, referência do dossiê, quem analisou | sim (id do usuário; sem FK, sobrevive à exclusão) | atender e provar o atendimento de pedidos do titular | a própria pessoa; a fila, só o administrador da plataforma pela RPC | **não definida** |
+| `privacy_request_events` | histórico de transições do pedido (append-only) | id do ator | trilha do atendimento | a própria pessoa | segue o pedido |
+| `platform_admins` | usuários que moderam e atendem pedidos | sim (id do usuário) | autorização da fila administrativa | nenhum papel de cliente; provisionado por SQL | enquanto a pessoa exercer a função |
+| `moderation_reports` | página, conta, endereço, motivo, detalhe livre de até 500 caracteres, hash diário de quem denunciou, situação, análise | o detalhe pode conter dado pessoal de terceiros; o hash é pseudônimo; **não há contato do denunciante** | apurar abuso e limitar denúncias repetidas | só o administrador da plataforma, pela RPC | **não definida** |
+| `profiles.moderation_status` | `active` ou `suspended` | não | tirar do ar uma página denunciada | membros da conta (na linha da página) | vida da página |
+| `audit_events` (`legal.*`, `privacy.*`, `moderation.*`) | aceite (versões e hashes), exportações, pedidos, análises, suspensão e reativação com motivo | id do ator; o motivo da moderação é texto livre do administrador | trilha | como as demais ações | 1 ano (provisório) |
+| Vault `moderation_signing_secret`; variável `MODERATION_SIGNING_SECRET` | segredo | não | o banco só aceita denúncia assinada pelo servidor | servidor | rotação: trocar os dois juntos |
+
+### Exportação e exclusão por store (estado em 09/10/2026)
+
+"JSON pessoal" é `export_my_data()`; "JSON da conta" é `export_workspace_data()` (só o proprietário); as duas saem por `POST /app/conta/dados/exportar`, com limite de 8 MiB. **A exclusão não é automática em nenhum store:** a tela registra um pedido, e a execução, store a store, é manual e ainda não tem runbook nem foi ensaiada.
+
+| Store | Exportação | Exclusão hoje |
+|---|---|---|
+| Supabase Auth (`auth.users`) | JSON pessoal: id, e-mail, datas. Nunca credenciais | manual, por último; o pedido só pode ser concluído depois que a linha sumir (`LK114`) |
+| `user_accounts`, `workspace_memberships` | JSON pessoal (as próprias) e JSON da conta (todas as da conta) | manual |
+| `workspaces`, `profiles` (rascunho), `profile_publications`, `slug_history` | JSON da conta | manual; `soft_delete_workspace` recusa conta com assinatura em curso |
+| `media_assets`, `media_asset_shares` | JSON da conta: só o inventário | manual |
+| Storage (bucket `media`) | **não exportado**: os arquivos dependem do pedido de pacote completo | manual; o job de limpeza só remove órfãos |
+| `form_leads` | JSON da conta (além do CSV por página) | por lead, na tela de contatos; 90 dias provisórios, sem expurgo agendado |
+| `analytics_daily` | JSON da conta | manual; 100 dias pelo job diário |
+| `analytics_events`, `analytics_rate_hits`, `form_submission_hits` | **exceção:** não exportados (hashes de visitante, sem identificador que localize uma pessoa) | expiram sozinhos (7 dias; 2 dias) |
+| `report_links` | JSON da conta, sem o hash do token | manual |
+| `report_lookup_failures` | **exceção:** não exportado (hash de endereço) | expira em 24 horas |
+| `workspace_invitations` | JSON pessoal (enviados, recebidos, aceitos) e JSON da conta, sem o hash do token | manual |
+| `billing_customers`, `billing_subscriptions`, `billing_invoices`, `billing_events` | JSON da conta, **com** os ids do provedor (decisão da revisão pendente) | manual; cancelar no provedor antes. O que fica na Stripe é exceção a registrar |
+| `audit_events` | JSON pessoal (ações da pessoa) e JSON da conta | **exceção proposta:** mantido 1 ano |
+| `legal_acceptances`, `privacy_requests` | JSON pessoal | aceites caem com `auth.users`; pedidos ficam |
+| `moderation_reports` | **não exportado** (a conta denunciada não lê denúncias) | manual |
+| `waitlist_signups` | JSON pessoal, pelo e-mail da conta | manual |
+| Logs da Vercel e do Supabase, cópias em cache e prévias de link de terceiros | **não exportados** | retenção do fornecedor, não confirmada |

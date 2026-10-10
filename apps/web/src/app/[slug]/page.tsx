@@ -41,6 +41,7 @@ export default async function PublicPage({ params }: Props) {
           <PublicPageWebVitals />
           {/* Customer analytics (ADR 0011): only this route mounts the collector, never the preview. */}
           <PublicPageAnalytics slug={result.slug} />
+          <footer className="bg-app-bg px-4 py-5 text-center text-sm"><a className="underline underline-offset-4" href={"/denunciar?pagina=" + encodeURIComponent(result.slug)}>Denunciar esta página</a></footer>
         </>
       );
     case "moved":

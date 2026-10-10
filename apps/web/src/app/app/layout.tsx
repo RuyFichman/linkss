@@ -7,6 +7,7 @@ import { PRODUCT } from "@/lib/product";
 import { SignOutButton } from "@/modules/identity/components/sign-out-button";
 import { WorkspaceSwitcher } from "@/modules/identity/components/workspace-switcher";
 import { resolveAccount } from "@/modules/identity/session";
+import { legalAcceptanceRequired } from "@/modules/legal/server";
 import { EmptyState } from "@/ui";
 import { BRAND_CLASS } from "@/ui/brand-font";
 
@@ -16,6 +17,7 @@ export const metadata: Metadata = { title: { default: "Painel", template: `%s | 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const account = await resolveAccount();
   if (account.status === "anonymous") redirect("/entrar?next=/app");
+  if (account.status === "ready" && await legalAcceptanceRequired()) redirect("/aceite");
 
   return (
     <div className={BRAND_CLASS}>
@@ -27,7 +29,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <Link className="app-brand" href="/app">{PRODUCT.codename}</Link>
             {account.status === "ready" ? <WorkspaceSwitcher workspaces={account.workspaces.map((workspace) => ({ id: workspace.workspaceId, name: workspace.name, kind: workspace.kind, role: workspace.role }))} /> : null}
           </div>
-          <SignOutButton />
+          <div className="flex items-center gap-3">
+            <Link href="/app/conta/dados" className="text-sm underline underline-offset-4">Meus dados</Link>
+            <SignOutButton />
+          </div>
         </div>
       </header>
       <main id="conteudo" className="app-shell py-6 sm:py-10">

@@ -37,7 +37,7 @@ Legenda: **implementado + verificado** (teste automatizado ou verificação manu
 | Dados sensíveis em logs/auditoria | allowlist de metadados no banco e na aplicação; logger descarta chaves sensíveis e mascara e-mails | implementado + verificado | pgTAP 080; `audit.test.ts`; logs do servidor sem e-mail na verificação manual |
 | Secret key no navegador | somente publishable key em `NEXT_PUBLIC_*`; secret apenas no store server-side da waitlist | implementado | `.env.example`, `lib/supabase/*` |
 | MFA para owners | TOTP | pendente | adiado (ADR 0005) |
-| Headers de segurança e CSP | — | pendente | Sprint 9 |
+| Headers de segurança e CSP | CSP para origens, frames, objetos e ações de formulário; bloqueio de handlers inline; `nosniff`, `DENY`, política de referrer e permissões | implementado + verificado localmente | `next.config.ts`, `lib/security/response-headers.ts`, Vitest `security.test.ts`; scripts de bootstrap do Next e estilos do tema ainda exigem `unsafe-inline`, portanto CSP não é uma defesa completa contra XSS |
 
 ## Controles adicionados na Sprint 3 (página pública)
 
@@ -53,10 +53,10 @@ Legenda: **implementado + verificado** (teste automatizado ou verificação manu
 | Página suspensa continuar no ar | `get_public_page` responde `suspended`; cache expira em ≤ 60 s mesmo sem invalidação | implementado + verificado (fallback medido em 30 s) | pgTAP 095; runbook `PUBLIC_PAGE.md` |
 | Cache poisoning via Host | URLs absolutas só de `NEXT_PUBLIC_APP_URL`; `metadataBase` fixo | implementado | `lib/app-url.ts`, `app/layout.tsx` |
 | Poluição do cache ISR com grafias variantes | redirect 308 no proxy antes do render para maiúsculas/`%` | implementado + verificado | curl: `/Ana-Lima` → 308 sem entrada de cache |
-| Abuso do endpoint `/api/vitals` (logs falsos, flood) | allowlist de campos, limite de 1 KB, só same-origin, sempre 204 | implementado; **rate limit pendente** (Sprint 9) | Vitest `web-vitals.test.ts`; curl |
+| Abuso do endpoint `/api/vitals` (logs falsos, flood) | allowlist de campos, leitura limitada a 1 KiB mesmo sem `Content-Length`, só same-origin, sempre 204 | implementado + teste local; **limite global pendente** | Vitest `web-vitals.test.ts` e `security.test.ts`; limites de borda ainda não configurados |
 | Flood de endereços inexistentes gerando regenerações ISR | — | **risco residual** | cada endereço novo custa um render + RPC; mitigar com firewall/rate limit da Vercel antes do lançamento aberto |
 | Banco lento derrubar páginas | timeout de 4 s; ISR mantém a última cópia boa | implementado + verificado | teste de queda: página em cache seguiu 200 (STALE); nova respondeu 500 em 4 s |
-| Phishing/impersonação em páginas publicadas | suspensão por workspace; denúncia e moderação por página | parcial: suspensão existe, **denúncia/moderação pendentes** (Sprint 9) | — |
+| Phishing/impersonação em páginas publicadas | suspensão por workspace e, desde a Sprint 9, por página; denúncia pública assinada pelo servidor, com resposta neutra e limites por endereço e por página; fila só para administrador da plataforma | implementado + verificado localmente; **aviso ao dono e contestação pendentes** | pgTAP 180; denúncia enviada pelo navegador no stack local |
 
 ## Controles adicionados na Sprint 4 (editor por blocos)
 
@@ -122,7 +122,7 @@ Decisão: ADR 0011. É o primeiro caminho de escrita aberto a visitantes anônim
 | Tráfego interno ou automático contado como visita | robôs e prévias de link por user agent, `navigator.webdriver`, sessão do produto no mesmo navegador, visita vinda de `/app`; a prévia e o editor não montam o coletor | implementado + verificado; **limite conhecido:** dono sem sessão, em outro navegador ou num navegador embutido conta; robô com user agent de navegador conta até o limite | Vitest (tabela de user agents; teste de isolamento do coletor); navegador (dono com sessão: descartado; prévia: zero requisições) |
 | Injeção de fórmula no CSV | mesmas células da exportação de leads (aspas e apóstrofo); o CSV só tem totais por dia | implementado + verificado | Vitest |
 | Chamar o job de agregação/limpeza sem autorização | `CRON_SECRET` em `Authorization`, comparação em tempo constante; a função só é executável pelo `service_role` | implementado + verificado | Vitest `jobs/analytics/route.test.ts`; pgTAP 140 |
-| Flood de requisições a `/api/events` (custo de função e de transação) | corpo de até 4 KiB, 10 eventos por lote, resposta sem banco | **risco residual**: sem limite global nem firewall até a Sprint 9 | — |
+| Flood de requisições a `/api/events` (custo de função e de transação) | leitura limitada a 4 KiB mesmo sem `Content-Length`, 10 eventos por lote, resposta sem banco | **risco residual**: sem limite global nem firewall | Vitest `security.test.ts` e `route.test.ts`; o limite de borda precisa de configuração na hospedagem |
 
 ## Controles adicionados na Sprint 7, parte 1 (páginas, convites e papéis)
 
@@ -148,6 +148,14 @@ Desenho em `docs/adr/0012-multi-page-operations-invitations-and-roles.md`. Verif
 | Cópia publicada com Pix, WhatsApp ou consentimento de outro cliente | Aviso "Revise antes de publicar" no rascunho copiado, listando o que conferir, até a primeira publicação. Não bloqueia | Implementado. **Risco aceito:** depende de a pessoa ler o aviso (UX-052) |
 | Busca da lista como vetor de leitura entre contas ou de injeção | A função roda com os privilégios de quem chama (RLS decide); `%`, `_` e `\` são escapados; ordem e filtro vêm de listas fechadas | Implementado e testado com strings hostis |
 | Página arquivada continuar no ar ou em cache | A mesma transação tira a página do ar; a ação invalida o cache público pelo caminho já usado por "Tirar do ar"; uma constraint impede página arquivada com versão no ar | Implementado e testado (navegador: 404 logo após arquivar) |
+
+## Revisão transversal da Sprint 9 (local)
+
+- **CSRF:** Server Actions continuam usando a verificação de origem do Next. Rotas autenticadas que aceitam POST usam `isSameOriginRequest`; o guard agora compara esquema e host, recusa `Origin` ausente e caminhos extras. O webhook confere assinatura e timestamp, e jobs exigem `CRON_SECRET`. Vitest `security.test.ts` e `cleanup.test.ts` cobrem os casos negativos.
+- **XSS:** React renderiza texto do cliente sem HTML e as políticas de URL, embed e tema seguem fechadas. O CSP bloqueia objetos, frames não permitidos e atributos de script; o bootstrap inline do Next e estilos inline ainda são permitidos. Uma política com nonce exigiria rever o ISR das páginas públicas antes de ativar.
+- **SQL injection:** o acesso da aplicação usa PostgREST/RPCs com argumentos tipados; a busca de páginas escapa `%_` e barra invertida para `LIKE`. A inspeção das migrações existentes não encontrou SQL dinâmico interpolando entrada de usuário. As novas RPCs da Sprint 9 têm pgTAP positivo e negativo (arquivo 180).
+- **Rate limits:** limites transacionais de Auth, leads, uploads, analytics, convites, checkout e relatórios permanecem como documentados nas seções anteriores. Não existe, neste checkout, um controle global distribuído na borda para renderer, `/api/vitals`, `/api/events`, `/api/media`, `/r/` ou webhook; a configuração e o teste na hospedagem são pendências para usuários externos. Um contador em memória por instância não ofereceria essa garantia.
+- **Dependências (09/10/2026):** Next e `eslint-config-next` foram atualizados juntos para 16.4.0. `npm audit --omit=dev` passou com zero vulnerabilidades. O audit completo ainda aponta cinco itens `high` na cadeia de ferramentas `eslint-config-next → fast-glob → micromatch → braces@3.0.3`; `npm view braces version` informa que 3.0.3 é a versão mais nova, sem correção publicada. O risco é do processamento de padrões pelo tooling local/CI, não do bundle em produção; acompanhar uma correção upstream, sem rebaixar o lint de Next.
 
 ## Requisitos antes do MVP privado
 

@@ -125,7 +125,10 @@ describe("report response headers", () => {
     expect(headers["x-frame-options"]).toBe("DENY");
     // next.config.ts applies exactly this list to everything under /r/, the 404 included.
     expect(REPORT_ROUTE_SOURCE).toBe("/r/:path*");
-    expect(await nextConfig.headers?.()).toEqual([{ source: "/r/:path*", headers: REPORT_RESPONSE_HEADERS }]);
+    const configured = await nextConfig.headers?.();
+    expect(configured?.[0]?.source).toBe("/:path*");
+    expect(configured?.[0]?.headers.some((header) => header.key === "Content-Security-Policy")).toBe(true);
+    expect(configured?.[1]).toEqual({ source: "/r/:path*", headers: REPORT_RESPONSE_HEADERS });
   });
 });
 
