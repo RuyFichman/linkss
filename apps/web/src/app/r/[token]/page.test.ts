@@ -155,11 +155,11 @@ describe("the visit collector stays on the public page only", () => {
     });
   }
 
-  it("is imported by /[slug] and by no other route, the report and the consolidated dashboard included", () => {
+  it("is imported by the two public routes and by no other route, the report and the consolidated dashboard included", () => {
     const importers = sources(appDirectory)
       .filter((path) => /public-page-analytics|modules\/analytics\/collector|web-vitals-reporter/.test(readFileSync(path, "utf8")))
       .map((path) => path.slice(appDirectory.length).replace(/\\/g, "/").replace(/^\//, ""));
-    expect(importers).toEqual(["[slug]/page.tsx"]);
+    expect(importers.sort()).toEqual(["[slug]/page.tsx", "d/[host]/page.tsx"]);
     const reportRoute = sources(join(appDirectory, "r")).map((path) => readFileSync(path, "utf8")).join("\n");
     const consolidated = sources(join(appDirectory, "app", "w", "[workspaceId]", "resultados")).map((path) => readFileSync(path, "utf8")).join("\n");
     for (const source of [reportRoute, consolidated]) expect(source).not.toMatch(/"use client"|PublicPageAnalytics|analytics\/collector|sendBeacon|document\.cookie|localStorage/);

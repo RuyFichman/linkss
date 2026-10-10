@@ -157,14 +157,14 @@ describe("public page metadata", () => {
 
   it("uses the configured public origin for canonical and Open Graph URLs", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://exemplo.com.br/");
-    const metadata = buildPublicPageMetadata({ state: "published", slug: "ana", version: 1, publishedAt: null, showBadge: true, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana Lima", bio: "  Nutricionista\n em SP ", avatarPath: null, theme: null, blocks: [] } });
+    const metadata = buildPublicPageMetadata({ state: "published", slug: "ana", version: 1, publishedAt: null, showBadge: true, customDomain: null, pixels: null, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana Lima", bio: "  Nutricionista\n em SP ", avatarPath: null, theme: null, blocks: [] } });
     expect(metadata.alternates?.canonical).toBe("https://exemplo.com.br/ana");
     expect(metadata.openGraph).toMatchObject({ url: "https://exemplo.com.br/ana", title: "Ana Lima", description: "Nutricionista em SP", locale: "pt_BR" });
     expect(metadata.robots).toEqual({ index: true, follow: true });
   });
 
   it("falls back to a default description and truncates long bios", () => {
-    const base = { state: "published" as const, slug: "ana", version: 1, publishedAt: null, showBadge: true };
+    const base = { state: "published" as const, slug: "ana", version: 1, publishedAt: null, showBadge: true, customDomain: null, pixels: null };
     expect(buildPublicPageMetadata({ ...base, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana", bio: "", avatarPath: null, theme: null, blocks: [] } }).description).toBe("Links e contatos de Ana.");
     const long = buildPublicPageMetadata({ ...base, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana", bio: "x".repeat(280), avatarPath: null, theme: null, blocks: [] } }).description ?? "";
     expect(long.length).toBe(160);

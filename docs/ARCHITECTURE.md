@@ -256,3 +256,38 @@ Vercel Cron diário ── GET /api/jobs/billing (CRON_SECRET) ── run_billin
 - **Selo:** `remove_badge` é lido a cada requisição; quando o plano muda, o banco devolve os endereços das páginas no ar e o servidor invalida o cache delas (o limite, sem isso, é a janela de 60 s do ISR).
 - **Módulo:** `billing` (catálogo, máquina de estados, impacto do rebaixamento, modo, adapter + Stripe + fake, atestação, serviço, leitura, apresentação, ações, componentes; `testing/` com o emulador e o ledger em memória, nunca importados pela aplicação).
 - **Fora desta parte:** domínio próprio e pixels (parte 2), cobrança real, nota fiscal, e-mails de cobrança, troca mensal↔anual numa assinatura em curso, limite global na frente do webhook (Sprint 9).
+
+## Domínio próprio e pixels — implementado na Sprint 8, parte 2
+
+Decisões em `docs/adr/0016-custom-domains.md` e `docs/adr/0017-pixels-and-consent.md`. Verificado só no stack local (pgTAP, Vitest e `apps/web/scripts/domains-lifecycle.mjs`, contra um resolvedor DNS de teste e um emulador da API da Vercel). **Nada rodou contra a API da Vercel, com um domínio real, nem contra a Meta ou o Google.**
+
+```text
+dono da página ── registra o domínio ─► profile_domains (pending, desafio aleatório)
+               ── publica TXT em _linkfav.<domínio>
+               ── "Verificar" ─► servidor lê o TXT (resolvedores públicos)
+                                 ├─ desafio presente ─► DomainsAdapter.ensure (Vercel: anexa ao projeto, lê o roteamento)
+                                 └─ assina {domínio, desafios encontrados, roteamento} (HMAC, segredo no Vault)
+                                        ─► confirm_profile_domain ─► active | dns_missing | in_use
+                                                                     └─ outra página ativa sem prova no DNS ─► lapsed
+
+visitante ── https://<domínio>/ ── rewrite por Host (next.config.ts) ─► /d/<domínio> (ISR)
+                                     └─ get_public_page_by_domain ─► linha ativa + plano com custom_domain ─► get_public_page
+           ── qualquer outro caminho no domínio ─► 404 (só /_next, /api/events, /api/vitals e o ícone passam)
+
+página pública ── get_public_page.pixels (só com tracking_pixels no plano) ─► aviso de consentimento
+                    └─ "Aceitar" ─► carregador do produto ─► fbevents.js / gtag.js (um page view para cada)
+```
+
+- **Um domínio por página**, em `profile_domains` (fora do snapshot e fora de `profiles`: a duplicação não copia). Uma página no domínio do produto continua funcionando; o canônico passa a ser o domínio próprio nos dois endereços.
+- **Prova de controle por TXT, lida pelo servidor e atestada ao banco.** Registrar não prova nem reserva nada (linhas `pending` não são únicas). Só `confirm_profile_domain`, com assinatura do servidor, torna uma linha `active`; há no máximo uma linha ativa por domínio (índice único parcial).
+- **Quem controla o DNS hoje decide.** Uma nova prova só toma um domínio ativo quando o desafio da página anterior não está mais no DNS; aí a linha anterior vira `lapsed` na mesma transação, com auditoria.
+- **Roteamento por Host em `next.config.ts`** (`modules/domains/routing.ts`): todo Host que não é do produto (o de `NEXT_PUBLIC_APP_URL` com e sem `www`, `*.vercel.app`, loopback) é domínio próprio. A regra geral vem antes da regra da raiz, porque o Next aplica as regras seguintes sobre o caminho já reescrito. **Um novo endereço do produto precisa ser o host de `NEXT_PUBLIC_APP_URL`**, senão é tratado como domínio de cliente e responde 404.
+- **O domínio serve a página e nada mais:** login, app, relatórios, API e outras páginas não respondem num domínio de cliente.
+- **Entitlement lido a cada leitura.** `get_public_page_by_domain` exige `custom_domain` no plano; `get_public_page` só devolve `pixels` com `tracking_pixels`. Perder o plano não apaga nada: desliga, e volta com o plano.
+- **Cache:** `revalidatePublicPage(slug)` também derruba todas as cópias de `/d/[host]` (ele não conhece o domínio da página). Cada cópia derrubada custa uma leitura no banco na visita seguinte. **Sinal para estreitar:** volume de publicações em que essas regenerações apareçam no p95 do banco ou no custo de função.
+- **`DomainsAdapter`** (`ensure`, `inspect`, `detach`) com implementação da Vercel por `fetch` e um fake. O provedor emite o certificado; a aplicação não pede nem guarda certificado. Sem as variáveis do provedor a prova continua valendo e a tela diz que a ativação automática não está disponível.
+- **Pixels são identificadores**, nunca scripts: Meta Pixel (10 a 20 dígitos) e Google Analytics 4 (`G-…`). Tag Manager é recusado. O carregador é do produto e só roda depois do aceite do visitante, por página.
+- **CSP por rota:** as origens da Meta e do Google só são permitidas em `/[slug]` (padrão que exclui as rotas reservadas) e na raiz de um domínio próprio. O resto do produto mantém a política base.
+- **Papéis:** todos os membros veem; proprietário e administrador alteram (`domains.manage`, `pixels.manage`).
+- **Módulos:** `domains` (hostname, DNS, adapter + Vercel + fake, configuração, roteamento, serviço, ações, componentes) e `pixels` (modelo, serviço, carregador, ações, componentes). `publishing/render/published-page.tsx` é o que as duas rotas públicas renderizam; o coletor de analytics continua montado só pelas rotas.
+- **Fora desta parte:** reverificação agendada, redirecionamento do endereço do produto para o domínio, eventos de conversão nos pixels, registro de consentimento, domínios e pixels na exportação da conta.

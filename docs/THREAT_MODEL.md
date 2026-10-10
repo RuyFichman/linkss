@@ -164,7 +164,7 @@ Desenho em `docs/adr/0012-multi-page-operations-invitations-and-roles.md`. Verif
 - testes de isolamento por workspace — **feito (pgTAP + Vitest)**;
 - rate limits para auth, formulário, upload e ingestão — Auth configurado localmente; formulário e upload têm limites no banco (Sprint 5); a ingestão de analytics tem limites no banco por endereço, por página e de capacidade (Sprint 6); limite global na frente das rotas públicas pendente;
 - CAPTCHA no Auth para fechar a enumeração direta pela API;
-- trilha para publicação, domínio, papéis e suspensão — papéis/slug/exclusão/publicação/restauração/despublicação feitos; domínio e suspensão pendentes;
+- trilha para publicação, domínio, papéis e suspensão — papéis/slug/exclusão/publicação/restauração/despublicação feitos; suspensão feita na Sprint 9; domínio feito na Sprint 8, parte 2 (registro, comprovação, perda e remoção auditados);
 - backup e restauração testados;
 - processo de denúncia e contato de segurança.
 
@@ -219,3 +219,36 @@ Decisões em `docs/adr/0014-payments-subscriptions-and-webhooks.md`. O webhook �
 | Abuso de checkouts (criar sessões em massa) | 10 por conta por hora no banco (`LK101`) | implementado; limite global é da Sprint 9 |
 
 Exposto até a Sprint 9: limite global e allowlist de IPs na frente de `/api/billing/webhook`; exportação e exclusão de conta alcançando as tabelas de cobrança; revisão jurídica (lista no ADR 0014).
+
+## Controles adicionados na Sprint 8, parte 2 (domínio próprio e pixels)
+
+Decisões em `docs/adr/0016-custom-domains.md` e `docs/adr/0017-pixels-and-consent.md`. Verificado no stack local contra um resolvedor DNS de teste e um emulador da API da Vercel; **não verificado com um domínio real, contra a API da Vercel, nem contra a Meta ou o Google**.
+
+| Ameaça | Controle | Estado |
+|---|---|---|
+| Alguém associa um domínio que não controla | Registrar não prova nada. Só `confirm_profile_domain` ativa um domínio, e exige um atestado assinado pelo servidor (HMAC, segredo no Vault) de que o desafio daquela página estava no TXT `_linkfav.<domínio>` | implementado + verificado (pgTAP 190: assinatura errada, malformada, vencida, de outro domínio, desafio de outra página; script: registro alheio no DNS) |
+| Chamada direta à RPC ou escrita direta na tabela com sessão válida | A assinatura não pode ser produzida pelo cliente; `profile_domains` e `profile_pixels` não têm grant de escrita para papel de cliente | implementado + verificado (pgTAP: `update`, `insert` ativo e `insert` de pixel recusados com 42501) |
+| Sequestro de um domínio em uso por outra conta | Uma linha ativa por domínio (índice único parcial); nova prova só toma o domínio se o desafio da página atual **não** estiver mais no DNS; com os dois presentes, `in_use` | implementado + verificado (pgTAP e script: `in_use` com os dois, troca com um só, auditoria na conta que perdeu) |
+| Ocupar nomes para bloquear os donos (squatting) | Linhas `pending` não são únicas nem reservam o nome; limite de 20 registros por conta em 24 h | implementado + verificado (pgTAP: `LK121`) |
+| Tomada por registro DNS esquecido (CNAME pendurado) | Apontar o domínio nunca é a prova; a prova é o TXT com desafio aleatório de 128 bits | implementado (decisão) |
+| Descobrir quais domínios são clientes | Registrar um domínio ativo em outra conta não revela nada; `get_public_page_by_domain` responde `not_found` igual para desconhecido, pendente, perdido e fora do plano | implementado + verificado (pgTAP) |
+| Phishing do produto num domínio de cliente (`cliente.com/entrar`) | Num Host que não é do produto, só a raiz e os recursos da própria página respondem; todo o resto é 404; cookies de sessão são por host | implementado + verificado (script: 10 caminhos do produto num domínio de teste; Vitest do padrão) |
+| Página de outro cliente servida num domínio de terceiro | A regra geral reescreve `/d/…` e `/<slug>` para 404 nesse Host; a rota `/d/[host]` só resolve o que o banco diz para aquele Host | implementado + verificado (script) |
+| Host forjado envenenando o cache | O cache é por caminho `/d/<host>`; o valor só chega ao banco se for um hostname na forma armazenada; canônico e `og:url` vêm do banco e de `NEXT_PUBLIC_APP_URL`, nunca do Host | implementado + verificado (Vitest) |
+| Domínio continua respondendo depois de removido, perdido ou sem plano | Decisão no banco a cada regeneração; as ações derrubam o cache; limite de 60 s do ISR | implementado + verificado (script: 404 imediato após remoção; troca imediata) |
+| Token da Vercel enviado a outro host | `VERCEL_API_BASE_URL` só é aceito para loopback; fora disso o provedor fica desligado | implementado + verificado (Vitest) |
+| Vazamento do token ou do desafio em log | Logs trazem só o desfecho; nenhum hostname, desafio, identificador ou token | implementado + verificado (script: 0 linhas com esses valores) |
+| JavaScript arbitrário via "pixel" | Só identificadores, em formato fechado, conferidos no formulário, na RPC, na tabela e de novo no navegador; sem campo de script; Tag Manager recusado | implementado + verificado (pgTAP, Vitest, script: `<script>`, `GTM-`, `UA-`) |
+| Rastreamento do visitante por terceiros sem escolha | Nada é pedido à Meta ou ao Google antes do aceite; recusar tem o mesmo peso; escolha por página e por conjunto de identificadores | implementado + verificado (Vitest do carregador e do armazenamento; script: HTML público sem endereço de fornecedor; Chrome: zero requisição a Meta ou Google antes da escolha e depois de *Recusar*). **O caminho *Aceitar* não foi exercitado num navegador** |
+| Afrouxar a CSP do produto para acomodar os pixels | As origens dos fornecedores só entram em `/[slug]` e na raiz de domínio próprio; teste compara as duas políticas | implementado + verificado (Vitest; script: 8 rotas do produto com a política base) |
+| Editor liga um pixel e envia dados de visitantes a terceiros | Só proprietário e administrador (`pixels.manage`), na aplicação e na RPC | implementado + verificado (pgTAP, Vitest, script) |
+| Identificador na trilha de auditoria | `pixels.updated` registra só quais ferramentas estão ligadas | implementado + verificado (pgTAP, script) |
+
+**Riscos aceitos ou em aberto**
+
+- **Sem reverificação agendada:** um domínio cujo TXT é apagado continua ativo até outra conta comprovar o controle. Um domínio vendido a terceiros segue abrindo a página antiga enquanto o novo dono não o reivindicar no produto (ou mudar o DNS, o que basta para tirá-lo do ar).
+- **Domínio próprio dá aparência oficial a phishing.** O link de denúncia continua em toda página e a suspensão vale também no domínio; lista de bloqueio de domínios e revisão de novos domínios não existem.
+- **Sem limite global** na frente de `/d/<host>` e das ações de verificação (cada verificação faz uma consulta DNS e até três chamadas ao provedor): herdado da lista da Sprint 9.
+- **A lista de origens dos fornecedores não foi exercitada num navegador** (o caminho *Aceitar* nunca rodou); pode estar incompleta ou larga demais.
+- **O consentimento não deixa registro no servidor** e o texto do aviso não passou por revisão jurídica.
+- **Plano Hobby da Vercel** não cobre uso comercial nem muitos domínios por projeto.

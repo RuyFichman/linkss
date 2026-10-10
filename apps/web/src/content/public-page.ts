@@ -49,6 +49,18 @@ export const PUBLIC_PAGE_COPY = {
     failed: "Não foi possível enviar agora. Seus dados não foram guardados. Tente novamente.",
     previewNote: "Na prévia, o formulário não envia dados.",
   },
+  // Consent for the page owner's Meta Pixel / Google Analytics (ADR 0017). Nothing loads before "accept".
+  consent: {
+    label: "Aviso de privacidade",
+    text: (vendors: string) => `Esta página usa ${vendors} para medir visitas e anúncios. Se você aceitar, dados da sua visita são enviados a ${vendors.includes(" e ") ? "essas empresas" : "essa empresa"}.`,
+    meta: "o Meta Pixel",
+    ga: "o Google Analytics",
+    and: " e ",
+    accept: "Aceitar",
+    refuse: "Recusar",
+    change: "Preferências de privacidade",
+  },
+  report: "Denunciar esta página",
 } as const;
 
 /** Names of the Pix key types as shown to visitors. */

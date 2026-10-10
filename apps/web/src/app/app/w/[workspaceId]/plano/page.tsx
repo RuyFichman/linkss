@@ -7,6 +7,7 @@ import { BILLING_INTERVALS, PLAN_IDS, formatMoney, isPaidPlan, planPrice, planRa
 import { BillingActionForm } from "@/modules/billing/components/billing-action-form";
 import { resolveBillingMode } from "@/modules/billing/mode";
 import { billingStateSentence, formatBillingDate, planFeatureLines, priceLabel } from "@/modules/billing/presentation";
+import { domainsSignerFromEnv } from "@/modules/domains/config";
 import type { WorkspaceBilling } from "@/modules/billing/read";
 import { fetchWorkspaceBilling } from "@/modules/billing/server";
 import { availableBillingActions, billingViewState, type BillingViewState } from "@/modules/billing/subscription";
@@ -146,7 +147,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
                 <div className="grid gap-2">
                   <h4 className="text-sm font-bold">{copy.plans.includes(name)}</h4>
                   <ul className="m-0 grid list-disc gap-1 pl-5 text-sm">
-                    {planFeatureLines(planId).map((line) => <li key={line}>{line}</li>)}
+                    {planFeatureLines(planId, { customDomains: domainsSignerFromEnv() !== null }).map((line) => <li key={line}>{line}</li>)}
                   </ul>
                 </div>
                 {selling && isOwner && !suspended && paid ? (

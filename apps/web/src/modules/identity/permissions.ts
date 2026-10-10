@@ -47,6 +47,12 @@ export const PERMISSIONS = {
   // cancels. Editors see nothing about payment (ADR 0014).
   "billing.view": ["owner", "admin"],
   "billing.manage": ["owner"],
+  // A custom domain changes where a page answers and pixels send visitors' data to third parties:
+  // every member sees them, owners and admins change them (ADR 0016, ADR 0017).
+  "domains.view": ["owner", "admin", "editor"],
+  "domains.manage": ["owner", "admin"],
+  "pixels.view": ["owner", "admin", "editor"],
+  "pixels.manage": ["owner", "admin"],
   "audit.view": ["owner", "admin"],
 } as const satisfies Record<string, readonly WorkspaceRole[]>;
 

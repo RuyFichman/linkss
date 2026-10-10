@@ -442,6 +442,56 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"profile_domains": {
+                  Row: {
+                    "challenge": string,"created_at": string,"created_by": string | null,"hostname": string,"id": string,"lapsed_at": string | null,"last_checked_at": string | null,"profile_id": string,"routing": string,"status": string,"verified_at": string | null,"workspace_id": string
+                  }
+                  Insert: {
+                    "challenge": string,"created_at"?: string,"created_by"?: string | null,"hostname": string,"id"?: string,"lapsed_at"?: string | null,"last_checked_at"?: string | null,"profile_id": string,"routing"?: string,"status"?: string,"verified_at"?: string | null,"workspace_id": string
+                  }
+                  Update: {
+                    "challenge"?: string,"created_at"?: string,"created_by"?: string | null,"hostname"?: string,"id"?: string,"lapsed_at"?: string | null,"last_checked_at"?: string | null,"profile_id"?: string,"routing"?: string,"status"?: string,"verified_at"?: string | null,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profile_domains_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "profile_domains_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profile_pixels": {
+                  Row: {
+                    "ga_measurement_id": string | null,"meta_pixel_id": string | null,"profile_id": string,"updated_at": string,"updated_by": string | null,"workspace_id": string
+                  }
+                  Insert: {
+                    "ga_measurement_id"?: string | null,"meta_pixel_id"?: string | null,"profile_id": string,"updated_at"?: string,"updated_by"?: string | null,"workspace_id": string
+                  }
+                  Update: {
+                    "ga_measurement_id"?: string | null,"meta_pixel_id"?: string | null,"profile_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profile_pixels_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "profile_pixels_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"profile_publications": {
                   Row: {
                     "created_at": string,"document": NonNullable<Json>,"id": string,"profile_id": string,"published_by": string | null,"schema_version": number,"source_revision": number,"version": number,"workspace_id": string
@@ -694,6 +744,14 @@ isOneToOne: false
               "media_id": string,"object_names": (string)[]
             }[]
                            },
+"claim_profile_domain":
+{ Args: { "p_hostname": string,"p_profile_id": string }; Returns: {
+              "challenge": string,"domain_id": string,"hostname": string
+            }[]
+                           },
+"confirm_profile_domain":
+{ Args: { "p_signature": string,"p_text": string }; Returns: Json
+                           },
 "create_agency_workspace":
 { Args: { "p_name": string }; Returns: string
                            },
@@ -742,7 +800,12 @@ isOneToOne: false
                            },
 "get_public_page":
 { Args: { "p_slug": string }; Returns: {
-              "canonical_slug": string,"document": Json,"published_at": string,"show_badge": boolean,"state": string,"version": number
+              "canonical_slug": string,"custom_domain": string,"document": Json,"pixels": Json,"published_at": string,"show_badge": boolean,"state": string,"version": number
+            }[]
+                           },
+"get_public_page_by_domain":
+{ Args: { "p_hostname": string }; Returns: {
+              "canonical_slug": string,"custom_domain": string,"document": Json,"pixels": Json,"published_at": string,"show_badge": boolean,"state": string,"version": number
             }[]
                            },
 "get_shared_report":
@@ -798,6 +861,11 @@ isOneToOne: false
 "register_media_asset":
 { Args: { "p_height": number,"p_kind": Database["public"]['Enums']["media_kind"],"p_media_id": string,"p_profile_id": string,"p_signature": string,"p_variants": Json,"p_width": number }; Returns: undefined
                            },
+"remove_profile_domain":
+{ Args: { "p_domain_id": string }; Returns: {
+              "hostname": string,"slug": string,"was_active": boolean
+            }[]
+                           },
 "remove_workspace_member":
 { Args: { "p_membership_id": string }; Returns: undefined
                            },
@@ -831,6 +899,11 @@ isOneToOne: false
 "set_profile_moderation":
 { Args: { "p_profile_id": string,"p_reason": string,"p_report_id"?: string,"p_suspend": boolean }; Returns: Json
                            },
+"set_profile_pixels":
+{ Args: { "p_ga_measurement_id": string,"p_meta_pixel_id": string,"p_profile_id": string }; Returns: {
+              "is_live": boolean,"slug": string
+            }[]
+                           },
 "soft_delete_profile":
 { Args: { "p_profile_id": string }; Returns: undefined
                            },
@@ -856,7 +929,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "analytics_device": "mobile"|"tablet"|"desktop"|"unknown","analytics_dimension": "total"|"block"|"source"|"utm"|"device"|"country","analytics_event_type": "page_view"|"link_click"|"social_click"|"embed_load"|"whatsapp_click"|"pix_copy"|"pix_pay_click"|"form_submit"|"badge_click","analytics_source": "direct"|"instagram"|"facebook"|"whatsapp"|"tiktok"|"youtube"|"x"|"linkedin"|"telegram"|"google"|"search"|"other","audit_action": "auth.sign_in"|"auth.sign_out"|"auth.password_reset_completed"|"workspace.created"|"workspace.deleted"|"membership.role_changed"|"membership.removed"|"profile.slug_changed"|"profile.deleted"|"profile.published"|"profile.unpublished"|"profile.publication_restored"|"lead.deleted"|"lead.exported"|"analytics.exported"|"profile.archived"|"profile.unarchived"|"profile.duplicated"|"invitation.created"|"invitation.revoked"|"invitation.accepted"|"report_link.created"|"report_link.revoked"|"billing.checkout_started"|"billing.change_requested"|"billing.subscription_changed"|"billing.plan_changed"|"legal.accepted"|"privacy.account_exported"|"privacy.workspace_exported"|"privacy.deletion_requested"|"privacy.data_access_requested"|"privacy.request_reviewed"|"moderation.reported"|"moderation.reviewed"|"moderation.suspended"|"moderation.reactivated","billing_interval": "month"|"year","billing_subscription_status": "incomplete"|"active"|"past_due"|"ended","entitlement_key": "max_profiles"|"analytics_days"|"team_members"|"custom_domain"|"remove_badge"|"shareable_reports"|"storage_mb","media_kind": "avatar"|"image","media_status": "pending"|"ready"|"failed"|"deleting","membership_status": "invited"|"active"|"revoked","profile_status": "draft"|"published"|"archived","slug_release_reason": "changed"|"deleted","workspace_kind": "personal"|"agency","workspace_role": "owner"|"admin"|"editor","workspace_status": "active"|"suspended"
+            "analytics_device": "mobile"|"tablet"|"desktop"|"unknown","analytics_dimension": "total"|"block"|"source"|"utm"|"device"|"country","analytics_event_type": "page_view"|"link_click"|"social_click"|"embed_load"|"whatsapp_click"|"pix_copy"|"pix_pay_click"|"form_submit"|"badge_click","analytics_source": "direct"|"instagram"|"facebook"|"whatsapp"|"tiktok"|"youtube"|"x"|"linkedin"|"telegram"|"google"|"search"|"other","audit_action": "auth.sign_in"|"auth.sign_out"|"auth.password_reset_completed"|"workspace.created"|"workspace.deleted"|"membership.role_changed"|"membership.removed"|"profile.slug_changed"|"profile.deleted"|"profile.published"|"profile.unpublished"|"profile.publication_restored"|"lead.deleted"|"lead.exported"|"analytics.exported"|"profile.archived"|"profile.unarchived"|"profile.duplicated"|"invitation.created"|"invitation.revoked"|"invitation.accepted"|"report_link.created"|"report_link.revoked"|"billing.checkout_started"|"billing.change_requested"|"billing.subscription_changed"|"billing.plan_changed"|"legal.accepted"|"privacy.account_exported"|"privacy.workspace_exported"|"privacy.deletion_requested"|"privacy.data_access_requested"|"privacy.request_reviewed"|"moderation.reported"|"moderation.reviewed"|"moderation.suspended"|"moderation.reactivated"|"domain.claimed"|"domain.verified"|"domain.lapsed"|"domain.removed"|"pixels.updated","billing_interval": "month"|"year","billing_subscription_status": "incomplete"|"active"|"past_due"|"ended","entitlement_key": "max_profiles"|"analytics_days"|"team_members"|"custom_domain"|"remove_badge"|"shareable_reports"|"storage_mb"|"tracking_pixels","media_kind": "avatar"|"image","media_status": "pending"|"ready"|"failed"|"deleting","membership_status": "invited"|"active"|"revoked","profile_status": "draft"|"published"|"archived","slug_release_reason": "changed"|"deleted","workspace_kind": "personal"|"agency","workspace_role": "owner"|"admin"|"editor","workspace_status": "active"|"suspended"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -972,7 +1045,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "analytics_device": ["mobile", "tablet", "desktop", "unknown"],"analytics_dimension": ["total", "block", "source", "utm", "device", "country"],"analytics_event_type": ["page_view", "link_click", "social_click", "embed_load", "whatsapp_click", "pix_copy", "pix_pay_click", "form_submit", "badge_click"],"analytics_source": ["direct", "instagram", "facebook", "whatsapp", "tiktok", "youtube", "x", "linkedin", "telegram", "google", "search", "other"],"audit_action": ["auth.sign_in", "auth.sign_out", "auth.password_reset_completed", "workspace.created", "workspace.deleted", "membership.role_changed", "membership.removed", "profile.slug_changed", "profile.deleted", "profile.published", "profile.unpublished", "profile.publication_restored", "lead.deleted", "lead.exported", "analytics.exported", "profile.archived", "profile.unarchived", "profile.duplicated", "invitation.created", "invitation.revoked", "invitation.accepted", "report_link.created", "report_link.revoked", "billing.checkout_started", "billing.change_requested", "billing.subscription_changed", "billing.plan_changed", "legal.accepted", "privacy.account_exported", "privacy.workspace_exported", "privacy.deletion_requested", "privacy.data_access_requested", "privacy.request_reviewed", "moderation.reported", "moderation.reviewed", "moderation.suspended", "moderation.reactivated"],"billing_interval": ["month", "year"],"billing_subscription_status": ["incomplete", "active", "past_due", "ended"],"entitlement_key": ["max_profiles", "analytics_days", "team_members", "custom_domain", "remove_badge", "shareable_reports", "storage_mb"],"media_kind": ["avatar", "image"],"media_status": ["pending", "ready", "failed", "deleting"],"membership_status": ["invited", "active", "revoked"],"profile_status": ["draft", "published", "archived"],"slug_release_reason": ["changed", "deleted"],"workspace_kind": ["personal", "agency"],"workspace_role": ["owner", "admin", "editor"],"workspace_status": ["active", "suspended"]
+            "analytics_device": ["mobile", "tablet", "desktop", "unknown"],"analytics_dimension": ["total", "block", "source", "utm", "device", "country"],"analytics_event_type": ["page_view", "link_click", "social_click", "embed_load", "whatsapp_click", "pix_copy", "pix_pay_click", "form_submit", "badge_click"],"analytics_source": ["direct", "instagram", "facebook", "whatsapp", "tiktok", "youtube", "x", "linkedin", "telegram", "google", "search", "other"],"audit_action": ["auth.sign_in", "auth.sign_out", "auth.password_reset_completed", "workspace.created", "workspace.deleted", "membership.role_changed", "membership.removed", "profile.slug_changed", "profile.deleted", "profile.published", "profile.unpublished", "profile.publication_restored", "lead.deleted", "lead.exported", "analytics.exported", "profile.archived", "profile.unarchived", "profile.duplicated", "invitation.created", "invitation.revoked", "invitation.accepted", "report_link.created", "report_link.revoked", "billing.checkout_started", "billing.change_requested", "billing.subscription_changed", "billing.plan_changed", "legal.accepted", "privacy.account_exported", "privacy.workspace_exported", "privacy.deletion_requested", "privacy.data_access_requested", "privacy.request_reviewed", "moderation.reported", "moderation.reviewed", "moderation.suspended", "moderation.reactivated", "domain.claimed", "domain.verified", "domain.lapsed", "domain.removed", "pixels.updated"],"billing_interval": ["month", "year"],"billing_subscription_status": ["incomplete", "active", "past_due", "ended"],"entitlement_key": ["max_profiles", "analytics_days", "team_members", "custom_domain", "remove_badge", "shareable_reports", "storage_mb", "tracking_pixels"],"media_kind": ["avatar", "image"],"media_status": ["pending", "ready", "failed", "deleting"],"membership_status": ["invited", "active", "revoked"],"profile_status": ["draft", "published", "archived"],"slug_release_reason": ["changed", "deleted"],"workspace_kind": ["personal", "agency"],"workspace_role": ["owner", "admin", "editor"],"workspace_status": ["active", "suspended"]
           }
         }
 } as const

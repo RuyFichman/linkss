@@ -366,10 +366,10 @@ describe("the preview, the editor and every admin surface emit nothing", () => {
   });
   afterEach(() => vi.unstubAllEnvs());
 
-  it("mounts the collector in the public route only", () => {
+  it("mounts the collector in the two public routes only (product address and custom hostname)", () => {
     const normalize = (file: string) => file.slice(SRC.length).replace(/\\/g, "/");
     const importers = sourceFiles(SRC).filter((file) => /public-page-analytics|analytics\/collector/.test(readFileSync(file, "utf8"))).map(normalize).sort();
-    expect(importers).toEqual(["app/[slug]/page.tsx"]);
+    expect(importers).toEqual(["app/[slug]/page.tsx", "app/d/[host]/page.tsx"]);
   });
 
   it("keeps the collector out of the shared renderer, which the preview and the editor reuse", () => {

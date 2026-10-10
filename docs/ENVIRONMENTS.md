@@ -176,6 +176,36 @@ A ordem recomendada é esta, mas **qualquer ordem é segura**: enquanto faltar a
 
 **Stack local.** A denúncia precisa de `MODERATION_SIGNING_SECRET` em `apps/web/.env.local` e do mesmo valor no Vault local, como os outros segredos de assinatura.
 
+## Passos de deploy da Sprint 8, parte 2 (domínio próprio e pixels)
+
+**Nada disto foi aplicado.** Verificado só no stack local, contra um resolvedor DNS de teste e um emulador da API da Vercel. Qualquer ordem é segura: sem a migração, a aba *Página* do editor diz que domínio e pixels ainda não estão disponíveis e a página pública funciona como antes; sem o segredo, ninguém consegue comprovar um domínio; sem as variáveis da Vercel, a comprovação funciona e a tela diz que a ativação automática não está disponível.
+
+| # | Passo | Depois dele |
+|---|---|---|
+| 1 | **Merge do PR** em `main` (publica em staging). Todo Host que não seja o de `NEXT_PUBLIC_APP_URL` (com ou sem `www`), um endereço `*.vercel.app` ou local passa a ser tratado como domínio de cliente. **Conferir antes:** `NEXT_PUBLIC_APP_URL` do ambiente é o endereço pelo qual as pessoas entram (`https://linkfav.com`) | o produto abre normalmente em `linkfav.com`, `www.linkfav.com` e `linkss-black.vercel.app`; páginas publicadas passam a receber a política de segurança com as origens da Meta e do Google (nada é carregado sem pixel configurado e aceite) |
+| 2 | **Migrações:** `npx supabase db push`. Deve listar `202610100001_sprint8_part2_enum_values` e `202610100002_custom_domains_and_pixels`. Acrescentam duas tabelas, quatro RPCs e a leitura por domínio; **recriam** `get_public_page` com duas colunas a mais (a função é apagada e criada na mesma transação) e reservam o endereço `d` | as seções *Domínio próprio* e *Meta Pixel e Google Analytics* aparecem na aba *Página*; pixels já funcionam em contas com plano pago; registrar um domínio funciona, verificar responde "não disponível" |
+| 3 | **Segredo no Vault**, pelo SQL Editor: `select vault.create_secret(encode(extensions.gen_random_bytes(32), 'hex'), 'domains_signing_secret');`. Para copiar: `select decrypted_secret from vault.decrypted_secrets where name = 'domains_signing_secret';`. Na Vercel, `DOMAINS_SIGNING_SECRET` com **o mesmo valor** (*Sensitive*). Novo deploy | a verificação passa a ler o DNS e a comprovar; a tela diz que a ativação automática não está disponível |
+| 4 | **Token da Vercel** (decisão do founder, ver abaixo): criar um token de acesso com escopo no time/conta do projeto; variáveis `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID` (em *Project Settings → General*) e, se o projeto for de um time, `VERCEL_TEAM_ID` (todas *Sensitive*). **Não** definir `VERCEL_API_BASE_URL` nem `DOMAINS_DNS_RESOLVER`. Novo deploy | um domínio comprovado é anexado ao projeto e a tela mostra o registro (CNAME ou A) que a Vercel recomenda; o certificado é emitido pela Vercel quando o DNS aponta para ela |
+
+**Antes do passo 4, decidir:** o plano Hobby da Vercel é para uso não comercial e limita domínios por projeto. Vender domínio próprio pede o plano pago da Vercel (serviço pago novo). Sem o passo 4, cada domínio comprovado pode ser acrescentado à mão em *Project → Domains*.
+
+**Conferência de ponta a ponta em staging (o founder roda; precisa de um domínio de teste que você controle):**
+
+1. Pôr a conta de teste num plano pago (assinatura de teste, ou o `update` manual descrito acima).
+2. Editor da página → aba *Página* (ou `…/paginas/<id>?aba=pagina`) → *Domínio próprio* → digitar um subdomínio seu, por exemplo `teste.seudominio.com.br`.
+3. Criar o registro TXT mostrado (`_linkfav.teste.seudominio.com.br`) no painel de DNS; tocar em **Verificar**. Antes da propagação a tela diz que não encontrou; depois, "Controle comprovado".
+4. Criar o registro CNAME (ou A) que a tela mostrar; **Verificar de novo** até "Domínio no ar". Abrir `https://teste.seudominio.com.br`: é a página publicada, com cadeado.
+5. No mesmo domínio, abrir `/entrar` e `/app`: 404. Abrir a página no endereço do produto e ver, no código-fonte, o `canonical` com o domínio próprio.
+6. Com uma segunda conta paga, registrar o mesmo domínio: com os dois registros TXT no DNS, "já está em uso"; apagando o TXT da primeira conta e verificando, o domínio muda de página e a primeira conta vê "Perdido".
+7. Remover o domínio: 404 em até um minuto; em *Project → Domains* na Vercel ele some.
+8. *Meta Pixel e Google Analytics*: salvar um ID de teste de cada; abrir a página publicada em janela anônima: aparece o aviso; com o painel de rede aberto, **nenhuma** requisição a `facebook` ou `google` antes de **Aceitar**; depois de aceitar, `fbevents.js` e `gtag/js` carregam sem erro de "Content Security Policy" no console, e a visita aparece em *Test Events* (Meta) e *Tempo real* (Google). **Este passo nunca foi executado:** qualquer bloqueio no console é um achado.
+9. Tentar salvar `GTM-XXXXXXX`: recusado.
+10. **Comparar com o emulador:** qualquer diferença entre o que a Vercel fez e o que este roteiro esperava é um achado para corrigir em `apps/web/src/modules/domains/vercel-adapter.ts`.
+
+**Rollback da aplicação para antes desta parte depois das migrações:** suportado. O código antigo ignora as duas colunas novas de `get_public_page` e não conhece as tabelas; domínios de clientes passam a abrir a home do produto (o código antigo não tem a regra por Host) e os pixels deixam de carregar.
+
+**Stack local.** `node scripts/domains-lifecycle.mjs` em `apps/web` (depois de `NEXT_PUBLIC_APP_URL=http://127.0.0.1:3100 npm run build --workspace=@lnk/web`) sobe o resolvedor DNS de teste, o emulador e a aplicação e percorre o ciclo de vida (77 verificações); `--serve` deixa no ar para o navegador; `--cleanup` remove as contas `qa-domains-*@example.test`. Ele cria o segredo `domains_signing_secret` no Vault local se não existir.
+
 ## Checklist de Auth para projetos hospedados (não aplicado)
 
 Configurar em staging e produção **antes** de convidar usuários externos, espelhando `supabase/config.toml`. Nenhuma destas mudanças foi aplicada no projeto hospedado.
@@ -200,7 +230,7 @@ Configurar em staging e produção **antes** de convidar usuários externos, esp
 |---|---|
 | local | `http://localhost:3000` (ou a porta usada) |
 | preview/staging | `https://linkss-black.vercel.app` |
-| produção | `https://linkfav.com` (domínio escolhido em 10/10/2026; ainda não conectado a nenhum deploy) |
+| produção | `https://linkfav.com` (domínio escolhido em 10/10/2026). Em 10/10/2026 `linkfav.com` e `www.linkfav.com` respondiam com a aplicação e o `robots.txt` já saía com `https://linkfav.com` (conferido por HTTP a partir deste repositório); o deploy `linkss-black.vercel.app` responde com o mesmo valor, ou seja, hoje há um só ambiente hospedado. Site URL e Redirect URLs do Auth não foram conferidos |
 
 Checklist ao comprar o domínio:
 

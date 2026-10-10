@@ -57,6 +57,8 @@ export interface BlockEditorProps {
   notices?: ReactNode;
   /** Server-rendered page settings (publishing history, address, archive, delete) for the "Página" tab. */
   settings: ReactNode;
+  /** Opens on the "Página" tab (`?aba=pagina`): a direct address for the page settings. */
+  startOnSettings?: boolean;
 }
 
 type StudioTab = "content" | "styles" | "page";
@@ -109,7 +111,7 @@ function publishBlockedReason(status: AutosaveSnapshot["status"], uploading: boo
  * Switching to preview keeps the form mounted, including pending uploads and unfinished fields.
  * Wide screens keep the panel and framed preview side by side (UX-072).
  */
-export function BlockEditor({ profileId, initial, livePublicationId, publications, canPublish, publishAction, showBadge, address, nav, notices, settings, plansHref = null }: BlockEditorProps) {
+export function BlockEditor({ profileId, initial, livePublicationId, publications, canPublish, publishAction, showBadge, address, nav, notices, settings, startOnSettings = false, plansHref = null }: BlockEditorProps) {
   const [state, setState] = useState<EditorState>(() => editorStateFromDraft(initial));
   const stateRef = useRef(state);
   const { autosave, snapshot } = useAutosave(profileId, initial.revision);
@@ -120,7 +122,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
   const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [headerOpen, setHeaderOpen] = useState(false);
-  const [tab, setTab] = useState<StudioTab>("content");
+  const [tab, setTab] = useState<StudioTab>(startOnSettings ? "page" : "content");
   const [mobilePreview, setMobilePreview] = useState(false);
   const studioRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);

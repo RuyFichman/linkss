@@ -1,6 +1,6 @@
 # Relatório da Sprint 8
 
-**Status:** **em andamento, parte 1 de 2.** A parte 1 (planos, assinatura e cobrança) está implementada e verificada **no ambiente local**. Nada foi aplicado em staging, na Vercel ou num provedor de pagamento; não existe conta no provedor. A parte 2 (domínio próprio e pixels) não foi iniciada.
+**Status:** **as duas partes estão implementadas e verificadas no ambiente local; a sprint não está concluída fora dele.** A parte 1 (planos, assinatura e cobrança) está na `main` (PR #23) e nunca rodou contra a Stripe; o founder informou em 10/10/2026 que criou a conta Stripe, e a cobrança seguia desligada no deploy nesse dia (`/api/billing/webhook` respondia 503). A parte 2 (domínio próprio e pixels) está na branch `feat/sprint-8-domains-pixels` e é descrita na segunda metade deste arquivo. Nada das duas partes foi aplicado em staging.
 **Objetivo da sprint:** deixar o MVP comercializável.
 **Objetivo desta parte:** o plano de uma conta passa a vir de uma assinatura, e não de um `update` manual.
 **Resultado desta parte:** o proprietário de uma conta no plano Gratuito chega a um limite, vê o que cada plano dá e quanto custa em reais, paga mensal ou anual na página do provedor e volta para uma conta com os limites novos, sem ninguém rodar SQL. Quando um pagamento falha, a conta tem 7 dias para regularizar. Ao cancelar ou mudar para um plano menor, a pessoa vê antes, com os números da própria conta, o que deixa de funcionar, e nada do que ela criou é apagado.
@@ -191,3 +191,136 @@ Ordenados e detalhados em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 8,
 - **Duplicação de página** não deve copiar domínio nem pixels (ADR 0012), e o relatório do cliente não deve mostrá-los (ADR 0013).
 - **Parcial nesta parte:** nada foi verificado contra a Stripe; troca mensal↔anual cortada; atualização do Next pendente.
 - **Ponto de partida recomendado:** conferir primeiro a parte 1 em staging com a conta de teste da Stripe (se o founder a tiver aberto), porque a parte 2 depende de contas em planos pagos para ser testada; depois, o ADR do domínio próprio (prova de controle e sequestro) e o dos pixels (consentimento e allowlist).
+
+---
+
+# Parte 2 — domínio próprio e pixels
+
+**Status:** **implementada e verificada no ambiente local.** Nada foi aplicado em staging nem em produção; nada rodou contra a API da Vercel, com um domínio real, nem contra a Meta ou o Google.
+**Objetivo desta parte:** uma conta em plano pago abre a sua página num endereço seu, com prova de que o domínio é dela, e liga o Meta Pixel e o Google Analytics sem colar script.
+**Resultado desta parte:** na aba *Página* do editor, o proprietário ou administrador registra um domínio, recebe um registro TXT para criar, toca em *Verificar* e, comprovado o controle, recebe o registro que aponta o domínio; a partir daí o domínio abre a página publicada e nada mais do produto. Outra conta só fica com o mesmo domínio se comprovar o controle depois que a prova da primeira sair do DNS. Na mesma aba, dois campos aceitam o ID do Meta Pixel e o ID do Google Analytics; na página pública, o visitante vê um aviso e nada é carregado antes de ele aceitar. Perder o plano desliga as duas coisas sem apagar nada.
+**Provedor integrado de verdade?** **Não.** O adapter da Vercel foi escrito a partir da referência oficial da API (lida em 10/10/2026) e roda de ponta a ponta contra um **emulador local** de quatro chamadas. Não havia token da Vercel nem domínio de teste. Certificado automático depende da Vercel e **não foi observado**.
+**Data:** 10/10/2026
+**Branch:** `feat/sprint-8-domains-pixels`, criada a partir da `origin/main` (`f8ea7d6`, com o PR #28).
+
+## Como esta parte foi executada
+
+O founder informou que `linkfav.com` está no ar e que a conta Stripe foi criada, e pediu para seguir para a parte 2. Conferido antes de começar: `linkfav.com` e `www.linkfav.com` respondem com a aplicação e o `robots.txt` já sai com `https://linkfav.com`; `POST /api/billing/webhook` nesse endereço responde 503, ou seja, **a cobrança continua desligada no deploy** (os passos da parte 1 em staging seguem pendentes). A parte 2 foi construída e testada com o plano definido por SQL no banco local.
+
+O Docker Desktop não estava em execução e foi iniciado; contêineres de outros projetos não foram tocados. O banco local recebeu as duas migrações com `supabase migration up` (sem `db reset`).
+
+Ordem de trabalho: leitura do handoff da parte 1; migrações e tipos; catálogo e impacto de rebaixamento; módulos `domains` e `pixels`; telas; rota pública por domínio, regras de roteamento e CSP; pgTAP; Vitest; script de ponta a ponta; navegador; documentação; gate final.
+
+## Decisões tomadas
+
+Todas provisórias até o founder confirmar (UX-086 a UX-093 em `docs/ux/UX_DECISIONS.md`; ADR 0016 e ADR 0017).
+
+1. **Um domínio por página**, não por conta. A página continua no endereço do produto; o canônico passa a ser o domínio próprio. Sem redirecionamento.
+2. **Prova por registro TXT** em `_linkfav.<domínio>`, lido pelo servidor e atestado ao banco por assinatura. Apontar o domínio é a etapa 2 e nunca é a prova.
+3. **Registrar não reserva o nome.** Quem controla o DNS hoje decide; uma página só perde o domínio quando a prova dela não está mais no DNS.
+4. **O domínio serve só a página.** Qualquer outro caminho num domínio de cliente é 404.
+5. **Pixels são identificadores:** Meta Pixel e Google Analytics 4. Tag Manager é recusado (um contêiner roda scripts arbitrários).
+6. **Consentimento antes de carregar** (opt-in), por página, com recusar no mesmo peso de aceitar. Só um *page view* é enviado a cada ferramenta.
+7. **Proprietário e administrador alteram; todos os membros veem.**
+8. **Entitlement novo `tracking_pixels`** (Gratuito: não; Pro e Agência: sim), separado de `custom_domain`.
+9. **Novo endereço `?aba=pagina`** abre o editor direto na aba *Página*.
+
+### Cortes de escopo
+
+- **Reverificação agendada** dos domínios (um domínio cujo TXT é apagado segue ativo até outra conta comprovar).
+- **Eventos de conversão** nos pixels (lead, clique no WhatsApp, cópia do Pix): só *page view*.
+- **Redirecionar** o endereço do produto para o domínio próprio, e `www` ↔ sem `www`.
+- **Registro de consentimento** no servidor e Google Consent Mode.
+- **Domínios e pixels na exportação da conta** e no procedimento de exclusão.
+
+## Critérios de aceite
+
+| # | Critério | Status | Evidência |
+|---|---|---|---|
+| AC5 | Domínio só é associado após prova de controle e não pode ser sequestrado por outro usuário | **verificado no local; não verificado com domínio real** | pgTAP `190-domains-pixels` (106 asserções): assinatura forjada, malformada, vencida, de outro domínio e desafio de outra página não ativam; escrita direta na tabela recusada; editor, outra conta e `anon` recusados; com as duas provas no DNS, `in_use`; só com a nova, a anterior vira `lapsed`. Script `domains-lifecycle.mjs`: os mesmos casos pela tela, com DNS de teste |
+| AC6 | Pixels respeitam configuração de consentimento e política publicada | **parcial** | Implementado: nada é carregado antes do aceite; recusar e mudar de ideia; identificadores só com o plano. Verificado em teste (carregador, armazenamento, grafo de imports, CSP por rota) e no Chrome (aviso aparece, zero requisição a Meta/Google antes da escolha, *Recusar* guarda a escolha). **Não verificado:** o caminho *Aceitar* num navegador (carregamento real das bibliotecas sob a CSP). **Não feito:** "política publicada": os textos jurídicos não estão ativos e não mencionam pixels; o aviso não passou por advogado |
+| — | Domínio próprio com verificação DNS e certificado automático (entregável) | **verificação DNS: verificada no local; certificado: preparado, não observado** | A leitura do TXT roda contra um resolvedor de teste; o certificado é emitido pela Vercel quando o domínio é anexado e apontado, o que só o emulador simulou |
+| — | Meta Pixel e Google Analytics/Tag configuráveis sem aceitar scripts arbitrários (entregável) | **verificado no local** | Só identificadores em formato fechado, conferidos em quatro lugares; `<script>`, `GTM-` e `UA-` recusados (pgTAP, Vitest, script) |
+
+## Entregáveis
+
+| Entrega | Onde revisar |
+|---|---|
+| Migrações | `supabase/migrations/202610100001_sprint8_part2_enum_values.sql`, `202610100002_custom_domains_and_pixels.sql` |
+| Módulo de domínios | `apps/web/src/modules/domains/` (hostname, DNS, adapter, Vercel, fake, configuração, roteamento, serviço, ações, componentes) |
+| Módulo de pixels | `apps/web/src/modules/pixels/` (modelo, serviço, carregador, ações, componentes) |
+| Rota pública por domínio | `apps/web/src/app/d/[host]/page.tsx`; regras em `apps/web/next.config.ts` |
+| Página publicada compartilhada pelas duas rotas | `apps/web/src/modules/publishing/render/published-page.tsx` |
+| CSP por rota | `apps/web/src/lib/security/response-headers.ts` |
+| Telas | aba *Página* do editor: `/app/w/<conta>/paginas/<página>?aba=pagina` |
+| Plano e rebaixamento | `modules/billing/downgrade-impact.ts`, `presentation.ts`; `lib/product.ts` (`trackingPixels`) |
+| Testes | `supabase/tests/database/190-domains-pixels.test.sql`; `modules/domains/domains.test.ts`; `modules/pixels/pixels.test.ts` |
+| Roteiro de ponta a ponta | `apps/web/scripts/domains-lifecycle.mjs` |
+| Documentação | ADR 0016, ADR 0017; `docs/{ARCHITECTURE,THREAT_MODEL,DATA_MAP,OBSERVABILITY,ENVIRONMENTS}.md`; `docs/runbooks/DOMAINS.md`; `docs/ux/UX_DECISIONS.md`; `.env.example` |
+
+## Validação executada
+
+### Resultado final registrado (10/10/2026)
+
+| Verificação | Resultado |
+|---|---|
+| `npm run lint` | sem erros nem avisos |
+| `npm run typecheck` | sem erros |
+| `npm run test` | **1.227 testes em 44 arquivos, todos aprovados** (79 novos em dois arquivos; antes: 1.148 em 42) |
+| `npm run build` | aprovado; rota nova `/d/[host]` |
+| `npm run test:db` | **1.262 asserções em 21 arquivos, todas aprovadas** (106 novas; antes: 1.156 em 20) |
+| `node scripts/domains-lifecycle.mjs` | **77 verificações, todas aprovadas**; 0 linhas de log com domínio, desafio, identificador, token ou e-mail |
+| Advisors do Supabase, `npm audit`, Lighthouse | **não executados nesta parte** (nenhuma dependência mudou) |
+
+### Navegador (Chrome, build de produção, conta descartável)
+
+Página pública com os dois identificadores: o aviso aparece fixo no rodapé com *Recusar* e *Aceitar*; antes da escolha, nenhum script, nenhuma requisição a `facebook` ou `google`, `window.fbq` e `window.dataLayer` indefinidos e nada no `localStorage`; depois de *Recusar*, o aviso some, aparece *Preferências de privacidade* e a escolha fica guardada com os identificadores. **Não abertos num navegador:** as seções *Domínio próprio* e *Meta Pixel e Google Analytics* da aba *Página* (conferidas só pelo HTML que o servidor devolve ao script), o caminho *Aceitar*, a página num domínio próprio, celular e leitor de tela.
+
+### Problemas encontrados e corrigidos
+
+- **Todo domínio próprio respondia 404 depois de ativado.** O Next aplica as regras `beforeFiles` seguintes sobre o caminho já reescrito: a regra geral pegava o destino da regra da raiz. Corrigido invertendo a ordem; o motivo está no comentário de `modules/domains/routing.ts`. Só o script de ponta a ponta mostrou isso (os testes unitários das regras passavam).
+- **A mensagem da verificação sumia quando a situação mudava** (de "aguardando" para "comprovado"), porque o formulário mudava de lugar na tela. Agora há um formulário só, no mesmo lugar em todos os estados.
+- **As configurações da página só existiam depois de um clique na aba**, sem endereço próprio. Criado `?aba=pagina`.
+- Dois testes que garantiam "o coletor de analytics só é montado pela rota pública" quebraram quando o coletor foi movido para um componente compartilhado. A montagem voltou para as rotas (agora duas) e os testes passaram a exigir exatamente as duas.
+
+## Segurança, privacidade, acessibilidade, performance e operação
+
+- **Segurança:** seção nova em `docs/THREAT_MODEL.md`. Casos negativos testados: atestado sem assinatura do servidor, malformado, vencido, com roteamento inválido, de outro domínio; desafio de outra página; DNS vazio; cada papel (proprietário, administrador, editor, outra conta, `anon`, sem sessão) contra registrar, verificar, remover e salvar pixels, pela tela com o formulário do proprietário e pela RPC direta; escrita direta nas duas tabelas; domínio em uso com as duas provas; domínio do próprio produto e de provedores; `<script>`, `GTM-` e `UA-` como identificador; dez caminhos do produto num domínio de cliente; oito rotas do produto com a política base; token da Vercel para host que não é loopback. Nenhuma validação, policy, regra de lint ou política existente foi afrouxada; a CSP ficou mais larga **apenas** nas páginas públicas.
+- **Privacidade:** `docs/DATA_MAP.md`. Fluxos novos, ainda desligados em todo ambiente hospedado: nome do domínio para a Vercel; consulta de DNS a resolvedores públicos; e, pelo navegador do visitante que aceitar, dados da visita para a Meta e o Google na conta do dono da página. A página pública passa a gravar a escolha do visitante no `localStorage`. **Pendente de revisão jurídica** (lista no ADR 0017).
+- **Acessibilidade:** situação do domínio sempre em palavras; registros de DNS como texto selecionável com botões de copiar e região `aria-live`; campos com rótulo e dica; aviso de consentimento como região nomeada, com os dois botões do mesmo tamanho e alvos de 44 px. **Não revisado:** foco e ordem de leitura do aviso, que é fixo no rodapé e não prende o foco; leitor de tela real.
+- **Performance:** página sem pixel não muda (o componente do aviso não é enviado). Página com pixel recebe o componente e o carregador; o aviso é fixo (sem deslocamento de layout) e aparece depois da hidratação. **Não medido:** JavaScript adicional, LCP e INP com uma biblioteca de fornecedor em execução. Toda publicação passa a derrubar o cache de todas as páginas em domínio próprio.
+- **Operação:** sinais em `docs/OBSERVABILITY.md`; runbook `docs/runbooks/DOMAINS.md`; passos de deploy em `docs/ENVIRONMENTS.md`. Nenhum cron novo.
+
+## Pendências, gaps e riscos
+
+- **Nada foi verificado contra a Vercel nem com um domínio real.** É o maior risco desta parte, junto com o comportamento das regras por Host na borda da Vercel (testadas só com `next start`).
+- **Plano da Vercel:** o Hobby é para uso não comercial e limita domínios por projeto. Vender domínio próprio pede plano pago (decisão do founder; nada foi contratado).
+- **O caminho *Aceitar* dos pixels nunca rodou num navegador.** A lista de origens da CSP pode estar incompleta.
+- **Sem reverificação agendada** dos domínios.
+- **Revisão jurídica** do aviso de consentimento, dos papéis e dos textos (que continuam inativos).
+- **Exportação e exclusão** não alcançam as duas tabelas novas nem o domínio anexado na Vercel.
+- **Sem limite global** nas ações de verificação e em `/d/<host>`.
+- **A parte 1 continua sem conferência em staging** e sem rodar contra a Stripe.
+- **Banco local:** ficou o segredo `domains_signing_secret` no Vault local (criado pelo script, nunca impresso). As contas `qa-domains-*@example.test` foram removidas com `--cleanup`.
+- **Fora do repositório:** arquivos temporários da sessão; Docker Desktop iniciado; uma aba do Chrome aberta em `127.0.0.1:3100` e fechada.
+
+## Perguntas para o founder
+
+1. **Plano pago da Vercel** para oferecer domínio próprio: contrata? Sem isso o recurso não deve ser vendido.
+2. **Um domínio por página** (UX-086), e a página continua também no endereço do produto, sem redirecionar. Mantém?
+3. **Consentimento antes de carregar o pixel** (UX-090): os números da Meta e do Google ficam menores. Mantém até a revisão jurídica?
+4. **Tag Manager fica de fora** (UX-089). Concorda?
+5. **Só proprietário e administrador** configuram domínio e pixels (UX-087, UX-089). Mantém?
+6. **Eventos de conversão** nos pixels (lead, WhatsApp, Pix) entram em seguida?
+7. A **home** continua sem mencionar domínio próprio e pixels até eles estarem ligados no ambiente. Concorda?
+
+## Passos de deploy em staging
+
+Ordenados e detalhados em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 8, parte 2". Em resumo: (1) merge do PR, conferindo antes que `NEXT_PUBLIC_APP_URL` é `https://linkfav.com`; (2) `npx supabase db push` (duas migrações); (3) segredo `domains_signing_secret` no Vault e `DOMAINS_SIGNING_SECRET` na Vercel; (4) token e ids da Vercel, depois da decisão sobre o plano. Pixels funcionam a partir do passo 2; a verificação de domínio, do passo 3; a ativação automática, do passo 4.
+
+## Handoff
+
+- **Ponto de partida recomendado:** aplicar a parte 1 em staging com a conta Stripe de teste e comparar com o emulador; depois os passos da parte 2 com um subdomínio de teste, comparando a Vercel real com o emulador (roteiro em `docs/ENVIRONMENTS.md`, passos 1 a 10).
+- **Se a Vercel real divergir:** tudo o que conhece a API está em `modules/domains/vercel-adapter.ts`; o emulador está dentro de `scripts/domains-lifecycle.mjs`.
+- **Próximos incrementos naturais:** job diário de reverificação (segue o desenho dos outros crons); eventos de conversão (o coletor de analytics já conhece os eventos); domínios e pixels em `export_workspace_data`.
+- **Contratos que mudam juntos:** `hostname.ts` e as duas funções `private.domain_hostname_*`; `pixels/model.ts`, `set_profile_pixels` e os checks de `profile_pixels`; `confirmationText` e as chaves aceitas por `confirm_profile_domain`; a lista de origens da CSP e os endereços em `pixels/loader.ts`.

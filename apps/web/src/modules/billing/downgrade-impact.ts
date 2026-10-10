@@ -16,6 +16,10 @@ export interface WorkspaceUsage {
   /** Report links that open today. */
   activeReportLinks: number;
   storageBytes: number;
+  /** Custom domains whose control is proven (ADR 0016). */
+  activeDomains: number;
+  /** Pages with a Meta Pixel or Google Analytics identifier (ADR 0017). */
+  pagesWithPixels: number;
 }
 
 export type ImpactKind = "kept" | "blocked" | "stops";
@@ -26,7 +30,9 @@ export type ImpactItem =
   | { key: "storage_mb"; kind: ImpactKind; usedMb: number; limitMb: number }
   | { key: "analytics_days"; kind: ImpactKind; from: number; to: number }
   | { key: "shareable_reports"; kind: ImpactKind; activeLinks: number }
-  | { key: "remove_badge"; kind: ImpactKind };
+  | { key: "remove_badge"; kind: ImpactKind }
+  | { key: "custom_domain"; kind: ImpactKind; domains: number }
+  | { key: "tracking_pixels"; kind: ImpactKind; pages: number };
 
 const MEBIBYTE = 1024 * 1024;
 
@@ -54,6 +60,13 @@ export function downgradeImpact(usage: WorkspaceUsage, current: Entitlements, ta
   }
   if (current.features.remove_badge) {
     items.push({ key: "remove_badge", kind: target.features.remove_badge ? "kept" : "stops" });
+  }
+  // Listed only when the workspace uses them: a line about a domain nobody configured is noise.
+  if (current.features.custom_domain && usage.activeDomains > 0) {
+    items.push({ key: "custom_domain", kind: target.features.custom_domain ? "kept" : "stops", domains: usage.activeDomains });
+  }
+  if (current.features.tracking_pixels && usage.pagesWithPixels > 0) {
+    items.push({ key: "tracking_pixels", kind: target.features.tracking_pixels ? "kept" : "stops", pages: usage.pagesWithPixels });
   }
   return items;
 }

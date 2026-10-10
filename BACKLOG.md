@@ -110,7 +110,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 
 ## Sprint 8 — comercialização
 
-**Parte 1 (planos, assinatura e cobrança) concluída no stack local em 09/10/2026**, na branch `feat/sprint-8-billing`, contra um emulador local da API da Stripe. **Nada rodou contra a Stripe e nada foi aplicado em staging.** Parte 2 (domínio próprio e pixels) não iniciada. Relatório: `docs/SPRINT_8_REPORT.md`.
+**Parte 1 (planos, assinatura e cobrança) concluída no stack local em 09/10/2026**, na branch `feat/sprint-8-billing`, contra um emulador local da API da Stripe. **Nada rodou contra a Stripe e nada foi aplicado em staging.** **Parte 2 (domínio próprio e pixels) concluída no stack local em 10/10/2026**, na branch `feat/sprint-8-domains-pixels`, contra um resolvedor DNS de teste e um emulador da API da Vercel. **Nada rodou contra a Vercel, com um domínio real, nem contra a Meta ou o Google, e nada foi aplicado em staging.** Relatório: `docs/SPRINT_8_REPORT.md`.
 
 - [x] P0 Registrar ADR do provedor de pagamento (ADR 0014; Stripe, decisão do founder em 09/10/2026).
 - [x] P0 Implementar `PaymentsAdapter` e webhooks idempotentes (adapter da Stripe por `fetch` e fake; verificado contra o emulador, **não** contra a Stripe).
@@ -118,8 +118,17 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [x] P0 Área de cobrança, tela de planos, confirmação de cancelamento/mudança e pontos de entrada nas telas de limite.
 - [ ] P0 Abrir a conta Stripe em modo de teste e aplicar a parte 1 em staging (passos em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 8, parte 1"); rodar o roteiro de conferência e **comparar o comportamento real com o do emulador**.
 - [x] P0 Atualizar o Next para 16.4.0 (`npm audit`: aviso alto novo em `next` 16.0.0–16.3.7, de produção). Feito junto com a Sprint 9, não em PR próprio; `npm audit --omit=dev` sem achados em 09/10/2026.
-- [ ] P1 Domínio próprio com prova de controle (parte 2).
-- [ ] P1 Integrações Meta Pixel e GA sem scripts arbitrários (parte 2).
+- [x] P1 Domínio próprio com prova de controle (parte 2; ADR 0016). Verificado no local; **certificado automático não observado**.
+- [x] P1 Integrações Meta Pixel e GA sem scripts arbitrários (parte 2; ADR 0017). Consentimento antes de carregar; **caminho "Aceitar" não exercitado num navegador**.
+- [ ] P0 Decidir o plano da Vercel para domínios de clientes (o Hobby não cobre uso comercial nem muitos domínios por projeto) antes de oferecer o recurso.
+- [ ] P0 Aplicar a parte 2 em staging (passos em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 8, parte 2") com um subdomínio de teste e IDs reais de Meta e Google; **comparar a Vercel real com o emulador** e conferir no console que as bibliotecas carregam sem violação de CSP.
+- [ ] P0 Revisão jurídica do aviso de consentimento e dos papéis no uso de pixels (lista no ADR 0017), junto com as minutas de `docs/legal/`.
+- [ ] P1 Reverificação agendada dos domínios (job diário: domínio sem prova no DNS perde a situação e é desanexado no provedor).
+- [ ] P1 Incluir `profile_domains` e `profile_pixels` em `export_workspace_data`; na exclusão, desanexar o domínio no provedor (Sprint 9).
+- [ ] P1 Limite global nas verificações de domínio e em `/d/<host>` (Sprint 9).
+- [ ] P2 Eventos de conversão nos pixels (lead, WhatsApp, Pix), registro de consentimento e Google Consent Mode.
+- [ ] P2 Invalidar o cache só do domínio da página publicada (hoje toda publicação derruba todas as cópias em domínio próprio).
+- [ ] P2 Conferir no navegador o que a parte 2 só cobriu por HTTP: seções da aba *Página*, página num domínio próprio, celular e leitor de tela.
 - [ ] P1 Trocar entre mensal e anual numa assinatura em curso — cortado na parte 1 (UX-079).
 - [ ] P1 Aviso por e-mail de pagamento que falhou e de renovação (depende do SMTP; hoje só na tela, e pelos e-mails da própria Stripe se forem ligados).
 - [ ] P1 Plano de migração para mudança de preço com assinaturas em curso (hoje o valor antigo viraria `price_mismatch`).

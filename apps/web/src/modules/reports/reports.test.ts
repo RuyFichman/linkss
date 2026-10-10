@@ -128,7 +128,8 @@ describe("report response headers", () => {
     const configured = await nextConfig.headers?.();
     expect(configured?.[0]?.source).toBe("/:path*");
     expect(configured?.[0]?.headers.some((header) => header.key === "Content-Security-Policy")).toBe(true);
-    expect(configured?.[1]).toEqual({ source: "/r/:path*", headers: REPORT_RESPONSE_HEADERS });
+    // Last, so nothing configured before it can override a report header.
+    expect(configured?.at(-1)).toEqual({ source: "/r/:path*", headers: REPORT_RESPONSE_HEADERS });
   });
 });
 

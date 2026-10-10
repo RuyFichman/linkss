@@ -7,9 +7,9 @@ export const PRODUCT = {
   locale: "pt-BR",
   currency: "BRL",
   plans: {
-    free: { monthlyPriceInCents: 0, yearlyPriceInCents: 0, includedProfiles: 1, analyticsDays: 7, teamMembers: 1, storageMb: 20, customDomain: false, removeBadge: false, shareableReports: false },
-    pro: { monthlyPriceInCents: 1490, yearlyPriceInCents: 14900, includedProfiles: 1, analyticsDays: 90, teamMembers: 1, storageMb: 100, customDomain: true, removeBadge: true, shareableReports: false },
-    agency: { monthlyPriceInCents: 5790, yearlyPriceInCents: 57900, includedProfiles: 10, analyticsDays: 90, teamMembers: 5, storageMb: 500, customDomain: true, removeBadge: true, shareableReports: true },
+    free: { monthlyPriceInCents: 0, yearlyPriceInCents: 0, includedProfiles: 1, analyticsDays: 7, teamMembers: 1, storageMb: 20, customDomain: false, removeBadge: false, shareableReports: false, trackingPixels: false },
+    pro: { monthlyPriceInCents: 1490, yearlyPriceInCents: 14900, includedProfiles: 1, analyticsDays: 90, teamMembers: 1, storageMb: 100, customDomain: true, removeBadge: true, shareableReports: false, trackingPixels: true },
+    agency: { monthlyPriceInCents: 5790, yearlyPriceInCents: 57900, includedProfiles: 10, analyticsDays: 90, teamMembers: 5, storageMb: 500, customDomain: true, removeBadge: true, shareableReports: true, trackingPixels: true },
   },
 } as const;
 

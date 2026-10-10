@@ -5,7 +5,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ANALYTICS_COPY, APP_COPY, EDITOR_COPY, LEADS_COPY, PUBLISHING_COPY } from "@/content/pt-BR";
 import { publicAddressLabel, publicPageUrl } from "@/lib/app-url";
+import { DomainSection } from "@/modules/domains/components/domain-section";
 import { BlockEditor } from "@/modules/editor/components/block-editor";
+import { PixelsSection } from "@/modules/pixels/components/pixels-section";
 import { isUuid } from "@/modules/identity/guard";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { can } from "@/modules/identity/permissions";
@@ -37,7 +39,8 @@ const STATUS_TONE = { draft: "neutral", published: "success", archived: "warning
  */
 export default async function ProfileEditorPage({ params, searchParams }: { params: Promise<{ workspaceId: string; profileId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { workspaceId, profileId } = await params;
-  const justDuplicated = typeof (await searchParams).duplicada === "string";
+  const query = await searchParams;
+  const justDuplicated = typeof query.duplicada === "string";
   const access = await authorizeWorkspacePage(workspaceId, "profile.view");
   if (!access || !isUuid(profileId)) notFound();
 
@@ -107,6 +110,9 @@ export default async function ProfileEditorPage({ params, searchParams }: { para
         {canChangeSlug ? <div><ChangeSlugDialog action={changeProfileSlugAction.bind(null, profile.id)} currentSlug={profile.slug} workspaceId={workspaceId} /></div> : <p className="m-0 text-app-muted">{APP_COPY.slugChange.forbidden}</p>}
       </section>
 
+      <DomainSection workspaceId={workspaceId} profileId={profile.id} role={access.role} inPlan={entitlements.features.custom_domain} />
+      <PixelsSection workspaceId={workspaceId} profileId={profile.id} role={access.role} inPlan={entitlements.features.tracking_pixels} />
+
       {canDuplicate || (canArchive && !archived) ? (
         <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="manage-title">
           <h2 id="manage-title" className="text-xl font-bold">{APP_COPY.manage.title}</h2>
@@ -158,6 +164,7 @@ export default async function ProfileEditorPage({ params, searchParams }: { para
           </>
         }
         settings={settings}
+        startOnSettings={query.aba === "pagina"}
       />
     );
   }
