@@ -240,6 +240,7 @@ describe("publishing commands: server-side authorization", () => {
   it("maps database errors to actionable messages", async () => {
     expect(publishingErrorFromDatabase({ code: "LK030" })).toBe("stale");
     expect(publishingErrorFromDatabase({ code: "42501" })).toBe("forbidden");
+    expect(publishingErrorFromDatabase({ code: "LK113" })).toBe("suspended");
     expect(publishingErrorFromDatabase({ code: "P0002" })).toBe("not_found");
     expect(publishingErrorFromDatabase({ code: "XX000" })).toBe("unavailable");
     const repository = fakeRepository([WS_A]);

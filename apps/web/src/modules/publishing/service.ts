@@ -17,7 +17,7 @@ export interface PublicationSummary {
   createdAt: string;
 }
 
-export type PublishingErrorKind = "stale" | "forbidden" | "not_found" | "unavailable";
+export type PublishingErrorKind = "stale" | "forbidden" | "suspended" | "not_found" | "unavailable";
 export type RepositoryResult<T> = { ok: true; value: T } | { ok: false; error: PublishingErrorKind };
 
 /** Persistence port. The Supabase implementation calls the publishing RPCs as the signed-in user. */
@@ -49,6 +49,7 @@ export function publishingErrorFromDatabase(error: { code?: string | null }): Pu
   switch (error.code) {
     case "LK030": return "stale";
     case "42501": return "forbidden";
+    case "LK113": return "suspended";
     case "P0002":
     case "PGRST116": return "not_found";
     default: return "unavailable";
@@ -58,6 +59,7 @@ export function publishingErrorFromDatabase(error: { code?: string | null }): Pu
 function failure<T>(error: PublishingErrorKind): PublishingResult<T> {
   const message = error === "stale" ? PUBLISHING_COPY.errors.stale
     : error === "forbidden" ? PUBLISHING_COPY.errors.forbidden
+    : error === "suspended" ? PUBLISHING_COPY.errors.suspended
     : error === "not_found" ? APP_COPY.errors.notFound
     : PUBLISHING_COPY.errors.unavailable;
   return { ok: false, error, message };

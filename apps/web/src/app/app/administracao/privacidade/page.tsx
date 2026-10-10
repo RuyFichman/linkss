@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib/format-date";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUserId, getSupabase } from "@/modules/identity/session";
@@ -38,7 +39,7 @@ export default async function PrivacyQueue({ searchParams }: {
           <article className="surface-card p-5" key={item.id}>
             <h2 className="text-xl font-bold">{item.kind === "account_deletion" ? "Exclusão" : "Acesso aos dados"} · {item.status}</h2>
             <p className="mt-1 text-sm">{item.email ?? item.userId}</p>
-            <p className="text-sm text-app-muted">{new Date(item.createdAt).toLocaleString("pt-BR")} · motivo: {item.reason ?? "não definido"}</p>
+            <p className="text-sm text-app-muted">{formatDateTime(item.createdAt)} · motivo: {item.reason ?? "não definido"}</p>
             {item.evidenceReference ? <p className="text-sm">Referência: {item.evidenceReference}</p> : null}
             <form action={reviewPrivacyRequestAction} className="mt-4 grid gap-3 border-t border-app-border pt-4">
               <input type="hidden" name="requestId" value={item.id} />
