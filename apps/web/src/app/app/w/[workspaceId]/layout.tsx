@@ -17,10 +17,11 @@ export default async function WorkspaceLayout({ children, params }: { children: 
 
   return (
     <>
-      {workspace ? (
+      {/* The personal workspace is already named by the switcher in the header. */}
+      {workspace?.kind === "agency" ? (
         <div data-app-chrome="" className="mb-3 flex flex-wrap items-center gap-2 text-sm text-app-muted">
-          <span>{workspace.kind === "personal" ? APP_COPY.workspace.personalLabel : APP_COPY.workspace.agencyLabel}</span>
-          {workspace.kind === "agency" ? <><span aria-hidden="true">•</span><b className="text-app-text">{workspaceLabel(workspace)}</b><Badge tone="accent">{APP_COPY.roles[workspace.role]}</Badge></> : null}
+          <span>{APP_COPY.workspace.agencyLabel}</span>
+          <span aria-hidden="true">•</span><b className="text-app-text">{workspaceLabel(workspace)}</b><Badge tone="accent">{APP_COPY.roles[workspace.role]}</Badge>
         </div>
       ) : null}
       {workspace ? <WorkspaceNav workspaceId={workspaceId} showPlan={can(workspace.role, "billing.view")} /> : null}

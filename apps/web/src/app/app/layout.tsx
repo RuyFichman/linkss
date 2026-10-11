@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { APP_COPY } from "@/content/pt-BR";
 import { PRODUCT } from "@/lib/product";
-import { SignOutButton } from "@/modules/identity/components/sign-out-button";
+import { AccountMenu } from "@/modules/identity/components/account-menu";
 import { WorkspaceSwitcher } from "@/modules/identity/components/workspace-switcher";
 import { resolveAccount } from "@/modules/identity/session";
 import { legalAcceptanceRequired } from "@/modules/legal/server";
@@ -25,14 +25,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       {/* `data-app-chrome` steps aside while the page editor fills the viewport (studio.css). */}
       <header data-app-chrome="">
         <div className="app-header">
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <Link className="app-brand" href="/app">{PRODUCT.name}</Link>
             {account.status === "ready" ? <WorkspaceSwitcher workspaces={account.workspaces.map((workspace) => ({ id: workspace.workspaceId, name: workspace.name, kind: workspace.kind, role: workspace.role }))} /> : null}
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/app/conta/dados" className="text-sm underline underline-offset-4">Meus dados</Link>
-            <SignOutButton />
-          </div>
+          <AccountMenu />
         </div>
       </header>
       <main id="conteudo" className="app-shell py-6 sm:py-10">
