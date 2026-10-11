@@ -230,7 +230,7 @@ export const APP_COPY = {
     sessionExpired: "Sua sessão expirou. Entre novamente para continuar.",
     notDeployed: "Este recurso ainda não está disponível nesta conta. Tente novamente mais tarde.",
   },
-  nav: { home: "Início", skipToContent: "Pular para o conteúdo", workspace: "Seções da conta", pages: "Páginas", results: "Resultados", members: "Membros", plan: "Plano" },
+  nav: { home: "Início", skipToContent: "Pular para o conteúdo", workspace: "Seções da conta", account: "Conta", myData: "Meus dados", pages: "Páginas", results: "Resultados", members: "Membros", plan: "Plano" },
 } as const;
 
 /** Members, roles and invitations (ADR 0012). */
