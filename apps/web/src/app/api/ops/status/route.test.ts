@@ -87,7 +87,7 @@ describe("status route", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     const body = await response.json();
     expect(body).toMatchObject({ ok: true, failing: [], checkedAt: NOW });
-    expect(body.checks).toHaveLength(11);
+    expect(body.checks).toHaveLength(12);
   });
 
   it("refuses a call without the secret, with a wrong one, or with the job secret, and reads nothing", async () => {

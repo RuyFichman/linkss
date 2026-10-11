@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { PublicPageAnalytics } from "@/modules/analytics/components/public-page-analytics";
 import { PublicPageWebVitals } from "@/modules/publishing/components/web-vitals-reporter";
 import { buildPublicPageMetadata } from "@/modules/publishing/metadata";
+import { publicPageViewport } from "@/modules/publishing/render/page-hints";
 import { PublishedPage, SuspendedPage } from "@/modules/publishing/render/published-page";
 import { resolveRouteSlug } from "@/modules/publishing/route-slug";
 import { getPublicPage } from "@/modules/publishing/server";
@@ -24,6 +25,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const route = resolveRouteSlug((await params).slug);
   if (route.kind !== "canonical") return buildPublicPageMetadata({ state: "not_found" });
   return buildPublicPageMetadata(await getPublicPage(route.slug));
+}
+
+/** The browser bar takes the page's own background color. Same cached read as the metadata. */
+export async function generateViewport({ params }: Props): Promise<Viewport> {
+  const route = resolveRouteSlug((await params).slug);
+  if (route.kind !== "canonical") return {};
+  return publicPageViewport(await getPublicPage(route.slug));
 }
 
 export default async function PublicPage({ params }: Props) {

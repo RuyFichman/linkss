@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { PublicPageAnalytics } from "@/modules/analytics/components/public-page-analytics";
 import { isStoredHostname } from "@/modules/domains/hostname";
 import { PublicPageWebVitals } from "@/modules/publishing/components/web-vitals-reporter";
 import { buildPublicPageMetadata } from "@/modules/publishing/metadata";
+import { publicPageViewport } from "@/modules/publishing/render/page-hints";
 import { PublishedPage, SuspendedPage } from "@/modules/publishing/render/published-page";
 import { getPublicPageByDomain } from "@/modules/publishing/server";
 
@@ -36,6 +37,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hostname = hostnameFrom((await params).host);
   if (!hostname) return buildPublicPageMetadata({ state: "not_found" });
   return buildPublicPageMetadata(await getPublicPageByDomain(hostname), { viaCustomDomain: true });
+}
+
+export async function generateViewport({ params }: Props): Promise<Viewport> {
+  const hostname = hostnameFrom((await params).host);
+  if (!hostname) return {};
+  return publicPageViewport(await getPublicPageByDomain(hostname));
 }
 
 export default async function CustomDomainPage({ params }: Props) {

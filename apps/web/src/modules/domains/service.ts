@@ -23,7 +23,14 @@ export interface DomainSummary {
   routing: StoredRouting;
   verifiedAt: string | null;
   lastCheckedAt: string | null;
+  /** Consecutive daily re-verifications that did not find the proof; 0 before the migration that counts them. */
+  recheckMisses: number;
+  /** `recheck`: lapsed because the proof was absent for the whole grace period. */
+  lapseReason: "recheck" | null;
 }
+
+/** Days without the proof after which the daily job lapses an active domain. Mirror of private.domain_recheck_limit(). */
+export const DOMAIN_RECHECK_LIMIT = 7;
 
 export type DomainErrorKind =
   | "invalid"

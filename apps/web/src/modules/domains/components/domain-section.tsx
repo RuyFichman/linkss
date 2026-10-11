@@ -9,7 +9,7 @@ import { claimDomainAction, removeDomainAction, verifyDomainAction } from "../ac
 import type { DomainRouting } from "../adapter";
 import { challengeRecordName, customDomainUrl } from "../hostname";
 import { getDomainsAdapter, getDomainsService } from "../server";
-import type { DomainSummary } from "../service";
+import { DOMAIN_RECHECK_LIMIT, type DomainSummary } from "../service";
 import { DnsRecordCard, DomainClaimForm, DomainVerifyForm } from "./domain-forms";
 
 const STATUS_TONE = { pending: "neutral", active: "success", lapsed: "warning" } as const;
@@ -68,7 +68,7 @@ export async function DomainSection({ workspaceId, profileId, role, inPlan }: { 
       {!inPlan ? <><Notice tone="warning">{copy.suspendedByPlan}</Notice><UpgradeLink workspaceId={workspaceId} role={role} reason="custom_domain" /></> : null}
       {inPlan ? <DomainState domain={domain} routing={routing} hasProvider={getDomainsAdapter() !== null} /> : null}
       {/* One form at one place for every state, so the result of a check stays on screen when the state changes. */}
-      {inPlan && canManage && domain.status !== "lapsed" ? <DomainVerifyForm action={verifyDomainAction.bind(null, domain.id)} label={domain.status === "pending" ? copy.verify.submit : copy.verify.again} /> : null}
+      {inPlan && canManage && (domain.status !== "lapsed" || domain.lapseReason === "recheck") ? <DomainVerifyForm action={verifyDomainAction.bind(null, domain.id)} label={domain.status === "pending" ? copy.verify.submit : copy.verify.again} /> : null}
       {canManage ? null : <p className="m-0 text-app-muted">{copy.viewOnly}</p>}
       {remove}
     </>,
@@ -83,7 +83,7 @@ function DomainState({ domain, routing, hasProvider }: { domain: DomainSummary; 
     return (
       <div className="grid gap-2">
         <h3 className="text-base font-bold">{copy.lapsed.title}</h3>
-        <p className="m-0 text-app-muted">{copy.lapsed.lead}</p>
+        <p className="m-0 text-app-muted">{domain.lapseReason === "recheck" ? copy.lapsed.recheck : copy.lapsed.lead}</p>
       </div>
     );
   }
@@ -105,6 +105,7 @@ function DomainState({ domain, routing, hasProvider }: { domain: DomainSummary; 
       <div className="grid gap-3">
         <h3 className="text-base font-bold">{copy.live.title}</h3>
         <p className="m-0">{copy.live.lead(url)}</p>
+        {domain.recheckMisses > 0 ? <Notice tone="warning">{copy.live.proofMissing(Math.max(DOMAIN_RECHECK_LIMIT - domain.recheckMisses, 1))}</Notice> : null}
         {domain.lastCheckedAt ? <p className="m-0 text-sm text-app-muted">{copy.live.checkedAt(formatDateTime(domain.lastCheckedAt))}</p> : null}
         <div><a className="ui-button ui-button-secondary" href={url} target="_blank" rel="noopener noreferrer">{copy.live.open}</a></div>
       </div>

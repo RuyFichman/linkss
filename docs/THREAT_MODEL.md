@@ -307,3 +307,18 @@ Decisão: ADR 0019. Verificado só no stack local.
 - **A suspensão de uma conta inteira** (`workspaces.status`) continua sem aviso próprio e sem contestação.
 - **O monitor é um cinto de segurança:** o GitHub pode atrasar ou pular execuções e desliga agendamentos depois de 60 dias sem atividade; o log do workflow é público (por isso o corpo não tem dado pessoal); o alerta é um e-mail para uma pessoa.
 - **Sem alerta** para taxa de erro do renderer, uploads, formulários e Auth.
+
+## Sprints 8 e 9, lacunas fechadas em 11/10/2026
+
+Verificado só no stack local.
+
+| Ameaça | Controle | Estado | Evidência |
+|---|---|---|---|
+| Página continua respondendo num domínio que o dono abandonou, vendeu ou deixou vencer | reverificação diária; sete dias seguidos sem a comprovação desligam o domínio, derrubam o cache e desanexam o hostname | implementado + verificado localmente; **nunca rodou contra DNS real nem contra a Vercel** | pgTAP `220-export-domain-recheck`; Vitest `recheck.test.ts` |
+| Falha de resolvedor derrubando domínios de clientes | dia sem resposta do DNS não grava nada; só ausência confirmada conta; sete dias de tolerância | implementado + verificado | Vitest; pgTAP (seis ausências não bastam; encontrar zera) |
+| Forjar uma reverificação para derrubar o domínio de alguém, ou reaproveitar uma para ativar um domínio | função só para o papel de serviço e só com atestado assinado pelo servidor; conjunto de chaves diferente do da confirmação | implementado + verificado | pgTAP (assinatura errada, atestado velho, confirmação reapresentada como reverificação e o contrário) |
+| Origem de fornecedor de pixel faltando ou sobrando na CSP | caminho "Aceitar" exercitado num navegador com as bibliotecas reais | verificado localmente, **com identificadores de ninguém** | `scripts/mobile-a11y.mjs`: nenhuma violação de CSP |
+| Valor injetado na regra de estilo da página pública | a cor do tema só é escrita se for `#rrggbb` | implementado + verificado | Vitest `page-hints.test.ts` |
+| Exportação da conta vazando dados de outra conta ou a justificativa interna da moderação | as chaves novas são filtradas pela conta; as tabelas exportadas não guardam a justificativa | implementado + verificado | pgTAP (nada de outra conta; outra conta recebe "não encontrado") |
+
+**Riscos residuais:** o dono só é avisado da falta da comprovação se abrir o painel naqueles sete dias; os identificadores reais dos fornecedores podem contatar origens que o ensaio não viu; o QA de celular e acessibilidade é automático (regras do axe-core, largura, tamanho de alvo) e **não substitui** teste em aparelho real nem com leitor de tela.

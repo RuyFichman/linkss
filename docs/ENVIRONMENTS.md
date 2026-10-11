@@ -308,3 +308,17 @@ Checklist ao comprar o domínio:
 - Na Vercel o cache é compartilhado entre instâncias. Self-hosting com várias instâncias exige `cacheHandler` compartilhado.
 - O cache de arquivos do `next start` local não diferencia maiúsculas no Windows/macOS; o proxy redireciona grafias não canônicas antes do cache.
 - Para verificar localmente: `npm run build && npx next start` e observar `x-nextjs-cache`; `NEXT_PRIVATE_DEBUG_CACHE=1` detalha hits/misses.
+
+## Passos de deploy das lacunas das Sprints 8 e 9 (11/10/2026)
+
+**Nada disto foi aplicado em produção.** Verificado só no stack local.
+
+| # | Passo | Depois dele |
+|---|---|---|
+| 1 | **Merge do PR** | a página pública declara a cor do tema ao navegador e pede a primeira imagem antes; o webhook passa a registrar por que a cobrança está desligada; o quinto cron (`/api/jobs/domains`, 08:00 UTC) responde 503 `not_deployed` até a migração |
+| 2 | **Backup conferido** e `npx supabase db push`. Deve listar `202610110005_export_and_domain_recheck` (depende das migrações `202610110003` e `202610110004`, aplicadas antes ou junto). Acrescenta duas colunas com padrão, funções e um gatilho; troca `export_workspace_data` pela mesma função com quatro chaves a mais | a exportação da conta inclui domínios, pixels, suspensões e contestações; a reverificação diária começa a contar |
+| 3 | Conferir: `curl -s -X POST https://linkfav.com/api/jobs/domains -H "Authorization: Bearer $CRON_SECRET"` | `{"ok":true,"checked":0,...}` enquanto não houver domínio ativo |
+
+**Ordem com os outros pendentes:** o monitor acusa `job:domains` se o código estiver no ar sem esta migração por mais de 36 horas depois de `OPS_STATUS_SECRET` existir. Aplique as três migrações de 11/10 juntas.
+
+**Rollback da aplicação depois da migração:** suportado; o código antigo não lê as colunas novas.

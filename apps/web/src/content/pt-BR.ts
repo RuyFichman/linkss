@@ -1482,9 +1482,11 @@ export const DOMAINS_COPY = {
     lead: (url: string) => `A página abre em ${url}.`,
     open: "Abrir o domínio",
     checkedAt: (when: string) => `Última verificação: ${when}.`,
+    proofMissing: (days: number) => days === 1 ? "Não encontramos mais o registro TXT de comprovação deste domínio. Recrie o registro hoje: sem ele, o domínio deixa de abrir a página amanhã." : `Não encontramos mais o registro TXT de comprovação deste domínio. Recrie o registro: sem ele, o domínio deixa de abrir a página em ${days} dias.`,
   },
   lapsed: {
     title: "Este domínio não está mais ligado a esta página",
+    recheck: "O registro TXT de comprovação ficou sete dias seguidos fora do DNS, e o domínio foi desligado desta página. Se o domínio ainda é seu, recrie o registro e toque em Verificar.",
     lead: "Outra conta comprovou o controle deste domínio depois de você, e o seu registro de comprovação não estava mais no DNS. Se o domínio é seu, remova-o aqui, registre de novo e refaça a comprovação.",
   },
   records: {

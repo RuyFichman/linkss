@@ -17,7 +17,18 @@ function toSummary(row: DomainRow): DomainSummary {
     status: row.status === "active" || row.status === "lapsed" ? row.status : "pending",
     routing: row.routing === "ok" || row.routing === "pending" ? row.routing : "unknown",
     verifiedAt: row.verified_at, lastCheckedAt: row.last_checked_at,
+    recheckMisses: 0, lapseReason: null,
   };
+}
+
+/**
+ * The two columns added for the daily re-verification, read apart from the rest so that a
+ * deployment ahead of its migration still shows the domain (it just knows nothing about misses).
+ */
+async function withRecheck(supabase: SupabaseServerClient, summary: DomainSummary): Promise<DomainSummary> {
+  const { data, error } = await supabase.from("profile_domains").select("recheck_misses, lapse_reason").eq("id", summary.id).maybeSingle();
+  if (error || !data) return summary;
+  return { ...summary, recheckMisses: data.recheck_misses, lapseReason: data.lapse_reason === "recheck" ? "recheck" : null };
 }
 
 const CONFIRM_STATUSES: readonly ConfirmStatus[] = ["active", "dns_missing", "in_use", "not_in_plan"];
@@ -41,7 +52,7 @@ export function createSupabaseDomainsRepository(supabase: SupabaseServerClient):
     async findForProfile(profileId) {
       const { data, error } = await supabase.from("profile_domains").select(COLUMNS).eq("profile_id", profileId).maybeSingle();
       if (error) return { ok: false, error: domainErrorFromDatabase(error) };
-      return { ok: true, value: data ? toSummary(data) : null };
+      return { ok: true, value: data ? await withRecheck(supabase, toSummary(data)) : null };
     },
 
     async claim(profileId, hostname) {

@@ -139,3 +139,17 @@ Verified locally: pgTAP `190-domains-pixels` (every role against every command, 
 - `get_public_page` returns two more columns (`custom_domain`, `pixels`); the function was dropped and recreated in the migration.
 - A new top-level route (`/d`) and host-dependent behaviour in `next.config.ts`: a new product hostname must be the host of `NEXT_PUBLIC_APP_URL` (or a `*.vercel.app` address), otherwise it is treated as a customer's domain and serves a 404.
 - Every publish drops all custom-hostname cache entries.
+
+## Addendum (2026-10-11): scheduled re-verification
+
+Verified on the local stack only; migration `202610110005` is not applied to production.
+
+An active domain used to be looked at again only when somebody else proved the same hostname. A page therefore kept answering on a hostname whose owner had removed the proof, sold the domain or let it expire. Since this addendum a daily job (`/api/jobs/domains`, 08:00 UTC, fifth Vercel Cron) reads the TXT proof of every active domain again.
+
+- The server signs what it found (`recheckText`: `at`, `domainId`, `found`, `hostname`, `kind: "recheck"`, `v`) with the same secret as a confirmation, and `public.record_domain_recheck` (service role only) verifies it. The key set differs from a confirmation's, so neither can be replayed as the other (tested both ways).
+- **Seven consecutive days without the proof lapse the domain** (`private.domain_recheck_limit`, mirrored by `DOMAIN_RECHECK_LIMIT`): the hostname stops opening the page, the cached copies are dropped and the hostname is detached at the provider (best effort). Finding the proof resets the count.
+- **A day on which DNS could not be asked records nothing.** A resolver outage never counts against a customer.
+- From the first miss the domain screen warns how many days are left. A domain lapsed this way (`lapse_reason = 'recheck'`) says so and keeps its Verify button: recreating the record and verifying puts it back, with the count cleared by a trigger.
+- Up to 200 domains per run, oldest check first.
+
+**Provisional, awaiting the founder:** the seven-day grace period. **Not done:** an e-mail to the owner when the proof goes missing (no mail service); the product still depends on the owner opening the panel during those seven days. The verification step already told owners to keep the TXT record; a customer who removed it anyway will lose the domain a week after this ships, which is why the migration should be applied before any customer has a domain.
