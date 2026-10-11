@@ -142,7 +142,7 @@ Consequências para quem opera:
 
 ## Passos de deploy da Sprint 8, parte 1 (cobrança em modo de teste)
 
-**Nada disto foi aplicado.** A Sprint 8 (parte 1) foi verificada só no stack local, contra um emulador da API da Stripe; não existe conta Stripe. Os passos abaixo são para o founder, em staging, com a Stripe em **modo de teste (sandbox)**. Cobrança real fica fora até a revisão jurídica e contábil (ADR 0014).
+**Aplicado pelo founder em 10/10/2026, no ambiente que hoje é a produção** (os seis passos; cobrança em `sandbox`). O roteiro de conferência abaixo foi percorrido até o cancelamento, com o resultado esperado; **não foram exercitados** o passo 6 (falha de pagamento) e o passo 8 (job). Os passos ficam registrados para repetição e para o momento de ir para `live`. Eles descrevem a Stripe em **modo de teste (sandbox)**. Cobrança real fica fora até a revisão jurídica e contábil (ADR 0014).
 
 A ordem recomendada é esta, mas **qualquer ordem é segura**: enquanto faltar a migração, um segredo ou o modo, a aplicação se comporta como antes (sem botão de compra, telas de limite com a frase de sempre, nenhum erro). A coluna da direita diz o que a aplicação faz depois de cada passo.
 
@@ -175,7 +175,7 @@ A ordem recomendada é esta, mas **qualquer ordem é segura**: enquanto faltar a
 
 ## Passos de deploy da Sprint 9 (aceite, privacidade, denúncias, headers)
 
-**Nada disto foi aplicado em staging.** Verificado só no stack local. Qualquer ordem é segura: sem as migrações, `/app` funciona como antes, `/termos` e `/cookies` dizem que o texto está em revisão, `/privacidade` mostra o aviso provisório, *Meus dados* mostra históricos vazios e os botões de exportar e pedir respondem que não está disponível; sem o segredo, `/denunciar` diz que o canal está indisponível e a página pública continua no ar.
+**Passos 1 e 2 aplicados em 10/10/2026** (merge e migrações, em produção). O passo 3 (segredo de denúncias) foi orientado e não está confirmado; os passos 4 e 5 não foram feitos. Verificado só no stack local. Qualquer ordem é segura: sem as migrações, `/app` funciona como antes, `/termos` e `/cookies` dizem que o texto está em revisão, `/privacidade` mostra o aviso provisório, *Meus dados* mostra históricos vazios e os botões de exportar e pedir respondem que não está disponível; sem o segredo, `/denunciar` diz que o canal está indisponível e a página pública continua no ar.
 
 | # | Passo | Depois dele |
 |---|---|---|
@@ -191,7 +191,7 @@ A ordem recomendada é esta, mas **qualquer ordem é segura**: enquanto faltar a
 
 ## Passos de deploy da Sprint 8, parte 2 (domínio próprio e pixels)
 
-**Nada disto foi aplicado.** Verificado só no stack local, contra um resolvedor DNS de teste e um emulador da API da Vercel. Qualquer ordem é segura: sem a migração, a aba *Página* do editor diz que domínio e pixels ainda não estão disponíveis e a página pública funciona como antes; sem o segredo, ninguém consegue comprovar um domínio; sem as variáveis da Vercel, a comprovação funciona e a tela diz que a ativação automática não está disponível.
+**Passos 1 e 2 aplicados em 10/10/2026** (PR #29 mergeado e migrações em produção); o passo 3 aparenta estar feito (a tela *Plano* lista domínio próprio, o que só acontece com o segredo no ambiente); o passo 4 depende da decisão sobre o plano da Vercel. **A conferência de ponta a ponta abaixo ainda não foi feita.** Verificado só no stack local, contra um resolvedor DNS de teste e um emulador da API da Vercel. Qualquer ordem é segura: sem a migração, a aba *Página* do editor diz que domínio e pixels ainda não estão disponíveis e a página pública funciona como antes; sem o segredo, ninguém consegue comprovar um domínio; sem as variáveis da Vercel, a comprovação funciona e a tela diz que a ativação automática não está disponível.
 
 | # | Passo | Depois dele |
 |---|---|---|

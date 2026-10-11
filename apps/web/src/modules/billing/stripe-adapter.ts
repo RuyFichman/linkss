@@ -7,8 +7,10 @@ import { verifyWebhookSignature } from "./webhook-signature";
  * Stripe behind the PaymentsAdapter (ADR 0014). Plain `fetch` against the REST API, no SDK: the
  * surface used is ten calls and one signature check. Nothing outside this file knows a Stripe
  * status, event name or field. Written from the official documentation (pages and date in the ADR);
- * NOT yet run against a real Stripe sandbox (no account exists): the contract test runs it against
- * documentation-shaped responses and the local emulator in scripts/billing-lifecycle.mjs.
+ * run against a real Stripe sandbox for the first time on 2026-10-10 (checkout, subscription,
+ * upgrade, portal, cancel and resume matched). Failing payments, disputes and refunds are still
+ * covered only by the contract test (documentation-shaped responses) and the local emulator in
+ * scripts/billing-lifecycle.mjs.
  */
 export const STRIPE_API_VERSION = "2026-09-30.endive";
 const STRIPE_API_ORIGIN = "https://api.stripe.com";

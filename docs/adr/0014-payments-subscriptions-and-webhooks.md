@@ -1,6 +1,6 @@
 # ADR 0014 — Payment provider, subscription model and webhooks
 
-- **Status:** accepted for the MVP (items marked *provisional* await founder confirmation). **The provider (Stripe) was chosen by the founder on 2026-10-09.** Nothing here has run against a real Stripe account: no account exists yet.
+- **Status:** accepted for the MVP (items marked *provisional* await founder confirmation). **The provider (Stripe) was chosen by the founder on 2026-10-09.** Until 2026-10-10 nothing here had run against a real Stripe account. On that day the founder ran it against the Stripe sandbox on the production deployment: checkout, the first three webhook deliveries (200), the plan change, the receipt link, an upgrade, the customer portal, cancellation and resuming behaved as the emulator assumed. A failing payment, the grace period, disputes, refunds and the daily job are still verified against the emulator only, and no live charge has been made. The webhook destination was created at API version `2026-02-25.clover` while the adapter requests `2026-09-30.endive`; no effect was seen, because an event is only a hint.
 - **Date:** 2026-10-09
 - **Sprint:** 8, part 1 of 2 (custom domains and pixels are part 2)
 - **Builds on:** ADR 0004 (tenancy; `workspaces.plan_id` is not user-writable), ADR 0009 and ADR 0011 (server attestation with a secret mirrored in Supabase Vault; the job pattern), ADR 0012 and ADR 0013 (what each limit does when it is reached or lost)

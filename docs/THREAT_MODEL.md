@@ -193,7 +193,7 @@ Pendente: limite global e CAPTCHA (Sprint 9), expurgo agendado de links e contad
 
 ## Controles adicionados na Sprint 8, parte 1 (planos, assinatura e cobrança)
 
-Decisões em `docs/adr/0014-payments-subscriptions-and-webhooks.md`. O webhook é o primeiro endpoint em que um terceiro escreve no nosso estado sem sessão. Verificado no stack local contra um emulador da API da Stripe; **não verificado contra a Stripe**.
+Decisões em `docs/adr/0014-payments-subscriptions-and-webhooks.md`. O webhook é o primeiro endpoint em que um terceiro escreve no nosso estado sem sessão. Verificado no stack local contra um emulador da API da Stripe. Em 10/10/2026 o caminho feliz (assinar, mudar de plano, portal, cancelar, desfazer) rodou contra a área restrita da Stripe; **os casos negativos desta tabela continuam verificados só contra o emulador**.
 
 | Ameaça | Controle | Estado |
 |---|---|---|
