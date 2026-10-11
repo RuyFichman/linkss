@@ -341,3 +341,18 @@ A exclusão deixou de ser manual store a store: um administrador da plataforma a
 **Bloqueios:** assinatura que não terminou e conta com outros membros impedem a exclusão até serem resolvidos pelo operador (runbook, passo 2).
 
 **Pendente:** revisão jurídica dos prazos novos e da resposta ao titular; exportação dos arquivos de mídia; domínios e pixels na exportação da conta; aviso por e-mail ao titular (não há e-mail transacional).
+
+## Sprint 9, parte 3 (11/10/2026): suspensão, contestação e monitor
+
+Decisão: ADR 0019. Verificado só no stack local; a migração não foi aplicada em produção. **Nenhum subprocessador novo:** o monitor roda no GitHub Actions, que já era usado para a integração contínua, e só lê contagens.
+
+| Store / tabela | Conteúdo | Dado pessoal? | Finalidade | Quem lê | Retenção |
+|---|---|---|---|---|---|
+| `moderation_suspensions` | página, conta, categoria do motivo, quando foi suspensa e quando voltou | não | dizer ao dono por que a página saiu do ar | membros da conta, pela função `get_page_moderation`; administrador da plataforma | vida da página (cascata). **Sem expurgo próprio** para suspensões já encerradas |
+| `moderation_appeals` | texto livre da contestação (até 1.000 caracteres), quem enviou, situação, resposta escrita pelo administrador (até 500), quem decidiu, datas | **sim**: texto livre de um membro da conta, que pode citar pessoas; identificadores de quem enviou e de quem decidiu | permitir a defesa do dono da página e registrar a resposta | proprietário e administrador da conta (o texto); editores (só situação e resposta); administrador da plataforma | vida da página (cascata). **Sem expurgo próprio** |
+| `job_runs` | nome do job, horário e resultado da última execução | não | alertar quando um job para | só a função de status (papel de serviço) | uma linha por job, sobrescrita |
+| `audit_events` (ações novas) | `moderation.appealed`, `moderation.appeal_decided`, com o identificador da contestação; **nunca o texto** | id do ator | trilha | proprietário e administrador | a da trilha (1 ano, provisória) |
+| Logs `moderation.appeal`, `ops.status` | desfecho; nomes das verificações que falharam | não | operação | retenção do provedor de logs |
+| Log público do workflow *Monitor* no GitHub | a resposta de `/api/ops/status`: contagens, durações e códigos de motivo | não (a rota não devolve e-mail, endereço de página nem identificador) | alerta | **qualquer pessoa** (o repositório é público) | retenção do GitHub Actions (90 dias por padrão) |
+
+**Exportação e exclusão:** suspensões e contestações **não entram** em `export_workspace_data` (pendência). Na exclusão de página ou de conta saem por cascata; `created_by` e `decided_by` ficam nulos se a pessoa for excluída.

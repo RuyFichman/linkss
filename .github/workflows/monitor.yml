@@ -1,0 +1,73 @@
+name: Monitor
+
+# External monitor of production (ADR 0019, docs/runbooks/MONITORING.md). When a run fails, GitHub
+# e-mails the person who last changed this schedule: that e-mail is the alert. No other service
+# is involved, and nothing here can change production: every request is a read.
+#
+# GitHub disables scheduled workflows after 60 days without activity in the repository and may
+# delay or skip a run under load: this is a safety net, not a guarantee.
+
+on:
+  schedule:
+    # Hourly: what is broken now.
+    - cron: "17 * * * *"
+    # Once a day (09:43 in Brasília): also work that has been waiting for a person.
+    - cron: "43 12 * * *"
+  workflow_dispatch:
+    inputs:
+      attention:
+        description: "Also fail for work waiting for a person"
+        type: boolean
+        default: true
+
+permissions: {}
+
+concurrency:
+  group: monitor
+  cancel-in-progress: false
+
+env:
+  BASE_URL: https://linkfav.com
+
+jobs:
+  production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: The application answers
+        run: |
+          curl --silent --show-error --fail --max-time 20 --retry 2 --retry-delay 10 "$BASE_URL/api/health" | grep -q '"status":"ok"'
+
+      - name: The home page renders
+        run: |
+          curl --silent --show-error --fail --max-time 30 --retry 2 --retry-delay 10 "$BASE_URL/" | grep -q "Linkfav"
+
+      # Optional: set the repository variable MONITOR_PUBLIC_PAGE to the path of a published page
+      # kept for this purpose (for example /teste) to exercise the public renderer and the database.
+      - name: A published page renders
+        if: ${{ vars.MONITOR_PUBLIC_PAGE != '' }}
+        env:
+          PAGE: ${{ vars.MONITOR_PUBLIC_PAGE }}
+        run: |
+          case "$PAGE" in /[a-z0-9]*) ;; *) echo "::error::MONITOR_PUBLIC_PAGE must look like /endereco"; exit 1 ;; esac
+          curl --silent --show-error --fail --max-time 30 --retry 2 --retry-delay 10 --output /dev/null "$BASE_URL$PAGE"
+
+      - name: Jobs, billing and queues
+        env:
+          OPS_STATUS_SECRET: ${{ secrets.OPS_STATUS_SECRET }}
+          ATTENTION: ${{ github.event.schedule == '43 12 * * *' || inputs.attention == true }}
+        run: |
+          if [ -z "$OPS_STATUS_SECRET" ]; then
+            echo "::warning::OPS_STATUS_SECRET is not set in this repository: jobs, billing and queues are not being monitored (docs/runbooks/MONITORING.md)."
+            exit 0
+          fi
+          query=""
+          if [ "$ATTENTION" = "true" ]; then query="?attention=1"; fi
+          status=$(curl --silent --show-error --max-time 30 --retry 2 --retry-delay 10 --output status.json --write-out "%{http_code}" \
+            --header "Authorization: Bearer $OPS_STATUS_SECRET" "$BASE_URL/api/ops/status$query")
+          # The body has counts and reason codes only (no personal data, no secret), so it is safe in a public log.
+          cat status.json; echo
+          if [ "$status" != "200" ]; then
+            echo "::error::Operational status failed with HTTP $status. Open docs/runbooks/MONITORING.md."
+            exit 1
+          fi

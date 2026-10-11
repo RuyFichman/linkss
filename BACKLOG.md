@@ -152,13 +152,17 @@ Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 s
   - [ ] Minutas em `docs/legal/` revisadas pelo advogado e ativadas.
 - [ ] P0 Denúncia, moderação, suspensão e auditoria.
   - [x] Denúncia pública, fila, suspensão e reativação por página, auditadas.
-  - [ ] Aviso ao dono da página suspensa e canal de contestação. A retenção das denúncias foi definida como 180 dias (provisório) e entrou no expurgo em 11/10/2026.
+  - [x] Aviso ao dono da página suspensa (dentro do produto) e canal de contestação: código de 11/10/2026 (ADR 0019), verificado só no stack local; runbook `docs/runbooks/MODERATION.md`. A retenção das denúncias foi definida como 180 dias (provisório) e entrou no expurgo em 11/10/2026.
+  - [ ] Aviso de suspensão e de resposta **por e-mail** (depende do SMTP); aviso e contestação para suspensão de conta inteira; expurgo próprio e exportação de suspensões e contestações; segunda pessoa para julgar contestações.
 - [ ] P0 Headers, CSP, rate limits e revisão de autorização.
   - [x] Headers de segurança e CSP (ainda com `unsafe-inline`); leitura limitada do corpo em `/api/events` e `/api/vitals`; origem com esquema nas rotas com sessão.
   - [x] Limite por instância nas rotas públicas, CAPTCHA nos formulários de acesso (desligado até ser configurado) e expurgo agendado: código de 11/10/2026 (ADR 0018), verificado só no stack local.
   - [ ] **Founder:** criar a regra do firewall da Vercel (`docs/runbooks/RATE_LIMITS.md`), ligar o Turnstile e aplicar as migrações `202610110001` e `202610110002` depois de um backup conferido (`docs/ENVIRONMENTS.md`, "Sprint 9, continuação").
   - [ ] Confirmar os prazos provisórios novos (denúncias 180 dias; pedidos de privacidade 5 anos) e os limites (300/min na regra; seis limites por rota).
 - [ ] P0 Backup/restauração e runbooks.
+  - [x] Runbooks de jobs, monitor e moderação (`JOBS.md`, `MONITORING.md`, `MODERATION.md`) e primeiro mecanismo de alerta (workflow *Monitor* + `/api/ops/status`): código de 11/10/2026 (ADR 0019), verificado só no stack local.
+  - [ ] **Founder:** aplicar as migrações `202610110003` e `202610110004` e criar `OPS_STATUS_SECRET` na Vercel e no GitHub (`docs/runbooks/MONITORING.md` §1). Até lá o monitor só confere que o site responde.
+  - [ ] Alertas para taxa de erro e latência do renderer, uploads, formulários, Auth e webhook que não chega (dependem de contratar um serviço que leia logs).
   - [x] Backup lógico (`npm run db:backup`: banco, contas, histórico de migrações e mídia) e ensaio de restauração (`npm run db:restore-check`), aprovados com o banco local em 10/10/2026; runbook `docs/runbooks/BACKUP.md`.
   - [ ] **Primeiro backup de produção** e ensaio dele (a CLI precisa estar logada na conta dona do projeto) e cópia para fora da máquina.
   - [ ] Ensaiar a restauração num projeto Supabase novo, incluindo mídia, segredos do Vault e Auth.

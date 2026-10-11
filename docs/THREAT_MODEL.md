@@ -281,3 +281,29 @@ Decisão: ADR 0018. Verificado só no stack local.
 - **O domínio anexado na Vercel e o cliente na Stripe** não são conferidos depois da exclusão; o runbook manda conferir à mão.
 - **O expurgo roda em produção sem ambiente de ensaio**: um prazo errado numa migração futura apaga dados na execução seguinte. Mitigação: backup conferido antes de cada `db push`.
 - **Sem CAPTCHA** no formulário público e na denúncia.
+
+## Sprint 9, parte 3 (11/10/2026): aviso de suspensão, contestação e monitor
+
+Decisão: ADR 0019. Verificado só no stack local.
+
+| Ameaça | Controle | Estado | Evidência |
+|---|---|---|---|
+| Suspensão arbitrária ou por engano, sem que o dono saiba ou possa responder | aviso em todas as telas da conta, com o motivo em categoria; contestação por proprietário ou administrador; resposta escrita; tudo na auditoria | implementado + verificado localmente. **Sem e-mail:** o dono só vê ao abrir o painel | pgTAP `210-appeals-ops`; script `moderation-appeal.mjs` |
+| Vazar ao dono quem denunciou ou o que o administrador anotou | o dono vê só a categoria e a resposta escrita para ele; a justificativa interna fica na auditoria | implementado + verificado | pgTAP (a resposta de `get_page_moderation` não contém a justificativa); script |
+| Outra conta lendo a suspensão ou contestando por terceiros | `get_page_moderation` e `submit_moderation_appeal` respondem "não encontrado" a quem não é da conta; nenhuma tabela é lida por papel de cliente | implementado + verificado | pgTAP (`P0002`, privilégios); script (pessoa de fora não vê nada) |
+| Editor falando pela conta, ou lendo o texto da contestação | só proprietário e administrador contestam (`42501`); o editor vê situação e resposta, não o texto | implementado + verificado | pgTAP; script |
+| Flood de contestações | uma por vez (`LK127`) e três por suspensão (`LK128`); 20 a 1.000 caracteres, sem caracteres de controle | implementado + verificado | pgTAP; Vitest `appeals.test.ts` |
+| Dono decidindo a própria contestação | `decide_moderation_appeal` só para administrador da plataforma; decisão final não se reverte (`LK129`) | implementado + verificado | pgTAP |
+| Texto da contestação ou da resposta usado para injetar conteúdo | renderizado como texto nas duas telas | implementado | revisão do código; script sem erro de execução |
+| Job parado, cobrança desligada ou banco pausado sem ninguém perceber | execução de cada job gravada; rota de status com segredo próprio; workflow de hora em hora cujo fracasso vira e-mail | implementado + verificado localmente; **não ligado em produção** | Vitest `ops/status/route.test.ts`; pgTAP; script (rota com e sem segredo) |
+| Rota de status vazando dados ou servindo de gatilho | só leitura; só contagens, durações e códigos de motivo; segredo diferente do que dispara jobs; função só para o papel de serviço | implementado + verificado | pgTAP (sem endereço nem página no resultado); Vitest (sem segredo nem chave no corpo) |
+| Segredo do monitor exposto (fica também no GitHub) | lê contagens e nada mais; rotação: trocar na Vercel e no GitHub | implementado | `docs/runbooks/MONITORING.md` |
+
+**Riscos residuais:**
+
+- **O aviso depende de o dono abrir o painel.** Uma página pode ficar dias suspensa sem que ele saiba. Mitigação: e-mail quando houver SMTP.
+- **Quem suspende também julga a contestação**; não há segunda pessoa.
+- **Aceitar a contestação devolve ao ar a versão publicada antes da suspensão**, não o rascunho corrigido; o runbook orienta a pedir nova publicação.
+- **A suspensão de uma conta inteira** (`workspaces.status`) continua sem aviso próprio e sem contestação.
+- **O monitor é um cinto de segurança:** o GitHub pode atrasar ou pular execuções e desliga agendamentos depois de 60 dias sem atividade; o log do workflow é público (por isso o corpo não tem dado pessoal); o alerta é um e-mail para uma pessoa.
+- **Sem alerta** para taxa de erro do renderer, uploads, formulários e Auth.

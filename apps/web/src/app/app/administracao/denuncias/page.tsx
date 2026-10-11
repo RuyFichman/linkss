@@ -2,7 +2,7 @@ import { formatDateTime } from "@/lib/format-date";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUserId, getSupabase } from "@/modules/identity/session";
-import { reviewReportAction, setPageModerationAction } from "@/modules/moderation/actions";
+import { decideAppealAction, reviewReportAction, setPageModerationAction } from "@/modules/moderation/actions";
 
 export const metadata: Metadata = { title: "Fila de denúncias" };
 export const dynamic = "force-dynamic";
@@ -21,6 +21,20 @@ interface Report {
   reviewReason: string | null;
 }
 
+interface Appeal {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  suspendedAt: string;
+  message: string;
+  status: string;
+  response: string | null;
+  createdAt: string;
+}
+
+const APPEAL_STATUS: Record<string, string> = { open: "aguardando resposta", accepted: "aceita", denied: "não aceita" };
+
 const REASON: Record<string, string> = {
   phishing: "Golpe ou coleta enganosa",
   impersonation: "Imitação",
@@ -38,6 +52,9 @@ export default async function ModerationQueue({ searchParams }: {
   const { data, error } = await supabase.rpc("list_moderation_reports");
   if (error?.code === "42501") notFound();
   const reports = Array.isArray(data) ? data as unknown as Report[] : [];
+  // Before the migration the function does not exist: the appeals section is simply absent.
+  const appealsRead = await supabase.rpc("list_moderation_appeals");
+  const appeals = Array.isArray(appealsRead.data) ? appealsRead.data as unknown as Appeal[] : [];
   const { erro } = await searchParams;
   return (
     <section className="app-shell max-w-5xl">
@@ -45,6 +62,35 @@ export default async function ModerationQueue({ searchParams }: {
       <p className="mt-2 text-app-muted">Últimas 100 denúncias. Confirme os fatos antes de suspender ou reativar uma página; cada decisão e justificativa entram na auditoria.</p>
       {error ? <p role="alert" className="mt-4 text-red-700">A fila não está disponível neste ambiente.</p> : null}
       {erro ? <p role="alert" className="mt-4 text-red-700">Não foi possível concluir a ação. Confira a justificativa e tente novamente.</p> : null}
+      {appeals.length > 0 ? (
+        <div className="mt-6 grid gap-5">
+          <h2 className="text-2xl font-bold">Contestações de suspensão</h2>
+          <p className="text-app-muted">Últimas 100. A resposta é mostrada ao dono da página: escreva para ele, sem citar quem denunciou. Aceitar reativa a página na hora.</p>
+          {appeals.map((appeal) => (
+            <article key={appeal.id} className="surface-card p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-xl font-bold">{appeal.slug}</h3>
+                <span className="ui-badge">{APPEAL_STATUS[appeal.status] ?? appeal.status}</span>
+              </div>
+              <p className="mt-2 text-sm text-app-muted">{appeal.title} · suspensa por {REASON[appeal.category] ?? "outro motivo"} em {formatDateTime(appeal.suspendedAt)} · contestada em {formatDateTime(appeal.createdAt)}</p>
+              <p className="mt-3 whitespace-pre-wrap break-words">{appeal.message}</p>
+              {appeal.response ? <p className="mt-3 text-sm">Resposta enviada: {appeal.response}</p> : null}
+              {appeal.status === "open" ? (
+                <form action={decideAppealAction} className="mt-4 grid gap-3 border-t border-app-border pt-4">
+                  <input type="hidden" name="appealId" value={appeal.id} />
+                  <label htmlFor={"appeal-" + appeal.id} className="font-semibold">Resposta ao dono da página</label>
+                  <textarea id={"appeal-" + appeal.id} name="response" required minLength={10} maxLength={500} rows={3} className="ui-input" />
+                  <div className="flex flex-wrap gap-2">
+                    <button type="submit" name="decision" value="accept" className="ui-button ui-button-secondary">Aceitar e reativar a página</button>
+                    <button type="submit" name="decision" value="deny" className="ui-button ui-button-secondary">Não aceitar</button>
+                  </div>
+                </form>
+              ) : null}
+            </article>
+          ))}
+          <h2 className="text-2xl font-bold">Denúncias</h2>
+        </div>
+      ) : null}
       {!error && reports.length === 0 ? <p className="mt-6 rounded-xl border border-app-border p-5">Nenhuma denúncia na fila.</p> : null}
       <div className="mt-6 grid gap-5">
         {reports.map((report) => (

@@ -22,6 +22,8 @@
 
 **Não apaga:** denúncia aberta sobre página que existe; nada de quem está dentro do prazo; contas de acesso (`auth.users`), que só saem pela exclusão de conta (`ACCOUNT_DELETION.md`). Eventos brutos e agregados de analytics continuam com o job de analytics; o registro de eventos de cobrança, com o job de cobrança.
 
+**Alertas:** `job:retention` e `retention:backlog` no monitor (`MONITORING.md`); os outros jobs estão em `JOBS.md`.
+
 ## Conferir que rodou
 
 Log `retention.maintenance`, uma vez por dia:

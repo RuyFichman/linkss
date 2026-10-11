@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { secretsMatch } from "@/lib/same-origin";
+import { recordJobRun } from "@/modules/ops/status-server";
 import { retentionTotal } from "@/modules/privacy/retention";
 import { runConfiguredRetention } from "@/modules/privacy/retention-server";
 
@@ -51,10 +52,12 @@ async function runJob(request: Request): Promise<NextResponse> {
     const { report } = result;
     // `partial`: something past its date is still there, usually waiting for the media job.
     const outcome = report.pendingProfiles > 0 || report.pendingWorkspaces > 0 ? "partial" : "ok";
+    await recordJobRun("retention", outcome);
     // Counts only: the log never says whose rows were removed.
     logEvent("info", "retention.maintenance", { correlationId, outcome, ...report, removed: retentionTotal(report), durationMs: Math.round(performance.now() - startedAt) });
     return NextResponse.json({ ok: true, ...report }, { headers });
   } catch {
+    await recordJobRun("retention", "unavailable");
     return fail("unavailable", 503, "error");
   }
 }

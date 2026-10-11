@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { secretsMatch } from "@/lib/same-origin";
+import { recordJobRun } from "@/modules/ops/status-server";
 import { isDay } from "@/modules/analytics/dates";
 import { runConfiguredAnalyticsMaintenance } from "@/modules/analytics/maintenance-server";
 
@@ -52,9 +53,11 @@ async function runJob(request: Request): Promise<NextResponse> {
     if (report.status === "out_of_range") return fail("invalid", 400);
     // `partial`: the per-run bound was reached and days are still waiting; the next run continues.
     const outcome = report.pendingDays > 0 ? "partial" : "ok";
+    await recordJobRun("analytics", outcome);
     logEvent(outcome === "ok" ? "info" : "warn", "analytics.maintenance", { correlationId, outcome, ...report, durationMs: Math.round(performance.now() - startedAt) });
     return NextResponse.json({ ok: true, ...report }, { headers });
   } catch {
+    await recordJobRun("analytics", "unavailable");
     return fail("unavailable", 503, "error");
   }
 }

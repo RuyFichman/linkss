@@ -237,6 +237,62 @@ export const APP_COPY = {
   nav: { home: "Início", skipToContent: "Pular para o conteúdo", workspace: "Seções da conta", account: "Conta", myData: "Meus dados", pages: "Páginas", results: "Resultados", members: "Membros", plan: "Plano" },
 } as const;
 
+/** Suspension notice and appeal (ADR 0019). */
+export const MODERATION_COPY = {
+  heading: "Suspensão da página",
+  back: "Voltar para as páginas",
+  active: "Esta página não está suspensa. Ela pode ser publicada normalmente.",
+  unavailable: { title: "Não foi possível mostrar a situação desta página", description: "Tente novamente em instantes." },
+  notice: {
+    title: (count: number) => count === 1 ? "Uma página desta conta foi suspensa pela moderação e está fora do ar." : `${count} páginas desta conta foram suspensas pela moderação e estão fora do ar.`,
+    link: "Ver o motivo e contestar",
+  },
+  what: {
+    title: "O que aconteceu",
+    body: "A equipe do Linkfav analisou esta página e a tirou do ar. Enquanto durar a suspensão, quem abre o endereço vê um aviso de página indisponível e não é possível publicar.",
+    category: "Motivo",
+    since: "Suspensa em",
+    kept: "Nada foi apagado: o conteúdo, os contatos e os resultados continuam guardados, e você pode editar o rascunho para corrigir o problema.",
+  },
+  categories: {
+    phishing: "Suspeita de golpe ou de coleta enganosa de dados",
+    impersonation: "Suspeita de imitação de outra pessoa ou marca",
+    illegal: "Conteúdo possivelmente ilegal",
+    spam: "Spam",
+    privacy: "Exposição de dados pessoais de terceiros",
+    other: "Descumprimento das regras de uso",
+  },
+  appeal: {
+    title: "Contestar a suspensão",
+    lead: (left: number) => left === 1 ? "Se você entende que houve engano, ou se já corrigiu o problema, explique abaixo. Esta é a última contestação disponível para esta suspensão." : `Se você entende que houve engano, ou se já corrigiu o problema, explique abaixo. Você pode enviar até ${left} contestações para esta suspensão.`,
+    label: "Sua contestação",
+    hint: "De 20 a 1.000 caracteres. Diga o que a página é, por que o motivo não se aplica ou o que você mudou. Não inclua senhas nem documentos.",
+    submit: "Enviar contestação",
+    sent: "Contestação enviada. A resposta aparece nesta tela.",
+    editors: "Só o proprietário e os administradores da conta podem contestar. Fale com um deles.",
+    waiting: "Sua contestação foi recebida e está em análise. A resposta aparece nesta tela.",
+    exhausted: "Todas as contestações desta suspensão já foram respondidas. Não é possível enviar outra.",
+    errors: {
+      too_short: "Escreva pelo menos 20 caracteres.",
+      too_long: "Use no máximo 1.000 caracteres.",
+      invalid: "O texto tem caracteres que não podem ser usados. Escreva de novo, sem colar formatação.",
+      forbidden: "Só o proprietário e os administradores da conta podem contestar.",
+      not_found: "Esta página não foi encontrada.",
+      not_suspended: "Esta página não está mais suspensa.",
+      already_open: "Já existe uma contestação em análise para esta suspensão.",
+      limit_reached: "O limite de contestações desta suspensão foi atingido.",
+      not_deployed: "A contestação ainda não está disponível. Tente novamente mais tarde.",
+      unavailable: "Não foi possível enviar agora. Tente novamente em instantes.",
+    },
+  },
+  history: {
+    title: "Contestações enviadas",
+    status: { open: "Em análise", accepted: "Aceita", denied: "Não aceita" },
+    sent: (when: string) => `Enviada em ${when}`,
+    response: "Resposta da equipe:",
+  },
+} as const;
+
 /** Members, roles and invitations (ADR 0012). */
 export const TEAM_COPY = {
   title: "Membros",
@@ -392,7 +448,7 @@ export const PUBLISHING_COPY = {
   errors: {
     stale: "O rascunho mudou desde que você abriu esta tela. Confira a prévia e publique de novo.",
     forbidden: "Você não tem permissão para publicar nesta conta, ou a conta está suspensa.",
-    suspended: "Esta página foi suspensa pela moderação e não pode ser publicada. Fale com o suporte para saber o motivo.",
+    suspended: "Esta página foi suspensa pela moderação e não pode ser publicada. O motivo e a contestação estão no aviso no topo da lista de páginas.",
     unavailable: "Não foi possível publicar agora. Nada mudou na página no ar. Tente novamente em instantes.",
   },
   previewBanner: "Prévia do rascunho. Visitantes ainda não veem estas alterações.",

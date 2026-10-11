@@ -104,6 +104,7 @@ Nenhuma rota nova de nível superior.
 - `/app/w/[workspaceId]/paginas/[profileId]` — o editor ganhou foto da página (envio com recorte), blocos Imagem, Vídeo ou música, Pix e Formulário, o painel Aparência (cores, estilo, fonte), cinco modelos e o uso de armazenamento.
 - `/app/w/[workspaceId]/paginas/[profileId]/contatos` — contatos recebidos pelos formulários (lista, exclusão); `/contatos/exportar` baixa o CSV (owner e admin).
 - `/api/media` — recebe o envio de imagem do editor (sessão do usuário, mesma origem).
+- `/api/ops/status` — situação operacional lida pelo monitor externo (`GET` com `Authorization: Bearer <OPS_STATUS_SECRET>`; `docs/runbooks/MONITORING.md`).
 - `/api/jobs/retention` — job diário de expurgo (`GET` pelo Vercel Cron às 07:00 UTC ou `POST` à mão, com `Authorization: Bearer <CRON_SECRET>`): apaga o que passou do prazo de retenção (`docs/runbooks/RETENTION.md`).
 - `/api/jobs/media-cleanup` — job administrativo de limpeza de imagens órfãs (`GET` pelo Vercel Cron diário ou `POST` à mão, sempre com `Authorization: Bearer <CRON_SECRET>`).
 - `/<endereço>` — a página pública renderiza tema, foto, imagens responsivas, cartão de vídeo/música com carregamento no toque, Pix com copiar e formulário (funciona sem JavaScript).

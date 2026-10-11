@@ -53,6 +53,10 @@ export const PERMISSIONS = {
   "domains.manage": ["owner", "admin"],
   "pixels.view": ["owner", "admin", "editor"],
   "pixels.manage": ["owner", "admin"],
+  // A suspension by moderation concerns everyone who operates the page; the appeal speaks for the
+  // workspace, so owners and admins send it (ADR 0019).
+  "moderation.view": ["owner", "admin", "editor"],
+  "moderation.appeal": ["owner", "admin"],
   "audit.view": ["owner", "admin"],
 } as const satisfies Record<string, readonly WorkspaceRole[]>;
 
