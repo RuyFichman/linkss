@@ -127,6 +127,19 @@ Uma conta assim aparece na tela *Plano* como "Definido manualmente" e não é to
 
 **Stack local.** `node scripts/agency-scale.mjs` (em `apps/web`, com um `next start -p 3100` rodando) mede lista, consolidado e criação com 1, 10 e 50 páginas e deixa no banco a conta `qa-ac5-escala@example.test`; `--cleanup` remove tudo o que ele criou.
 
+## Ambientes desde 10/10/2026: um só, e é produção
+
+Por decisão do founder em 10/10/2026, o projeto Supabase hospedado que este arquivo e os relatórios chamam de **"staging" é o banco de produção**, e continua no **plano Free**. `https://linkfav.com` (com e sem `www`) e `https://linkss-black.vercel.app` servem o mesmo deploy da Vercel contra esse banco. **Não existe ambiente de staging.** Onde as seções abaixo dizem "staging", leia "produção".
+
+Consequências para quem opera:
+
+- **Antes de cada `npx supabase db push`:** CI verde (job `database`), `npm run db:backup` e `npm run db:restore-check` no backup recém-feito (`docs/runbooks/BACKUP.md`). O plano Free não tem backup gerenciado.
+- **Nada de SQL de teste ou exploratório no SQL Editor.** Testes vão no banco local.
+- **Contas de teste** em produção usam e-mails do próprio founder e são removidas depois; as contas `qa-*@example.test` existem só no banco local.
+- **A cobrança está em modo de teste (`BILLING_MODE=sandbox`)** neste mesmo ambiente: qualquer pessoa que assinar hoje passa pelo checkout de teste da Stripe e não paga. Antes de convidar gente de fora, decidir entre desligar (`off`) e ir para `live`.
+
+**Estado conferido em 10/10/2026:** PR #29 mergeado; as sete migrações de `202610090001` a `202610100002` aplicadas pelo founder; cobrança funcionando contra a área restrita da Stripe (assinar, recibo, mudar de plano, portal, cancelar e desfazer, relatados pelo founder; três entregas de webhook com 200). **Pendente de confirmação:** Site URL e Redirect URL do Auth apontando para `https://linkfav.com` (em 10/10 ainda apontavam para `linkss-black.vercel.app`). **Ainda não feito:** primeiro backup de produção; teste de domínio próprio e de pixels.
+
 ## Passos de deploy da Sprint 8, parte 1 (cobrança em modo de teste)
 
 **Nada disto foi aplicado.** A Sprint 8 (parte 1) foi verificada só no stack local, contra um emulador da API da Stripe; não existe conta Stripe. Os passos abaixo são para o founder, em staging, com a Stripe em **modo de teste (sandbox)**. Cobrança real fica fora até a revisão jurídica e contábil (ADR 0014).

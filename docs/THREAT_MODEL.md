@@ -165,7 +165,7 @@ Desenho em `docs/adr/0012-multi-page-operations-invitations-and-roles.md`. Verif
 - rate limits para auth, formulário, upload e ingestão — Auth configurado localmente; formulário e upload têm limites no banco (Sprint 5); a ingestão de analytics tem limites no banco por endereço, por página e de capacidade (Sprint 6); limite global na frente das rotas públicas pendente;
 - CAPTCHA no Auth para fechar a enumeração direta pela API;
 - trilha para publicação, domínio, papéis e suspensão — papéis/slug/exclusão/publicação/restauração/despublicação feitos; suspensão feita na Sprint 9; domínio feito na Sprint 8, parte 2 (registro, comprovação, perda e remoção auditados);
-- backup e restauração testados;
+- backup e restauração testados — **parcial (10/10/2026):** scripts de backup lógico e de ensaio de restauração escritos e aprovados com o banco local (`docs/runbooks/BACKUP.md`); nenhum backup de produção feito ainda e a restauração num projeto hospedado nunca foi ensaiada. O banco de produção está no plano Free, sem backup gerenciado;
 - processo de denúncia e contato de segurança.
 
 ## Controles adicionados na Sprint 7, parte 2 (painel consolidado e links de relatório)

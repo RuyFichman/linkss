@@ -282,3 +282,13 @@ Decisões: ADR 0016 e ADR 0017. **Fluxos novos para fora do produto, ainda não 
 **O que não é guardado:** o conteúdo do registro TXT além dos valores no formato do desafio; a resposta da Vercel; quem aceitou ou recusou o aviso; qualquer dado que os pixels enviam.
 
 **Exportação e exclusão:** `profile_domains` e `profile_pixels` **ainda não entram** em `export_workspace_data` (pendência registrada no backlog). Na exclusão de uma página ou conta as duas tabelas saem por cascata; o domínio anexado ao projeto na Vercel **não** é removido por essa cascata e precisa entrar no procedimento de exclusão (Sprint 9).
+
+## Backups do banco (desde 10/10/2026)
+
+O plano Free do Supabase não tem backup gerenciado; os backups são feitos pelo founder com `npm run db:backup` (`docs/runbooks/BACKUP.md`).
+
+| Store | Conteúdo | Dado pessoal? | Finalidade | Quem lê | Retenção |
+|---|---|---|---|---|---|
+| Pasta `backups/` no computador do founder (ignorada pelo Git) e a cópia que ele guardar fora da máquina | cópia completa de `public`, `auth` e `storage` (contas com e-mail e hash de senha, páginas, contatos de formulários, auditoria, cobrança) e os arquivos de mídia | **sim, tudo o que o banco tem** | recuperar o serviço depois de perda ou erro | só o founder | sugestão do runbook: quatro semanais e os de antes de migrações dos últimos 30 dias. **Sem expurgo automático** |
+
+**Exclusão:** um dado apagado na produção continua nos backups até eles vencerem. Isso precisa constar da resposta a um pedido de exclusão e entrar no procedimento de exclusão quando ele for escrito (Sprint 9). O local da cópia externa é uma decisão do founder ainda não registrada; se for um serviço de nuvem, ele passa a ser um subprocessador.

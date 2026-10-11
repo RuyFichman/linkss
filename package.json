@@ -21,7 +21,9 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local --schema public > apps/web/src/lib/database.types.ts",
-    "test:db": "supabase test db"
+    "test:db": "supabase test db",
+    "db:backup": "node scripts/db-backup.mjs",
+    "db:restore-check": "node scripts/db-restore-check.mjs"
   },
   "devDependencies": {
     "supabase": "2.118.0"

@@ -136,3 +136,11 @@ Fazer upgrade da produção para Pro antes do beta pago ou antes, se qualquer um
 - receita ou reputação passa a depender da disponibilidade.
 
 O Pro inclui, na referência atual, 8 GB de disco por projeto, 100 GB de arquivos, 250 GB de egress, backups diários por sete dias e 100 mil MAU antes de overage. O custo começa em US$ 25/mês e deve entrar no custo normal do beta pago.
+
+## Decisão de 10/10/2026: produção no plano Free
+
+O founder decidiu manter o banco de **produção** no plano Free. Isso substitui a política anterior de subir o plano antes do beta pago. O que muda na prática:
+
+- **Sem backup gerenciado:** o backup é o procedimento de `docs/runbooks/BACKUP.md` (`npm run db:backup` e `npm run db:restore-check`).
+- **Sem staging:** o projeto que os relatórios chamam de "staging" é a produção; migrações são aplicadas direto nele.
+- **Pausa por inatividade e teto de 500 MB** passam a ser riscos de produção, não de desenvolvimento. Acompanhar o uso em *Database → Usage* e avisar o founder ao chegar a 60% de banco, arquivos ou tráfego: a decisão de subir o plano continua sendo dele.

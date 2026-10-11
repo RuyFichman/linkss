@@ -105,3 +105,15 @@ Verificado no navegador, 27 verificações aprovadas: `/app` sem redirecionar pa
 ## Backlog
 
 `BACKLOG.md`: os cinco P0 da Sprint 9 seguem abertos, com as partes concluídas marcadas abaixo de cada um. A atualização do Next para 16.4.0 (item da Sprint 8) foi marcada como feita.
+
+## Adendo de 10/10/2026 — backup e restauração
+
+O founder decidiu manter o banco de produção no plano Free do Supabase, que não tem backup gerenciado. Para o que dá para fazer nessa condição:
+
+- `scripts/db-backup.mjs` (`npm run db:backup`): backup lógico de papéis, estrutura, dados de `public`, `auth` e `storage`, histórico de migrações e arquivos do bucket `media`, com manifesto (linhas por tabela e SHA-256).
+- `scripts/db-restore-check.mjs` (`npm run db:restore-check`): sobe uma instância descartável, restaura o backup como numa restauração real e compara com o manifesto.
+- Runbook `docs/runbooks/BACKUP.md`, com o roteiro de restauração num projeto novo e os riscos do plano Free.
+
+**Verificado:** com o banco local, backup de 70 tabelas (57.605 linhas) e 36 de 36 arquivos de mídia; restauração com todas as verificações aprovadas (estrutura e linhas sem erro, 70 tabelas com as contagens do manifesto, histórico de migrações, leitura de uma página publicada, RLS ligada em todas as tabelas de `public`).
+
+**Não feito:** nenhum backup de produção (a CLI estava logada em conta sem acesso ao projeto: 403); restauração num projeto hospedado; recarga de mídia; agendamento; local da cópia externa. O item P0 de backup **continua aberto** no backlog.

@@ -324,3 +324,19 @@ Ordenados e detalhados em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 8,
 - **Se a Vercel real divergir:** tudo o que conhece a API está em `modules/domains/vercel-adapter.ts`; o emulador está dentro de `scripts/domains-lifecycle.mjs`.
 - **Próximos incrementos naturais:** job diário de reverificação (segue o desenho dos outros crons); eventos de conversão (o coletor de analytics já conhece os eventos); domínios e pixels em `export_workspace_data`.
 - **Contratos que mudam juntos:** `hostname.ts` e as duas funções `private.domain_hostname_*`; `pixels/model.ts`, `set_profile_pixels` e os checks de `profile_pixels`; `confirmationText` e as chaves aceitas por `confirm_profile_domain`; a lista de origens da CSP e os endereços em `pixels/loader.ts`.
+
+---
+
+# Adendo de 10/10/2026 — o que aconteceu depois do merge
+
+Registrado a partir do que o founder fez e relatou no mesmo dia; o que foi conferido a partir deste repositório está indicado.
+
+- **PR #29 (parte 2) mergeado** com CI verde (`quality` e `database`).
+- **Migrações aplicadas pelo founder** com `supabase db push`: de `202610090001` a `202610100002` (parte 1, Sprint 9 e parte 2).
+- **O founder decidiu que esse banco é a produção e que fica no plano Free.** Não há mais ambiente de staging (`docs/ENVIRONMENTS.md`).
+- **A parte 1 falou com a Stripe pela primeira vez** (área restrita): o webhook passou de 503 para 400 numa chamada sem assinatura (conferido por HTTP); três entregas com 200 (`customer.subscription.created`, `checkout.session.completed`, `invoice.paid`; print do founder); assinar o Pro com o cartão de teste, abrir o recibo, mudar para o Agência, abrir o portal, cancelar e desfazer o cancelamento funcionaram **como o emulador previa** (relato do founder). Nenhuma divergência encontrada.
+- **Um desvio de configuração no caminho:** o destino de webhook não tinha sido concluído na Stripe, o que mantinha a cobrança desligada. O log não diz por que a cobrança está desligada; vale registrar o motivo (sem valores) em `billing.webhook`.
+- **Observado:** o webhook foi criado na versão de API `2026-02-25.clover`, e o adapter pede `2026-09-30.endive`. Sem efeito visível, porque o evento é só um aviso e o servidor relê a assinatura.
+- **Não exercitado contra a Stripe:** pagamento que falha, prazo de 7 dias, contestação, reembolso, job diário.
+- **Parte 2 em produção:** as telas de plano listam domínio próprio e pixels (o que indica o segredo de domínios configurado); **registrar um domínio e aceitar pixels num navegador ainda não foram testados**.
+- **Pendente:** nome público "Linkfav" na conta Stripe (o recibo sai com a razão social); Site URL do Auth; decidir `BILLING_MODE` antes de convidar gente de fora.
