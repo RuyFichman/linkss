@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
+import { resolveBillingMode } from "@/modules/billing/mode";
 import { configuredSync } from "@/modules/billing/server";
 import { processWebhook } from "@/modules/billing/service";
 import { revalidatePublicPage } from "@/modules/publishing/cache";
@@ -33,7 +34,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   };
 
   const sync = configuredSync();
-  if (!sync) return answer(503, "billing_off", "warn");
+  // Says why, with a reason code and never a value: a key that does not match the mode, or a
+  // missing secret, otherwise looks exactly like "billing was never turned on".
+  if (!sync) return answer(503, "billing_off", "warn", { reason: resolveBillingMode().reason });
 
   const declared = Number(request.headers.get("content-length") ?? "0");
   if (!Number.isFinite(declared) || declared > MAX_BODY_BYTES) return answer(400, "too_large", "warn");

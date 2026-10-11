@@ -13,6 +13,7 @@ import type { PublishedBlock, PublishedDocument } from "../document";
 import { EmbedFacade } from "./embed-facade";
 import { LeadForm, LeadFormPreview } from "./lead-form";
 import { PixCopyButton } from "./pix-copy-button";
+import { priorityImageId } from "./priority-image";
 import { SocialIcon, WhatsAppIcon } from "./social-icon";
 
 // Links are user content: no ranking credit, no window.opener, no referrer (ADR 0007/0008).
@@ -151,21 +152,7 @@ function BlockView({ block, context }: { block: PublishedBlock; context: BlockCo
   }
 }
 
-/**
- * How many leading blocks can share the first screen of a phone with the header. Measured on
- * staging (2026-10-02): with a form first, the image in the second block was the LCP element and
- * still lazy, so the browser only fetched it after layout.
- */
-export const PRIORITY_IMAGE_WINDOW = 3;
-
-/**
- * The image most likely to be the LCP element: the first image among the leading blocks. Only one
- * image gets eager loading and high fetch priority; images further down stay lazy, so a page with
- * many images still costs one image above the fold.
- */
-export function priorityImageId(blocks: readonly PublishedBlock[]): string | null {
-  return blocks.slice(0, PRIORITY_IMAGE_WINDOW).find((block) => block.type === "image")?.id ?? null;
-}
+export { PRIORITY_IMAGE_WINDOW, priorityImageId } from "./priority-image";
 
 /**
  * Public page markup for a published (or preview) document. Server-rendered HTML with plain
