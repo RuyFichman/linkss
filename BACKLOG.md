@@ -110,7 +110,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 
 ## Sprint 8 — comercialização
 
-**Parte 1 (planos, assinatura e cobrança) concluída no stack local em 09/10/2026**, na branch `feat/sprint-8-billing`, contra um emulador local da API da Stripe. **Nada rodou contra a Stripe e nada foi aplicado em staging.** **Parte 2 (domínio próprio e pixels) concluída no stack local em 10/10/2026**, na branch `feat/sprint-8-domains-pixels`, contra um resolvedor DNS de teste e um emulador da API da Vercel. **Nada rodou contra a Vercel, com um domínio real, nem contra a Meta ou o Google, e nada foi aplicado em staging.** Relatório: `docs/SPRINT_8_REPORT.md`.
+**Parte 1 (planos, assinatura e cobrança) concluída no stack local em 09/10/2026**, na branch `feat/sprint-8-billing`, contra um emulador local da API da Stripe. **Em 10/10/2026 o founder aplicou as migrações em produção e rodou a cobrança contra a área restrita da Stripe: assinar, recibo, mudar de plano, portal, cancelar e desfazer funcionaram como o emulador previa.** **Parte 2 (domínio próprio e pixels) concluída no stack local em 10/10/2026**, na branch `feat/sprint-8-domains-pixels`, contra um resolvedor DNS de teste e um emulador da API da Vercel. PR #29 mergeado e migrações aplicadas em produção em 10/10/2026. **Nada rodou contra a Vercel, com um domínio real, nem contra a Meta ou o Google.** Relatório: `docs/SPRINT_8_REPORT.md`.
 
 - [x] P0 Registrar ADR do provedor de pagamento (ADR 0014; Stripe, decisão do founder em 09/10/2026).
 - [x] P0 Implementar `PaymentsAdapter` e webhooks idempotentes (adapter da Stripe por `fetch` e fake; verificado contra o emulador, **não** contra a Stripe).
