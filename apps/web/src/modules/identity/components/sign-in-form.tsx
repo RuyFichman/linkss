@@ -7,6 +7,7 @@ import { IDLE_FORM_STATE } from "@/lib/form-state";
 import { Button, FormStatus, TextField } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
 import { signInAction } from "../actions";
+import { CaptchaField } from "./captcha-field";
 
 export function SignInForm({ next, signUpHref = "/cadastro" }: { next: string; signUpHref?: string }) {
   const [state, action, pending] = useActionState(signInAction, IDLE_FORM_STATE);
@@ -18,6 +19,7 @@ export function SignInForm({ next, signUpHref = "/cadastro" }: { next: string; s
       <input type="hidden" name="next" value={next} />
       <TextField id="signin-email" name="email" type="email" label={AUTH_COPY.fields.email} autoComplete="email" inputMode="email" required defaultValue={state.values?.email} error={state.fieldErrors?.email} />
       <TextField id="signin-password" name="password" type="password" label={AUTH_COPY.fields.password} autoComplete="current-password" required error={state.fieldErrors?.password} />
+      <CaptchaField resetSignal={state} />
       <FormStatus id="signin-status" state={state} />
       {state.code === "email-not-confirmed" ? <Link className="font-bold text-app-accent underline" href="/confirmar-email">{AUTH_COPY.confirmEmail.submit}</Link> : null}
       <Button type="submit" loading={pending}>{AUTH_COPY.signIn.submit}</Button>

@@ -14,9 +14,13 @@ function isInfrastructureFailure(error: AuthErrorLike): boolean {
   return error.status === undefined || error.status === null || error.status === 0 || error.status >= 500;
 }
 
-export type SignUpOutcome = "check-email" | "weak-password" | "invalid-email" | "rate-limited" | "unavailable";
+/** Supabase Auth refused the request before looking at the account: no or bad CAPTCHA token. Says nothing about the address. */
+const CAPTCHA_FAILED = "captcha_failed";
+
+export type SignUpOutcome = "check-email" | "weak-password" | "invalid-email" | "rate-limited" | "captcha" | "unavailable";
 export function signUpOutcome(error: AuthErrorLike | null | undefined): SignUpOutcome {
   if (!error) return "check-email";
+  if (error.code === CAPTCHA_FAILED) return "captcha";
   if (error.code && EXISTENCE_DEPENDENT_CODES.has(error.code)) return "check-email";
   if (error.code === "weak_password") return "weak-password";
   if (error.code === "email_address_invalid" || error.code === "validation_failed") return "invalid-email";
@@ -24,17 +28,19 @@ export function signUpOutcome(error: AuthErrorLike | null | undefined): SignUpOu
   return "unavailable";
 }
 
-export type RecoveryOutcome = "check-email" | "rate-limited" | "unavailable";
+export type RecoveryOutcome = "check-email" | "rate-limited" | "captcha" | "unavailable";
 export function recoveryOutcome(error: AuthErrorLike | null | undefined): RecoveryOutcome {
   if (!error) return "check-email";
+  if (error.code === CAPTCHA_FAILED) return "captcha";
   if (error.code === "over_request_rate_limit") return "rate-limited";
   if (isInfrastructureFailure(error)) return "unavailable";
   return "check-email";
 }
 
-export type SignInOutcome = "signed-in" | "invalid-credentials" | "email-not-confirmed" | "rate-limited" | "unavailable";
+export type SignInOutcome = "signed-in" | "invalid-credentials" | "email-not-confirmed" | "rate-limited" | "captcha" | "unavailable";
 export function signInOutcome(error: AuthErrorLike | null | undefined): SignInOutcome {
   if (!error) return "signed-in";
+  if (error.code === CAPTCHA_FAILED) return "captcha";
   // Only reachable with the correct password, so it does not reveal existence to a guesser.
   if (error.code === "email_not_confirmed") return "email-not-confirmed";
   if (error.code === "over_request_rate_limit") return "rate-limited";
