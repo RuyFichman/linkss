@@ -6,7 +6,7 @@
  * run of the monitor; `attention` checks are work waiting for a person and only fail the daily
  * run, so nobody gets an hourly e-mail about a queue. Every check names the runbook to open.
  */
-export const JOBS = ["analytics", "billing", "media-cleanup", "retention"] as const;
+export const JOBS = ["analytics", "billing", "domains", "media-cleanup", "retention"] as const;
 export type JobName = (typeof JOBS)[number];
 
 /** The jobs run once a day: a day and a half without a good run means one was missed. */
@@ -68,6 +68,7 @@ export function parseOpsSnapshot(data: unknown): OpsSnapshot | null {
 const JOB_RUNBOOK: Record<JobName, string> = {
   analytics: "docs/runbooks/JOBS.md",
   billing: "docs/runbooks/JOBS.md",
+  domains: "docs/runbooks/JOBS.md",
   "media-cleanup": "docs/runbooks/JOBS.md",
   retention: "docs/runbooks/JOBS.md",
 };

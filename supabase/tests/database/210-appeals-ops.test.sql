@@ -164,7 +164,7 @@ select tests.authenticate_as(tests.id('own'));
 select throws_ok('select public.get_ops_status()', '42501', null, 'a signed-in person cannot read the status');
 select throws_ok($$select public.record_job_run('billing', 'ok')$$, '42501', null, 'nor write the heartbeat');
 select tests.authenticate_service();
-select is(jsonb_array_length(public.get_ops_status() -> 'jobs'), 4, 'the status lists the four jobs from the baseline');
+select is(jsonb_array_length(public.get_ops_status() -> 'jobs'), 5, 'the status lists the five jobs from the baseline');
 select public.record_job_run('retention', 'unavailable');
 select ok((select (j ->> 'lastOutcome') = 'unavailable' and (j ->> 'lastOkAt') is not null
   from jsonb_array_elements(public.get_ops_status() -> 'jobs') j where j ->> 'job' = 'retention'),

@@ -117,7 +117,7 @@ describe("database error contract", () => {
 });
 
 function summary(overrides: Partial<DomainSummary> = {}): DomainSummary {
-  return { id: DOMAIN_A, profileId: PAGE_A, workspaceId: WS_A, hostname: "www.loja.com.br", challenge: CHALLENGE, status: "pending", routing: "unknown", verifiedAt: null, lastCheckedAt: null, ...overrides };
+  return { id: DOMAIN_A, profileId: PAGE_A, workspaceId: WS_A, hostname: "www.loja.com.br", challenge: CHALLENGE, status: "pending", routing: "unknown", verifiedAt: null, lastCheckedAt: null, recheckMisses: 0, lapseReason: null, ...overrides };
 }
 
 function setup(options: { role?: WorkspaceRole | null; userId?: string | null; domain?: DomainSummary | null; tokens?: string[] | Error; sign?: boolean; adapter?: ReturnType<typeof createFakeDomainsAdapter> | null } = {}) {

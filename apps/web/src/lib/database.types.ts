@@ -513,13 +513,13 @@ isOneToOne: false
                   ]
                 },"profile_domains": {
                   Row: {
-                    "challenge": string,"created_at": string,"created_by": string | null,"hostname": string,"id": string,"lapsed_at": string | null,"last_checked_at": string | null,"profile_id": string,"routing": string,"status": string,"verified_at": string | null,"workspace_id": string
+                    "challenge": string,"created_at": string,"created_by": string | null,"hostname": string,"id": string,"lapse_reason": string | null,"lapsed_at": string | null,"last_checked_at": string | null,"profile_id": string,"recheck_misses": number,"routing": string,"status": string,"verified_at": string | null,"workspace_id": string
                   }
                   Insert: {
-                    "challenge": string,"created_at"?: string,"created_by"?: string | null,"hostname": string,"id"?: string,"lapsed_at"?: string | null,"last_checked_at"?: string | null,"profile_id": string,"routing"?: string,"status"?: string,"verified_at"?: string | null,"workspace_id": string
+                    "challenge": string,"created_at"?: string,"created_by"?: string | null,"hostname": string,"id"?: string,"lapse_reason"?: string | null,"lapsed_at"?: string | null,"last_checked_at"?: string | null,"profile_id": string,"recheck_misses"?: number,"routing"?: string,"status"?: string,"verified_at"?: string | null,"workspace_id": string
                   }
                   Update: {
-                    "challenge"?: string,"created_at"?: string,"created_by"?: string | null,"hostname"?: string,"id"?: string,"lapsed_at"?: string | null,"last_checked_at"?: string | null,"profile_id"?: string,"routing"?: string,"status"?: string,"verified_at"?: string | null,"workspace_id"?: string
+                    "challenge"?: string,"created_at"?: string,"created_by"?: string | null,"hostname"?: string,"id"?: string,"lapse_reason"?: string | null,"lapsed_at"?: string | null,"last_checked_at"?: string | null,"profile_id"?: string,"recheck_misses"?: number,"routing"?: string,"status"?: string,"verified_at"?: string | null,"workspace_id"?: string
                   }
                   Relationships: [
                     {
@@ -906,6 +906,11 @@ isOneToOne: false
 "ingest_analytics_events":
 { Args: { "p_payload": string,"p_signature": string }; Returns: Json
                            },
+"list_domains_for_recheck":
+{ Args: { "p_limit"?: number }; Returns: {
+              "challenge": string,"domain_id": string,"hostname": string
+            }[]
+                           },
 "list_moderation_appeals":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
@@ -935,6 +940,9 @@ isOneToOne: false
                            },
 "record_auth_event":
 { Args: { "p_action": Database["public"]['Enums']["audit_action"],"p_metadata"?: Json }; Returns: undefined
+                           },
+"record_domain_recheck":
+{ Args: { "p_signature": string,"p_text": string }; Returns: Json
                            },
 "record_job_run":
 { Args: { "p_job": string,"p_outcome": string }; Returns: undefined

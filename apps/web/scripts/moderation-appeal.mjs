@@ -162,7 +162,7 @@ try {
     check((await fetch(`${base}/api/ops/status`)).status === 401, "The status route refuses a call without its secret");
     const response = await fetch(`${base}/api/ops/status`, { headers: { authorization: `Bearer ${secret}` } });
     const body = await response.json();
-    check(Array.isArray(body.checks) && body.checks.length === 11 && body.checks.filter((item) => item.name.startsWith("job:")).length === 4, "The status route answers with the eleven checks");
+    check(Array.isArray(body.checks) && body.checks.length === 12 && body.checks.filter((item) => item.name.startsWith("job:")).length === 5, "The status route answers with the twelve checks");
     check(!JSON.stringify(body).includes("@") && !JSON.stringify(body).includes(slug), "The status body names no address and no page");
   } else {
     console.log("SKIP status route (start the app with OPS_STATUS_SECRET and pass it to this script)");
