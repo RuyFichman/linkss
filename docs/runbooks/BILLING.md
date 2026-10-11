@@ -124,3 +124,7 @@ select outcome, count(*) from public.billing_events where received_at > now() - 
 ## 8. Ambiente local
 
 `node scripts/billing-lifecycle.mjs` (em `apps/web`) sobe um emulador local da API da Stripe e a aplicação apontada para ele, e percorre o ciclo de vida inteiro; `--serve` deixa os dois no ar para usar no navegador; `--cleanup` remove as contas `qa-billing-*@example.test`. Instruções no cabeçalho do arquivo. O emulador segue a documentação da Stripe, não a Stripe: serve para conferir o produto, não o provedor.
+
+## 9. Alertas
+
+O monitor externo (`MONITORING.md`) avisa por e-mail quando: a cobrança foi pedida no ambiente e está desligada (`billing:mode`, com o motivo; ver §2); um evento ficou em processamento por mais de 1 h (`billing:stuck_events`; ver §1); chegou evento de cliente desconhecido, com divergência ou conflito nas últimas 24 h (`billing:mismatches`; ver §1 e §7); o job diário não roda há mais de 36 h (`job:billing`; ver `JOBS.md`). **Ele não percebe um webhook que não chegou:** isso só aparece quando o job diário corrige a assinatura (`billing.maintenance` com `corrected > 0`).

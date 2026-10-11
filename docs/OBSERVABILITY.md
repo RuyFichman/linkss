@@ -117,7 +117,7 @@ Limiares propostos (sem alerta automático até o provisionamento): `report.read
 
 ## Provisionamento pendente
 
-O health endpoint está implementado. Sentry, uptime monitor e dashboards dependem das contas/credenciais dos ambientes e devem ser provisionados antes da Sprint 10. Até lá, os nomes de variáveis já estão documentados em `.env.example`.
+O health endpoint está implementado. Desde 11/10/2026 existe um monitor externo sem fornecedor novo (seção "Monitor externo e alertas" abaixo), que cobre disponibilidade, jobs, cobrança e filas. Sentry (ou equivalente) e dashboards, necessários para taxa de erro e latência, continuam dependendo de contas e credenciais e de uma decisão do founder. Até lá, os nomes de variáveis já estão documentados em `.env.example`.
 
 ## Sinais de cobrança (Sprint 8, parte 1)
 
@@ -165,3 +165,29 @@ Verificados só no stack local (ADR 0018).
 | `auth.sign_in`, `auth.sign_up`, `auth.recovery_requested`, `auth.confirmation_resent` com `errorCode=captcha_failed` | o Supabase recusou o token do CAPTCHA | casos isolados → robô ou verificação não concluída. **Quase todas as tentativas** → configuração quebrada (chave do site ausente no deploy ou hostname fora do widget): P1, desligar o CAPTCHA no Supabase e corrigir (`ENVIRONMENTS.md`) |
 
 **O que não tem sinal:** `/api/vitals` e a denúncia recusadas pelo limite (respondem em silêncio, de propósito); a regra do firewall da Vercel (o que ela marca ou bloqueia só aparece no painel *Firewall*); o que o Turnstile mostra ao visitante.
+
+## Monitor externo e alertas (Sprint 9, parte 3)
+
+Decisão: ADR 0019. Verificado só no stack local; **em produção o monitor só vigia o que não depende de segredo até o founder concluir os passos de `docs/runbooks/MONITORING.md` §1**.
+
+Até aqui este documento listava limiares que ninguém vigiava. Desde 11/10/2026 existe um mecanismo: o workflow `.github/workflows/monitor.yml` roda de hora em hora, e uma execução com falha faz o GitHub enviar um e-mail ao founder. **Só os sinais da tabela abaixo geram alerta; todos os outros limiares deste documento continuam dependendo de alguém ler os logs.**
+
+| Alerta | Fonte | Severidade | Runbook |
+|---|---|---|---|
+| a aplicação, a home ou a página pública de teste não respondem | requisições do workflow | P1 | `INCIDENT.md`, `PUBLIC_PAGE.md` |
+| o banco não responde (projeto pausado no plano Free, entre outros) | `/api/ops/status` responde 503 `unavailable` | P1 | `MONITORING.md` |
+| um job sem execução boa há mais de 36 h | `job_runs`, gravada por cada job | P2 (cobrança: P1 com assinantes) | `JOBS.md` |
+| cobrança pedida no ambiente e desligada | `resolveBillingMode` | P1 | `BILLING.md` |
+| evento de cobrança preso há mais de 1 h, ou com cliente desconhecido, divergência ou conflito em 24 h | `billing_events` | P2 / P1 | `BILLING.md` |
+| denúncia sem análise ou contestação sem resposta há mais de 72 h (uma vez por dia) | filas | P2 | `MODERATION.md` |
+| pedido de privacidade aberto há mais de 10 dias (uma vez por dia) | `privacy_requests` | P1 | `ACCOUNT_DELETION.md` |
+| página ou conta vencida há mais de 3 dias sem expurgo (uma vez por dia) | `purge_after` | P3 | `RETENTION.md` |
+
+Eventos novos:
+
+| Evento | O que é | Quando agir |
+|---|---|---|
+| `ops.status` (`outcome`: `ok`, `failing`, `unauthorized`, `not_configured`, `not_deployed`, `unavailable`; `failing` com os nomes das verificações) | uma leitura do monitor | o alerta chega por e-mail; o log serve para ver desde quando falha |
+| `moderation.appeal` (`outcome`: `sent`, `invalid`, `forbidden`, `not_found`, `not_suspended`, `already_open`, `limit_reached`, `not_deployed`, `unavailable`) | uma contestação enviada pelo dono de uma página suspensa | `unavailable` repetido → P2: o dono não consegue contestar. Nunca contém o texto |
+
+**Sem alerta, ainda:** taxa de erro e latência do renderer, Web Vitals, picos de `rate_limited`, `unavailable` em uploads, formulários e Auth, webhook que não chega (só aparece como `corrected > 0` no job diário), domínios próprios. Dependem de um serviço que leia os logs, que não foi contratado.

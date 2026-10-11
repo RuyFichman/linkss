@@ -220,6 +220,24 @@ A ordem recomendada é esta, mas **qualquer ordem é segura**: enquanto faltar a
 
 **Stack local.** Nenhuma variável nova é necessária: sem `NEXT_PUBLIC_TURNSTILE_SITE_KEY` não há widget, e o Auth local fica com o CAPTCHA desligado. O ensaio da exclusão é `node scripts/account-erasure.mjs` em `apps/web` (`docs/runbooks/ACCOUNT_DELETION.md`).
 
+## Passos de deploy da Sprint 9, parte 3 (aviso de suspensão, contestação e monitor)
+
+**Nada disto foi aplicado em produção.** Verificado só no stack local (ADR 0019). Qualquer ordem é segura: sem a migração, o aviso não aparece, a tela de contestação diz que não está disponível, os jobs seguem rodando (só não gravam a execução) e o monitor acusa `not_deployed`.
+
+| # | Passo | Depois dele |
+|---|---|---|
+| 1 | **Merge do PR** | o workflow *Monitor* começa a rodar de hora em hora e confere que o site e a home respondem; sem o segredo, o último passo só emite um aviso |
+| 2 | **Backup feito e conferido**, depois `npx supabase db push`. Deve listar `202610110003_sprint9_appeal_enum_values` e `202610110004_suspension_notice_and_ops_status`. Cria três tabelas que nenhum papel de cliente lê e troca uma função (`set_profile_moderation`, mesmo contrato) | uma página suspensa passa a mostrar o aviso à conta, com a tela de contestação; a fila de denúncias ganha a seção de contestações; cada job grava a própria execução |
+| 3 | **Segredo do monitor:** gerar com `openssl rand -hex 32` (**não** reutilizar o `CRON_SECRET`); na Vercel, `OPS_STATUS_SECRET` (*Sensitive*) e novo deploy; no GitHub, *Settings* → *Secrets and variables* → *Actions* → secret `OPS_STATUS_SECRET` com o mesmo valor | `GET /api/ops/status` passa a responder; o monitor passa a vigiar jobs, cobrança e filas |
+| 4 | **Conferir:** *Actions* → *Monitor* → *Run workflow* | execução verde, com a lista das onze verificações no log |
+| 5 | Opcional: variável `MONITOR_PUBLIC_PAGE` no GitHub com o endereço de uma página publicada de teste | o monitor passa a exercitar a página pública |
+
+**Na primeira execução depois do passo 3**, as verificações diárias podem falhar por causa de filas antigas (por exemplo, um pedido de privacidade de teste aberto há mais de 10 dias). É o comportamento esperado: resolva ou encerre o item.
+
+**Rollback da aplicação depois da migração:** suportado. O código antigo chama `set_profile_moderation` com os mesmos argumentos (a suspensão continua sendo registrada) e não conhece as funções novas; o aviso some, e as contestações já enviadas ficam guardadas.
+
+**Stack local.** Nada novo é obrigatório. O ensaio é `node scripts/moderation-appeal.mjs` em `apps/web`; para cobrir a rota de status, suba a aplicação com `OPS_STATUS_SECRET` e passe o mesmo valor ao script.
+
 ## Passos de deploy da Sprint 8, parte 2 (domínio próprio e pixels)
 
 **Passos 1 e 2 aplicados em 10/10/2026** (PR #29 mergeado e migrações em produção); o passo 3 aparenta estar feito (a tela *Plano* lista domínio próprio, o que só acontece com o segredo no ambiente); o passo 4 depende da decisão sobre o plano da Vercel. **A conferência de ponta a ponta abaixo ainda não foi feita.** Verificado só no stack local, contra um resolvedor DNS de teste e um emulador da API da Vercel. Qualquer ordem é segura: sem a migração, a aba *Página* do editor diz que domínio e pixels ainda não estão disponíveis e a página pública funciona como antes; sem o segredo, ninguém consegue comprovar um domínio; sem as variáveis da Vercel, a comprovação funciona e a tela diz que a ativação automática não está disponível.

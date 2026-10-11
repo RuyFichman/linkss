@@ -182,3 +182,67 @@ O founder pediu os quatro primeiros itens da lista de continuação: limites de 
 ### Próximo passo recomendado
 
 Aplicar os passos de deploy na ordem A → C → B → D depois do primeiro backup de produção conferido; em seguida o SMTP próprio (Resend, escolhido pelo founder em 11/10/2026, ainda não contratado) e o checklist do Auth hospedado.
+
+## Adendo de 11/10/2026, parte 3 — aviso de suspensão, contestação, runbooks e alertas
+
+**Branch:** `feat/moderation-notice-and-monitoring`, criada de `main` depois do merge do PR #33. **Decisão:** ADR 0019. **Estado: implementado e verificado só no stack local. Nada aplicado em produção** (migrações `202610110003` e `202610110004` pendentes; o segredo do monitor não existe; o workflow nunca rodou contra a produção). A sprint continua parcial.
+
+### Objetivo e resultado
+
+O founder pediu os itens 5 e 6 da lista: avisar o dono de uma página suspensa e dar um canal de contestação; e runbooks e alertas para renderer, jobs e webhooks. Os dois têm código, testes e runbook. O "aviso" é dentro do produto, porque não existe envio de e-mail; os "alertas" são um workflow agendado no GitHub cujo fracasso vira e-mail, porque nenhum serviço de monitoramento foi contratado.
+
+### Decisões
+
+- **Aviso em todas as telas da conta**, para todos os membros, com link para o motivo e a contestação. **Sem e-mail** até existir SMTP.
+- **O dono vê o motivo em categoria** (a da denúncia de origem, ou "regras de uso"), **nunca a justificativa do administrador**.
+- **Contestação só por proprietário e administrador**; uma por vez, três por suspensão; a resposta do administrador é escrita para o dono e aceitar reativa a página.
+- **Alerta = execução do workflow com falha → e-mail do GitHub.** Sem fornecedor novo. Duas severidades: o que está quebrado agora falha de hora em hora; trabalho esperando por uma pessoa só falha uma vez por dia.
+- **Segredo próprio para o monitor** (`OPS_STATUS_SECRET`), diferente do `CRON_SECRET`: o monitor só lê.
+- **Provisórias, aguardando o founder:** limite de três contestações; prazo de 72 horas para denúncias e contestações e de 10 dias para pedidos de privacidade antes do alerta; 36 horas sem execução boa para acusar um job; a redação do aviso e das categorias.
+
+### Critérios de aceite deste adendo
+
+| Critério | Estado | Evidência |
+|---|---|---|
+| O dono é avisado quando a página é suspensa | **parcial**: aviso no produto implementado e verificado localmente; **sem e-mail** | pgTAP `210-appeals-ops`; `scripts/moderation-appeal.mjs` |
+| Existe um canal de contestação | **implementado e verificado localmente** | idem; Vitest `appeals.test.ts` |
+| Runbook do renderer | **já existia** (`PUBLIC_PAGE.md`); ganhou a ligação com os alertas e com a moderação | `docs/runbooks/PUBLIC_PAGE.md` |
+| Runbook dos jobs | **escrito** | `docs/runbooks/JOBS.md` |
+| Runbook dos webhooks | **já existia** (`BILLING.md` §2); ganhou a ligação com os alertas | `docs/runbooks/BILLING.md` |
+| Alertas para jobs | **preparado**: implementado e testado; não ligado em produção | Vitest `ops/status/route.test.ts`; pgTAP; `docs/runbooks/MONITORING.md` |
+| Alertas para webhooks | **parcial**: acusa cobrança desligada por configuração e eventos presos ou divergentes; **não acusa um webhook que não chegou** | idem |
+| Alertas para o renderer | **parcial**: acusa site, home e uma página pública fora do ar; **não mede taxa de erro nem latência** | `.github/workflows/monitor.yml` |
+
+### Entregáveis
+
+- Suspensão e contestação: migrações `202610110003` e `202610110004` (tabelas `moderation_suspensions` e `moderation_appeals`; funções `get_page_moderation`, `submit_moderation_appeal`, `decide_moderation_appeal`, `list_moderation_appeals`; `set_profile_moderation` passa a registrar a suspensão); `modules/moderation/appeals*.ts` e componentes; tela `/app/w/<conta>/paginas/<página>/moderacao`; aviso no layout da conta; seção de contestações em `/app/administracao/denuncias`; permissões `moderation.view` e `moderation.appeal`.
+- Monitor: tabela `job_runs` e funções `record_job_run` e `get_ops_status`; `modules/ops/status*.ts`; rota `GET /api/ops/status`; os quatro jobs gravam a própria execução; `.github/workflows/monitor.yml`; `OPS_STATUS_SECRET` em `.env.example`.
+- Documentos: ADR 0019; runbooks novos `MONITORING.md`, `JOBS.md` e `MODERATION.md`; seções novas em `ENVIRONMENTS.md`, `OBSERVABILITY.md`, `THREAT_MODEL.md` e `DATA_MAP.md`.
+
+### Verificação (11/10/2026, stack local)
+
+- `npm run check`: lint sem avisos, typecheck, **1.277 testes Vitest (50 arquivos)** e build aprovados.
+- `npm run test:db`: **1.369 asserções pgTAP (23 arquivos)** aprovadas; o arquivo novo tem 51.
+- `node scripts/moderation-appeal.mjs` (build de produção, Chrome, contas descartáveis, 390 px para o dono e o editor): **20 verificações aprovadas**. Cobre: sem aviso quando nada está suspenso; aviso com o nome da página em duas telas da conta, cabendo no celular; a justificativa do administrador não aparece; a tela mostra a categoria; mensagem curta recusada com o motivo e sem gravar; depois do envio o formulário dá lugar ao estado de espera; o editor vê o aviso, não o formulário nem o texto; uma pessoa de fora da conta não vê nada; o administrador lê e aceita na fila; a página volta, o aviso some; quatro entradas na auditoria; a rota de status recusa sem segredo, responde com as onze verificações e não cita endereço nem página.
+- Casos negativos no pgTAP: `anon` e outra conta (`42501`, `P0002`); editor contestando (`42501`); página não suspensa (`LK126`); segunda contestação em espera (`LK127`); quarta contestação (`LK128`); mensagem curta, longa ou com caractere de controle (`22023`); dono decidindo a própria contestação; decisão revertida (`LK129`); sessão comum lendo o status ou gravando execução de job; job desconhecido.
+
+### Implicações
+
+- **Privacidade:** `moderation_appeals` guarda texto livre de um membro da conta; sem expurgo próprio (sai com a página). O log do workflow é público, por isso a rota de status não devolve dado pessoal (testado).
+- **Operação:** primeiro mecanismo de alerta do produto. Um job passa a fazer uma chamada a mais ao banco; o layout da conta, uma leitura a mais por requisição.
+- **Acessibilidade:** o aviso é um `role="alert"` com texto e link de 44 px; o formulário usa os campos rotulados do produto. Não testado com leitor de tela.
+- **Desempenho:** nenhuma mudança nas páginas públicas.
+
+### Lacunas e o que ficou de fora
+
+- **Nada verificado em produção.** O workflow do monitor é YAML nunca executado: o primeiro teste real é o passo 4 de `ENVIRONMENTS.md`.
+- **Sem e-mail** ao dono na suspensão ou na resposta.
+- **Sem alerta** para taxa de erro e latência do renderer, Web Vitals, picos de limite, uploads, formulários, Auth e webhook que não chega. Dependem de um serviço que leia logs.
+- Suspensão de conta inteira continua sem aviso e sem contestação.
+- Suspensões encerradas e contestações não têm expurgo próprio nem entram na exportação da conta.
+- Não há segunda pessoa para julgar uma contestação.
+- QA de celular e acessibilidade das telas da Sprint 9, e a revisão jurídica, continuam pendentes.
+
+### Próximo passo recomendado
+
+Aplicar os passos de deploy (backup, migrações, segredo do monitor) junto com os da continuação anterior; depois o SMTP próprio, que também destrava o e-mail de aviso de suspensão.

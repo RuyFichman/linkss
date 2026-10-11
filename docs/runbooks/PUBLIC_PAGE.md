@@ -26,7 +26,7 @@ Regras gerais:
 2. Timeout (`durationMs ≈ 4000`) ou erro de conexão indica banco ou API do Supabase indisponível. Siga `INCIDENT.md` (P1). Páginas já em cache continuam no ar (`STALE`) durante a falha.
 3. `public_page.invalid_document` indica bug de contrato entre o snapshot e o renderer (P1). Restaure a versão anterior da página afetada e corrija o código.
 
-## 4. Denúncia de phishing/impersonação (até existir a moderação da Sprint 9)
+## 4. Denúncia de phishing/impersonação (procedimento anterior à moderação; hoje use `MODERATION.md`)
 
 1. Registre a denúncia com o endereço e evidências. Não contate o dono da página por canais sugeridos na denúncia.
 2. Se confirmado, suspenda o workspace (`update public.workspaces set status = 'suspended' where id = …`, executado como `postgres` e anotado no ticket). A página passa a mostrar "Página indisponível" em no máximo 60 s. Para efeito imediato, faça um novo deploy.
@@ -42,3 +42,7 @@ Regras gerais:
 1. Agrupe `web_vital` por `name` nas últimas 24 h. A meta é LCP p75 ≤ 2,5 s e CLS p75 ≤ 0,1.
 2. Compare com o deploy anterior. Regressões de bundle aparecem primeiro em FCP/LCP.
 3. Medição de laboratório: Lighthouse mobile. Em máquinas com antivírus que injeta scripts em HTTP, bloqueie o domínio do antivírus na medição (ver `docs/SPRINT_3_REPORT.md`).
+
+## 7. Alertas
+
+O monitor externo (`MONITORING.md`) avisa por e-mail quando o site, a home ou a página pública de teste (`MONITOR_PUBLIC_PAGE`) não respondem, e quando o banco não responde. **Ele não mede taxa de erro nem lentidão:** os limiares de `docs/OBSERVABILITY.md` para `public_page.*` e `web_vital` continuam dependendo de alguém ler os logs da Vercel.
