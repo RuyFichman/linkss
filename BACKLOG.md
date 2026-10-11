@@ -36,7 +36,7 @@ Verificado localmente (pgTAP + `next start` de produção + Lighthouse); nada pr
 - [x] P0 Adicionar metadados/OG/canonical e estados 404/suspenso.
 - [x] P1 Instrumentar Web Vitals e erros (logs estruturados; Sentry/dashboards dependem de provisionamento).
 - [ ] P0 Medir em staging (CDN real): publicação visível em ≤ 30 s, LCP/CLS de campo e prévia OG no WhatsApp/Instagram — parcial em 2026-10-02 (`docs/SPRINT_5_REPORT.md`, "Verificações no staging depois da correção"): publicação visível em ~5 s e prévia OG conferida nos dois apps; os logs `web_vital` ficaram dentro da meta, mas só com acessos do founder e Lighthouse. Falta LCP/CLS de visitantes reais.
-- [ ] P0 Trocar `NEXT_PUBLIC_APP_URL` e o Auth para o domínio comprado (checklist em `docs/ENVIRONMENTS.md`).
+- [ ] P0 Trocar `NEXT_PUBLIC_APP_URL` e o Auth para o domínio comprado (checklist em `docs/ENVIRONMENTS.md`). `NEXT_PUBLIC_APP_URL` já é `https://linkfav.com` (conferido em 10/10/2026); **falta confirmar Site URL e Redirect URL do Auth**, que nesse dia ainda apontavam para `linkss-black.vercel.app`.
 - [ ] P1 Rate limit/firewall para `/api/vitals` e para flood de endereços inexistentes no renderer (Sprint 9).
 
 ## Sprint 4 — editor
@@ -116,12 +116,14 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [x] P0 Implementar `PaymentsAdapter` e webhooks idempotentes (adapter da Stripe por `fetch` e fake; verificado contra o emulador, **não** contra a Stripe).
 - [x] P0 Criar planos/entitlements e estados de assinatura (catálogo de preços, máquina de estados, tolerância de 7 dias, regras de rebaixamento).
 - [x] P0 Área de cobrança, tela de planos, confirmação de cancelamento/mudança e pontos de entrada nas telas de limite.
-- [ ] P0 Abrir a conta Stripe em modo de teste e aplicar a parte 1 em staging (passos em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 8, parte 1"); rodar o roteiro de conferência e **comparar o comportamento real com o do emulador**.
+- [x] P0 Abrir a conta Stripe em modo de teste e aplicar a parte 1 (feito pelo founder em 10/10/2026, no ambiente que passou a ser produção): assinar, recibo, mudar de plano, portal, cancelar e desfazer funcionaram como o emulador previa.
+- [ ] P0 Conferir contra a Stripe o que faltou: pagamento que falha, prazo de 7 dias, contestação, reembolso e o job diário.
+- [ ] P0 Antes de convidar gente de fora: decidir entre `BILLING_MODE=off` e `live` (hoje `sandbox` em produção: quem assina não paga) e trocar o nome público da conta Stripe para "Linkfav".
 - [x] P0 Atualizar o Next para 16.4.0 (`npm audit`: aviso alto novo em `next` 16.0.0–16.3.7, de produção). Feito junto com a Sprint 9, não em PR próprio; `npm audit --omit=dev` sem achados em 09/10/2026.
 - [x] P1 Domínio próprio com prova de controle (parte 2; ADR 0016). Verificado no local; **certificado automático não observado**.
 - [x] P1 Integrações Meta Pixel e GA sem scripts arbitrários (parte 2; ADR 0017). Consentimento antes de carregar; **caminho "Aceitar" não exercitado num navegador**.
 - [ ] P0 Decidir o plano da Vercel para domínios de clientes (o Hobby não cobre uso comercial nem muitos domínios por projeto) antes de oferecer o recurso.
-- [ ] P0 Aplicar a parte 2 em staging (passos em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 8, parte 2") com um subdomínio de teste e IDs reais de Meta e Google; **comparar a Vercel real com o emulador** e conferir no console que as bibliotecas carregam sem violação de CSP.
+- [ ] P0 Conferir a parte 2 em produção (PR #29 mergeado e migrações aplicadas em 10/10/2026; passos em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 8, parte 2") com um subdomínio de teste e IDs reais de Meta e Google; **comparar a Vercel real com o emulador** e conferir no console que as bibliotecas carregam sem violação de CSP.
 - [ ] P0 Revisão jurídica do aviso de consentimento e dos papéis no uso de pixels (lista no ADR 0017), junto com as minutas de `docs/legal/`.
 - [ ] P1 Reverificação agendada dos domínios (job diário: domínio sem prova no DNS perde a situação e é desanexado no provedor).
 - [ ] P1 Incluir `profile_domains` e `profile_pixels` em `export_workspace_data`; na exclusão, desanexar o domínio no provedor (Sprint 9).
@@ -153,7 +155,11 @@ Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 s
 - [ ] P0 Headers, CSP, rate limits e revisão de autorização.
   - [x] Headers de segurança e CSP (ainda com `unsafe-inline`); leitura limitada do corpo em `/api/events` e `/api/vitals`; origem com esquema nas rotas com sessão.
   - [ ] Limites globais na borda (os itens "Sprint 9" espalhados neste arquivo seguem abertos); CAPTCHA; expurgos agendados.
-- [ ] P0 Backup/restauração e runbooks. Não iniciado.
+- [ ] P0 Backup/restauração e runbooks.
+  - [x] Backup lógico (`npm run db:backup`: banco, contas, histórico de migrações e mídia) e ensaio de restauração (`npm run db:restore-check`), aprovados com o banco local em 10/10/2026; runbook `docs/runbooks/BACKUP.md`.
+  - [ ] **Primeiro backup de produção** e ensaio dele (a CLI precisa estar logada na conta dona do projeto) e cópia para fora da máquina.
+  - [ ] Ensaiar a restauração num projeto Supabase novo, incluindo mídia, segredos do Vault e Auth.
+  - [ ] Agendar o backup (hoje é manual) e definir onde a cópia externa fica.
 - [ ] P0 QA mobile/cross-browser e acessibilidade prioritária. Não iniciado (só uma checagem no Chrome de desktop).
 
 ## Débito/decisões abertas

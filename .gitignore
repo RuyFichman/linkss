@@ -30,3 +30,6 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# database backups (personal data; see docs/runbooks/BACKUP.md)
+backups/
