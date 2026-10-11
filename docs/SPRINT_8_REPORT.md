@@ -340,3 +340,14 @@ Registrado a partir do que o founder fez e relatou no mesmo dia; o que foi confe
 - **Não exercitado contra a Stripe:** pagamento que falha, prazo de 7 dias, contestação, reembolso, job diário.
 - **Parte 2 em produção:** as telas de plano listam domínio próprio e pixels (o que indica o segredo de domínios configurado); **registrar um domínio e aceitar pixels num navegador ainda não foram testados**.
 - **Pendente:** nome público "Linkfav" na conta Stripe (o recibo sai com a razão social); Site URL do Auth; decidir `BILLING_MODE` antes de convidar gente de fora.
+
+## Adendo de 11/10/2026 — lacunas da Sprint 8 fechadas depois
+
+Registradas em detalhe no adendo de mesma data de `docs/SPRINT_9_REPORT.md` ("lacunas das Sprints 8 e 9"). Verificado só no stack local; migração `202610110005` não aplicada em produção.
+
+- **Domínios e pixels na exportação da conta:** feito.
+- **Reverificação agendada de domínios:** feita (job diário; sete dias seguidos sem a comprovação desligam o domínio; ADR 0016, adendo).
+- **Caminho "Aceitar" dos pixels:** exercitado num navegador com as bibliotecas reais e identificadores de ninguém, sem violação de CSP (ADR 0017, adendo). Falta um evento chegar numa conta real da Meta e do Google.
+- **Versão da API da Stripe no webhook:** registrada como aceita (ADR 0014, adendo).
+- **Motivo no log quando a cobrança se desliga:** feito.
+- **Troca entre mensal e anual:** continua fora do escopo, aguardando decisão do founder sobre a cobrança proporcional.

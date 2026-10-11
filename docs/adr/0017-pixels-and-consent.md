@@ -82,3 +82,11 @@ Verified locally: pgTAP `190-domains-pixels` (roles, formats, plan loss, duplica
 - Public pages with pixels have a wider script, connect and image policy than the rest of the product.
 - Visitors of pages with pixels see a notice the product controls; owners cannot restyle or remove it.
 - The first browser storage entry written by a public page (the consent choice). The customer-analytics collector stays storage-free.
+
+## Addendum (2026-10-11): the "Aceitar" path in a browser
+
+`apps/web/scripts/mobile-a11y.mjs` (local stack, production build, Chrome at phone width) now runs the accept path on a published page with a Meta Pixel ID and a GA4 measurement ID that belong to nobody. The two vendor libraries were **really fetched** from `connect.facebook.net` and `www.googletagmanager.com`; every other request to Meta or Google (the ones that would report a visit) was answered locally, so nothing was sent to them.
+
+Observed: nothing requested before a choice; after **Aceitar**, both libraries requested (the Google tag with the page's measurement ID), `fbq` and `gtag` initialised, a request to `www.google-analytics.com`, the notice gone, the choice remembered on reload, and **no Content-Security-Policy violation**.
+
+Still not verified: that an event actually arrives in a real Meta or Google account (needs real IDs, on production); the vendor libraries' behaviour with real IDs, which may contact origins not seen here; conversion events; the legal review of the notice.

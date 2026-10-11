@@ -191,3 +191,12 @@ Eventos novos:
 | `moderation.appeal` (`outcome`: `sent`, `invalid`, `forbidden`, `not_found`, `not_suspended`, `already_open`, `limit_reached`, `not_deployed`, `unavailable`) | uma contestação enviada pelo dono de uma página suspensa | `unavailable` repetido → P2: o dono não consegue contestar. Nunca contém o texto |
 
 **Sem alerta, ainda:** taxa de erro e latência do renderer, Web Vitals, picos de `rate_limited`, `unavailable` em uploads, formulários e Auth, webhook que não chega (só aparece como `corrected > 0` no job diário), domínios próprios. Dependem de um serviço que leia os logs, que não foi contratado.
+
+## Sinais acrescentados em 11/10/2026 (lacunas das Sprints 8 e 9)
+
+| Evento | O que é | Quando agir |
+|---|---|---|
+| `domains.recheck` (`outcome`: `ok`, `partial`, `skipped`, `not_configured`, `unauthorized`, `not_deployed`, `unavailable`; `checked`, `found`, `missing`, `lapsed`, `dnsUnavailable`, `failed`) | uma execução da reverificação diária de domínios | `lapsed` alto de uma vez, ou `dnsUnavailable` em todos por dois dias → P2 (`DOMAINS.md`). Sem execução boa em 36 h → alerta `job:domains` |
+| `billing.webhook` com `outcome=billing_off` e `reason` | o webhook respondeu 503 porque a cobrança está desligada, e por quê | `reason` diferente de `disabled` → a cobrança foi pedida e está mal configurada: P1 (`BILLING.md` §2). O monitor acusa o mesmo em `billing:mode` |
+
+O monitor passou a ter doze verificações (cinco jobs).

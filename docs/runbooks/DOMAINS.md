@@ -89,3 +89,19 @@ delete from public.profile_domains where hostname = '<domínio>' returning id, w
 ## 8. Verificação local
 
 `node scripts/domains-lifecycle.mjs` em `apps/web` (depois de `NEXT_PUBLIC_APP_URL=http://127.0.0.1:3100 npm run build --workspace=@lnk/web`) sobe um resolvedor DNS de teste, um emulador da API da Vercel e a aplicação, e percorre o ciclo de vida. `--serve` deixa no ar; `--cleanup` remove as contas `qa-domains-*@example.test`. Detalhes no cabeçalho do arquivo.
+
+## Reverificação diária (desde 11/10/2026)
+
+Verificado só no stack local; a migração `202610110005` ainda não foi aplicada em produção.
+
+O job `/api/jobs/domains` (08:00 UTC) lê de novo o registro TXT de comprovação de cada domínio ativo. Log `domains.recheck` com contagens (`checked`, `found`, `missing`, `lapsed`, `dnsUnavailable`, `failed`), **nunca o nome do domínio**. Alerta: `job:domains` no monitor (`MONITORING.md`).
+
+- **Sete dias seguidos sem o registro** desligam o domínio da página (situação "desligado", motivo reverificação). O hostname é desanexado na Vercel, se houver provedor configurado.
+- **Dia em que o DNS não pôde ser consultado não conta** (`dnsUnavailable`): nem a favor, nem contra.
+- Desde a primeira ausência, a tela do domínio avisa o dono de quantos dias faltam. **Não há e-mail.**
+
+**"Meu domínio parou de abrir a página."** Abra a seção *Domínio* da página: se diz que o registro TXT ficou sete dias fora do DNS, o dono recria o registro `_linkfav.<domínio>` com o valor mostrado e toca em **Verificar**. O domínio volta na hora (o certificado já existia).
+
+**`lapsed > 0` no log sem reclamação:** normal para domínios abandonados. Muitos de uma vez → suspeitar dos resolvedores (o job deveria ter contado `dnsUnavailable`, não `missing`); conferir `dig TXT _linkfav.<domínio> @1.1.1.1` para um deles antes de qualquer outra coisa. Para reativar à mão, o caminho é o mesmo do dono: Verificar.
+
+**Ambiente sem `DOMAINS_SIGNING_SECRET`:** o job responde `{"ok":true,"skipped":"domains_off"}`, o que conta como execução boa.

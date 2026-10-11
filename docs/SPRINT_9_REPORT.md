@@ -246,3 +246,51 @@ O founder pediu os itens 5 e 6 da lista: avisar o dono de uma página suspensa e
 ### Próximo passo recomendado
 
 Aplicar os passos de deploy (backup, migrações, segredo do monitor) junto com os da continuação anterior; depois o SMTP próprio, que também destrava o e-mail de aviso de suspensão.
+
+## Adendo de 11/10/2026 — lacunas das Sprints 8 e 9
+
+**Branch:** `feat/sprint-8-9-gaps`, criada de `main` depois do merge do PR #34. **Estado: implementado e verificado só no stack local. Nada aplicado em produção** (migração `202610110005` pendente).
+
+### Objetivo e resultado
+
+O founder pediu, da lista de pendências, "os que você consegue fazer". Oito itens foram feitos; três não, com o motivo abaixo.
+
+| Item | Estado | Evidência |
+|---|---|---|
+| QA de celular e acessibilidade das telas da Sprint 9, incluindo `/aceite` com textos ativos | **parcial**: passagem automática aprovada; falta aparelho real, outros navegadores, leitor de tela e teclado | `apps/web/scripts/mobile-a11y.mjs`, 28 verificações, 12 telas em 390 e 320 px |
+| Domínios e pixels na exportação da conta | **implementado e verificado localmente**, com suspensões e contestações | pgTAP `220-export-domain-recheck` |
+| Reverificação agendada de domínios | **implementado e verificado localmente**; nunca contra DNS real nem contra a Vercel | pgTAP `220`; Vitest `recheck.test.ts` e `jobs/domains/route.test.ts` |
+| Caminho "Aceitar" dos pixels num navegador | **verificado localmente** com as bibliotecas reais e identificadores de ninguém; sem violação de CSP. Falta um evento chegar numa conta real | `scripts/mobile-a11y.mjs` |
+| Versão da API da Stripe no webhook | **registrado como aceito** (o evento é só um aviso; nenhum valor é lido dele) | adendo no ADR 0014 |
+| Motivo no log quando a cobrança se desliga | **implementado** | `api/billing/webhook/route.ts`; também no monitor (`billing:mode`) |
+| Cor do tema na barra do navegador das páginas públicas | **implementado e verificado localmente** em Chrome; **não conferido no Safari do iPhone**, que é onde o problema foi visto | Vitest `page-hints.test.ts`; script (tema escuro) |
+| `preload` da imagem principal | **implementado**; **ganho de LCP não medido** | Vitest `page-hints.test.ts` |
+| Troca entre mensal e anual numa assinatura em andamento | **não feito**: é funcionalidade nova, e a regra de cobrança proporcional na Stripe precisa de decisão do founder e de teste contra a Stripe | — |
+| E-mail de novo contato; QR code do Pix; imagem de fundo no tema | **não feito**: o e-mail depende do SMTP (escolhido, não contratado); os outros dois são funcionalidades cortadas da Sprint 5 que mudam o formato do documento publicado e pedem decisão de escopo | — |
+| Remover `profiles.social_links` | **não feito**: migração destrutiva, depende de aprovação do founder | — |
+
+### Decisões
+
+- **Reverificação:** sete dias seguidos sem o registro de comprovação desligam o domínio; dia sem resposta do DNS não conta; o aviso é só na tela (sem e-mail). **O prazo de sete dias é provisório.**
+- **Cor do navegador:** além de `theme-color`, a cor da página vira o fundo do documento, porque é dele que o Safari tira a cor das barras e da área de rolagem elástica.
+- **QA automático:** caixa de seleção de `/aceite` e a de consentimento do formulário público passaram de 13 e 20 px para 24 px (tamanho mínimo de alvo da WCAG 2.2). Foi o único achado.
+- **Versão da API da Stripe:** nada muda; ao recriar o destino para o modo real, escolher a versão do adaptador.
+
+### Verificação (11/10/2026, stack local)
+
+- `npm run check`: lint sem avisos, typecheck, **1.296 testes Vitest (53 arquivos)** e build aprovados.
+- `npm run test:db`: **1.405 asserções pgTAP (24 arquivos)** aprovadas; o arquivo novo tem 36.
+- `node scripts/mobile-a11y.mjs`: **28 verificações, nenhuma pendência**. Em cada tela, a 390 e a 320 px: sem rolagem horizontal, campos de texto com 16 px ou mais, controles com 24 px ou mais, nenhuma violação séria ou crítica das regras WCAG 2.2 A/AA do axe-core. Telas: `/aceite` (com dois textos ativos de teste, removidos no fim), *Meus dados*, lista de páginas, tela de suspensão, as duas filas do administrador, as quatro telas de acesso, `/denunciar`, página suspensa e página publicada com o aviso de consentimento.
+- Casos negativos no pgTAP: assinatura errada, atestado velho e malformado; confirmação reapresentada como reverificação e o contrário; domínio inexistente, de nome diferente e não ativo; seis ausências não desligam; domínio de outra conta intocado; dono e sessão comum não gravam reverificação; outra conta não exporta.
+
+### Implicações
+
+- **Operação:** quinto cron; o monitor passa a ter doze verificações. Aplicar esta migração junto com as outras duas de 11/10, ou o monitor acusa `job:domains`.
+- **Clientes:** depois da migração, um cliente que tenha apagado o registro TXT perde o domínio em sete dias. Hoje nenhum cliente tem domínio.
+- **Dados locais:** o ensaio deixou seis pedidos de privacidade de contas descartáveis no banco local, que quebraram um teste de banco; foram removidos e a limpeza do script foi corrigida.
+
+### Lacunas
+
+- Nada em produção. Safari do iPhone não conferido para a cor da barra. LCP não medido depois do `preload`.
+- QA em aparelho real, outros navegadores, leitor de tela e teclado continua pendente.
+- Sem e-mail ao dono quando a comprovação do domínio some.

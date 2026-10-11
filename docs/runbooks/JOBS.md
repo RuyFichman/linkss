@@ -53,3 +53,11 @@ Troque `retention` por `analytics`, `billing` ou `media-cleanup`. Resposta `{"ok
 ## Depois de uma pausa longa
 
 Rodar à mão nesta ordem: `analytics`, `billing`, `media-cleanup`, `retention`. Analytics e expurgo são limitados por execução: repita até `pendingDays`, `pendingProfiles` e `pendingWorkspaces` chegarem a zero.
+
+## Quinto job: reverificação de domínios (desde 11/10/2026)
+
+| Job | Horário (UTC) | O que faz | Log | Runbook do assunto |
+|---|---|---|---|---|
+| `/api/jobs/domains` | 08:00 | lê de novo o registro de comprovação de cada domínio próprio ativo; sete dias seguidos sem ele desligam o domínio | `domains.recheck` | `DOMAINS.md` |
+
+Vale tudo o que este runbook diz dos outros quatro: mesmo segredo, mesma forma de rodar à mão, mesmo alerta (`job:domains`). Parado, o efeito é só que um domínio abandonado continua abrindo a página: P3.

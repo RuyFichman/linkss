@@ -356,3 +356,12 @@ Decisão: ADR 0019. Verificado só no stack local; a migração não foi aplicad
 | Log público do workflow *Monitor* no GitHub | a resposta de `/api/ops/status`: contagens, durações e códigos de motivo | não (a rota não devolve e-mail, endereço de página nem identificador) | alerta | **qualquer pessoa** (o repositório é público) | retenção do GitHub Actions (90 dias por padrão) |
 
 **Exportação e exclusão:** suspensões e contestações **não entram** em `export_workspace_data` (pendência). Na exclusão de página ou de conta saem por cascata; `created_by` e `decided_by` ficam nulos se a pessoa for excluída.
+
+## Sprints 8 e 9, lacunas fechadas em 11/10/2026
+
+Verificado só no stack local; a migração `202610110005` não foi aplicada em produção. Nenhum dado novo de pessoas e nenhum subprocessador novo.
+
+- **Exportação da conta** (`export_workspace_data`): passa a incluir `domains` (sem o valor de comprovação), `pixels`, `moderationSuspensions` e `moderationAppeals` (o texto da contestação e a resposta recebida). A pendência registrada nas seções da Sprint 8, parte 2, e da Sprint 9, parte 3, está resolvida. Os arquivos de mídia continuam fora da exportação.
+- **`profile_domains`** ganhou `recheck_misses` (dias seguidos sem a comprovação) e `lapse_reason`. Não são dados pessoais.
+- **Reverificação diária de domínios:** os resolvedores públicos (Cloudflare, Google) passam a receber, uma vez por dia, a consulta do registro de comprovação de cada domínio ativo. Como antes, só o nome consultado e o endereço do servidor.
+- **Página pública:** a cor de fundo da página é declarada ao navegador e a primeira imagem é pedida antes; nada novo é coletado.

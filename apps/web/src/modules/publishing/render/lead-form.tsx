@@ -47,7 +47,7 @@ function Fields({ id, props, state, disabled }: { id: string; props: LeadFormPro
         );
       })}
       <label className="flex min-h-11 items-center gap-3 text-sm">
-        <input className="h-5 w-5 shrink-0" type="checkbox" name="consent" value="yes" disabled={disabled} required={props.consentRequired} defaultChecked={state.consent === true} />
+        <input className="h-6 w-6 shrink-0" type="checkbox" name="consent" value="yes" disabled={disabled} required={props.consentRequired} defaultChecked={state.consent === true} />
         <span className="break-words">{props.consentText}{props.consentRequired ? "" : PUBLIC_PAGE_COPY.form.consentOptional}</span>
       </label>
     </>

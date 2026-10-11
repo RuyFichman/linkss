@@ -255,3 +255,11 @@ The mode asked for and the kind of key must agree: a live key under `sandbox` or
 - Dunning is on screen only (the banner and the billing area): there is no mail adapter. A customer who does not open the product learns of a failed payment from Stripe's own e-mails, if the founder enables them.
 - Part 2 (custom domains, pixels) adds entitlements that follow this same path with no change to it: see the handoff in `docs/SPRINT_8_REPORT.md`.
 - Sprint 9 must add: the platform rate limit in front of `/api/billing/webhook`, billing rows in the account export, and the order "cancel at the provider, then purge" for account deletion.
+
+## Addendum (2026-10-11): webhook API version, accepted as is
+
+The Stripe webhook destination was created at API version `2026-02-25.clover`; the adapter requests `2026-09-30.endive`. **This difference is accepted and needs no change.** A webhook event is only a hint: from its payload the application reads the event id, its topic, and the customer and subscription ids (`processWebhook` in `modules/billing/service.ts`), then reads the subscription at the provider through the adapter, at the adapter's own version, and it is that read which is signed and applied. No amount, status or date is ever taken from the event body, so the shape of the event at another version cannot change a plan. The run against the Stripe sandbox on 2026-10-10 used exactly this combination.
+
+Revisit only if a future change starts trusting a field of the event body, or if Stripe retires the destination's version. When the destination is recreated for live mode, choose the adapter's version to remove the note.
+
+Also since this date, `POST /api/billing/webhook` logs **why** billing is off when it answers 503 (`reason`: `disabled`, `key_mode_mismatch`, `missing_webhook_secret`...), a reason code and never a value, and the external monitor reports the same condition (ADR 0019).

@@ -121,12 +121,12 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [ ] P0 Antes de convidar gente de fora: decidir entre `BILLING_MODE=off` e `live` (hoje `sandbox` em produção: quem assina não paga) e trocar o nome público da conta Stripe para "Linkfav".
 - [x] P0 Atualizar o Next para 16.4.0 (`npm audit`: aviso alto novo em `next` 16.0.0–16.3.7, de produção). Feito junto com a Sprint 9, não em PR próprio; `npm audit --omit=dev` sem achados em 09/10/2026.
 - [x] P1 Domínio próprio com prova de controle (parte 2; ADR 0016). Verificado no local; **certificado automático não observado**.
-- [x] P1 Integrações Meta Pixel e GA sem scripts arbitrários (parte 2; ADR 0017). Consentimento antes de carregar; **caminho "Aceitar" não exercitado num navegador**.
+- [x] P1 Integrações Meta Pixel e GA sem scripts arbitrários (parte 2; ADR 0017). Consentimento antes de carregar; caminho "Aceitar" exercitado num navegador em 11/10/2026, com as bibliotecas reais e identificadores de ninguém, sem violação de CSP. **Falta conferir a chegada de um evento numa conta real da Meta e do Google.**
 - [ ] P0 Decidir o plano da Vercel para domínios de clientes (o Hobby não cobre uso comercial nem muitos domínios por projeto) antes de oferecer o recurso.
 - [ ] P0 Conferir a parte 2 em produção (PR #29 mergeado e migrações aplicadas em 10/10/2026; passos em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 8, parte 2") com um subdomínio de teste e IDs reais de Meta e Google; **comparar a Vercel real com o emulador** e conferir no console que as bibliotecas carregam sem violação de CSP.
 - [ ] P0 Revisão jurídica do aviso de consentimento e dos papéis no uso de pixels (lista no ADR 0017), junto com as minutas de `docs/legal/`.
-- [ ] P1 Reverificação agendada dos domínios (job diário: domínio sem prova no DNS perde a situação e é desanexado no provedor).
-- [ ] P1 Incluir `profile_domains` e `profile_pixels` em `export_workspace_data`; na exclusão, desanexar o domínio no provedor (Sprint 9).
+- [x] P1 Reverificação agendada dos domínios (job diário `/api/jobs/domains`; sete dias seguidos sem a prova desligam o domínio): código de 11/10/2026, verificado só no stack local; **migração `202610110005` não aplicada em produção**. Falta confirmar o prazo de sete dias e avisar o dono por e-mail (depende do SMTP).
+- [x] P1 Incluir `profile_domains` e `profile_pixels` em `export_workspace_data` (11/10/2026, com suspensões e contestações); na exclusão de conta o domínio é desanexado pelo procedimento de 11/10/2026 (ADR 0018). Verificado só no stack local.
 - [ ] P1 Limite global nas verificações de domínio e em `/d/<host>` (Sprint 9).
 - [ ] P2 Eventos de conversão nos pixels (lead, WhatsApp, Pix), registro de consentimento e Google Consent Mode.
 - [ ] P2 Invalidar o cache só do domínio da página publicada (hoje toda publicação derruba todas as cópias em domínio próprio).
@@ -167,7 +167,7 @@ Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 s
   - [ ] **Primeiro backup de produção** e ensaio dele (a CLI precisa estar logada na conta dona do projeto) e cópia para fora da máquina.
   - [ ] Ensaiar a restauração num projeto Supabase novo, incluindo mídia, segredos do Vault e Auth.
   - [ ] Agendar o backup (hoje é manual) e definir onde a cópia externa fica.
-- [ ] P0 QA mobile/cross-browser e acessibilidade prioritária. Não iniciado (só uma checagem no Chrome de desktop).
+- [ ] P0 QA mobile/cross-browser e acessibilidade prioritária. **Parcial:** passagem automática em 11/10/2026 (`scripts/mobile-a11y.mjs`: 12 telas em 390 e 320 px, regras WCAG 2.2 A/AA do axe-core, tamanho de alvo, `/aceite` com textos ativos), sem pendências depois de aumentar duas caixas de seleção. **Falta:** aparelho real (iOS e Android), outros navegadores, leitor de tela e teclado.
 
 ## Débito/decisões abertas
 

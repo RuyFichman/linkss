@@ -36,7 +36,7 @@ export default async function LegalAcceptancePage({ searchParams }: {
             <input type="hidden" name="terms" value={terms.id} />
             <input type="hidden" name="privacy" value={privacy.id} />
             <label className="flex items-start gap-3">
-              <input type="checkbox" name="agree" value="yes" required className="mt-1" />
+              <input type="checkbox" name="agree" value="yes" required className="mt-0.5 h-6 w-6 shrink-0" />
               <span>Li as versões dos Termos de Uso e do Aviso de Privacidade exibidas acima e aceito continuar com elas.</span>
             </label>
             <button type="submit" className="ui-button ui-button-primary justify-self-start">Registrar aceite e continuar</button>

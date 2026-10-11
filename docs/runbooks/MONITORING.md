@@ -35,7 +35,7 @@ Severidades: **P1** = clientes afetados agora, agir no mesmo dia; **P2** = agir 
 | idem, `"error":"not_configured"` | `OPS_STATUS_SECRET` ou `SUPABASE_SECRET_KEY` sumiu do deploy | P2 | repor a variável na Vercel e fazer novo deploy |
 | idem, `"error":"not_deployed"` | a migração `202610110004` não está aplicada | P2 | `supabase db push` |
 | HTTP 401 | o segredo do GitHub e o da Vercel não são iguais | P2 | refazer os passos 3 e 4 com o mesmo valor |
-| `job:analytics`, `job:billing`, `job:media-cleanup`, `job:retention` | o job não tem uma execução boa há mais de 36 h | P2 (cobrança: P1 se houver assinantes) | `JOBS.md` |
+| `job:analytics`, `job:billing`, `job:domains`, `job:media-cleanup`, `job:retention` | o job não tem uma execução boa há mais de 36 h | P2 (cobrança: P1 se houver assinantes) | `JOBS.md` |
 | `billing:mode` | a cobrança foi pedida no ambiente e está desligada; o detalhe diz o motivo (`key_mode_mismatch`, `missing_webhook_secret`...) | P1 | `BILLING.md` §2: corrigir a variável indicada e fazer novo deploy |
 | `billing:stuck_events` | um evento da Stripe ficou em processamento por mais de 1 h | P2 | `BILLING.md` §1; o job diário relê a assinatura |
 | `billing:mismatches` | chegou evento de cliente desconhecido, com divergência ou conflito nas últimas 24 h | P1 | `BILLING.md` §1 e §7: alguém pode ter pago e não recebido o plano |
@@ -52,7 +52,7 @@ Enquanto a causa não for resolvida, o e-mail se repete a cada execução (de ho
 curl -s https://linkfav.com/api/ops/status?attention=1 -H "Authorization: Bearer $OPS_STATUS_SECRET"
 ```
 
-A resposta lista as onze verificações com `ok`, um detalhe curto e o runbook. Não contém e-mail, endereço de página nem segredo.
+A resposta lista as doze verificações com `ok`, um detalhe curto e o runbook. Não contém e-mail, endereço de página nem segredo.
 
 ## 4. O que o monitor não vê
 
