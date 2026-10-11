@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { secretsMatch } from "@/lib/same-origin";
 import { runConfiguredBillingMaintenance } from "@/modules/billing/server";
+import { recordJobRun } from "@/modules/ops/status-server";
 import { revalidatePublicPage } from "@/modules/publishing/cache";
 
 export const runtime = "nodejs";
@@ -52,10 +53,12 @@ async function runJob(request: Request): Promise<NextResponse> {
     for (const slug of new Set(slugs)) revalidatePublicPage(slug);
     // `partial`: a provider read failed or the per-run bound was reached; the next run continues.
     const outcome = report.failed > 0 || report.pending > 0 ? "partial" : "ok";
+    await recordJobRun("billing", outcome);
     // A correction means a webhook was lost: worth a warning even when the run itself went well.
     logEvent(outcome === "ok" && report.corrected === 0 ? "info" : "warn", "billing.maintenance", { correlationId, outcome, ...report, durationMs: Math.round(performance.now() - startedAt) });
     return NextResponse.json({ ok: true, ...report }, { headers });
   } catch {
+    await recordJobRun("billing", "unavailable");
     return fail("unavailable", 503, "error");
   }
 }

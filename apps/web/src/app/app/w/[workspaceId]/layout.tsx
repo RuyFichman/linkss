@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { APP_COPY } from "@/content/pt-BR";
 import { BillingBanner } from "@/modules/billing/components/billing-banner";
 import { WorkspaceNav } from "@/modules/identity/components/workspace-nav";
+import { SuspendedPagesNotice } from "@/modules/moderation/components/suspended-pages-notice";
 import { can } from "@/modules/identity/permissions";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { resolveAccount } from "@/modules/identity/session";
@@ -26,6 +27,7 @@ export default async function WorkspaceLayout({ children, params }: { children: 
       ) : null}
       {workspace ? <WorkspaceNav workspaceId={workspaceId} showPlan={can(workspace.role, "billing.view")} /> : null}
       {workspace ? <BillingBanner workspaceId={workspaceId} role={workspace.role} /> : null}
+      {workspace ? <SuspendedPagesNotice workspaceId={workspaceId} /> : null}
       {workspace?.status === "suspended" ? <div className="mb-6"><Notice tone="warning">Esta conta está suspensa. Você pode consultar as páginas, mas não alterá-las. Fale com o suporte.</Notice></div> : null}
       {children}
     </>

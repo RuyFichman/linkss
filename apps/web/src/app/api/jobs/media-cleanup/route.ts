@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { secretsMatch } from "@/lib/same-origin";
+import { recordJobRun } from "@/modules/ops/status-server";
 import { runConfiguredMediaCleanup } from "@/modules/media/cleanup-server";
 
 export const runtime = "nodejs";
@@ -47,9 +48,12 @@ async function runCleanupJob(request: Request): Promise<NextResponse> {
       logEvent("warn", "media.cleanup", { correlationId, outcome: "not_configured" });
       return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503, headers });
     }
+    // A run that could not remove some files is `failed` for the heartbeat: files left behind are what the monitor must report.
+    await recordJobRun("media-cleanup", report.failed > 0 ? "failed" : "ok");
     logEvent(report.failed > 0 ? "warn" : "info", "media.cleanup", { correlationId, outcome: report.failed > 0 ? "partial" : "ok", ...report, durationMs: Math.round(performance.now() - startedAt) });
     return NextResponse.json({ ok: true, ...report }, { headers });
   } catch {
+    await recordJobRun("media-cleanup", "unavailable");
     logEvent("error", "media.cleanup", { correlationId, outcome: "unavailable", durationMs: Math.round(performance.now() - startedAt) });
     return NextResponse.json({ ok: false, error: "unavailable" }, { status: 503, headers });
   }

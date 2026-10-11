@@ -48,6 +48,8 @@ describe("permission matrix (mirrors docs/adr/0004 and RLS)", () => {
       "domains.manage": ["owner", "admin"],
       "pixels.view": ["owner", "admin", "editor"],
       "pixels.manage": ["owner", "admin"],
+      "moderation.view": ["owner", "admin", "editor"],
+      "moderation.appeal": ["owner", "admin"],
       "audit.view": ["owner", "admin"],
     });
   });
