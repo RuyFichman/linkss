@@ -2,6 +2,7 @@ import { after } from "next/server";
 import { appUrl } from "@/lib/app-url";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { readLimitedText } from "@/lib/security/limited-body";
+import { allowRequest, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { analyticsSigningSecret } from "@/modules/analytics/attestation";
 import { MAX_REQUEST_BYTES } from "@/modules/analytics/contract";
 import { DEFAULT_REPORTING_TIME_ZONE, localDay } from "@/modules/analytics/dates";
@@ -28,7 +29,8 @@ function ownHost(): string | null {
  * or unavailable database never delays a visitor, and nothing the client does depends on the
  * answer. Cross-site, oversized and malformed requests, automated traffic and signed-in people are
  * dropped. Logs carry the outcome and counts, never the payload, the hash, the referrer or the
- * user agent. Global rate limiting in front of this route is Sprint 9 (docs/THREAT_MODEL.md).
+ * user agent. An address over the per-instance limit is dropped before the body is read; the
+ * global limit is the firewall rule (docs/runbooks/RATE_LIMITS.md).
  */
 export async function POST(request: Request): Promise<Response> {
   const startedAt = performance.now();
@@ -41,6 +43,8 @@ export async function POST(request: Request): Promise<Response> {
 
   const fetchSite = request.headers.get("sec-fetch-site");
   if (fetchSite && fetchSite !== "same-origin") return drop("cross_site");
+  const address = clientAddress(request.headers.get("x-forwarded-for"), request.headers.get("x-real-ip"));
+  if (!allowRequest(RATE_LIMITS.events, address)) return drop("rate_limited");
   const contentType = (request.headers.get("content-type") ?? "").split(";")[0]?.trim().toLowerCase() ?? "";
   if (!CONTENT_TYPES.includes(contentType)) return drop("invalid");
   const length = Number(request.headers.get("content-length") ?? "0");
@@ -58,7 +62,7 @@ export async function POST(request: Request): Promise<Response> {
   const prepared = prepareIngestion({
     body,
     userAgent: request.headers.get("user-agent"),
-    ip: clientAddress(request.headers.get("x-forwarded-for"), request.headers.get("x-real-ip")),
+    ip: address,
     country: request.headers.get("x-vercel-ip-country"),
     signedIn: hasSessionCookie(request.headers.get("cookie")),
     ownHost: ownHost(),

@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { LEADS_COPY } from "@/content/pt-BR";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
+import { allowRequest, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { FORM_FIELDS, type FormField } from "@/modules/blocks/form";
 import { getLeadsService } from "./server";
 import { createLeadSubmissionService, type LeadSubmitStatus } from "./service";
@@ -35,10 +36,16 @@ function text(formData: FormData, name: string): string {
 export async function submitLeadAction(slug: string, blockId: string, _previous: LeadFormState, formData: FormData): Promise<LeadFormState> {
   const startedAt = performance.now();
   const requestHeaders = await headers();
-  const hash = visitorHash(clientAddress(requestHeaders.get("x-forwarded-for"), requestHeaders.get("x-real-ip")), process.env.VISITOR_HASH_SALT);
+  const address = clientAddress(requestHeaders.get("x-forwarded-for"), requestHeaders.get("x-real-ip"));
+  const hash = visitorHash(address, process.env.VISITOR_HASH_SALT);
   const values = Object.fromEntries(FORM_FIELDS.map((field) => [field, text(formData, field)])) as Record<FormField, string>;
   const service = createLeadSubmissionService(createSupabaseLeadSubmissionRepository(), { clientHash: () => hash });
   const consent = formData.get("consent") === "yes";
+  // Per-instance limit across pages; the per-page and per-visitor limits are in the database.
+  if (!allowRequest(RATE_LIMITS.lead, address)) {
+    logEvent("warn", "lead.submit", { correlationId: correlationIdFrom(requestHeaders.get(CORRELATION_HEADER)), outcome: "rate_limited", hashed: hash !== null, durationMs: Math.round(performance.now() - startedAt) });
+    return { status: "rate_limited", values, consent };
+  }
   const result = await service.submit(slug, blockId, { values, consent, honeypot: text(formData, "website") });
 
   logEvent(result.status === "unavailable" ? "error" : result.status === "ok" ? "info" : "warn", "lead.submit", {

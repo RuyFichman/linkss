@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
+import { allowRequest, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { createPublicSupabaseClient } from "@/lib/supabase/public";
 import { clientAddress, visitorHash } from "@/modules/leads/visitor-hash";
 import { getCurrentUserId, getSupabase } from "@/modules/identity/session";
@@ -23,7 +24,10 @@ export async function submitPublicReportAction(formData: FormData): Promise<void
   const secret = process.env.MODERATION_SIGNING_SECRET;
   if (!secret || secret.length < 32) redirect("/denunciar?estado=indisponivel");
   const requestHeaders = await headers();
-  const hash = visitorHash(clientAddress(requestHeaders.get("x-forwarded-for"), requestHeaders.get("x-real-ip")), process.env.VISITOR_HASH_SALT) ?? "direct";
+  const address = clientAddress(requestHeaders.get("x-forwarded-for"), requestHeaders.get("x-real-ip"));
+  // Over the per-instance limit: the neutral answer, and nothing is sent to the database.
+  if (!allowRequest(RATE_LIMITS.moderation, address)) redirect("/denunciar?estado=recebido");
+  const hash = visitorHash(address, process.env.VISITOR_HASH_SALT) ?? "direct";
   const text = serializeReport({ v: 1, slug: safeSlug, reason: reason as ReportReason, detail, hash, at: new Date().toISOString() });
   const { data, error } = await createPublicSupabaseClient().rpc("submit_moderation_report", {
     p_text: text,
