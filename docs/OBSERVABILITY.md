@@ -152,3 +152,16 @@ Os eventos carregam o desfecho e, na verificação, a situação e o roteamento 
 | `pixels.set` com `ok`, `invalid`, `not_in_plan`, `forbidden` | alteração dos códigos de uma página | informativo |
 
 **O que não tem sinal:** o que acontece no navegador do visitante com os pixels (aceite, recusa, carregamento, bloqueio por CSP). Uma violação de CSP só aparece no console do visitante; não há `report-uri` configurado.
+
+## Sinais de limites, CAPTCHA, expurgo e exclusão de conta (Sprint 9, continuação)
+
+Verificados só no stack local (ADR 0018).
+
+| Evento | O que é | Quando agir |
+|---|---|---|
+| `retention.maintenance` (`outcome`: `ok`, `partial`, `not_configured`, `unauthorized`, `not_deployed`, `unavailable`; contagens por tipo, `removed`, `pendingProfiles`, `pendingWorkspaces`) | uma execução do job diário de expurgo | nenhuma execução `ok` ou `partial` em 36 h → P2 (dados ficando além do prazo; runbook `RETENTION.md`). `partial` por três dias seguidos → P2 (imagens não estão saindo). `removed` muito acima do habitual sem mudança de prazo → P1: conferir antes da próxima execução |
+| `privacy.erasure` (`outcome`: `erased` ou o motivo da recusa; `pages`, `hostnames`, `workspaces`) | uma execução de exclusão de conta pelo administrador | `domain_failed`, `media_pending` repetido ou `unavailable` → o operador executa de novo (`ACCOUNT_DELETION.md`). Qualquer `erased` sem dossiê correspondente → P1 (uso indevido da fila) |
+| `analytics.ingest`, `report.read`, `lead.submit`, `media.upload` com `outcome=rate_limited` | requisição recusada pelo limite por instância (os três primeiros já existiam para os limites do banco; a origem não é distinguida no log) | pico vindo de poucos endereços → informativo, o limite funcionou. Sustentado e espalhado → flood distribuído: agir no firewall (`RATE_LIMITS.md` §3) |
+| `auth.sign_in`, `auth.sign_up`, `auth.recovery_requested`, `auth.confirmation_resent` com `errorCode=captcha_failed` | o Supabase recusou o token do CAPTCHA | casos isolados → robô ou verificação não concluída. **Quase todas as tentativas** → configuração quebrada (chave do site ausente no deploy ou hostname fora do widget): P1, desligar o CAPTCHA no Supabase e corrigir (`ENVIRONMENTS.md`) |
+
+**O que não tem sinal:** `/api/vitals` e a denúncia recusadas pelo limite (respondem em silêncio, de propósito); a regra do firewall da Vercel (o que ela marca ou bloqueia só aparece no painel *Firewall*); o que o Turnstile mostra ao visitante.

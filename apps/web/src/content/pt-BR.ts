@@ -74,6 +74,10 @@ export const AUTH_COPY = {
     requestNewRecovery: "Pedir novo link de recuperação",
   },
   rateLimited: "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.",
+  captcha: {
+    label: "Verificação de segurança",
+    failed: "Não foi possível concluir a verificação de segurança. Espere ela aparecer como concluída e tente de novo.",
+  },
   unavailable: "Não foi possível falar com o serviço de acesso agora. Tente novamente em instantes.",
   signOut: "Sair",
   fields: { name: "Seu nome", email: "E-mail", password: "Senha", newPassword: "Nova senha", confirmation: "Repita a nova senha" },

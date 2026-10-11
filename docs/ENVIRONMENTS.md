@@ -189,6 +189,37 @@ A ordem recomendada é esta, mas **qualquer ordem é segura**: enquanto faltar a
 
 **Stack local.** A denúncia precisa de `MODERATION_SIGNING_SECRET` em `apps/web/.env.local` e do mesmo valor no Vault local, como os outros segredos de assinatura.
 
+## Passos de deploy da Sprint 9, continuação (limites, CAPTCHA, expurgo e exclusão de conta)
+
+**Nada disto foi aplicado em produção.** Verificado só no stack local (ADR 0018). São quatro blocos independentes; dentro do bloco B a ordem importa.
+
+**A. Código (merge do PR).** Sem nenhum outro passo, a aplicação se comporta como antes, com uma diferença: os limites por instância da tabela em `docs/runbooks/RATE_LIMITS.md` já valem. O cron novo (`/api/jobs/retention`, 07:00 UTC) responde 503 `not_deployed` até a migração.
+
+**B. CAPTCHA (Turnstile). A ordem importa: se o passo 3 vier antes do 2, ninguém consegue entrar.**
+
+| # | Passo | Depois dele |
+|---|---|---|
+| 1 | **Cloudflare** (conta gratuita; o DNS do domínio não precisa ir para lá): *Turnstile* → *Add widget* → nome `Linkfav`, hostnames `linkfav.com` e `www.linkfav.com`, modo *Managed*. Anote a *Site Key* e a *Secret Key* | nada muda |
+| 2 | **Vercel:** variável `NEXT_PUBLIC_TURNSTILE_SITE_KEY` com a *Site Key* (não é segredo; Production e Preview). **Novo deploy** (é valor de build). Abra `/entrar`: a verificação aparece acima do botão | o formulário passa a enviar o token; o Supabase ainda o ignora |
+| 3 | **Supabase:** *Authentication* → *Attack Protection* → *Enable Captcha protection*, provedor *Turnstile*, cole a *Secret Key* | cadastro, login, reenvio de confirmação e recuperação de senha passam a exigir o token |
+| 4 | **Conferir** numa janela anônima: entrar com a conta de teste; pedir recuperação de senha; criar uma conta nova | tudo funciona como antes |
+
+**Se algo der errado no passo 4** (mensagem "Não foi possível concluir a verificação de segurança" para todo mundo): desligue o CAPTCHA no Supabase (passo 3), que tem efeito imediato, e só depois investigue. Causas comuns: a *Site Key* não chegou ao deploy (faltou o novo deploy), ou o hostname do widget não inclui o endereço em uso (`linkss-black.vercel.app` não está na lista, de propósito).
+
+**C. Migrações (expurgo e exclusão de conta).**
+
+| # | Passo | Depois dele |
+|---|---|---|
+| 1 | **Backup feito e conferido** (`docs/runbooks/BACKUP.md`). Este é o primeiro deploy que **apaga dados sozinho** | — |
+| 2 | `npx supabase db push`. Deve listar `202610110001_sprint9_retention_enum_values` e `202610110002_retention_and_account_erasure`. Só acrescentam funções; nenhuma tabela muda | o job das 07:00 UTC passa a rodar; a fila de privacidade ganha o quadro *Executar a exclusão* nos pedidos em análise |
+| 3 | **Conferir o job à mão:** `curl -s -X POST https://linkfav.com/api/jobs/retention -H "Authorization: Bearer $CRON_SECRET"` | resposta `{"ok":true,...}` com as contagens; no primeiro dia ele apaga tudo o que já passou do prazo (`docs/runbooks/RETENTION.md`) |
+
+**Rollback da aplicação depois da migração:** suportado. O código antigo não chama as funções novas; o cron some com o `vercel.json` antigo. **O que o job já apagou não volta** sem restaurar um backup.
+
+**D. Regra do firewall da Vercel.** Passo a passo em `docs/runbooks/RATE_LIMITS.md` §1 (uma regra, começando em *Log*).
+
+**Stack local.** Nenhuma variável nova é necessária: sem `NEXT_PUBLIC_TURNSTILE_SITE_KEY` não há widget, e o Auth local fica com o CAPTCHA desligado. O ensaio da exclusão é `node scripts/account-erasure.mjs` em `apps/web` (`docs/runbooks/ACCOUNT_DELETION.md`).
+
 ## Passos de deploy da Sprint 8, parte 2 (domínio próprio e pixels)
 
 **Passos 1 e 2 aplicados em 10/10/2026** (PR #29 mergeado e migrações em produção); o passo 3 aparenta estar feito (a tela *Plano* lista domínio próprio, o que só acontece com o segredo no ambiente); o passo 4 depende da decisão sobre o plano da Vercel. **A conferência de ponta a ponta abaixo ainda não foi feita.** Verificado só no stack local, contra um resolvedor DNS de teste e um emulador da API da Vercel. Qualquer ordem é segura: sem a migração, a aba *Página* do editor diz que domínio e pixels ainda não estão disponíveis e a página pública funciona como antes; sem o segredo, ninguém consegue comprovar um domínio; sem as variáveis da Vercel, a comprovação funciona e a tela diz que a ativação automática não está disponível.
@@ -230,7 +261,7 @@ Configurar em staging e produção **antes** de convidar usuários externos, esp
 | Senha | Mínimo 8 caracteres, requisito "letters and digits"; ativar proteção contra senhas vazadas quando o plano permitir |
 | Templates | Confirmação, recuperação e troca de e-mail com links `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=…` (conteúdo em `supabase/templates/`). Projetos Free com SMTP padrão não permitem customizar templates desde 2026-06-03: **SMTP próprio é pré-requisito** (decisão de provedor + atualização do `DATA_MAP.md`) |
 | Rate limits | Sign-in/sign-up e verificações por IP iguais ou mais estritos que o local (30 por 5 min); envio de e-mails conforme o SMTP contratado |
-| CAPTCHA | Ativar Turnstile no Auth antes do piloto externo (fecha a enumeração direta por `/auth/v1/recover`) |
+| CAPTCHA | Ativar Turnstile no Auth antes do piloto externo (fecha a enumeração direta por `/auth/v1/recover`). **Só depois** de a chave do site estar no deploy: passos em "Passos de deploy da Sprint 9, continuação", bloco B |
 | API | Data API expondo apenas `public`; conferir que novas tabelas não são auto-expostas |
 | Migrações | Aplicar `supabase/migrations/` em ordem via pipeline, nunca pelo dashboard |
 | Segredos | `SUPABASE_SECRET_KEY` apenas no runtime servidor; publishable key em `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` |

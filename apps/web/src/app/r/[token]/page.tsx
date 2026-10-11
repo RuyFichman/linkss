@@ -5,6 +5,7 @@ import { SHARED_REPORT_COPY } from "@/content/shared-report";
 import { publicAddressLabel, publicPageUrl } from "@/lib/app-url";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { PRODUCT } from "@/lib/product";
+import { allowRequest, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { blockTypeLabelForEvent } from "@/modules/analytics/block-labels";
 import { Bar, DailyChart } from "@/modules/analytics/components/charts";
 import { VALUE_ACTION_TYPES } from "@/modules/analytics/contract";
@@ -47,7 +48,13 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
   const { token } = await params;
   const requestHeaders = await headers();
   const correlationId = correlationIdFrom(requestHeaders.get(CORRELATION_HEADER));
-  const client = reportClientHash(clientAddress(requestHeaders.get("x-forwarded-for"), requestHeaders.get("x-real-ip")), process.env.VISITOR_HASH_SALT);
+  const address = clientAddress(requestHeaders.get("x-forwarded-for"), requestHeaders.get("x-real-ip"));
+  // Over the per-instance limit: the same 404 as an unknown link, without asking the database.
+  if (!allowRequest(RATE_LIMITS.report, address)) {
+    logEvent("warn", "report.read", { correlationId, outcome: "rate_limited" });
+    notFound();
+  }
+  const client = reportClientHash(address, process.env.VISITOR_HASH_SALT);
   const read = await fetchSharedReport(token, client);
   logEvent(read.kind === "error" ? "error" : "info", "report.read", { correlationId, outcome: read.kind === "report" ? "ok" : read.kind, errorCode: read.kind === "error" ? read.code : undefined });
   if (read.kind !== "report") notFound();

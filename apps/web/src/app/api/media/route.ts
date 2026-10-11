@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { isSameOriginRequest } from "@/lib/same-origin";
+import { allowRequest, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { clientAddress } from "@/modules/leads/visitor-hash";
 import { MAX_UPLOAD_BYTES } from "@/modules/media/policy";
 import { getMediaService } from "@/modules/media/server";
 import type { UploadErrorKind, UploadResult } from "@/modules/media/service";
@@ -46,6 +48,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   const startedAt = performance.now();
   const correlationId = correlationIdFrom(request.headers.get(CORRELATION_HEADER));
   if (!isSameOriginRequest(request.headers)) return respond({ ok: false, error: "forbidden" }, correlationId, startedAt, 0, null);
+  // Before the body is read: an upload is the most expensive request the product accepts.
+  if (!allowRequest(RATE_LIMITS.media, clientAddress(request.headers.get("x-forwarded-for"), request.headers.get("x-real-ip")))) return respond({ ok: false, error: "rate_limited" }, correlationId, startedAt, 0, null);
 
   const declared = Number(request.headers.get("content-length") ?? "0");
   if (!Number.isFinite(declared) || declared > MAX_UPLOAD_BYTES + BODY_OVERHEAD_BYTES) return respond({ ok: false, error: "too_large" }, correlationId, startedAt, 0, null);

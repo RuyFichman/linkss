@@ -8,6 +8,7 @@ import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { recordAuthEvent } from "@/modules/audit/record";
 import { passwordUpdateOutcome, recoveryOutcome, signInOutcome, signUpOutcome } from "./auth-outcomes";
+import { captchaToken } from "./captcha";
 import { validateEmailOnly, validateNewPassword, validateSignIn, validateSignUp } from "./auth-validation";
 import { AFTER_CONFIRM_COOKIE, AFTER_CONFIRM_MAX_AGE_SECONDS } from "./after-confirm";
 import { isInvitationPath } from "./invitations";
@@ -35,7 +36,7 @@ export async function signUpAction(_previous: FormState, formData: FormData): Pr
   const { name, email, password } = validation.value;
   const supabase = await getSupabase();
   const { error } = await withMinimumDuration(
-    () => supabase.auth.signUp({ email, password, options: { emailRedirectTo: CONFIRM_URL, data: { display_name: name } } }),
+    () => supabase.auth.signUp({ email, password, options: { emailRedirectTo: CONFIRM_URL, data: { display_name: name }, captchaToken: captchaToken(formData) } }),
     NEUTRAL_RESPONSE_MIN_MS,
   );
   const outcome = signUpOutcome(error);
@@ -53,6 +54,7 @@ export async function signUpAction(_previous: FormState, formData: FormData): Pr
     case "weak-password": return { status: "error", message: AUTH_COPY.validation.summary, fieldErrors: { password: AUTH_COPY.validation.passwordLettersDigits }, values };
     case "invalid-email": return { status: "error", message: AUTH_COPY.validation.summary, fieldErrors: { email: AUTH_COPY.validation.email }, values };
     case "rate-limited": return { status: "error", message: AUTH_COPY.rateLimited, values };
+    case "captcha": return { status: "error", message: AUTH_COPY.captcha.failed, values };
     case "unavailable": return { status: "error", message: AUTH_COPY.unavailable, values };
   }
 }
@@ -63,7 +65,7 @@ export async function signInAction(_previous: FormState, formData: FormData): Pr
   if (!validation.ok) return { status: "error", message: AUTH_COPY.validation.summary, fieldErrors: validation.errors, values };
 
   const supabase = await getSupabase();
-  const { error } = await withMinimumDuration(() => supabase.auth.signInWithPassword(validation.value), NEUTRAL_RESPONSE_MIN_MS);
+  const { error } = await withMinimumDuration(() => supabase.auth.signInWithPassword({ ...validation.value, options: { captchaToken: captchaToken(formData) } }), NEUTRAL_RESPONSE_MIN_MS);
   const outcome = signInOutcome(error);
   const requestId = await correlationId();
   logEvent(outcome === "unavailable" ? "error" : "info", "auth.sign_in", { correlationId: requestId, outcome, errorCode: error?.code ?? null });
@@ -72,6 +74,7 @@ export async function signInAction(_previous: FormState, formData: FormData): Pr
     case "invalid-credentials": return { status: "error", message: AUTH_COPY.signIn.invalidCredentials, values };
     case "email-not-confirmed": return { status: "error", message: AUTH_COPY.signIn.emailNotConfirmed, values, code: "email-not-confirmed" };
     case "rate-limited": return { status: "error", message: AUTH_COPY.rateLimited, values };
+    case "captcha": return { status: "error", message: AUTH_COPY.captcha.failed, values };
     case "unavailable": return { status: "error", message: AUTH_COPY.unavailable, values };
     case "signed-in": break;
   }
@@ -89,12 +92,13 @@ export async function resendConfirmationAction(_previous: FormState, formData: F
 
   const supabase = await getSupabase();
   const { error } = await withMinimumDuration(
-    () => supabase.auth.resend({ type: "signup", email: validation.value.email, options: { emailRedirectTo: CONFIRM_URL } }),
+    () => supabase.auth.resend({ type: "signup", email: validation.value.email, options: { emailRedirectTo: CONFIRM_URL, captchaToken: captchaToken(formData) } }),
     NEUTRAL_RESPONSE_MIN_MS,
   );
   const outcome = recoveryOutcome(error);
   logEvent(outcome === "unavailable" ? "error" : "info", "auth.confirmation_resent", { correlationId: await correlationId(), outcome, errorCode: error?.code ?? null });
   if (outcome === "rate-limited") return { status: "error", message: AUTH_COPY.rateLimited, values };
+  if (outcome === "captcha") return { status: "error", message: AUTH_COPY.captcha.failed, values };
   if (outcome === "unavailable") return { status: "error", message: AUTH_COPY.unavailable, values };
   return { status: "success", message: AUTH_COPY.confirmEmail.sent };
 }
@@ -105,10 +109,11 @@ export async function requestRecoveryAction(_previous: FormState, formData: Form
   if (!validation.ok) return { status: "error", message: AUTH_COPY.validation.summary, fieldErrors: validation.errors, values };
 
   const supabase = await getSupabase();
-  const { error } = await withMinimumDuration(() => supabase.auth.resetPasswordForEmail(validation.value.email, { redirectTo: RECOVERY_URL }), NEUTRAL_RESPONSE_MIN_MS);
+  const { error } = await withMinimumDuration(() => supabase.auth.resetPasswordForEmail(validation.value.email, { redirectTo: RECOVERY_URL, captchaToken: captchaToken(formData) }), NEUTRAL_RESPONSE_MIN_MS);
   const outcome = recoveryOutcome(error);
   logEvent(outcome === "unavailable" ? "error" : "info", "auth.recovery_requested", { correlationId: await correlationId(), outcome, errorCode: error?.code ?? null });
   if (outcome === "rate-limited") return { status: "error", message: AUTH_COPY.rateLimited, values };
+  if (outcome === "captcha") return { status: "error", message: AUTH_COPY.captcha.failed, values };
   if (outcome === "unavailable") return { status: "error", message: AUTH_COPY.unavailable, values };
   return { status: "success", message: AUTH_COPY.recovery.sent };
 }

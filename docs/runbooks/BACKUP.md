@@ -47,7 +47,8 @@ O script sobe uma segunda instância local **descartável** (não toca na produ�
 
 ## 3. Quando fazer e onde guardar
 
-- **Sempre antes de um `supabase db push` em produção** e antes de qualquer comando manual no SQL Editor que altere ou apague dados.
+- **Sempre antes de um `supabase db push` em produção**, antes de qualquer comando manual no SQL Editor que altere ou apague dados e **antes de executar uma exclusão de conta** (`ACCOUNT_DELETION.md`).
+- **Depois de uma exclusão de conta**, os backups anteriores ainda contêm os dados da pessoa até vencerem: se um deles for restaurado, a exclusão precisa ser refeita.
 - **Toda semana**, enquanto houver usuários de fora (sugestão; não há agendamento automático).
 - **Guardar fora desta máquina.** A pasta `backups/` é ignorada pelo Git e fica só neste computador: se o disco falhar, o backup vai junto. Copie cada pasta para um local com acesso restrito e criptografia (um disco externo cifrado ou um armazenamento em nuvem privado). **O backup contém dados pessoais** (e-mails das contas, contatos enviados pelos formulários): não envie por e-mail, chat ou pasta compartilhada.
 - **Quanto guardar:** sugestão de manter os quatro últimos semanais e os de antes de cada migração dos últimos 30 dias, e apagar os mais antigos. Um pedido de exclusão de dados atendido precisa valer também para os backups: o que foi apagado na produção some dos backups quando eles vencem (registrar isso na resposta ao titular).
