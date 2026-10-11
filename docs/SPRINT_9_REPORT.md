@@ -117,3 +117,68 @@ O founder decidiu manter o banco de produção no plano Free do Supabase, que n�
 **Verificado:** com o banco local, backup de 70 tabelas (57.605 linhas) e 36 de 36 arquivos de mídia; restauração com todas as verificações aprovadas (estrutura e linhas sem erro, 70 tabelas com as contagens do manifesto, histórico de migrações, leitura de uma página publicada, RLS ligada em todas as tabelas de `public`).
 
 **Não feito:** nenhum backup de produção (a CLI estava logada em conta sem acesso ao projeto: 403); restauração num projeto hospedado; recarga de mídia; agendamento; local da cópia externa. O item P0 de backup **continua aberto** no backlog.
+
+## Adendo de 11/10/2026 — limites, CAPTCHA, expurgo agendado e exclusão de conta
+
+**Branch:** `feat/sprint-9-hardening`. **Decisão:** ADR 0018. **Estado: implementado e verificado só no stack local. Nada foi configurado ou aplicado em produção** (sem regra de firewall, CAPTCHA desligado no Supabase, migração não aplicada, nenhuma conta real excluída). A sprint continua parcial.
+
+### Objetivo e resultado
+
+O founder pediu os quatro primeiros itens da lista de continuação: limites de requisição na borda, CAPTCHA no cadastro e no login, expurgos agendados e o procedimento de exclusão de conta. Os quatro têm código, testes e runbook. Dois deles só passam a valer depois de passos do founder em painéis (firewall da Vercel; Cloudflare e Supabase para o CAPTCHA).
+
+### Decisões
+
+- **Limite de borda = uma regra no firewall da Vercel, fora do repositório.** O plano Hobby permite uma única regra de limite de taxa; ela não pode ser escrita no código. O que o código ganhou é uma segunda camada, por instância e na memória, que **não é um limite global**. Alternativas recusadas (Redis/KV, limite no Postgres) no ADR 0018.
+- **A página pública não tem limite na aplicação**, para continuar em cache; depende só do firewall.
+- **Turnstile**, escolhido pelo founder em 11/10/2026, conferido pelo Supabase Auth. A aplicação só mostra o widget e repassa o token. Sem a chave do site no ambiente, nada muda.
+- **Um job diário de expurgo** (07:00 UTC), em vez de expurgo "na próxima escrita". Passa a remover também páginas e contas excluídas há mais de 30 dias, o que estava documentado desde a Sprint 2 e nunca tinha sido feito.
+- **Exclusão de conta executada pelo administrador**, em duas etapas no banco com a limpeza de cache, domínio e imagens no meio; nunca automática.
+- **Provisórias, aguardando o founder e a revisão jurídica:** denúncias guardadas por 180 dias depois da decisão; pedidos de privacidade encerrados guardados por 5 anos; limite de 300 requisições por minuto por endereço na regra do firewall; os seis limites por rota da aplicação; o texto de resposta ao titular.
+
+### Critérios de aceite deste adendo
+
+| Critério | Estado | Evidência |
+|---|---|---|
+| Limite na frente de `/api/events`, `/api/vitals`, `/api/media`, `/r/` e do envio de formulário | **parcial**: camada por instância implementada e testada; **regra global não configurada** | Vitest `rate-limit.test.ts`; `docs/runbooks/RATE_LIMITS.md` |
+| Limite na frente da página pública | **não feito no código** (decisão); depende da regra do firewall | ADR 0018 |
+| CAPTCHA no cadastro, login, reenvio e recuperação | **preparado**: código implementado e testado; **desligado**, e o widget nunca foi renderizado num navegador (não há chave) | Vitest `captcha.test.ts` |
+| Expurgo agendado de contatos, convites, links, denúncias e pedidos | **implementado e verificado localmente**; não aplicado em produção | pgTAP `200-retention-erasure`; script (rota chamada com e sem o segredo) |
+| Procedimento de exclusão escrito e ensaiado, incluindo mídia | **implementado e ensaiado localmente** com arquivos reais no bucket local; nunca em produção, nunca com domínio na Vercel nem assinatura na Stripe | `docs/runbooks/ACCOUNT_DELETION.md`; `apps/web/scripts/account-erasure.mjs` (18 verificações) |
+
+### Entregáveis
+
+- Limites: `apps/web/src/lib/security/rate-limit.ts`, aplicado em `api/events`, `api/vitals`, `api/media`, `r/[token]`, `modules/leads/actions.ts` e `modules/moderation/actions.ts`.
+- CAPTCHA: `modules/identity/captcha.ts`, `components/captcha-field.tsx`, os três formulários, `auth-outcomes.ts`, `lib/security/response-headers.ts`, `next.config.ts`, `.env.example` (`NEXT_PUBLIC_TURNSTILE_SITE_KEY`).
+- Expurgo: migrações `202610110001` e `202610110002`; `modules/privacy/retention*.ts`; rota `/api/jobs/retention`; quarto cron em `apps/web/vercel.json`.
+- Exclusão: funções `begin_account_erasure` e `finish_account_erasure`; `modules/privacy/erasure*.ts`; quadro *Executar a exclusão* em `/app/administracao/privacidade`.
+- Documentos: ADR 0018; runbooks `RATE_LIMITS.md`, `RETENTION.md`, `ACCOUNT_DELETION.md`; seções novas em `ENVIRONMENTS.md` (passos de deploy), `DATA_MAP.md`, `THREAT_MODEL.md` e `OBSERVABILITY.md`.
+
+### Verificação (11/10/2026, stack local)
+
+- `npm run check`: lint sem avisos, typecheck, **1.258 testes Vitest (48 arquivos)** e build aprovados.
+- `npm run test:db`: **1.318 asserções pgTAP (22 arquivos)** aprovadas; o arquivo novo tem 56.
+- `npm audit --omit=dev`: 0 vulnerabilidades.
+- `node scripts/account-erasure.mjs` (build de produção, Chrome, contas descartáveis): **18 verificações aprovadas**. Cobre: a fila oferece a exclusão só para o pedido em análise; palavra de confirmação errada não muda nada; depois da execução, conta, contas, páginas, contatos, links, convites, linhas de mídia e **arquivos do bucket** sumiram; pedido concluído com a referência; duas entradas na auditoria; endereços reservados; página pública em 404; **conta, página, contato e arquivo de um terceiro intactos**; job de expurgo recusa sem segredo, roda com ele e apaga só o contato vencido.
+- Casos negativos no pgTAP: `anon`, sessão comum e o próprio titular não executam nada; o papel de serviço não executa a exclusão nem apaga histórico de pedido; pedido fora de análise ou de outro tipo (`LK122`); assinatura em curso (`LK123`); outro membro (`LK124`); imagem pendente (`LK125`); referência curta (`22023`); pedido já concluído; conta em que a pessoa é só membro fica intacta; linha dentro do prazo fica.
+
+### Implicações
+
+- **Privacidade:** primeiro deploy que **apaga dados sozinho**; novo subprocessador (Cloudflare) quando o CAPTCHA for ligado. `DATA_MAP.md` atualizado.
+- **Operação:** quarto cron; novo modo de falha (imagens que não saem atrasam o expurgo de páginas); a ordem de ativação do CAPTCHA importa (chave do site antes de ligar no Supabase, ou ninguém entra).
+- **Acessibilidade:** o widget do Turnstile é de terceiro e não foi avaliado com leitor de tela; o grupo tem rótulo próprio.
+- **Desempenho:** nenhuma mudança nas páginas públicas. As quatro telas de acesso passam a carregar um script de terceiro quando o CAPTCHA estiver ligado (não medido).
+- **Dados locais:** o ensaio rodou o job de expurgo no banco local e removeu de fato 9 contadores de formulário e 22 de relatório vencidos (dados de teste antigos), além do contato criado pelo próprio ensaio.
+
+### Lacunas e o que ficou de fora
+
+- **Nada verificado em produção.** A regra do firewall, o widget do Turnstile e o CAPTCHA no Supabase são passos do founder (`ENVIRONMENTS.md`).
+- **O widget nunca foi visto num navegador**: sem chave não há o que renderizar. A integração segue a documentação do Turnstile e do Supabase; o primeiro teste real é o passo B4.
+- A exclusão nunca rodou contra a API da Vercel (desanexar domínio) nem com assinatura na Stripe.
+- Sem CAPTCHA no formulário público e na denúncia; sem limite na borda para Server Actions do painel e para o webhook de cobrança.
+- Não há transferência de propriedade de uma conta com outros membros, nem aviso por e-mail ao titular.
+- Exportação dos arquivos de mídia, e domínios e pixels na exportação da conta, continuam pendentes.
+- Itens 6 e 7 da lista de continuação original (aviso ao dono de página suspensa; revisão jurídica) e o QA de celular e acessibilidade não foram tocados.
+
+### Próximo passo recomendado
+
+Aplicar os passos de deploy na ordem A → C → B → D depois do primeiro backup de produção conferido; em seguida o SMTP próprio (Resend, escolhido pelo founder em 11/10/2026, ainda não contratado) e o checklist do Auth hospedado.

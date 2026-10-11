@@ -252,3 +252,32 @@ Decisões em `docs/adr/0016-custom-domains.md` e `docs/adr/0017-pixels-and-conse
 - **A lista de origens dos fornecedores não foi exercitada num navegador** (o caminho *Aceitar* nunca rodou); pode estar incompleta ou larga demais.
 - **O consentimento não deixa registro no servidor** e o texto do aviso não passou por revisão jurídica.
 - **Plano Hobby da Vercel** não cobre uso comercial nem muitos domínios por projeto.
+
+## Sprint 9, continuação (11/10/2026): limites, CAPTCHA, expurgo e exclusão de conta
+
+Decisão: ADR 0018. Verificado só no stack local.
+
+| Ameaça | Controle | Estado | Evidência |
+|---|---|---|---|
+| Flood de um endereço em `/api/events`, `/api/vitals`, `/api/media`, `/r/`, formulário público e denúncia | contador por endereço e por rota na memória da instância, antes de ler o corpo ou chamar o banco | implementado + teste local; **não é limite global** (cada instância conta sozinha) | Vitest `rate-limit.test.ts` |
+| Flood distribuído, ou na página pública e em `/d/<host>` | uma regra de limite de taxa no firewall da Vercel (única permitida no plano Hobby) | **não configurado**: passo do founder em `docs/runbooks/RATE_LIMITS.md` | — |
+| Enumeração de e-mail e força bruta direto na API do Auth | CAPTCHA (Turnstile) conferido pelo Supabase Auth; o formulário envia o token | código implementado + teste local; **desligado** até o founder criar o widget e ligar no Supabase | Vitest `captcha.test.ts` |
+| CAPTCHA mal configurado escondido por resposta neutra | `captcha_failed` tem desfecho e mensagem próprios; nunca vira "credenciais inválidas" nem "enviamos um e-mail" | implementado + verificado | Vitest `captcha.test.ts` |
+| Script de terceiro nas telas de acesso | origem da Cloudflare liberada só em `script-src` e `frame-src` das quatro rotas de formulário, e só quando o ambiente tem a chave | implementado + verificado | Vitest `captcha.test.ts` |
+| Dado pessoal guardado além do prazo | job diário de expurgo, limitado por execução, só para o papel de serviço | implementado + verificado localmente | pgTAP `200-retention-erasure` |
+| Expurgo apagando o que está no prazo, ou de outro tenant | cada regra testada com uma linha vencida e uma vigente; página e conta vivas intocadas | implementado + verificado | pgTAP `200-retention-erasure` |
+| Arquivo órfão no bucket depois de apagar a página | a página só é removida depois que o job de mídia apagou os arquivos (`ON DELETE RESTRICT`) | implementado + verificado | pgTAP; script `account-erasure.mjs` (arquivos reais no bucket local) |
+| Exclusão de conta disparada por quem não deve | as duas funções recusam quem não é administrador da plataforma (inclusive o próprio titular e o papel de serviço); só aceitam pedido de exclusão **em análise**; a tela pede a palavra `EXCLUIR` | implementado + verificado | pgTAP (42501, `LK122`); script |
+| Exclusão levando dados de terceiros | bloqueada enquanto houver outro membro numa conta da pessoa (`LK124`); conta em que ela é só membro fica intacta | implementado + verificado | pgTAP; script (conta de terceiro intocada) |
+| Assinatura que sobrevive à conta | bloqueada enquanto houver assinatura não encerrada (`LK123`) | implementado + verificado (pgTAP). **Não verificado contra a Stripe** |
+| Exclusão pela metade | duas etapas idempotentes; a segunda é uma transação só e recusa enquanto houver arquivo (`LK125`) ou página viva | implementado + verificado | pgTAP; Vitest `erasure.test.ts` |
+| Operador sem trilha | `privacy.erasure_started` e `privacy.account_erased` na auditoria; log `privacy.erasure` só com desfecho e contagens | implementado + verificado | pgTAP; script |
+
+**Riscos residuais:**
+
+- **O limite por instância é fraco por construção**; sem a regra do firewall não há limite global. A regra única do plano Hobby não distingue rotas.
+- **A exclusão é irreversível** e depende do julgamento do operador sobre identidade; um administrador da plataforma comprometido pode apagar qualquer conta sem outros membros e sem assinatura. Mitigação atual: administradores são inseridos por SQL, o pedido precisa ter sido aberto pelo próprio titular, e há trilha. Não há segunda aprovação.
+- **O titular pode continuar usando a conta entre o início e o fim** da exclusão (minutos); uma página criada nesse intervalo faz a etapa final recusar, e o operador executa de novo.
+- **O domínio anexado na Vercel e o cliente na Stripe** não são conferidos depois da exclusão; o runbook manda conferir à mão.
+- **O expurgo roda em produção sem ambiente de ensaio**: um prazo errado numa migração futura apaga dados na execução seguinte. Mitigação: backup conferido antes de cada `db push`.
+- **Sem CAPTCHA** no formulário público e na denúncia.

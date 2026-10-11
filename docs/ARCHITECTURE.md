@@ -291,3 +291,25 @@ página pública ── get_public_page.pixels (só com tracking_pixels no plano
 - **Papéis:** todos os membros veem; proprietário e administrador alteram (`domains.manage`, `pixels.manage`).
 - **Módulos:** `domains` (hostname, DNS, adapter + Vercel + fake, configuração, roteamento, serviço, ações, componentes) e `pixels` (modelo, serviço, carregador, ações, componentes). `publishing/render/published-page.tsx` é o que as duas rotas públicas renderizam; o coletor de analytics continua montado só pelas rotas.
 - **Fora desta parte:** reverificação agendada, redirecionamento do endereço do produto para o domínio, eventos de conversão nos pixels, registro de consentimento, domínios e pixels na exportação da conta.
+
+## Sprint 9, continuação: limites, CAPTCHA, expurgo e exclusão de conta (ADR 0018)
+
+Verificado só no stack local; nada aplicado em produção.
+
+```text
+Visitante ── firewall da Vercel (uma regra de taxa por IP; painel, fora do repositório)
+          └─ rota pública ── contador por instância (lib/security/rate-limit.ts) ── limites do banco (por página e visitante)
+
+Formulário de acesso ── CaptchaField (Turnstile, só com NEXT_PUBLIC_TURNSTILE_SITE_KEY) ── Server Action ── Supabase Auth confere o token
+
+Vercel Cron diário 06:00 ── GET /api/jobs/media-cleanup ── remove imagens órfãs e as de páginas vencidas
+Vercel Cron diário 07:00 ── GET /api/jobs/retention (CRON_SECRET) ── run_retention_maintenance
+                            (prazos vencidos; páginas e contas excluídas há mais de 30 dias, já sem imagens)
+
+Administrador da plataforma ── /app/administracao/privacidade ── eraseAccount (modules/privacy/erasure.ts)
+   1. begin_account_erasure   páginas fora do ar e marcadas para expurgo imediato; devolve endereços e domínios
+   2. servidor                invalida o cache, desanexa domínios (DomainsAdapter), roda a limpeza de mídia
+   3. finish_account_erasure  uma transação: contas da pessoa, convites e lista de espera do e-mail, auth.users; fecha o pedido
+```
+
+Invariantes: o contador por instância não é um limite global; a página pública não passa por ele (ficaria fora do cache); uma página só é apagada depois das imagens dela (`media_assets` é `ON DELETE RESTRICT`); a exclusão de conta nunca é automática e cada etapa pode ser repetida.

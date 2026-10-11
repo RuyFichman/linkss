@@ -225,7 +225,7 @@ Decisão: ADR 0014. **Novo subprocessador: Stripe** (processamento de pagamentos
 
 ## Dados adicionados na Sprint 9 (aceite, pedidos de privacidade e denúncias)
 
-Decisão: ADR 0015. Verificado só no stack local (pgTAP `180-sprint9-privacy-moderation`). **Nenhum subprocessador novo.** As retenções abaixo são propostas técnicas: nenhuma tem expurgo agendado e todas dependem da revisão jurídica (`docs/legal/REVISAO_JURIDICA.md`).
+Decisão: ADR 0015. Verificado só no stack local (pgTAP `180-sprint9-privacy-moderation`). **Nenhum subprocessador novo.** As retenções abaixo são propostas técnicas e todas dependem da revisão jurídica (`docs/legal/REVISAO_JURIDICA.md`); as que estavam "não definidas" ganharam prazo provisório e expurgo agendado em 11/10/2026 (seção "Sprint 9, continuação").
 
 | Store / tabela | Conteúdo | Dado pessoal? | Finalidade | Quem lê | Retenção |
 |---|---|---|---|---|---|
@@ -241,7 +241,7 @@ Decisão: ADR 0015. Verificado só no stack local (pgTAP `180-sprint9-privacy-mo
 
 ### Exportação e exclusão por store (estado em 09/10/2026)
 
-"JSON pessoal" é `export_my_data()`; "JSON da conta" é `export_workspace_data()` (só o proprietário); as duas saem por `POST /app/conta/dados/exportar`, com limite de 8 MiB. **A exclusão não é automática em nenhum store:** a tela registra um pedido, e a execução, store a store, é manual e ainda não tem runbook nem foi ensaiada.
+"JSON pessoal" é `export_my_data()`; "JSON da conta" é `export_workspace_data()` (só o proprietário); as duas saem por `POST /app/conta/dados/exportar`, com limite de 8 MiB. **A coluna "Exclusão hoje" descreve 09/10/2026.** Desde 11/10/2026 a exclusão de conta é executada pelo administrador da plataforma e os prazos têm expurgo agendado: ver "Sprint 9, continuação" no fim deste arquivo.
 
 | Store | Exportação | Exclusão hoje |
 |---|---|---|
@@ -292,3 +292,52 @@ O plano Free do Supabase não tem backup gerenciado; os backups são feitos pelo
 | Pasta `backups/` no computador do founder (ignorada pelo Git) e a cópia que ele guardar fora da máquina | cópia completa de `public`, `auth` e `storage` (contas com e-mail e hash de senha, páginas, contatos de formulários, auditoria, cobrança) e os arquivos de mídia | **sim, tudo o que o banco tem** | recuperar o serviço depois de perda ou erro | só o founder | sugestão do runbook: quatro semanais e os de antes de migrações dos últimos 30 dias. **Sem expurgo automático** |
 
 **Exclusão:** um dado apagado na produção continua nos backups até eles vencerem. Isso precisa constar da resposta a um pedido de exclusão e entrar no procedimento de exclusão quando ele for escrito (Sprint 9). O local da cópia externa é uma decisão do founder ainda não registrada; se for um serviço de nuvem, ele passa a ser um subprocessador.
+
+## Sprint 9, continuação (11/10/2026): CAPTCHA, limites, expurgo agendado e exclusão de conta
+
+Decisão: ADR 0018. Verificado só no stack local; **nada disto está ligado em produção** (o CAPTCHA depende de passos do founder; a migração não foi aplicada).
+
+**Novo subprocessador, quando o CAPTCHA for ligado: Cloudflare (Turnstile).** Nas telas de cadastro, login, reenvio de confirmação e recuperação de senha, o **navegador da pessoa** carrega o Turnstile, que recebe o endereço IP e sinais do navegador para decidir se é uma pessoa. O Supabase Auth confere o resultado com a Cloudflare. O produto não recebe nem guarda esses dados; só repassa o token. Tratamento fora do Brasil. **Antes de ligar:** menção no aviso de privacidade (revisão jurídica). Páginas públicas, relatórios e o painel não carregam o Turnstile.
+
+**Limites por instância** (`lib/security/rate-limit.ts`): o endereço IP é usado, como hash truncado, como chave de um contador **na memória** da instância, por até 1 minuto. Não é gravado em banco nem em log.
+
+**Nenhum dado novo é guardado.** O que muda é que os prazos abaixo passam a ser cumpridos por um job diário (`/api/jobs/retention`), e não mais "na próxima escrita".
+
+| Dado | Prazo | Situação do prazo |
+|---|---|---|
+| `form_leads` | 90 dias | provisório desde a Sprint 5 |
+| `form_submission_hits`, `report_lookup_failures` | 1 dia | definido |
+| `workspace_invitations` terminados | 30 dias depois do fim | definido (Sprint 7) |
+| `report_links` terminados | 90 dias depois do fim | provisório (Sprint 7) |
+| `moderation_reports` decididas; ou nunca decididas, de página que não existe mais | 180 dias | **novo, provisório** (antes: não definido) |
+| `privacy_requests` encerrados e `privacy_request_events` | 5 anos | **novo, provisório** (antes: não definido) |
+| `audit_events` | 1 ano | provisório desde a Sprint 2 |
+| `slug_history` | 1 ano depois do fim da reserva | definido (Sprint 2) |
+| `profiles` e `workspaces` excluídos | 30 dias depois da exclusão, depois que as imagens saíram do bucket | definido (Sprint 2) |
+
+`user_accounts.purge_after` continua sem uso: uma conta de acesso só é apagada pela exclusão de conta abaixo.
+
+### Exclusão de conta (substitui a coluna "Exclusão hoje" da tabela de 09/10/2026)
+
+A exclusão deixou de ser manual store a store: um administrador da plataforma a executa pela fila, para um pedido em análise (`docs/runbooks/ACCOUNT_DELETION.md`). **Nunca executada em produção.**
+
+| Store | O que a exclusão de conta faz |
+|---|---|
+| Supabase Auth (`auth.users`), `user_accounts`, `legal_acceptances`, `platform_admins` | apagados (cascata da linha do Auth) |
+| `workspaces` em que a pessoa é proprietária, com `workspace_memberships`, `profiles`, `profile_publications`, `form_leads`, `analytics_events`, `analytics_daily`, `report_links`, `workspace_invitations` enviados, `profile_domains`, `profile_pixels`, `media_asset_shares`, `billing_customers`, `billing_subscriptions`, `billing_invoices` | apagados (cascata da conta) |
+| `media_assets` e arquivos do bucket `media` dessas contas | apagados antes das linhas, pelo job de limpeza |
+| `workspace_invitations` endereçados ao e-mail da pessoa; `waitlist_signups` com o e-mail dela | apagados |
+| `workspace_memberships` em contas de outras pessoas | apagados; o conteúdo fica com a conta |
+| Cache das páginas públicas | invalidado na hora |
+| Domínio anexado na Vercel | desanexado pelo adaptador (não verificado contra a Vercel real) |
+| `privacy_requests`, `privacy_request_events` | **ficam** 5 anos: prova do atendimento; contêm o identificador do usuário e a referência do dossiê, nunca o e-mail |
+| `audit_events`, `slug_history` | **ficam** pelo prazo próprio; a pessoa aparece só como identificador que não leva mais a ninguém |
+| `moderation_reports` sobre páginas dela | **ficam** pelo prazo das denúncias |
+| `billing_events` | ficam até o expurgo do job de cobrança (90 dias); não contêm dado pessoal |
+| Stripe (cliente, faturas, recibos) | **fica** na Stripe: exceção por obrigação fiscal, a confirmar na revisão contábil |
+| Backups | **ficam** até vencer; restaurar um backup anterior exige refazer a exclusão |
+| Logs da Vercel e do Supabase | prazo do fornecedor |
+
+**Bloqueios:** assinatura que não terminou e conta com outros membros impedem a exclusão até serem resolvidos pelo operador (runbook, passo 2).
+
+**Pendente:** revisão jurídica dos prazos novos e da resposta ao titular; exportação dos arquivos de mídia; domínios e pixels na exportação da conta; aviso por e-mail ao titular (não há e-mail transacional).

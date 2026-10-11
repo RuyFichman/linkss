@@ -23,8 +23,8 @@ Verificado no stack Supabase local (pgTAP + navegador); nada foi aplicado em pro
 - [x] P0 Reservar, normalizar e validar slugs.
 - [x] P1 Registrar auditoria de ações sensíveis (`profile.published` preparado para a Sprint 3).
 - [ ] P0 Provisionar staging (Supabase + Vercel), aplicar migrações e configurar Auth conforme `docs/ENVIRONMENTS.md` — parcial: projeto Supabase criado, migrações aplicadas e deploy na Vercel no ar (`https://linkss-black.vercel.app`) em 2026-10-01; o founder fez cadastro → publicação no ambiente hospedado em 2026-10-02; falta o checklist de Auth.
-- [ ] P0 Escolher e contratar SMTP para e-mails de Auth (ADR `MailAdapter`) e atualizar o mapa de dados.
-- [ ] P1 Ativar CAPTCHA (Turnstile) no Auth antes do piloto externo.
+- [ ] P0 Escolher e contratar SMTP para e-mails de Auth (ADR `MailAdapter`) e atualizar o mapa de dados. **Escolhido pelo founder em 11/10/2026: Resend.** Falta criar a conta, os registros DNS (SPF/DKIM), configurar no Supabase Auth e atualizar o mapa de dados.
+- [ ] P1 Ativar CAPTCHA (Turnstile) no Auth antes do piloto externo. O formulário já envia o token quando o ambiente tem a chave (ADR 0018, 11/10/2026); **falta o founder criar o widget na Cloudflare, pôr a chave na Vercel e ligar no Supabase, nessa ordem** (`docs/ENVIRONMENTS.md`).
 
 ## Sprint 3 — página pública
 
@@ -37,7 +37,7 @@ Verificado localmente (pgTAP + `next start` de produção + Lighthouse); nada pr
 - [x] P1 Instrumentar Web Vitals e erros (logs estruturados; Sentry/dashboards dependem de provisionamento).
 - [ ] P0 Medir em staging (CDN real): publicação visível em ≤ 30 s, LCP/CLS de campo e prévia OG no WhatsApp/Instagram — parcial em 2026-10-02 (`docs/SPRINT_5_REPORT.md`, "Verificações no staging depois da correção"): publicação visível em ~5 s e prévia OG conferida nos dois apps; os logs `web_vital` ficaram dentro da meta, mas só com acessos do founder e Lighthouse. Falta LCP/CLS de visitantes reais.
 - [ ] P0 Trocar `NEXT_PUBLIC_APP_URL` e o Auth para o domínio comprado (checklist em `docs/ENVIRONMENTS.md`). `NEXT_PUBLIC_APP_URL` já é `https://linkfav.com` (conferido em 10/10/2026); **falta confirmar Site URL e Redirect URL do Auth**, que nesse dia ainda apontavam para `linkss-black.vercel.app`.
-- [ ] P1 Rate limit/firewall para `/api/vitals` e para flood de endereços inexistentes no renderer (Sprint 9).
+- [ ] P1 Rate limit/firewall para `/api/vitals` e para flood de endereços inexistentes no renderer (Sprint 9). `/api/vitals` ganhou limite por instância em 11/10/2026; **o renderer depende da regra do firewall da Vercel, ainda não criada** (`docs/runbooks/RATE_LIMITS.md`).
 
 ## Sprint 4 — editor
 
@@ -67,8 +67,8 @@ Verificado no stack local (pgTAP + Vitest + navegador + Lighthouse em `next star
 - [ ] P1 Imagem de fundo no tema — cortada nesta sprint.
 - [ ] P1 Aviso ao dono da página quando chega um contato (depende do SMTP).
 - [ ] P1 Imagem Open Graph com o tema e a foto da página.
-- [ ] P2 CAPTCHA no formulário público e limite global por IP (Sprint 9).
-- [ ] P2 Purge agendado de leads vencidos e de `form_submission_hits` (Sprint 9; hoje acontece no envio seguinte à página).
+- [ ] P2 CAPTCHA no formulário público e limite global por IP (Sprint 9). Limite por instância no envio desde 11/10/2026; CAPTCHA no formulário não feito; o limite global é a regra do firewall.
+- [x] P2 Purge agendado de leads vencidos e de `form_submission_hits` (job `/api/jobs/retention`, 11/10/2026). Código, testes e runbook prontos em 11/10/2026 (ADR 0018), verificados só no stack local. **Migração não aplicada em produção.**
 
 ## Sprint 6 — analytics
 
@@ -97,15 +97,15 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [x] P1 Relatório público revogável e com expiração (ADR 0013).
 - [x] P0 Medir a criação da décima página e a lista com 1, 10 e 50 páginas (AC5; `apps/web/scripts/agency-scale.mjs`).
 - [ ] P0 Fechar a Sprint 7 em staging: `supabase db push` das duas migrações da parte 2 (`202610060003`, `202610060004`), enviar a branch, abrir e fazer o merge do PR, pôr a conta de teste no plano Agência por SQL e conferir um link de relatório de ponta a ponta (passos em `docs/ENVIRONMENTS.md`).
-- [ ] P1 Limite global (firewall/rate limit) na frente de `/r/` e da RPC do relatório (Sprint 9; hoje só o limite por endereço no banco).
-- [ ] P1 Expurgo agendado de links de relatório terminados há mais de 90 dias e dos contadores de tentativas (Sprint 9; hoje acontece na criação seguinte e na falha seguinte).
-- [ ] P1 Incluir `report_links` na exportação e na exclusão de conta (Sprint 9).
+- [ ] P1 Limite global (firewall/rate limit) na frente de `/r/` e da RPC do relatório (Sprint 9). `/r/` ganhou limite por instância em 11/10/2026; a RPC chamada direto e o limite global seguem dependendo do firewall.
+- [x] P1 Expurgo agendado de links de relatório terminados há mais de 90 dias e dos contadores de tentativas (job `/api/jobs/retention`, 11/10/2026). Código, testes e runbook prontos em 11/10/2026 (ADR 0018), verificados só no stack local.
+- [x] P1 Incluir `report_links` na exportação e na exclusão de conta (exportação na Sprint 9; exclusão em 11/10/2026, por cascata da conta).
 - [ ] P2 Conferir no celular real e imprimir o relatório do cliente (nesta sprint: larguras de 360 a 768 px por medição para as telas da conta; o relatório só em desktop, com as regras de impressão presentes na folha de estilo).
 - [ ] P2 Página 404 do relatório sem JavaScript fica em branco (o framework renderiza o estado no cliente); avaliar uma resposta estática.
 - [ ] P2 Relatório com intervalo fixo de datas ("setembro") e campanha (UTM), se as agências do piloto pedirem.
 - [ ] P1 Lembrar a última conta usada em `/app` — cortado na parte 1 (UX-060).
 - [ ] P1 Levar o `next` do convite no modelo de e-mail de confirmação do Auth, para o cadastro por convite funcionar em outro aparelho (hoje só no mesmo, por cookie).
-- [ ] P2 Expurgo agendado de convites terminados há mais de 30 dias e limite global nas ações de convite (Sprint 9; hoje o expurgo acontece no convite seguinte da conta).
+- [ ] P2 Expurgo agendado de convites terminados há mais de 30 dias e limite global nas ações de convite (Sprint 9). Expurgo feito em 11/10/2026 (job `/api/jobs/retention`); **limite global nas ações de convite não feito**.
 - [ ] P2 Verificar no navegador o que a parte 1 só cobriu por teste: cadastro novo a partir de convite, alterar papel e sair pela interface, aplicação contra banco sem a migração, leitor de tela.
 
 ## Sprint 8 — comercialização
@@ -147,14 +147,17 @@ Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 s
   - [x] Aceite versionado com histórico (ADR 0015); nenhum texto ativo até a revisão do advogado.
   - [x] Exportação JSON da pessoa e da conta (só proprietário), com inventário por store em `docs/DATA_MAP.md`.
   - [x] Pedido de exclusão e de acesso com estados, fila administrativa e auditoria.
-  - [ ] Execução da exclusão store a store (hoje manual, sem runbook e sem ensaio); exportação dos arquivos de mídia.
+  - [x] Execução da exclusão de conta pela fila do administrador, com runbook (`docs/runbooks/ACCOUNT_DELETION.md`) e ensaio local (`scripts/account-erasure.mjs`, 18 verificações) em 11/10/2026. **Nunca executada em produção.**
+  - [ ] Exportação dos arquivos de mídia; transferência de propriedade de conta com outros membros; aviso por e-mail ao titular.
   - [ ] Minutas em `docs/legal/` revisadas pelo advogado e ativadas.
 - [ ] P0 Denúncia, moderação, suspensão e auditoria.
   - [x] Denúncia pública, fila, suspensão e reativação por página, auditadas.
-  - [ ] Aviso ao dono da página suspensa, canal de contestação e retenção das denúncias.
+  - [ ] Aviso ao dono da página suspensa e canal de contestação. A retenção das denúncias foi definida como 180 dias (provisório) e entrou no expurgo em 11/10/2026.
 - [ ] P0 Headers, CSP, rate limits e revisão de autorização.
   - [x] Headers de segurança e CSP (ainda com `unsafe-inline`); leitura limitada do corpo em `/api/events` e `/api/vitals`; origem com esquema nas rotas com sessão.
-  - [ ] Limites globais na borda (os itens "Sprint 9" espalhados neste arquivo seguem abertos); CAPTCHA; expurgos agendados.
+  - [x] Limite por instância nas rotas públicas, CAPTCHA nos formulários de acesso (desligado até ser configurado) e expurgo agendado: código de 11/10/2026 (ADR 0018), verificado só no stack local.
+  - [ ] **Founder:** criar a regra do firewall da Vercel (`docs/runbooks/RATE_LIMITS.md`), ligar o Turnstile e aplicar as migrações `202610110001` e `202610110002` depois de um backup conferido (`docs/ENVIRONMENTS.md`, "Sprint 9, continuação").
+  - [ ] Confirmar os prazos provisórios novos (denúncias 180 dias; pedidos de privacidade 5 anos) e os limites (300/min na regra; seis limites por rota).
 - [ ] P0 Backup/restauração e runbooks.
   - [x] Backup lógico (`npm run db:backup`: banco, contas, histórico de migrações e mídia) e ensaio de restauração (`npm run db:restore-check`), aprovados com o banco local em 10/10/2026; runbook `docs/runbooks/BACKUP.md`.
   - [ ] **Primeiro backup de produção** e ensaio dele (a CLI precisa estar logada na conta dona do projeto) e cópia para fora da máquina.
@@ -179,5 +182,5 @@ Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 s
 - [x] Rebaixamento para relatórios, páginas, pessoas e convites: decidido na Sprint 8, parte 1 (ADR 0014, UX-077): nada é removido, só o que é novo é recusado, nada mais é bloqueado, e a tela lista o impacto com os números da conta antes de confirmar. **Provisório — founder confirmar.**
 - [ ] Confirmar decisões provisórias UX-074 a UX-084 (tela de planos, papéis na cobrança, tolerância de 7 dias, rebaixamento, quando cada mudança vale, retorno do checkout, link nas telas de limite, ambiente de teste e home, plano manual, chargeback e reembolso).
 - [ ] `npm audit`: 5 avisos altos em ferramentas de desenvolvimento (`eslint-config-next` → `braces`), sem correção compatível em 06/10/2026; rever a cada atualização do Next. Em 09/10/2026 apareceu um sexto, **de produção**, no próprio `next` (item na Sprint 8).
-- [ ] Rate limit global e firewall na frente de `/api/events` (Sprint 9; hoje só há limites no banco).
+- [ ] Rate limit global e firewall na frente de `/api/events` (Sprint 9). Limite por instância desde 11/10/2026; o global é a regra do firewall, ainda não criada.
 - [ ] Contratar revisão jurídica/contábil antes do beta pago. A lista do que ela precisa resolver para a cobrança está no ADR 0014 ("For the legal and accounting review").
