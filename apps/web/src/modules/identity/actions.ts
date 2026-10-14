@@ -36,7 +36,9 @@ export async function signUpAction(_previous: FormState, formData: FormData): Pr
   const { name, email, password } = validation.value;
   const supabase = await getSupabase();
   const { error } = await withMinimumDuration(
-    () => supabase.auth.signUp({ email, password, options: { emailRedirectTo: CONFIRM_URL, data: { display_name: name }, captchaToken: captchaToken(formData) } }),
+    // From an invitation, the confirmation e-mail takes the person back to it on any device (the
+    // template reads this address; ADR 0012, addendum). The cookie below covers the same device.
+    () => supabase.auth.signUp({ email, password, options: { emailRedirectTo: isInvitationPath(stringField(formData, "next")) ? appUrl(`/auth/confirm?next=${stringField(formData, "next")}`) : CONFIRM_URL, data: { display_name: name }, captchaToken: captchaToken(formData) } }),
     NEUTRAL_RESPONSE_MIN_MS,
   );
   const outcome = signUpOutcome(error);

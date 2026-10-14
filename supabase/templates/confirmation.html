@@ -1,5 +1,9 @@
-<!-- Local/hosted confirmation template. Uses the token_hash flow handled by /auth/confirm. -->
+<!-- Local/hosted confirmation template. Uses the token_hash flow handled by /auth/confirm.
+     redirect_to carries the address the sign-up asked for: from an invitation it leads back to the
+     invitation on any device (ADR 0012, addendum). /auth/confirm reads only its own address from
+     it; next=/app is the destination when it says nothing usable. Paste into the hosted project
+     after custom SMTP is configured (docs/ENVIRONMENTS.md). -->
 <h2>Confirme seu e-mail</h2>
 <p>Recebemos um pedido para criar uma conta com este e-mail no Linkfav.</p>
-<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email&amp;next=/app">Confirmar meu e-mail</a></p>
+<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email&amp;next=/app&amp;redirect_to={{ .RedirectTo }}">Confirmar meu e-mail</a></p>
 <p>O link expira em 1 hora e só pode ser usado uma vez. Se você não pediu este cadastro, ignore esta mensagem.</p>

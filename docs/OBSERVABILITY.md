@@ -217,3 +217,18 @@ Decisões: ADR 0020 e adendo do ADR 0014. Verificado só no stack local.
 **Continua sem alerta:** a **taxa de erro** e a latência por requisição do renderer, dos uploads, dos formulários e do Auth, os Web Vitals e os picos de `rate_limited`. Um alerta de taxa precisa contar todas as requisições, isto é, ler os logs da hospedagem. Isso depende de contratar o envio de logs (não existe no plano Hobby da Vercel) e um serviço que os receba: **decisão do founder, em aberto**.
 
 **Analytics de produto** (ADR 0020): o funil em `/app/administracao/produto` é calculado na hora a partir das tabelas do produto. Não gera evento, não tem job e não tem alerta; se a consulta falhar, a tela diz que não conseguiu carregar.
+
+## Sinais do e-mail transacional (14/10/2026)
+
+Decisão: ADR 0021. Verificado só no stack local, contra um substituto da Resend.
+
+| Evento | O que é | Quando agir |
+|---|---|---|
+| `mail.drain` (`source`: `lead`, `page_suspended`, `appeal_decided`, `billing_webhook`, `billing_job`; `claimed`, `sent`, `retried`, `failed`, `skipped`) | envio logo depois da requisição que causou o aviso | `failed` ou `retried` repetidos → `MAIL.md` §4 |
+| `mail.maintenance` (`outcome`: `ok`, `partial`, `mail_off`, `not_configured`, `unauthorized`, `not_deployed`, `unavailable`; contagens; `reason` quando desligado) | o job diário | `unavailable` → P2; `mail_off` com `reason` num ambiente que devia enviar → P2 |
+| `mail.complete_failed`, `mail.drain_failed` | o banco não registrou um envio, ou a fila não pôde ser lida | repetido → P1 se `mail:overdue` também acusar |
+| `mail.preference` (`outcome`, `enabled`) | alguém ligou ou desligou o aviso de contato | não |
+
+**Nunca** aparecem nos logs: endereço, nome, título de página ou o que o visitante escreveu. Alertas novos do monitor: `job:mail`, `mail:overdue` (crítico só com o e-mail ligado) e `mail:failed` (atenção). O monitor passou a ter quinze verificações.
+
+**Sem alerta:** e-mail que a Resend aceitou e não foi entregue (caixa cheia, filtro de spam). Só aparece no painel da Resend.

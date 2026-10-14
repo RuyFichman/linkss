@@ -105,7 +105,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [ ] P2 Página 404 do relatório sem JavaScript fica em branco (o framework renderiza o estado no cliente); avaliar uma resposta estática.
 - [ ] P2 Relatório com intervalo fixo de datas ("setembro") e campanha (UTM), se as agências do piloto pedirem.
 - [ ] P1 Lembrar a última conta usada em `/app` — cortado na parte 1 (UX-060).
-- [ ] P1 Levar o `next` do convite no modelo de e-mail de confirmação do Auth, para o cadastro por convite funcionar em outro aparelho (hoje só no mesmo, por cookie).
+- [x] P1 Levar o convite no modelo de e-mail de confirmação do Auth, para o cadastro por convite funcionar em outro aparelho (14/10/2026, ADR 0012 adendo; verificado localmente de ponta a ponta). **Depende de colar o modelo no Supabase hospedado, o que exige o SMTP da Resend.**
 - [ ] P2 Expurgo agendado de convites terminados há mais de 30 dias e limite global nas ações de convite (Sprint 9). Expurgo feito em 11/10/2026 (job `/api/jobs/retention`); **limite global nas ações de convite não feito**.
 - [ ] P2 Verificar no navegador o que a parte 1 só cobriu por teste: cadastro novo a partir de convite, alterar papel e sair pela interface, aplicação contra banco sem a migração, leitor de tela.
 
@@ -134,7 +134,8 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [ ] P2 Conferir no navegador o que a parte 2 só cobriu por HTTP: seções da aba *Página*, página num domínio próprio, celular e leitor de tela.
 - [x] P1 Trocar do mensal para o anual numa assinatura em curso (13/10/2026, UX-094; ADR 0014, adendo): vale na hora, com o desconto da parte do mês já paga. Verificado só contra o emulador; **nunca contra a Stripe**.
 - [ ] P2 Trocar do anual para o mensal no meio do ano pago: não oferecido (a tela ensina a cancelar a renovação e assinar o mensal no fim do período). Fazer direito exige agendamento no provedor; avaliar se o piloto pedir.
-- [ ] P1 Aviso por e-mail de pagamento que falhou e de renovação (depende do SMTP; hoje só na tela, e pelos e-mails da própria Stripe se forem ligados).
+- [x] P1 Aviso por e-mail de pagamento que falhou e de renovação anual (14/10/2026, ADR 0021). Verificado só contra um substituto da Resend.
+- [ ] P1 **Founder:** decidir se os e-mails de falha de pagamento da própria Stripe ficam ligados junto com os nossos (`docs/runbooks/MAIL.md` §2).
 - [x] P1 Plano de migração para mudança de preço com assinaturas em curso (13/10/2026): preços aposentados continuam concedendo o plano a quem assinou por eles; procedimento em `docs/runbooks/PRICE_CHANGE.md`. Verificado só no stack local; nenhum preço foi mudado até hoje.
 - [ ] P1 Decidir se assinantes antigos são levados ao preço novo (UX-096) e, se forem, construir o aviso e o reajuste: depende do SMTP e da revisão jurídica. Hoje continuam no valor antigo, sem prazo.
 - [ ] P1 Limite global e lista de IPs da Stripe na frente de `/api/billing/webhook` (Sprint 9).
@@ -156,7 +157,8 @@ Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 s
 - [ ] P0 Denúncia, moderação, suspensão e auditoria.
   - [x] Denúncia pública, fila, suspensão e reativação por página, auditadas.
   - [x] Aviso ao dono da página suspensa (dentro do produto) e canal de contestação: código de 11/10/2026 (ADR 0019), verificado só no stack local; runbook `docs/runbooks/MODERATION.md`. A retenção das denúncias foi definida como 180 dias (provisório) e entrou no expurgo em 11/10/2026.
-  - [ ] Aviso de suspensão e de resposta **por e-mail** (depende do SMTP); aviso e contestação para suspensão de conta inteira; expurgo próprio e exportação de suspensões e contestações; segunda pessoa para julgar contestações.
+  - [x] Aviso de suspensão e de resposta à contestação **por e-mail** (14/10/2026, ADR 0021). Verificado só contra um substituto da Resend.
+  - [ ] Aviso e contestação para suspensão de conta inteira; expurgo próprio de suspensões e contestações; segunda pessoa para julgar contestações.
 - [ ] P0 Headers, CSP, rate limits e revisão de autorização.
   - [x] Headers de segurança e CSP (ainda com `unsafe-inline`); leitura limitada do corpo em `/api/events` e `/api/vitals`; origem com esquema nas rotas com sessão.
   - [x] Limite por instância nas rotas públicas, CAPTCHA nos formulários de acesso (desligado até ser configurado) e expurgo agendado: código de 11/10/2026 (ADR 0018), verificado só no stack local.
@@ -172,6 +174,21 @@ Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 s
   - [ ] Ensaiar a restauração num projeto Supabase novo, incluindo mídia, segredos do Vault e Auth.
   - [ ] Agendar o backup (hoje é manual) e definir onde a cópia externa fica.
 - [ ] P0 QA mobile/cross-browser e acessibilidade prioritária. **Parcial:** passagem automática em 11/10/2026 (`scripts/mobile-a11y.mjs`: 12 telas em 390 e 320 px, regras WCAG 2.2 A/AA do axe-core, tamanho de alvo, `/aceite` com textos ativos), sem pendências depois de aumentar duas caixas de seleção. **Falta:** aparelho real (iOS e Android), outros navegadores, leitor de tela e teclado.
+
+## E-mail transacional (14/10/2026)
+
+Código de 14/10/2026 (ADR 0021), **verificado só no stack local** contra um substituto da API da Resend e o Mailpit. Nenhum e-mail foi enviado a ninguém.
+
+- [x] P0 Fila de avisos no banco, envio pela Resend atrás de um adaptador, job diário de reserva, alertas no monitor.
+- [x] P1 E-mail de novo contato para o dono da página (sem o conteúdo do contato; um por hora; pode ser desligado).
+- [x] P1 E-mail de suspensão e de resposta à contestação.
+- [x] P1 E-mail de pagamento que falhou e lembrete de renovação anual.
+- [x] P1 Convite que funciona em outro aparelho.
+- [ ] P0 **Founder:** conta na Resend, domínio `linkfav.com` verificado (SPF, DKIM, DMARC), chave só de envio, variáveis na Vercel, SMTP e modelos no Supabase, *Redirect URL* com `**` (`docs/runbooks/MAIL.md` §1). **Sem o domínio verificado antes do SMTP, ninguém confirma o cadastro.**
+- [x] P0 **Founder:** aplicar a migração `202610140001`: aplicada em produção em 14/10/2026, antes do merge e sem backup novo (decisão do founder; o backup conferido da mesma tarde é o mais recente).
+- [ ] P0 Revisão jurídica: Resend como subprocessador, transferência internacional, menção na política de privacidade.
+- [ ] P1 Primeiro envio real: conferir entrega, caixa de spam e aparência no Gmail e no Outlook, no celular.
+- [ ] P2 Mandar o próprio convite por e-mail (a UX-055, confirmada, diz que não; rever se o piloto pedir).
 
 ## Sprint 10 — piloto privado (preparação)
 
@@ -209,6 +226,7 @@ O que dava para fazer em código antes de convidar alguém, feito em 13/10/2026 
 - [ ] Confirmar decisões provisórias UX-061 a UX-071 (painel da conta, relatório do cliente, validade e papéis dos links, sem registro de abertura) e os limites do ADR 0013 (5 links ativos por página, 30 criações por dia, retenção de 90 dias).
 - [x] Rebaixamento para relatórios, páginas, pessoas e convites: decidido na Sprint 8, parte 1 (ADR 0014, UX-077): nada é removido, só o que é novo é recusado, nada mais é bloqueado, e a tela lista o impacto com os números da conta antes de confirmar. **Provisório — founder confirmar.**
 - [ ] Confirmar decisões provisórias UX-074 a UX-084 (tela de planos, papéis na cobrança, tolerância de 7 dias, rebaixamento, quando cada mudança vale, retorno do checkout, link nas telas de limite, ambiente de teste e home, plano manual, chargeback e reembolso).
+- [ ] Confirmar decisões provisórias UX-102 a UX-105 (avisos por e-mail, para quem e quando; convite em outro aparelho).
 - [ ] Confirmar decisões provisórias UX-094 a UX-101 (troca para o anual e a recusa da volta, motivo do cancelamento, preço antigo mantido, primeiros passos, central de ajuda, página de preços, página de situação, definição de ativação no funil).
 - [ ] `npm audit`: 5 avisos altos em ferramentas de desenvolvimento (`eslint-config-next` → `braces`), sem correção compatível em 06/10/2026; rever a cada atualização do Next. Em 09/10/2026 apareceu um sexto, **de produção**, no próprio `next` (item na Sprint 8).
 - [ ] Rate limit global e firewall na frente de `/api/events` (Sprint 9). Limite por instância desde 11/10/2026; o global é a regra do firewall, ainda não criada.

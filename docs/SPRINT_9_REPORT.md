@@ -383,6 +383,50 @@ Este adendo não conclui a Sprint 9 nem inicia a Sprint 10. Ele fecha, da lista 
 3. Na área restrita da Stripe: trocar para o anual, cancelar com motivo, e excluir uma conta de teste com assinatura.
 4. Definir o endereço de suporte e a decisão sobre o leitor de logs.
 
+## Adendo de 14/10/2026 — e-mail transacional (Resend) e convite em outro aparelho
+
+**Branch:** `feat/transactional-email`, criada de `feat/pilot-readiness` (mergeada em `main` pelo PR #36), ainda sem merge em `main`. **Estado: implementado e verificado só no stack local.** A migração `202610140001` foi aplicada em produção em 14/10/2026, antes do merge e sem backup novo (decisão do founder). **Não há conta na Resend nem domínio verificado, e nenhum e-mail foi enviado a ninguém.** Decisões: ADR 0021 e adendo do ADR 0012.
+
+### Objetivo e resultado
+
+O founder pediu os quatro itens que dependiam do SMTP, já que a Resend foi escolhida.
+
+| Item | Estado | Evidência |
+|---|---|---|
+| E-mail de novo contato para o dono da página | **implementado e verificado localmente** com um formulário enviado num navegador; sem o conteúdo do contato; um por página e por hora; pode ser desligado | pgTAP `240`; `mail-lifecycle.mjs` |
+| E-mail de suspensão e de resposta à contestação | **implementado e verificado localmente** | pgTAP `240`; `mail-lifecycle.mjs` |
+| E-mail de pagamento que falhou e de renovação | **implementado e verificado localmente**: falha ao proprietário, uma vez por falha; lembrete só da renovação **anual**, sete dias antes | pgTAP `240`; `mail-lifecycle.mjs` |
+| Convite que funcione em outro aparelho | **implementado e verificado localmente de ponta a ponta** (e-mail real do Auth lido no Mailpit, aberto em outro navegador sem cookie em comum, convite aceito). **Em produção depende de colar o modelo no Supabase, o que exige o SMTP** | Vitest `/auth/confirm`; `mail-lifecycle.mjs` |
+
+### Decisões (provisórias: UX-102 a UX-105)
+
+- **Fila no banco escrita pelos próprios fatos** (gatilhos), enviada logo depois da resposta da requisição que causou o fato e, como reserva, por um job diário. Nenhum visitante, webhook ou moderador espera pelo e-mail, e uma falha da Resend nunca derruba nada.
+- **O aviso de contato não traz o contato.** Não copia dado de visitante para a Resend nem para a caixa do dono.
+- **Só o aviso de contato pode ser desligado**; os outros são sobre a própria conta.
+- **Renovação mensal sem lembrete**: o recibo da Stripe cobre.
+- **O convite continua sem e-mail próprio** (UX-055, confirmada pelo founder); o que mudou é o e-mail de confirmação do cadastro, que já existia.
+
+### Verificação (14/10/2026, stack local)
+
+- `npm run check`: lint sem avisos, typecheck, **1.340 testes Vitest (57 arquivos)** e build aprovados.
+- `npm run test:db`: **1.532 asserções pgTAP (26 arquivos)** aprovadas; o arquivo novo tem 52, e o `210` passou a contar seis jobs.
+- `node scripts/mail-lifecycle.mjs` (build de produção, Chrome, substituto da Resend, Mailpit): **25 verificações**, incluindo a resposta ao visitante antes do envio, uma falha do provedor e o reenvio com a mesma chave de idempotência, nenhuma linha de log com endereço ou nome, e o convite aceito em outro aparelho.
+- `node scripts/mobile-a11y.mjs`: **28 verificações, nenhuma pendência**, agora com a seção *Avisos por e-mail* em *Meus dados*.
+- A stack local do Supabase foi reiniciada (`supabase stop` e `start`, dados mantidos) para o Auth ler o modelo novo e a lista de endereços de retorno.
+
+### Implicações
+
+- **Privacidade:** novo subprocessador (Resend, Estados Unidos). Precisa de contrato, menção na política e revisão jurídica antes do primeiro envio.
+- **Operação:** sexto job (`mail`); o monitor passa a ter quinze verificações (`mail:overdue`, `mail:failed`, `job:mail`). Runbook novo `MAIL.md`.
+- **Configuração em produção:** domínio verificado, chave, três variáveis, SMTP e modelos no Supabase, *Redirect URL* com `**`. **Se o SMTP for ligado antes do domínio estar verificado, ninguém consegue confirmar o cadastro.**
+
+### Lacunas
+
+- Nada rodou contra a Resend real; entregabilidade, spam e aparência em clientes de e-mail não foram vistos.
+- E-mail aceito pela Resend e não entregue não gera alerta.
+- Duplicidade com os e-mails da própria Stripe depende de decisão do founder.
+- O reenvio da confirmação em `/confirmar-email` não carrega o convite.
+
 ## Adendo de 14/10/2026 — primeiro backup da produção e migrações aplicadas
 
 **Feito pelo agente, com a CLI logada pelo founder na conta dona do projeto.** Nada de código de produto mudou.
@@ -391,9 +435,9 @@ Este adendo não conclui a Sprint 9 nem inicia a Sprint 10. Ele fecha, da lista 
 |---|---|---|
 | Backup da produção | **feito** em `backups/20261014T201546Z-production` (só nesta máquina): 67 tabelas, 205 linhas, 22 migrações, 2 contas, 3 páginas, 9 versões publicadas, 3 contatos, 15 de 15 arquivos de mídia | saída de `npm run db:backup` |
 | Conferência da restauração | **PASS**, depois de um ajuste no script: o `GRANT` da plataforma ao papel `supabase_realtime_admin` falhava só porque a instância descartável sobe sem o Realtime; agora é mostrado como aviso e não conta como erro | `scripts/db-restore-check.mjs`; todas as outras verificações (linhas por tabela, histórico, página publicada, RLS) passaram antes e depois do ajuste |
-| `supabase db push` | **aplicadas** `202610110001` a `202610130001` (seis migrações); `202610140001` (e-mail) ficou de fora por decisão do founder, porque a branch não foi mergeada | `--dry-run` antes, `supabase migration list` depois |
+| `supabase db push` | **aplicadas** `202610110001` a `202610130001` (seis migrações); `202610140001` (e-mail) ficou de fora nesse momento e foi aplicada depois, no mesmo dia, antes do merge e sem backup novo, por decisão do founder (`--dry-run` listou só ela; `/`, `/api/health` e `/cafe-ipe` responderam 200 depois) | `--dry-run` antes, `supabase migration list` depois |
 | Site depois do push | `https://linkfav.com/` e `/api/health` responderam 200 | `curl` |
 
 **Consequências:** os jobs diários de expurgo (`/api/jobs/retention`, 07:00 UTC) e de reverificação de domínios (`/api/jobs/domains`, 08:00 UTC) passam a rodar em produção; a exclusão de conta, a contestação de suspensão, o funil de produto, a troca para o anual e o motivo de cancelamento passam a ter banco em produção.
 
-**Pendente:** copiar o backup para fora desta máquina (founder); Turnstile na ordem documentada; regra do firewall; `OPS_STATUS_SECRET` na Vercel e no GitHub (sem ele o monitor falha); conferir na Stripe (área restrita) o que só rodou no emulador; a migração de e-mail depois do merge.
+**Pendente:** copiar o backup para fora desta máquina (founder); Turnstile na ordem documentada; regra do firewall; `OPS_STATUS_SECRET` na Vercel e no GitHub (sem ele o monitor falha); conferir na Stripe (área restrita) o que só rodou no emulador; o merge do e-mail e a configuração da Resend.
