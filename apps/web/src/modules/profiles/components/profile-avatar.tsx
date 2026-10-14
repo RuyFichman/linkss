@@ -15,5 +15,5 @@ export function ProfileAvatar({ title, avatarPath = null, size = "md" }: { title
       </picture>
     );
   }
-  return <span aria-hidden="true" className={`inline-grid shrink-0 place-items-center rounded-full bg-app-accent font-bold text-white ${dimension}`}>{initialsFor(title)}</span>;
+  return <span aria-hidden="true" className={`inline-grid shrink-0 place-items-center brand-display rounded-full bg-[var(--app-accent-soft)] font-bold text-app-accent-strong ${dimension}`}>{initialsFor(title)}</span>;
 }

@@ -2,16 +2,21 @@
  * Execution of an account deletion request (ADR 0018, runbook ACCOUNT_DELETION.md).
  *
  * The database does the deciding and the deleting in two steps (`begin_account_erasure`,
- * `finish_account_erasure`), both restricted to a platform administrator. Between them this
- * module removes what the database cannot reach: cached public pages, hostnames attached at the
- * hosting provider and image files in the bucket. Every step is idempotent, so any outcome other
- * than `erased` is resolved by fixing its cause and running the same request again.
+ * `finish_account_erasure`), both restricted to a platform administrator. Before them this module
+ * ends, at the payment provider, the subscriptions of the person's workspaces (the database refuses
+ * to erase somebody who is still being charged); between them it removes what the database cannot
+ * reach: cached public pages, hostnames attached at the hosting provider and image files in the
+ * bucket. Every step is idempotent, so any outcome other than `erased` is resolved by fixing its
+ * cause and running the same request again.
  */
 export type ErasureRefusal =
   | "forbidden" | "not_found" | "not_processing" | "active_subscription" | "shared_workspace"
   | "media_pending" | "invalid_evidence" | "not_deployed" | "unavailable";
 
-export type ErasureOutcome = "erased" | ErasureRefusal | "domain_failed" | "media_not_configured";
+/** Subscriptions exist and this environment cannot talk to the provider / the provider or the copy of its answer failed. */
+export type BillingStop = "billing_not_configured" | "billing_failed";
+
+export type ErasureOutcome = "erased" | ErasureRefusal | BillingStop | "domain_failed" | "media_not_configured";
 
 export interface ErasureBegin {
   slugs: string[];
@@ -27,6 +32,12 @@ export interface ErasureCounts {
 }
 
 export interface ErasurePorts {
+  /**
+   * Ends at the provider every subscription of the person's workspaces that is not over and applies
+   * the result to the database. Runs first; refuses for the same reasons `begin` would (except the
+   * subscription itself), so nothing is cancelled for an erasure that cannot happen.
+   */
+  endSubscriptions(requestId: string): Promise<{ ok: true; ended: number } | { ok: false; reason: ErasureRefusal | BillingStop }>;
   begin(requestId: string): Promise<{ ok: true; value: ErasureBegin } | { ok: false; reason: ErasureRefusal }>;
   finish(requestId: string, evidence: string): Promise<{ ok: true; value: ErasureCounts } | { ok: false; reason: ErasureRefusal }>;
   /** Drops the cached copies of one public page. */
@@ -41,6 +52,8 @@ export interface ErasureResult {
   outcome: ErasureOutcome;
   pages: number;
   hostnames: number;
+  /** Subscriptions ended at the provider in this run (absent when none was). */
+  subscriptionsEnded?: number;
   counts?: ErasureCounts;
 }
 
@@ -85,10 +98,14 @@ export async function eraseAccount(ports: ErasurePorts, requestId: string, evide
   // Checked before anything goes off the air; the database checks it again in the last step.
   if (evidence.length < EVIDENCE_MIN_LENGTH || evidence.length > EVIDENCE_MAX_LENGTH) return { outcome: "invalid_evidence", pages: 0, hostnames: 0 };
 
+  const billing = await ports.endSubscriptions(requestId);
+  if (!billing.ok) return { outcome: billing.reason, pages: 0, hostnames: 0 };
+  const ended = billing.ended > 0 ? { subscriptionsEnded: billing.ended } : {};
+
   const begun = await ports.begin(requestId);
-  if (!begun.ok) return { outcome: begun.reason, pages: 0, hostnames: 0 };
+  if (!begun.ok) return { outcome: begun.reason, pages: 0, hostnames: 0, ...ended };
   const { slugs, hostnames, mediaPending } = begun.value;
-  const progress = { pages: slugs.length, hostnames: hostnames.length };
+  const progress = { pages: slugs.length, hostnames: hostnames.length, ...ended };
 
   for (const slug of slugs) ports.revalidate(slug);
 

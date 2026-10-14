@@ -142,9 +142,18 @@ export function createFakePaymentsAdapter(clock: () => Date) {
     async changePlan(request) {
       guard("changePlan");
       const subscription = need(request.subscriptionId);
+      if (request.interval !== subscription.interval) {
+        // Another interval starts a new period now, charged at once less what was paid for the rest of the old one.
+        const unusedMs = subscription.currentPeriodEnd ? Math.max(0, subscription.currentPeriodEnd.getTime() - clock().getTime()) : 0;
+        const credit = Math.round(subscription.amountCents * Math.min(1, unusedMs / periodEnd(new Date(0), subscription.interval).getTime()));
+        subscription.amountCents = request.amountCents;
+        subscription.interval = request.interval;
+        subscription.currentPeriodEnd = periodEnd(clock(), request.interval);
+        invoice(subscription, "paid", Math.max(0, request.amountCents - credit));
+        return;
+      }
       if (request.effective === "now" && request.amountCents > subscription.amountCents) invoice(subscription, "paid", request.amountCents - subscription.amountCents);
       subscription.amountCents = request.amountCents;
-      subscription.interval = request.interval;
     },
 
     async cancelNow(subscriptionId) {

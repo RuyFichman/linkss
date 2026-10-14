@@ -7,6 +7,7 @@ const counts = { workspaces: 2, invitations: 1, waitlist: 0, account: 1 };
 function ports(overrides: Partial<ErasurePorts> = {}) {
   const calls: string[] = [];
   const base: ErasurePorts = {
+    endSubscriptions: vi.fn(async () => { calls.push("billing"); return { ok: true as const, ended: 0 }; }),
     begin: vi.fn(async () => { calls.push("begin"); return { ok: true as const, value: { slugs: ["ana", "cliente"], hostnames: ["links.cliente.example"], mediaPending: 3 } }; }),
     finish: vi.fn(async () => { calls.push("finish"); return { ok: true as const, value: counts }; }),
     revalidate: vi.fn((slug: string) => { calls.push(`revalidate:${slug}`); }),
@@ -20,7 +21,7 @@ describe("account erasure", () => {
   it("takes the pages off the cache, detaches hostnames, removes files and only then deletes", async () => {
     const { calls, ports: p } = ports();
     expect(await eraseAccount(p, REQUEST, "  DOSSIE-0007  ")).toEqual({ outcome: "erased", pages: 2, hostnames: 1, counts });
-    expect(calls).toEqual(["begin", "revalidate:ana", "revalidate:cliente", "detach:links.cliente.example", "media", "finish"]);
+    expect(calls).toEqual(["billing", "begin", "revalidate:ana", "revalidate:cliente", "detach:links.cliente.example", "media", "finish"]);
     expect(p.finish).toHaveBeenCalledWith(REQUEST, "DOSSIE-0007");
   });
 
@@ -29,6 +30,22 @@ describe("account erasure", () => {
       const { ports: p } = ports();
       expect((await eraseAccount(p, REQUEST, evidence)).outcome).toBe("invalid_evidence");
       expect(p.begin).not.toHaveBeenCalled();
+    }
+  });
+
+  it("ends the subscriptions at the provider before anything else, and says how many", async () => {
+    const { calls, ports: p } = ports({ endSubscriptions: vi.fn(async () => ({ ok: true as const, ended: 2 })) });
+    expect(await eraseAccount(p, REQUEST, "DOSSIE-0007")).toEqual({ outcome: "erased", pages: 2, hostnames: 1, subscriptionsEnded: 2, counts });
+    expect(calls[0]).toBe("begin");
+    expect(p.endSubscriptions).toHaveBeenCalledWith(REQUEST);
+  });
+
+  it("deletes nothing while a subscription could not be ended, or when the request cannot be erased at all", async () => {
+    for (const reason of ["billing_not_configured", "billing_failed", "forbidden", "not_found", "not_processing", "shared_workspace", "unavailable"] as const) {
+      const { ports: p } = ports({ endSubscriptions: vi.fn(async () => ({ ok: false as const, reason })) });
+      expect(await eraseAccount(p, REQUEST, "DOSSIE-0007")).toEqual({ outcome: reason, pages: 0, hostnames: 0 });
+      expect(p.begin).not.toHaveBeenCalled();
+      expect(p.finish).not.toHaveBeenCalled();
     }
   });
 

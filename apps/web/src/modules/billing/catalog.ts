@@ -42,17 +42,27 @@ export const PRICE_CATALOG: readonly PlanPrice[] = PAID_PLAN_IDS.flatMap((planId
   BILLING_INTERVALS.map((interval) => ({ planId, interval, amountCents: amountFor(planId, interval), currency: PRODUCT.currency })),
 );
 
+/**
+ * Amounts that are no longer sold and are still charged to subscriptions bought at them (ADR 0014,
+ * addendum; docs/runbooks/PRICE_CHANGE.md). They mirror the `plan_prices` rows with `retired_at`
+ * set; the drift test compares both. Empty until a price changes. A retired amount is never used
+ * for a new checkout or a plan change: it only says which plan an existing charge pays for.
+ */
+export const RETIRED_PRICES: readonly PlanPrice[] = [];
+
+/** The price on sale: what a new checkout or a change of plan or interval is charged. */
 export function planPrice(planId: PlanId, interval: BillingInterval): PlanPrice | null {
   return PRICE_CATALOG.find((price) => price.planId === planId && price.interval === interval) ?? null;
 }
 
 /**
  * The plan a charge pays for. A subscription grants the plan whose catalogue price it is actually
- * charged, never a plan named in metadata: every (interval, amount) pair is unique in the catalogue
- * (tested), so the answer is unambiguous. The database applies the same rule (plan_prices).
+ * charged, never a plan named in metadata: every (interval, amount) pair is unique across the prices
+ * on sale and the retired ones (tested), so the answer is unambiguous. The database applies the
+ * same rule (plan_prices).
  */
 export function planForCharge(amountCents: number, currency: string, interval: string): PlanId | null {
-  const match = PRICE_CATALOG.find((price) => price.amountCents === amountCents && price.currency === currency.toUpperCase() && price.interval === interval);
+  const match = [...PRICE_CATALOG, ...RETIRED_PRICES].find((price) => price.amountCents === amountCents && price.currency === currency.toUpperCase() && price.interval === interval);
   return match?.planId ?? null;
 }
 

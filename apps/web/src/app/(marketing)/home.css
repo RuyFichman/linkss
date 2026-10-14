@@ -140,7 +140,8 @@
 .home-footer ul { margin: 0; padding: 0; list-style: none; }
 .home-footer li a { display: inline-flex; min-height: 44px; align-items: center; color: var(--home-muted); }
 .home-footer li a:hover { color: var(--home-ink); }
-@media (min-width: 720px) { .home-footer { grid-template-columns: 1.4fr repeat(3, 1fr); } }
+@media (min-width: 720px) { .home-footer { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1024px) { .home-footer { grid-template-columns: 1.4fr repeat(4, 1fr); } }
 
 @media (prefers-reduced-motion: reduce) { .home-marquee-track { animation: none; } }
 

@@ -1,10 +1,14 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
+import { BILLING_COPY } from "@/content/pt-BR";
 import type { IdentityPort } from "@/modules/identity/guard";
 import type { WorkspaceRole } from "@/modules/identity/permissions";
+import { CANCELLATION_COMMENT_MAX_LENGTH, CANCELLATION_REASONS, parseCancellationFeedback } from "./cancellation";
 import { PRICE_CATALOG } from "./catalog";
 import { FAKE_WEBHOOK_SECRET, createFakePaymentsAdapter, type FakeDelivery } from "./fake-adapter";
 import { billingErrorFromDatabase } from "./read";
-import { createBillingService, processWebhook, runBillingMaintenance, syncFromProvider, type BillingRepository, type SyncDeps } from "./service";
+import { createBillingService, endSubscriptionsNow, processWebhook, runBillingMaintenance, syncFromProvider, type BillingRepository, type SyncDeps } from "./service";
 import { createMemoryLedger } from "./testing/memory-ledger";
 import { signWebhookPayload } from "./webhook-signature";
 
@@ -15,6 +19,7 @@ import { signWebhookPayload } from "./webhook-signature";
  * The database's side of the same cases is supabase/tests/database/170-billing.test.sql.
  */
 const SIGNING_SECRET = "s".repeat(64);
+const MIGRATIONS_DIR = fileURLToPath(new URL("../../../../../supabase/migrations/", import.meta.url));
 const W1 = "11111111-1111-4111-8111-111111111111";
 const W2 = "22222222-2222-4222-8222-222222222222";
 const OWNER = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -31,6 +36,8 @@ function world(start = new Date("2026-10-09T12:00:00.000Z")) {
 
   // The database's part of the owner actions, reduced to what the service depends on.
   let checkoutsBegun = 0;
+  const feedback: Array<{ workspaceId: string; reason: string; comment: string | null }> = [];
+  const feedbackStore = { mode: "ok" as "ok" | "refuses" | "throws" };
   const repository: BillingRepository = {
     workspaceName: async () => "Agência Teste",
     async beginCheckout(workspaceId) {
@@ -52,6 +59,21 @@ function world(start = new Date("2026-10-09T12:00:00.000Z")) {
       const target = kind === "change_plan" ? PRICE_CATALOG.find((price) => price.planId === planId && price.interval === live.interval) : null;
       return { ok: true, value: { subscriptionId: live.id, customerId: ledger.customerOf(workspaceId) as string, planId: live.planId, interval: live.interval, amountCents: target?.amountCents ?? 0 } };
     },
+    async beginIntervalChange(workspaceId, interval) {
+      const live = ledger.liveSubscription(workspaceId);
+      if (!live) return { ok: false, error: "no_subscription" };
+      if (live.interval === interval) return { ok: false, error: "same_plan" };
+      if (interval !== "year") return { ok: false, error: "interval_unavailable" };
+      if (live.status !== "active" || live.cancelAtPeriodEnd || live.heldPlanId) return { ok: false, error: "invalid_state" };
+      const target = PRICE_CATALOG.find((price) => price.planId === live.planId && price.interval === interval);
+      return { ok: true, value: { subscriptionId: live.id, customerId: ledger.customerOf(workspaceId) as string, planId: live.planId, interval, amountCents: target?.amountCents ?? 0 } };
+    },
+    async recordCancellationFeedback(workspaceId, given) {
+      if (feedbackStore.mode === "throws") throw new Error("database unreachable");
+      if (feedbackStore.mode === "refuses") return { ok: false, error: "unavailable" };
+      feedback.push({ workspaceId, ...given });
+      return { ok: true, value: null };
+    },
   };
 
   // One id sequence for the whole world: every server-made snapshot has its own event id.
@@ -69,7 +91,7 @@ function world(start = new Date("2026-10-09T12:00:00.000Z")) {
     return { delivery, subscriptionId: delivery.event.subscriptionId as string };
   }
 
-  return { clock, fake, ledger, sync, advance, send, repository, serviceFor, subscribe, checkoutsBegun: () => checkoutsBegun };
+  return { clock, fake, ledger, sync, advance, send, repository, serviceFor, subscribe, checkoutsBegun: () => checkoutsBegun, feedback, feedbackStore };
 }
 
 describe("billing life cycle (fake provider, injected clock)", () => {
@@ -411,6 +433,7 @@ describe("only the owner manages billing", () => {
     ["cancel", (service, id) => service.cancel(id)],
     ["resume", (service, id) => service.resume(id)],
     ["change plan", (service, id) => service.changePlan(id, "agency")],
+    ["change interval", (service, id) => service.changeInterval(id, "year")],
     ["open the provider's page", (service, id) => service.openSelfService(id)],
   ];
 
@@ -418,7 +441,7 @@ describe("only the owner manages billing", () => {
     const w = world();
     const { delivery } = await w.subscribe(W1, "pro", "month");
     await w.send(delivery);
-    const spies = [vi.spyOn(w.repository, "beginCheckout"), vi.spyOn(w.repository, "beginChange"), vi.spyOn(w.repository, "registerCustomer"), vi.spyOn(w.repository, "findCustomerId")];
+    const spies = [vi.spyOn(w.repository, "beginCheckout"), vi.spyOn(w.repository, "beginChange"), vi.spyOn(w.repository, "beginIntervalChange"), vi.spyOn(w.repository, "recordCancellationFeedback"), vi.spyOn(w.repository, "registerCustomer"), vi.spyOn(w.repository, "findCustomerId")];
     const providerCalls = w.fake.calls.length;
 
     expect(await run(w.serviceFor("admin"), W1)).toEqual({ ok: false, error: "forbidden" });
@@ -437,7 +460,7 @@ describe("only the owner manages billing", () => {
   it("with billing off nothing can be bought or changed, and nothing errors", async () => {
     const w = world();
     const service = w.serviceFor("owner", true, "off");
-    for (const result of [await service.startCheckout(W1, "pro", "month"), await service.cancel(W1), await service.resume(W1), await service.changePlan(W1, "agency"), await service.openSelfService(W1)]) {
+    for (const result of [await service.startCheckout(W1, "pro", "month"), await service.cancel(W1), await service.resume(W1), await service.changePlan(W1, "agency"), await service.changeInterval(W1, "year"), await service.openSelfService(W1)]) {
       expect(result).toEqual({ ok: false, error: "billing_off" });
     }
     expect(w.fake.calls).toEqual([]);
@@ -464,6 +487,142 @@ describe("only the owner manages billing", () => {
     expect(await w.serviceFor("owner").resume(W1)).toEqual({ ok: false, error: "invalid_state" });
     expect(await w.serviceFor("owner").changePlan(W1, "free")).toEqual({ ok: false, error: "invalid_plan" });
     expect(billingErrorFromDatabase({ code: "LK100" })).toBe("already_subscribed");
+  });
+});
+
+describe("monthly to yearly on a running subscription", () => {
+  it("starts the yearly period now, at the yearly price on sale, and keeps the plan", async () => {
+    const w = world();
+    const { delivery } = await w.subscribe(W1, "pro", "month");
+    await w.send(delivery);
+    w.advance(10 * DAY);
+    expect(await w.serviceFor("owner").changeInterval(W1, "year")).toEqual({ ok: true, value: { planChanged: false, slugs: [] } });
+    expect(w.ledger.planOf(W1)).toBe("pro");
+    expect(w.ledger.liveSubscription(W1)).toMatchObject({ status: "active", planId: "pro", interval: "year", heldPlanId: null, currentPeriodEnd: new Date(w.clock.now.getTime() + 365 * DAY) });
+    // What was paid for the twenty days left of the month is discounted from the first yearly charge.
+    const subscription = await w.fake.adapter.findCustomerSubscription(w.ledger.customerOf(W1) as string);
+    expect(subscription).toMatchObject({ amountCents: 14900, interval: "year" });
+    const [latest] = await w.fake.adapter.listInvoices(subscription?.id ?? "", 1);
+    expect(latest).toMatchObject({ status: "paid", amountCents: 14900 - Math.round(1490 * (20 / 30)) });
+  });
+
+  it("is refused in the other direction, for the same interval and while the subscription is not in good standing", async () => {
+    const w = world();
+    expect(await w.serviceFor("owner").changeInterval(W1, "year")).toEqual({ ok: false, error: "no_subscription" });
+    const { delivery } = await w.subscribe(W1, "agency", "year");
+    await w.send(delivery);
+    const calls = w.fake.calls.length;
+    expect(await w.serviceFor("owner").changeInterval(W1, "month")).toEqual({ ok: false, error: "interval_unavailable" });
+    expect(await w.serviceFor("owner").changeInterval(W1, "year")).toEqual({ ok: false, error: "same_plan" });
+    expect(await w.serviceFor("owner").changeInterval(W1, "week")).toEqual({ ok: false, error: "invalid_plan" });
+    expect(w.fake.calls.length).toBe(calls);
+
+    const { delivery: second } = await w.subscribe(W2, "pro", "month");
+    await w.send(second);
+    await w.serviceFor("owner").cancel(W2);
+    expect(await w.serviceFor("owner").changeInterval(W2, "year")).toEqual({ ok: false, error: "invalid_state" });
+    expect(billingErrorFromDatabase({ code: "LK103", details: "interval" })).toBe("interval_unavailable");
+  });
+
+  it("does not charge an amount the catalogue does not hold, and reports a provider that does not answer", async () => {
+    const w = world();
+    const { delivery } = await w.subscribe(W1, "pro", "month");
+    await w.send(delivery);
+    const begin = vi.spyOn(w.repository, "beginIntervalChange");
+    begin.mockResolvedValueOnce({ ok: true, value: { subscriptionId: "sub_x", customerId: "cus_x", planId: "pro", interval: "year", amountCents: 1 } });
+    const calls = w.fake.calls.length;
+    expect(await w.serviceFor("owner").changeInterval(W1, "year")).toEqual({ ok: false, error: "unavailable" });
+    expect(w.fake.calls.length).toBe(calls);
+    w.fake.setDown(true);
+    expect(await w.serviceFor("owner").changeInterval(W1, "year")).toEqual({ ok: false, error: "provider_unavailable" });
+    w.fake.setDown(false);
+    expect(w.ledger.liveSubscription(W1)).toMatchObject({ interval: "month" });
+  });
+});
+
+describe("ending subscriptions for an account erasure", () => {
+  it("ends them at the provider at once, takes the plan away and can be run again", async () => {
+    const w = world();
+    const first = await w.subscribe(W1, "pro", "year");
+    await w.send(first.delivery);
+    const second = await w.subscribe(W2, "agency", "month");
+    await w.send(second.delivery);
+    let ids = 0;
+    const list = [{ subscriptionId: first.subscriptionId, customerId: w.ledger.customerOf(W1) as string }, { subscriptionId: second.subscriptionId, customerId: w.ledger.customerOf(W2) as string }];
+    expect(await endSubscriptionsNow(w.sync, list, () => `e${++ids}`)).toEqual({ ok: true, ended: 2, slugs: expect.any(Array) });
+    expect(w.ledger.liveSubscription(W1)).toBeNull();
+    expect(w.ledger.liveSubscription(W2)).toBeNull();
+    expect(w.ledger.planOf(W1)).toBe("free");
+    expect(w.ledger.planOf(W2)).toBe("free");
+    expect((await w.fake.adapter.fetchSubscription(first.subscriptionId))?.status).toBe("ended");
+    // The same step again finds them over and still succeeds.
+    expect(await endSubscriptionsNow(w.sync, list, () => `e${++ids}`)).toMatchObject({ ok: true, ended: 2 });
+  });
+
+  it("stops at the first one that cannot be ended or recorded", async () => {
+    const w = world();
+    const first = await w.subscribe(W1, "pro", "month");
+    await w.send(first.delivery);
+    const list = [{ subscriptionId: first.subscriptionId, customerId: w.ledger.customerOf(W1) as string }];
+    w.fake.setDown(true);
+    expect(await endSubscriptionsNow(w.sync, list, () => "e1")).toEqual({ ok: false, ended: 0, slugs: [] });
+    w.fake.setDown(false);
+    expect(w.ledger.liveSubscription(W1)).toMatchObject({ status: "active" });
+    // Ended at the provider, but the database did not take the snapshot: not done.
+    w.ledger.setDown(true);
+    expect(await endSubscriptionsNow(w.sync, list, () => "e2")).toEqual({ ok: false, ended: 0, slugs: [] });
+    w.ledger.setDown(false);
+    // A subscription the provider does not know leaves the stored copy as it was: not done either.
+    expect(await endSubscriptionsNow(w.sync, [{ subscriptionId: "sub_unknown", customerId: w.ledger.customerOf(W1) as string }], () => "e3")).toEqual({ ok: false, ended: 0, slugs: [] });
+    expect(await endSubscriptionsNow(w.sync, list, () => "e4")).toMatchObject({ ok: true, ended: 1 });
+  });
+});
+
+describe("cancellation reason", () => {
+  it("is stored after the provider accepted the cancellation, and only then", async () => {
+    const w = world();
+    const { delivery } = await w.subscribe(W1, "pro", "month");
+    await w.send(delivery);
+    w.fake.setDown(true);
+    expect(await w.serviceFor("owner").cancel(W1, { reason: "too_expensive", comment: null })).toEqual({ ok: false, error: "provider_unavailable" });
+    expect(w.feedback).toEqual([]);
+    w.fake.setDown(false);
+    expect(await w.serviceFor("owner").cancel(W1, { reason: "too_expensive", comment: "caro" })).toMatchObject({ ok: true, value: { feedbackStored: true } });
+    expect(w.feedback).toEqual([{ workspaceId: W1, reason: "too_expensive", comment: "caro" }]);
+    expect(w.ledger.liveSubscription(W1)).toMatchObject({ cancelAtPeriodEnd: true });
+  });
+
+  it("is optional, and a reason that cannot be stored never undoes or fails the cancellation", async () => {
+    const w = world();
+    const { delivery } = await w.subscribe(W1, "pro", "month");
+    await w.send(delivery);
+    expect(await w.serviceFor("owner").cancel(W1)).toMatchObject({ ok: true, value: { feedbackStored: false } });
+    expect(w.feedback).toEqual([]);
+
+    for (const mode of ["refuses", "throws"] as const) {
+      await w.serviceFor("owner").resume(W1);
+      w.feedbackStore.mode = mode;
+      expect(await w.serviceFor("owner").cancel(W1, { reason: "other", comment: null })).toMatchObject({ ok: true, value: { feedbackStored: false } });
+      expect(w.ledger.liveSubscription(W1)).toMatchObject({ cancelAtPeriodEnd: true });
+    }
+  });
+
+  it("reads the form: a known reason, a comment alone as `other`, nothing as nothing, and a long comment cut", () => {
+    expect(parseCancellationFeedback("not_using", "  ")).toEqual({ reason: "not_using", comment: null });
+    expect(parseCancellationFeedback("temporary", " volto em março ")).toEqual({ reason: "temporary", comment: "volto em março" });
+    expect(parseCancellationFeedback("", "faltou agenda")).toEqual({ reason: "other", comment: "faltou agenda" });
+    expect(parseCancellationFeedback("made_up", "")).toBeNull();
+    expect(parseCancellationFeedback(null, null)).toBeNull();
+    expect(parseCancellationFeedback("other", "x".repeat(CANCELLATION_COMMENT_MAX_LENGTH + 50))?.comment).toHaveLength(CANCELLATION_COMMENT_MAX_LENGTH);
+  });
+
+  it("has one label per reason and the reasons the database accepts", () => {
+    expect(Object.keys(BILLING_COPY.cancelReason.options).sort()).toEqual([...CANCELLATION_REASONS].sort());
+    const sql = readdirSync(MIGRATIONS_DIR).filter((file) => file.endsWith(".sql")).map((file) => readFileSync(MIGRATIONS_DIR + file, "utf8")).join("\n");
+    const list = `(${CANCELLATION_REASONS.map((reason) => `'${reason}'`).join(", ")})`;
+    // Once in the table check and once in record_cancellation_feedback.
+    expect(sql.split(`reason in ${list}`).length - 1).toBe(1);
+    expect(sql.split(`p_reason not in ${list}`).length - 1).toBe(1);
   });
 });
 

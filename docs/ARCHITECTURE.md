@@ -313,3 +313,28 @@ Administrador da plataforma ── /app/administracao/privacidade ── eraseAc
 ```
 
 Invariantes: o contador por instância não é um limite global; a página pública não passa por ele (ficaria fora do cache); uma página só é apagada depois das imagens dela (`media_assets` é `ON DELETE RESTRICT`); a exclusão de conta nunca é automática e cada etapa pode ser repetida.
+
+## Preparação do piloto (13/10/2026): preços aposentados, troca de período, funil e páginas públicas (ADR 0014 adendo, ADR 0020)
+
+Implementado e verificado só no stack local.
+
+```text
+Proprietário ── /plano/confirmar?acao=anual ── changeInterval ── begin_billing_interval_change (papel, situação, preço à venda)
+                                                └─ PaymentsAdapter.changePlan (mesmo plano, período novo, vale agora) ── retrato atestado ── apply_billing_snapshot
+
+Proprietário ── /plano/confirmar?acao=cancelar ── cancel ── begin_billing_change ── PaymentsAdapter.cancelAtPeriodEnd
+                                                  └─ só depois: record_cancellation_feedback (motivo opcional; falha aqui não desfaz nada)
+
+Administrador da plataforma ── eraseAccount
+   0. list_erasure_subscriptions ── PaymentsAdapter.cancelNow ── retrato atestado      (novo: antes de qualquer exclusão)
+   1. begin_account_erasure   2. servidor   3. finish_account_erasure                  (como antes)
+
+Administrador da plataforma ── /app/administracao/produto ── get_product_metrics (contagens por semana de cadastro)
+                               lê auth.users, profiles, profile_publications, analytics_daily, billing_invoices; não grava nada
+
+Visitante ── /ajuda, /precos   estáticas (textos em content/pt-BR.ts; preços do catálogo, só com cobrança real)
+Visitante ── /status           por requisição ── probePublicStatus (uma leitura anônima a cada 30 s por instância)
+Monitor (GitHub, de hora em hora) ── /api/health, /, /status, página de teste (com tempo máximo) ── /api/ops/status
+```
+
+Invariantes: o valor cobrado identifica um único plano, à venda ou aposentado (`plan_prices_charge_key`); checkout, mudança de plano e troca de período usam só o preço à venda; uma mudança de preço entra pela migração **antes** do deploy; o motivo do cancelamento nunca é condição para cancelar; nenhuma conta é apagada com assinatura em curso, e nenhuma assinatura é encerrada para uma exclusão que seria recusada; o funil devolve contagens e nunca um identificador; `/status` não diz nada sobre jobs, filas ou clientes.

@@ -44,7 +44,7 @@ export async function eraseAccountAction(formData: FormData): Promise<void> {
   const result = await eraseAccountForRequest(requestId, evidence);
   logEvent(result.outcome === "erased" ? "info" : result.outcome === "unavailable" ? "error" : "warn", "privacy.erasure", {
     correlationId: correlationIdFrom((await headers()).get(CORRELATION_HEADER)),
-    outcome: result.outcome, pages: result.pages, hostnames: result.hostnames, workspaces: result.counts?.workspaces,
+    outcome: result.outcome, pages: result.pages, hostnames: result.hostnames, subscriptionsEnded: result.subscriptionsEnded, workspaces: result.counts?.workspaces,
     durationMs: Math.round(performance.now() - startedAt),
   });
   if (result.outcome === "forbidden" || result.outcome === "not_found") notFound();

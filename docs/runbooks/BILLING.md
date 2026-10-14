@@ -125,6 +125,16 @@ select outcome, count(*) from public.billing_events where received_at > now() - 
 
 `node scripts/billing-lifecycle.mjs` (em `apps/web`) sobe um emulador local da API da Stripe e a aplicação apontada para ele, e percorre o ciclo de vida inteiro; `--serve` deixa os dois no ar para usar no navegador; `--cleanup` remove as contas `qa-billing-*@example.test`. Instruções no cabeçalho do arquivo. O emulador segue a documentação da Stripe, não a Stripe: serve para conferir o produto, não o provedor.
 
+## 8a. Mudanças que o dono faz sozinho (desde 13/10/2026)
+
+Código de 13/10/2026 (ADR 0014, adendo), verificado só contra o emulador. **Nada disto rodou contra a Stripe.**
+
+- **Mensal para anual:** em *Plano*, quem tem assinatura mensal em dia vê *Passar para o anual*. Vale na hora: a Stripe começa o período de um ano hoje e cobra o ano descontando a parte do mês já paga e não usada. Na primeira vez em produção, **confira na Stripe a fatura gerada** (valor do ano menos o crédito do mês) e compare com o que a tela de confirmação prometeu.
+- **Anual para mensal:** não existe no meio do ano pago (`LK103`, detalhe `interval`). O caminho é cancelar a renovação e assinar o mensal quando o período terminar. Se o cliente pedir a troca imediata, é um caso de atendimento: cancelar e reembolsar à mão (§3).
+- **Motivo do cancelamento:** opcional, gravado em `billing_cancellation_feedback` depois que a Stripe aceitou o cancelamento. Quem cancela pelo portal da Stripe não responde nada. As respostas aparecem em `/app/administracao/produto`. No log, `billing.cancel_feedback` com `outcome=not_stored` significa que o cancelamento valeu e a resposta se perdeu: não é incidente.
+- **Mudança de preço:** `PRICE_CHANGE.md`. Uma assinatura cobrada num valor antigo continua com o plano; `price_mismatch` volta a significar o que significava: um valor que **nunca** esteve no catálogo.
+- **Exclusão de conta com assinatura em curso:** a exclusão cancela na Stripe na hora, sem reembolso (`ACCOUNT_DELETION.md`).
+
 ## 9. Alertas
 
 O monitor externo (`MONITORING.md`) avisa por e-mail quando: a cobrança foi pedida no ambiente e está desligada (`billing:mode`, com o motivo; ver §2); um evento ficou em processamento por mais de 1 h (`billing:stuck_events`; ver §1); chegou evento de cliente desconhecido, com divergência ou conflito nas últimas 24 h (`billing:mismatches`; ver §1 e §7); o job diário não roda há mais de 36 h (`job:billing`; ver `JOBS.md`). **Ele não percebe um webhook que não chegou:** isso só aparece quando o job diário corrige a assinatura (`billing.maintenance` com `corrected > 0`).

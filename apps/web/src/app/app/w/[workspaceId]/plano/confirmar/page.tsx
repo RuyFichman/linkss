@@ -3,9 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BILLING_COPY } from "@/content/pt-BR";
 import type { PlanId } from "@/lib/product";
-import { cancelSubscriptionAction, changePlanAction } from "@/modules/billing/actions";
-import { formatMoney, isPaidPlan, isPlanId, planPrice, planRank } from "@/modules/billing/catalog";
+import { cancelSubscriptionAction, changeIntervalAction, changePlanAction } from "@/modules/billing/actions";
+import { formatMoney, isPaidPlan, isPlanId, planPrice, planRank, yearlySavingCents } from "@/modules/billing/catalog";
 import { BillingActionForm } from "@/modules/billing/components/billing-action-form";
+import { CancelSubscriptionForm } from "@/modules/billing/components/cancel-subscription-form";
 import { downgradeImpact, hasImpact, type ImpactItem } from "@/modules/billing/downgrade-impact";
 import { resolveBillingMode } from "@/modules/billing/mode";
 import { formatBillingDate, impactSentence, planFeatureLines } from "@/modules/billing/presentation";
@@ -44,7 +45,7 @@ export default async function ConfirmPlanChangePage({ params, searchParams }: { 
 
   const action = typeof query.acao === "string" ? query.acao : "";
   const targetParam = typeof query.plano === "string" ? query.plano : "";
-  if (action !== "cancelar" && action !== "mudar") notFound();
+  if (action !== "cancelar" && action !== "mudar" && action !== "anual") notFound();
   if (action === "mudar" && !(isPlanId(targetParam) && isPaidPlan(targetParam))) notFound();
   const target: PlanId = action === "cancelar" ? "free" : (targetParam as PlanId);
 
@@ -61,6 +62,28 @@ export default async function ConfirmPlanChangePage({ params, searchParams }: { 
   const record = billing.record;
   const state = billingViewState(record, billing.planId, new Date());
   const allowed = availableBillingActions(state);
+
+  if (action === "anual") {
+    // Same plan, another interval: nothing about what the workspace may use changes, so there is no impact list.
+    const yearly = record && state.kind === "active" && record.interval === "month" ? planPrice(state.planId, "year") : null;
+    if (!record || state.kind !== "active" || !yearly) return frame(copy.title, <><Notice tone="warning">{copy.confirm.notAvailable}</Notice><div>{back}</div></>);
+    const saving = yearlySavingCents(state.planId);
+    return frame(copy.confirm.intervalTitle, (
+      <>
+        {mode === "sandbox" ? <Notice tone="warning">{copy.sandbox}</Notice> : null}
+        <p className="m-0">{copy.confirm.intervalLead(copy.planNames[state.planId], formatMoney(yearly.amountCents))}</p>
+        <ul className="m-0 grid list-disc gap-1 pl-5">
+          {saving > 0 ? <li>{copy.confirm.intervalSaving(formatMoney(saving))}</li> : null}
+          <li>{copy.confirm.intervalSame}</li>
+          <li>{copy.confirm.intervalBack}</li>
+        </ul>
+        <div className="flex flex-wrap items-start gap-3">
+          <BillingActionForm action={changeIntervalAction.bind(null, workspaceId, "year")} label={copy.confirm.confirmInterval} variant="primary" hideOnSuccess />
+          <Link className="ui-button ui-button-secondary" href={base}>{copy.actions.back}</Link>
+        </div>
+      </>
+    ));
+  }
   // What the workspace is charged for today (after a scheduled change it differs from the plan in force).
   const charged: PlanId | null = record && (record.status === "active" || record.status === "past_due") ? record.planId : null;
   const possible = record && charged && (action === "cancelar" ? allowed.cancel : allowed.changePlan && target !== charged && planPrice(target, record.interval) !== null);
@@ -106,12 +129,14 @@ export default async function ConfirmPlanChangePage({ params, searchParams }: { 
         </section>
       )}
 
-      <div className="flex flex-wrap items-start gap-3">
-        {action === "cancelar"
-          ? <BillingActionForm action={cancelSubscriptionAction.bind(null, workspaceId)} label={copy.confirm.confirmCancel} variant="danger" hideOnSuccess />
-          : <BillingActionForm action={changePlanAction.bind(null, workspaceId, target)} label={copy.confirm.confirmChange(targetName)} variant="primary" hideOnSuccess />}
-        <Link className="ui-button ui-button-secondary" href={base}>{copy.actions.back}</Link>
-      </div>
+      {action === "cancelar" ? (
+        <CancelSubscriptionForm action={cancelSubscriptionAction.bind(null, workspaceId)} backHref={base} />
+      ) : (
+        <div className="flex flex-wrap items-start gap-3">
+          <BillingActionForm action={changePlanAction.bind(null, workspaceId, target)} label={copy.confirm.confirmChange(targetName)} variant="primary" hideOnSuccess />
+          <Link className="ui-button ui-button-secondary" href={base}>{copy.actions.back}</Link>
+        </div>
+      )}
     </>
   ));
 }

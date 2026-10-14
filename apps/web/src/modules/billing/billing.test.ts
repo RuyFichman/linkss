@@ -6,7 +6,7 @@ import { PRODUCT } from "@/lib/product";
 import { planEntitlementsFromProduct } from "@/modules/entitlements";
 import { WORKSPACE_ROLES } from "@/modules/identity/permissions";
 import { customerRegistrationMessage, serializeBillingSnapshot, signBillingMessage } from "./attestation";
-import { BILLING_INTERVALS, PAID_PLAN_IDS, PLAN_IDS, PRICE_CATALOG, formatMoney, isPaidPlan, planForCharge, planPrice, planRank, yearlySavingCents } from "./catalog";
+import { BILLING_INTERVALS, PAID_PLAN_IDS, PLAN_IDS, PRICE_CATALOG, RETIRED_PRICES, formatMoney, isPaidPlan, planForCharge, planPrice, planRank, yearlySavingCents } from "./catalog";
 import { downgradeImpact, hasImpact, type WorkspaceUsage } from "./downgrade-impact";
 import { paidPlansAreOnSale } from "./marketing";
 import { billingSecrets, resolveBillingMode } from "./mode";
@@ -60,6 +60,16 @@ describe("price catalogue (AC1)", () => {
     expect(new Set(PRICE_CATALOG.map((price) => `${price.interval}:${price.amountCents}:${price.currency}`)).size).toBe(PRICE_CATALOG.length);
   });
 
+  it("keeps retired prices apart from the prices on sale, and a charge still names one plan", () => {
+    const all = [...PRICE_CATALOG, ...RETIRED_PRICES];
+    expect(new Set(all.map((price) => `${price.interval}:${price.amountCents}:${price.currency}`)).size).toBe(all.length);
+    // A retired amount identifies its plan and is never what a checkout or a change charges.
+    for (const price of RETIRED_PRICES) {
+      expect(planForCharge(price.amountCents, price.currency, price.interval)).toBe(price.planId);
+      expect(planPrice(price.planId, price.interval)?.amountCents).not.toBe(price.amountCents);
+    }
+  });
+
   it("ranks plans by price without naming them", () => {
     expect(planRank("free")).toBe(0);
     expect(planRank("agency")).toBeGreaterThan(planRank("pro"));
@@ -68,8 +78,9 @@ describe("price catalogue (AC1)", () => {
   it("matches the plan_prices seed in the migrations (drift guard)", () => {
     const sql = readdirSync(MIGRATIONS_DIR).filter((file) => file.endsWith(".sql")).map((file) => readFileSync(MIGRATIONS_DIR + file, "utf8")).join("\n");
     const seeded = [...sql.matchAll(/\('([a-z_]+)', '(month|year)', (\d+), '([A-Z]{3})'\)/g)].map(([, planId, interval, amount, currency]) => ({ planId, interval, amountCents: Number(amount), currency }));
-    const byKey = (rows: ReadonlyArray<{ planId?: string; interval?: string }>) => [...rows].sort((a, b) => `${a.planId}${a.interval}`.localeCompare(`${b.planId}${b.interval}`));
-    expect(byKey(seeded)).toEqual(byKey(PRICE_CATALOG));
+    const byKey = (rows: ReadonlyArray<{ planId?: string; interval?: string; amountCents?: number }>) => [...rows].sort((a, b) => `${a.planId}${a.interval}${a.amountCents}`.localeCompare(`${b.planId}${b.interval}${b.amountCents}`));
+    // Every amount a migration ever inserted is either on sale or retired (docs/runbooks/PRICE_CHANGE.md).
+    expect(byKey(seeded)).toEqual(byKey([...PRICE_CATALOG, ...RETIRED_PRICES]));
     expect(sql).toContain(`interval '${GRACE_PERIOD_DAYS} days'`);
   });
 });

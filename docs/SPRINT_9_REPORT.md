@@ -294,3 +294,91 @@ O founder pediu, da lista de pendências, "os que você consegue fazer". Oito it
 - Nada em produção. Safari do iPhone não conferido para a cor da barra. LCP não medido depois do `preload`.
 - QA em aparelho real, outros navegadores, leitor de tela e teclado continua pendente.
 - Sem e-mail ao dono quando a comprovação do domínio some.
+
+## Adendo de 13/10/2026 — preparação do piloto (o que faltava em código e não depende do SMTP)
+
+**Branch de trabalho:** `fix/page-list-cards`, **sem commit**: as mudanças estão na árvore de trabalho, ao lado de alterações anteriores do founder nessa branch (lista de páginas e tipografia), que não foram tocadas. **Estado: implementado e verificado só no stack local. Nada aplicado em produção** (migração `202610130001` pendente). Decisões: ADR 0020 e adendo do ADR 0014.
+
+Este adendo não conclui a Sprint 9 nem inicia a Sprint 10. Ele fecha, da lista "ainda falta em código", os itens que não dependem de e-mail.
+
+### Objetivo e resultado
+
+| Item pedido | Estado | Evidência |
+|---|---|---|
+| Central curta de ajuda | **implementado e verificado localmente** em `/ajuda`; *Ajuda* no menu da conta | `pilot-readiness.mjs` |
+| Contato de suporte | **preparado**: a página mostra o endereço de `SUPPORT_EMAIL`. **O endereço não existe e a variável não está configurada em lugar nenhum**; sem ela a página diz que o atendimento do piloto é com quem enviou o convite | Vitest não cobre; navegador confere a variante sem endereço |
+| Funil de produto e coortes de ativação | **implementado e verificado localmente** em `/app/administracao/produto`; mede o gate de 60% e a mediana até publicar. **Conta todas as contas criadas, não só convidados** | pgTAP `230`; Vitest `metrics.test.ts`; navegador |
+| Tour de onboarding self-service | **implementado como lista de primeiros passos**, não como tour guiado sobre a tela (decisão UX-097) | Vitest `onboarding.test.ts`; navegador (três estados) |
+| FAQ | **implementado** dentro de `/ajuda` (19 perguntas em cinco assuntos, mais as de cobrança) | navegador |
+| Página de preços | **implementado e verificado localmente** em `/precos`; valores só com a cobrança real ligada. **A variante com preços não foi aberta num navegador** (o build local não está em modo real) | navegador (variante "Em breve") |
+| Página de status | **implementado e verificado localmente** em `/status`; servida pela própria aplicação, sem histórico de incidentes | Vitest `public-status.test.ts`; navegador |
+| Cancelamento com motivo | **implementado e verificado localmente**; opcional, gravado depois do aceite do provedor | pgTAP `230`; Vitest; `billing-lifecycle.mjs`; navegador |
+| Troca entre mensal e anual | **parcial**: mensal para anual implementado e verificado contra o emulador; **anual para mensal não é oferecido** no meio do ano pago | pgTAP `230`; Vitest; `billing-lifecycle.mjs` |
+| Plano de migração para mudança de preço | **implementado** (preços aposentados mantêm o plano) **e documentado** (`docs/runbooks/PRICE_CHANGE.md`). Levar assinantes antigos ao preço novo **não tem código** | pgTAP `230`; teste de divergência |
+| Alertas de taxa de erro e latência do renderer | **parcial**: o monitor passou a medir tempo de resposta de quatro endereços e a ler `/status`. **Taxa de erro não foi feita**: exige contratar um leitor de logs, decisão do founder | `.github/workflows/monitor.yml` (**o workflow novo nunca rodou**) |
+| Tabelas de cobrança na exportação da conta | **já existia** desde a Sprint 9 (o backlog estava desatualizado); conferido por teste e acrescido do motivo do cancelamento | pgTAP `230`; `billing-lifecycle.mjs` |
+| Cancelar no provedor antes de excluir a conta | **implementado e verificado contra o emulador** | pgTAP `230`; Vitest; `billing-lifecycle.mjs`; `account-erasure.mjs` |
+
+### Decisões (todas provisórias; UX-094 a UX-101 em `docs/ux/UX_DECISIONS.md`)
+
+- **Só mensal para anual.** A volta no meio do ano transformaria o ano pago em crédito no provedor, que quem cancela depois não recebe de volta. A tela diz como voltar: cancelar a renovação e assinar o mensal no fim do período.
+- **Preço antigo mantido sem prazo** para quem já assina. Reajustar quem já paga é decisão comercial e jurídica, e sem e-mail não há como avisar.
+- **Motivo do cancelamento opcional**, sem oferta de retenção. O provedor é chamado antes de qualquer gravação.
+- **A exclusão de conta encerra a assinatura na hora, sem reembolso automático.** A tela avisa antes do botão; o reembolso é do operador.
+- **Ativação = contas criadas que publicaram uma página.** O funil não coleta nada novo: é calculado das tabelas do produto.
+- **Primeiros passos em vez de tour**, sem estado guardado e sem JavaScript.
+- **`/status` não usa cache de página.** Uma página regenerada é servida velha primeiro; a consulta ao banco é lembrada por 30 segundos por instância.
+- **Nenhum fornecedor novo.** Leitor de logs, página de status hospedada e ferramenta de atendimento ficaram de fora por serem decisões do founder.
+
+### Entregáveis
+
+- **Banco:** `supabase/migrations/202610130001_pilot_readiness.sql`; testes em `supabase/tests/database/230-pilot-readiness.test.sql`.
+- **Cobrança:** `modules/billing/` (`cancellation.ts`, `catalog.ts`, `service.ts`, `server.ts`, `actions.ts`, `components/cancel-subscription-form.tsx`); telas `…/plano` e `…/plano/confirmar?acao=anual|cancelar`.
+- **Exclusão de conta:** `modules/privacy/erasure.ts` e `erasure-server.ts`; tela `/app/administracao/privacidade`.
+- **Funil:** `modules/product-metrics/metrics.ts`; tela `/app/administracao/produto`.
+- **Páginas públicas:** `app/(marketing)/ajuda`, `precos`, `status`; `modules/ops/public-status*.ts`; `lib/support.ts`; textos em `content/pt-BR.ts` (`HELP_COPY`, `PRICING_COPY`, `STATUS_COPY`, `ONBOARDING_COPY`).
+- **Primeiros passos:** `modules/profiles/onboarding.ts`; lista de páginas.
+- **Monitor:** `.github/workflows/monitor.yml`.
+- **Ensaios:** `apps/web/scripts/pilot-readiness.mjs` (novo); `billing-lifecycle.mjs` e `account-erasure.mjs` (estendidos).
+- **Documentos:** ADR 0020; adendo do ADR 0014; `docs/runbooks/PRICE_CHANGE.md` (novo), `BILLING.md`, `ACCOUNT_DELETION.md`, `MONITORING.md`; `DATA_MAP.md`, `THREAT_MODEL.md`, `OBSERVABILITY.md`, `ENVIRONMENTS.md`, `UX_DECISIONS.md`, `BACKLOG.md`, `AGENTS.md`.
+
+### Verificação (13/10/2026, stack local)
+
+- `npm run check`: lint sem avisos, typecheck, **1.323 testes Vitest (56 arquivos)** e build aprovados.
+- `npm run test:db`: **1.480 asserções pgTAP (25 arquivos)** aprovadas; o arquivo novo tem 75. `supabase db lint`: o único aviso é anterior a esta entrega (`private.billing_text_is_timestamp`).
+- `node scripts/billing-lifecycle.mjs` (build de produção contra o emulador da Stripe): **156 verificações** (eram 124). As novas cobrem a troca para o anual, o cancelamento com motivo, a exportação e a exclusão de conta com assinatura em curso. Nenhuma linha de log de cobrança com identificador, segredo ou endereço.
+- `node scripts/account-erasure.mjs` (Chrome): **20 verificações** (eram 18): com assinatura em curso e sem provedor acessível, nada é apagado e nenhuma página sai do ar.
+- `node scripts/pilot-readiness.mjs` (build de produção, Chrome a 390 e 320 px): **40 verificações, nenhuma pendência**. Em cada tela: sem rolagem horizontal, campos com 16 px ou mais, controles com 24 px ou mais, nenhuma violação séria ou crítica das regras WCAG 2.2 A/AA do axe-core, nenhum erro de execução e nenhuma violação de CSP. Telas: `/ajuda`, `/precos`, `/status`, rodapé da home, lista de páginas nos três estados dos primeiros passos, *Plano* com assinatura mensal, as duas confirmações e o funil.
+- **Dois achados corrigidos durante a passagem:** a pergunta do motivo e a sua seção tinham o mesmo nome acessível (a pergunta virou o rótulo do campo); as tabelas largas do funil rolavam sem receber foco do teclado.
+- **Dois achados não corrigidos**, na home, anteriores a esta entrega: contraste do texto de exemplo do endereço e a faixa de modelos sem foco de teclado. Estão no backlog.
+- **Casos negativos:** administrador, editor, outra conta e sessão anônima em cada função nova; período igual, anual para mensal, cancelamento agendado, pagamento falhando e plano mais barato aguardando; motivo desconhecido e comentário longo; segundo preço à venda para o mesmo plano e mesmo valor para dois planos; valor que nunca esteve no catálogo; lista de assinaturas pedida pelo próprio titular, para pedido fora de análise e para conta com outro membro; funil pedido por cliente; provedor fora do ar em cada comando; banco recusando e falhando ao gravar o motivo.
+
+### Implicações
+
+- **Segurança e tenancy:** quatro funções novas, todas com o papel conferido no banco; a tabela nova não tem leitura para papel de cliente. `/app/administracao/produto` é a primeira tela com dados de várias contas: só contagens, só para `platform_admins`. Detalhes em `docs/THREAT_MODEL.md`.
+- **Privacidade:** um dado novo, o comentário do cancelamento, que é texto livre. O funil é o primeiro uso de dados de clientes para análise interna: **base legal e menção na política vão para a revisão jurídica**. Sem subprocessador novo.
+- **Acessibilidade:** passagem automática sem pendências nas telas novas. Aparelho real, outros navegadores, leitor de tela e teclado continuam pendentes.
+- **Desempenho:** `/ajuda` e `/precos` são estáticas. `/status` e o funil são por requisição; o funil faz uma consulta com subconsultas por conta, adequada a dezenas ou centenas de contas e **não medida além disso**. A lista de páginas não ganhou consulta.
+- **Dados:** `plan_prices` troca de chave primária (quatro linhas). Migração aditiva e compatível com rollback da aplicação.
+- **Operação:** o monitor ganha um passo e prazos; **falha uma vez entre o merge e o fim do deploy**, porque `/status` ainda não existe. Runbook novo para mudança de preço. A exclusão de conta passa a mexer na Stripe.
+- **Dados locais:** os ensaios criam e removem contas `qa-pilot-*`, `qa-billing-*` e `qa-erasure-*`; as três foram removidas ao fim.
+
+### Lacunas e o que ficou de fora
+
+- **Nada em produção.** A migração não foi aplicada, o workflow novo do monitor nunca rodou, e nada disto falou com a Stripe.
+- **A fatura da troca para o anual é a da Stripe.** O emulador aproxima o crédito do mês não usado; o valor real precisa ser conferido na primeira troca na área restrita.
+- **Anual para mensal** não existe. **Reajuste de quem já assina** não existe.
+- **Taxa de erro e latência por requisição** continuam sem alerta. Depende de fornecedor.
+- **Endereço de suporte** não existe. **Prazo de resposta** não foi prometido em lugar nenhum.
+- **O funil não separa convidados** de quem chegou sozinho, e não mostra onde, dentro de uma tela, a pessoa desistiu.
+- **`/precos` com preços** e **`/ajuda` com a seção de cobrança à venda** só foram conferidas por leitura do código, não num navegador.
+- **Página de status hospedada fora**, com histórico e avisos: Sprint 12.
+- Os testes de usabilidade continuam pendentes; as decisões UX-094 a UX-101 são provisórias.
+- Não dependem de código e seguem abertos: primeiro backup de produção, SMTP, modo da cobrança, revisão jurídica.
+
+### Próximo passo recomendado
+
+1. Decidir como estas mudanças vão para um PR, separadas das alterações da lista de páginas que já estavam na branch.
+2. Backup conferido e `supabase db push` das migrações pendentes (11/10 e 13/10).
+3. Na área restrita da Stripe: trocar para o anual, cancelar com motivo, e excluir uma conta de teste com assinatura.
+4. Definir o endereço de suporte e a decisão sobre o leitor de logs.

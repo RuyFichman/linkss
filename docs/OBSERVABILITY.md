@@ -200,3 +200,20 @@ Eventos novos:
 | `billing.webhook` com `outcome=billing_off` e `reason` | o webhook respondeu 503 porque a cobrança está desligada, e por quê | `reason` diferente de `disabled` → a cobrança foi pedida e está mal configurada: P1 (`BILLING.md` §2). O monitor acusa o mesmo em `billing:mode` |
 
 O monitor passou a ter doze verificações (cinco jobs).
+
+## Sinais acrescentados em 13/10/2026 (preparação do piloto)
+
+Decisões: ADR 0020 e adendo do ADR 0014. Verificado só no stack local.
+
+| Evento | O que é | Quando agir |
+|---|---|---|
+| `billing.change_interval` (`outcome`: `ok`, `forbidden`, `not_found`, `no_subscription`, `same_plan`, `interval_unavailable`, `invalid_state`, `billing_off`, `provider_unavailable`, `provider_rejected`, `unavailable`) | o dono pediu para passar do mensal ao anual | `provider_rejected` ou `unavailable` repetidos → P2 (`BILLING.md` §8a); `unavailable` logo depois de uma mudança de preço é esperado até o deploy (`PRICE_CHANGE.md`) |
+| `billing.cancel_feedback` (`outcome`: `ok`, `not_stored`) | o motivo dado num cancelamento foi gravado, ou se perdeu. **Nunca o comentário** | `not_stored` não é incidente: o cancelamento valeu |
+| `privacy.erasure` com `outcome=billing_not_configured` ou `billing_failed`, e `subscriptionsEnded` nas execuções que encerraram assinaturas | a exclusão de conta parou antes de apagar qualquer coisa porque não conseguiu encerrar a assinatura no provedor | conferir a assinatura na Stripe e executar de novo (`ACCOUNT_DELETION.md`) |
+| `status.degraded` (`databaseOk`, `durationMs`) | a página pública de situação mostrou instabilidade a alguém | repetido → o monitor já deve ter alertado; se não alertou, conferir o workflow |
+
+**Alertas novos do monitor** (`MONITORING.md`): a página de situação precisa dizer "Tudo funcionando", e a aplicação, a home, a página de situação e a página pública de teste têm tempo máximo de resposta (3 s e 6 s, em uma de três tentativas). São limiares de disponibilidade, medidos de fora do Brasil e uma vez por hora: provisórios, a ajustar depois de algumas semanas de log.
+
+**Continua sem alerta:** a **taxa de erro** e a latência por requisição do renderer, dos uploads, dos formulários e do Auth, os Web Vitals e os picos de `rate_limited`. Um alerta de taxa precisa contar todas as requisições, isto é, ler os logs da hospedagem. Isso depende de contratar o envio de logs (não existe no plano Hobby da Vercel) e um serviço que os receba: **decisão do founder, em aberto**.
+
+**Analytics de produto** (ADR 0020): o funil em `/app/administracao/produto` é calculado na hora a partir das tabelas do produto. Não gera evento, não tem job e não tem alerta; se a consulta falhar, a tela diz que não conseguiu carregar.

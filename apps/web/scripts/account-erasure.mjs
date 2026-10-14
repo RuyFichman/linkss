@@ -153,6 +153,20 @@ try {
   await page.waitForURL(/exclusao=confirmation/);
   check(sql(`select count(*) from auth.users where id='${person.id}';`) === "1" && sql(`select count(*) from public.profiles where workspace_id in ('${person.workspace}','${agency}') and deleted_at is null;`) === "2", "A wrong confirmation word changes nothing");
 
+  // A subscription that is still running is ended at the provider before anything is deleted. This
+  // application has no provider it can reach (billing off, or a sandbox with nobody behind it), so
+  // the erasure must stop there, with every page still on the air.
+  sql(`insert into public.billing_subscriptions (workspace_id, provider, provider_subscription_id, provider_customer_id, plan_id, billing_interval, amount_cents, currency, status, observed_at)
+       values ('${agency}', 'stripe', 'sub_qa_erasure_${suffix}', 'cus_qa_erasure_${suffix}', 'agency', 'month', 5790, 'BRL', 'active', now());`);
+  await form.locator('input[name="evidence"]').fill(evidence);
+  await form.locator('input[name="confirmation"]').fill("EXCLUIR");
+  await form.getByRole("button", { name: "Excluir a conta em definitivo" }).click();
+  await page.waitForURL(/exclusao=billing_(not_configured|failed)/, { timeout: 60000 });
+  check(await page.locator('p[role="alert"]').innerText().then((text) => text.includes("provedor de pagamento")), "With a running subscription that cannot be ended at the provider, the operator is told why nothing was done");
+  check(sql(`select count(*) from auth.users where id='${person.id}';`) === "1" && sql(`select count(*) from public.profiles where workspace_id in ('${person.workspace}','${agency}') and deleted_at is null;`) === "2" && sql(`select status from public.billing_subscriptions where workspace_id='${agency}';`) === "active", "Nothing was deleted or taken off the air, and the subscription is as it was");
+  // The operator ended it at the provider; here its stored copy is closed the way that snapshot would.
+  sql(`update public.billing_subscriptions set status = 'ended', ended_at = now() where workspace_id='${agency}';`);
+
   await form.locator('input[name="evidence"]').fill(evidence);
   await form.locator('input[name="confirmation"]').fill("EXCLUIR");
   await form.getByRole("button", { name: "Excluir a conta em definitivo" }).click();

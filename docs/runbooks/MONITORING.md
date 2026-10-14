@@ -4,7 +4,7 @@
 
 ## Como funciona
 
-O workflow `.github/workflows/monitor.yml` roda no GitHub de hora em hora e faz quatro leituras em `https://linkfav.com`. **Se uma falha, o GitHub manda um e-mail para quem alterou o agendamento por último: esse e-mail é o alerta.** O título é "Run failed: Monitor". Abra o link, veja qual passo ficou vermelho e use a tabela abaixo.
+O workflow `.github/workflows/monitor.yml` roda no GitHub de hora em hora e faz cinco leituras em `https://linkfav.com` (a aplicação, a home, a página de situação, a página pública de teste e a situação operacional). Desde 13/10/2026 as quatro primeiras **têm tempo máximo**: 3 segundos para `/api/health` e 6 para as páginas. Cada uma tenta até três vezes, com dez segundos entre elas, e passa na primeira resposta 200 dentro do prazo: uma requisição lenta isolada não vira alerta. O log de cada execução mostra o código e o tempo de cada tentativa, e é o único histórico de latência que o projeto tem. **Se uma falha, o GitHub manda um e-mail para quem alterou o agendamento por último: esse e-mail é o alerta.** O título é "Run failed: Monitor". Abra o link, veja qual passo ficou vermelho e use a tabela abaixo.
 
 Uma vez por dia (09:43 de Brasília) ele também conta trabalho esperando por uma pessoa (filas).
 
@@ -29,7 +29,8 @@ Severidades: **P1** = clientes afetados agora, agir no mesmo dia; **P2** = agir 
 | Passo que falhou / verificação | O que significa | Sev. | O que fazer |
 |---|---|---|---|
 | *The application answers* | `linkfav.com/api/health` não respondeu | P1 | Vercel → *Deployments*: o último deploy falhou? Reverter para o anterior (*Promote*). Conferir o status da Vercel. `INCIDENT.md` |
-| *The home page renders* | a aplicação responde mas a home não | P1 | idem; ver os logs do deploy |
+| *The home page renders* | a aplicação responde mas a home não, ou levou mais de 6 s três vezes seguidas | P1 | idem; ver os logs do deploy. Se o log mostra 200 com tempo alto, é lentidão: conferir o status da Vercel e repetir (*Run workflow*) antes de agir |
+| *The status page reports no instability* | `linkfav.com/status` não disse "Tudo funcionando": **o banco não respondeu ou levou mais de 3 s** (páginas já publicadas podem continuar abrindo pelo cache) | P1 | abrir `linkfav.com/status`; Supabase → o projeto: está pausado? (*Restore/Resume*). `INCIDENT.md`. Nos primeiros minutos depois do merge deste código o passo falha uma vez, até o deploy terminar |
 | *A published page renders* | a página pública de teste não abriu | P1 | `PUBLIC_PAGE.md` §3. Se a home abre e esta não, suspeite do banco (próxima linha) |
 | *Jobs, billing and queues* com HTTP 503 e `"error":"unavailable"` | **o banco não respondeu.** No plano Free, a causa mais provável é o projeto **pausado** | P1 | Supabase → o projeto → *Restore/Resume*. Depois rodar os jobs à mão (`JOBS.md`) |
 | idem, `"error":"not_configured"` | `OPS_STATUS_SECRET` ou `SUPABASE_SECRET_KEY` sumiu do deploy | P2 | repor a variável na Vercel e fazer novo deploy |
@@ -56,10 +57,15 @@ A resposta lista as doze verificações com `ok`, um detalhe curto e o runbook. 
 
 ## 4. O que o monitor não vê
 
-- Taxa de erro e lentidão da página pública, e Web Vitals: só nos logs da Vercel (`PUBLIC_PAGE.md` §6), que duram pouco no plano atual.
+- **Taxa de erro** da página pública e dos fluxos da conta, e Web Vitals: só nos logs da Vercel (`PUBLIC_PAGE.md` §6), que duram pouco no plano atual. O monitor mede disponibilidade e tempo de resposta de quatro endereços, de hora em hora, a partir de um servidor do GitHub fora do Brasil; ele não conta quantas requisições de clientes falharam.
+- Lentidão que dure menos de uma hora, ou que só aconteça para quem está no Brasil.
 - Picos de `rate_limited` e ataques em curso (`RATE_LIMITS.md`).
 - Um webhook da Stripe que não chegou: só aparece quando o job diário corrige (log `billing.maintenance` com `corrected > 0`).
 - Domínios próprios de clientes.
 - E-mails do Auth que não chegam.
 
-Um serviço de monitoramento pago cobriria os dois primeiros; é uma decisão do founder ainda não tomada.
+Um serviço que leia os logs cobriria os três primeiros. Ele depende de duas decisões do founder ainda não tomadas: o plano da Vercel (o envio de logs para fora, *log drain*, não existe no Hobby) e qual serviço recebe os logs (novo subprocessador, a registrar em `docs/DATA_MAP.md`).
+
+## 5. A página pública de situação
+
+`https://linkfav.com/status` (ADR 0020) diz a qualquer pessoa se a aplicação e o banco respondem. Ela é servida pela própria aplicação: **se a Vercel cair, a página não abre**. Não tem histórico de incidentes nem um campo para publicar um aviso: durante um incidente, o aviso aos clientes é feito por fora do produto (`INCIDENT.md`). A página consulta o banco no máximo duas vezes por minuto por instância, por mais que seja aberta.

@@ -220,7 +220,7 @@ Decisão: ADR 0014. **Novo subprocessador: Stripe** (processamento de pagamentos
 | Logs `billing.webhook`, `billing.maintenance`, `billing.checkout`, `billing.cancel`, `billing.resume`, `billing.change_plan`, `billing.self_service` | evento, tópico, desfecho, duração, correlation id | não: **nunca** conteúdo do evento, assinatura, id do provedor, valor, e-mail ou documento | operação | retenção do provedor de logs |
 
 - **CPF/CNPJ:** o produto não coleta. Se a Stripe exigir do pagador, o dado fica na Stripe, sob o contrato dela com o founder. Se um dia o produto precisar dele (nota fiscal), é uma coleta nova: finalidade, base e retenção têm de ser definidas antes.
-- **Exportação e exclusão (Sprint 9):** a exportação da conta deve incluir `billing_subscriptions` e `billing_invoices` (sem os ids internos do provedor, se a revisão assim decidir). A exclusão de uma conta com assinatura em curso é **recusada** até o cancelamento (`LK102`); a exclusão de conta do titular precisa cancelar na Stripe e só depois expurgar. O que fica na Stripe (cliente, faturas, recibos) segue a retenção da Stripe e as obrigações fiscais do founder: **exceção legal a registrar** depois da revisão contábil.
+- **Exportação e exclusão:** a exportação da conta inclui as quatro tabelas de cobrança desde a Sprint 9 e o motivo do cancelamento desde 13/10/2026, **com** os ids do provedor (retirar ou não é decisão da revisão). A exclusão de uma conta de agência com assinatura em curso feita pelo próprio dono é **recusada** até o cancelamento (`LK102`); a exclusão de conta do titular, executada pelo administrador, **encerra a assinatura na Stripe na hora e só depois apaga** (desde 13/10/2026; sem reembolso automático). O que fica na Stripe (cliente, faturas, recibos) segue a retenção da Stripe e as obrigações fiscais do founder: **exceção legal a registrar** depois da revisão contábil.
 - **Rebaixamento, falta de pagamento e cancelamento não apagam dado nenhum** do cliente.
 
 ## Dados adicionados na Sprint 9 (aceite, pedidos de privacidade e denúncias)
@@ -256,7 +256,7 @@ Decisão: ADR 0015. Verificado só no stack local (pgTAP `180-sprint9-privacy-mo
 | `report_links` | JSON da conta, sem o hash do token | manual |
 | `report_lookup_failures` | **exceção:** não exportado (hash de endereço) | expira em 24 horas |
 | `workspace_invitations` | JSON pessoal (enviados, recebidos, aceitos) e JSON da conta, sem o hash do token | manual |
-| `billing_customers`, `billing_subscriptions`, `billing_invoices`, `billing_events` | JSON da conta, **com** os ids do provedor (decisão da revisão pendente) | manual; cancelar no provedor antes. O que fica na Stripe é exceção a registrar |
+| `billing_customers`, `billing_subscriptions`, `billing_invoices`, `billing_events`, `billing_cancellation_feedback` | JSON da conta, **com** os ids do provedor (decisão da revisão pendente) | pela exclusão de conta, que encerra a assinatura no provedor antes (13/10/2026). O que fica na Stripe é exceção a registrar |
 | `audit_events` | JSON pessoal (ações da pessoa) e JSON da conta | **exceção proposta:** mantido 1 ano |
 | `legal_acceptances`, `privacy_requests` | JSON pessoal | aceites caem com `auth.users`; pedidos ficam |
 | `moderation_reports` | **não exportado** (a conta denunciada não lê denúncias) | manual |
@@ -365,3 +365,23 @@ Verificado só no stack local; a migração `202610110005` não foi aplicada em 
 - **`profile_domains`** ganhou `recheck_misses` (dias seguidos sem a comprovação) e `lapse_reason`. Não são dados pessoais.
 - **Reverificação diária de domínios:** os resolvedores públicos (Cloudflare, Google) passam a receber, uma vez por dia, a consulta do registro de comprovação de cada domínio ativo. Como antes, só o nome consultado e o endereço do servidor.
 - **Página pública:** a cor de fundo da página é declarada ao navegador e a primeira imagem é pedida antes; nada novo é coletado.
+
+## Preparação do piloto (13/10/2026): motivo do cancelamento, funil de produto e contato de suporte
+
+Verificado só no stack local; a migração `202610130001` não foi aplicada em produção. **Nenhum subprocessador novo.** Decisões: ADR 0020 e adendo do ADR 0014.
+
+| Store | O que guarda | Dado pessoal? | Finalidade | Quem acessa | Retenção |
+|---|---|---|---|---|---|
+| `billing_cancellation_feedback` | conta, assinatura, **motivo** (uma de sete categorias), **comentário opcional de até 500 caracteres**, plano e período na hora da resposta, quem respondeu, datas | o comentário é texto livre do proprietário e **pode conter dados pessoais**; o resto, não | entender por que se cancela | nenhum papel de cliente lê a tabela; administradores da plataforma veem contagens e os 50 comentários mais recentes em `/app/administracao/produto` | vida da conta (cascata); `created_by` fica nulo se a pessoa for excluída |
+| `plan_prices` (`retired_at`) | quando um preço deixou de ser vendido | não | manter o plano de quem assinou por ele | catálogo, legível por quem tem sessão | indefinida |
+| Variável `SUPPORT_EMAIL` | o endereço de atendimento mostrado em `/ajuda` | endereço da empresa, público por definição | contato de suporte | público | enquanto configurada |
+| Log `billing.cancel_feedback` | desfecho (`ok`, `not_stored`) | não: **nunca o comentário nem o motivo** | operação | retenção do provedor de logs |
+| Log `billing.change_interval`, `status.degraded` | desfecho, duração | não | operação | retenção do provedor de logs |
+
+**Funil de produto (`get_product_metrics`):** não cria store e **não coleta nada novo**. Lê `auth.users` (data de criação e de confirmação), `profiles`, `profile_publications`, `analytics_daily`, `billing_invoices` e devolve **contagens** por semana de cadastro: nenhum nome, e-mail, endereço de página ou identificador. Só administradores da plataforma executam. Finalidade: medir a ativação do piloto. É o primeiro tratamento de dados de clientes para análise interna do produto: **a base legal e a menção na política de privacidade vão para a revisão jurídica**, junto com as minutas de `docs/legal/`.
+
+**E-mail de suporte:** quando existir, as mensagens recebidas ficam na caixa de e-mail do founder, fora do produto e fora deste inventário até o provedor da caixa ser definido. Quem escreve pode mandar dados pessoais; a página pede que não envie senhas.
+
+**Exportação e exclusão:** o motivo do cancelamento entra em `export_workspace_data` (`billingCancellationFeedback`) e sai por cascata com a conta. Na exclusão de conta, as assinaturas em curso são encerradas na Stripe antes do expurgo; **o cliente, as faturas e os recibos continuam na Stripe** (exceção legal a registrar depois da revisão contábil, como já constava).
+
+**Páginas públicas novas:** `/ajuda` e `/precos` são estáticas e não coletam nada. `/status` faz uma leitura anônima do banco no servidor e não guarda nada de quem a abre.

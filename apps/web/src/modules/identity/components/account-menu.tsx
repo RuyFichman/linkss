@@ -15,6 +15,7 @@ export function AccountMenu() {
       </summary>
       <div className="absolute right-0 z-40 mt-2 grid w-60 max-w-[calc(100vw-2rem)] gap-1 rounded-2xl border border-app-border bg-app-surface p-2 shadow-raised">
         <Link href="/app/conta/dados" className="flex min-h-11 items-center rounded-xl px-3 py-2 no-underline hover:bg-app-surface-soft">{APP_COPY.nav.myData}</Link>
+        <Link href="/ajuda" className="flex min-h-11 items-center rounded-xl px-3 py-2 no-underline hover:bg-app-surface-soft">{APP_COPY.nav.help}</Link>
         <form action={signOutAction} className="border-t border-app-border pt-1">
           <button type="submit" className="flex min-h-11 w-full cursor-pointer items-center rounded-xl border-0 bg-transparent px-3 py-2 text-left hover:bg-app-surface-soft">{AUTH_COPY.signOut}</button>
         </form>
