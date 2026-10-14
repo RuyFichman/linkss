@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { Button } from "./button";
 
 type Tone = "neutral" | "success" | "warning" | "danger" | "accent";
-export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: Tone }) { return <span className={`ui-badge ui-badge-${tone}`}>{children}</span>; }
+export function Badge({ children, tone = "neutral", dot = false }: { children: ReactNode; tone?: Tone; dot?: boolean }) { return <span className={`ui-badge ui-badge-${tone}${dot ? " ui-badge-dot" : ""}`}>{children}</span>; }
 export const StatusChip = Badge;
 export type SaveState = "idle" | "saving" | "saved" | "error";
 const SAVE_LABELS: Record<SaveState, string> = { idle: "Alterações não publicadas", saving: "Salvando…", saved: "Salvo", error: "Não foi possível salvar — tentar novamente" };

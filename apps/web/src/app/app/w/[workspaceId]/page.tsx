@@ -120,20 +120,20 @@ export default async function WorkspaceHomePage({ params, searchParams }: { para
               {list.items.map((profile) => {
                 const pagePath = `/app/w/${workspaceId}/paginas/${profile.id}`;
                 return (
-                  <li key={profile.id} className="surface-card grid gap-4 p-4 sm:p-5">
-                    <div className="flex min-w-0 items-center gap-4">
+                  <li key={profile.id} className="surface-card page-card">
+                    <div className="flex min-w-0 items-center gap-3 p-4 sm:gap-4 sm:p-5">
                       <ProfileAvatar title={profile.title} avatarPath={profile.avatarPath} />
                       <div className="min-w-0 flex-1">
-                        <h2 className="truncate text-lg font-bold">{profile.title}</h2>
-                        <p className="m-0 truncate text-sm text-app-muted">{publicAddressLabel(profile.slug)}</p>
-                        <p className="m-0 mt-2 flex flex-wrap gap-2">
-                          <Badge tone={STATUS_TONE[profile.status]}>{copy.status[profile.status]}</Badge>
+                        <h2 className="m-0 truncate text-lg font-bold leading-tight">{profile.title}</h2>
+                        <p className="m-0 mt-0.5 truncate text-sm text-app-muted">{publicAddressLabel(profile.slug)}</p>
+                        <p className="m-0 mt-2.5 flex flex-wrap gap-1.5">
+                          <Badge dot tone={STATUS_TONE[profile.status]}>{copy.status[profile.status]}</Badge>
                           {profile.hasUnpublishedChanges ? <Badge tone="warning">{copy.unpublishedChanges}</Badge> : null}
                         </p>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Link className="ui-button ui-button-secondary" href={pagePath} aria-label={`${copy.settings}: ${profile.title}`}>{copy.settings}</Link>
+                    <div className="page-card-actions">
+                      <Link className="ui-button ui-button-primary" href={pagePath} aria-label={`${copy.settings}: ${profile.title}`}>{copy.settings}</Link>
                       <Link className="ui-button ui-button-secondary" href={`${pagePath}/resultados`} aria-label={`${copy.results}: ${profile.title}`}>{copy.results}</Link>
                       {mayDuplicate ? <Link className="ui-button ui-button-secondary" href={`${pagePath}/duplicar`} aria-label={APP_COPY.duplicate.openFor(profile.title)}>{APP_COPY.duplicate.open}</Link> : null}
                       {mayArchive ? <ArchiveControl page={profile} /> : null}
