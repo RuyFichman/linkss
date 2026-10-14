@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { secretsMatch } from "@/lib/same-origin";
 import { resolveBillingMode } from "@/modules/billing/mode";
+import { resolveMailConfig } from "@/modules/mail/config";
 import { evaluateOps, opsPasses } from "@/modules/ops/status";
 import { readOpsSnapshot } from "@/modules/ops/status-server";
 
@@ -37,7 +38,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (read.kind !== "ok") return fail(read.kind, 503);
 
   const billing = resolveBillingMode();
-  const checks = evaluateOps(read.snapshot, { billing: { asked: process.env.BILLING_MODE ?? "off", mode: billing.mode, reason: billing.reason } });
+  const checks = evaluateOps(read.snapshot, { billing: { asked: process.env.BILLING_MODE ?? "off", mode: billing.mode, reason: billing.reason }, mailOn: resolveMailConfig().mode === "on" });
   const includeAttention = new URL(request.url).searchParams.get("attention") === "1";
   const ok = opsPasses(checks, includeAttention);
   const failing = checks.filter((check) => !check.ok).map((check) => check.name);

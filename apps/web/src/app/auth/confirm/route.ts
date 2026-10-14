@@ -4,7 +4,8 @@ import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observabi
 import { recordAuthEvent } from "@/modules/audit/record";
 import { AFTER_CONFIRM_COOKIE, afterConfirmPath } from "@/modules/identity/after-confirm";
 import { emailLinkFailurePath, parseLinkType } from "@/modules/identity/auth-outcomes";
-import { safeNextPath } from "@/modules/identity/redirects";
+import { appUrl } from "@/lib/app-url";
+import { emailLinkNextPath } from "@/modules/identity/redirects";
 import { ensurePersonalWorkspace, getSupabase } from "@/modules/identity/session";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
   // Creates the personal workspace right after verification; the /app layout retries on failure.
   const workspaceId = await ensurePersonalWorkspace(supabase);
   if (!workspaceId) logEvent("error", "identity.personal_workspace_failed", { correlationId });
-  // A sign-up that started from an invitation link goes back to it (same device only).
-  redirect(afterConfirmPath(request.cookies.get(AFTER_CONFIRM_COOKIE)?.value, safeNextPath(params.get("next"))));
+  // A sign-up that started from an invitation link goes back to it: on the same device by the
+  // cookie, on another one by the address the confirmation e-mail carries.
+  redirect(afterConfirmPath(request.cookies.get(AFTER_CONFIRM_COOKIE)?.value, emailLinkNextPath(params.get("next"), params.get("redirect_to"), new URL(appUrl()).origin)));
 }

@@ -321,6 +321,25 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"mail_outbox": {
+                  Row: {
+                    "attempts": number,"created_at": string,"dedupe_key": string,"expires_at": string,"finished_at": string | null,"id": string,"kind": string,"last_error": string | null,"next_attempt_at": string,"payload": NonNullable<Json>,"provider_message_id": string | null,"recipient_user_id": string,"status": string,"workspace_id": string | null
+                  }
+                  Insert: {
+                    "attempts"?: number,"created_at"?: string,"dedupe_key": string,"expires_at": string,"finished_at"?: string | null,"id"?: string,"kind": string,"last_error"?: string | null,"next_attempt_at"?: string,"payload": NonNullable<Json>,"provider_message_id"?: string | null,"recipient_user_id": string,"status"?: string,"workspace_id"?: string | null
+                  }
+                  Update: {
+                    "attempts"?: number,"created_at"?: string,"dedupe_key"?: string,"expires_at"?: string,"finished_at"?: string | null,"id"?: string,"kind"?: string,"last_error"?: string | null,"next_attempt_at"?: string,"payload"?: NonNullable<Json>,"provider_message_id"?: string | null,"recipient_user_id"?: string,"status"?: string,"workspace_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mail_outbox_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"media_asset_shares": {
                   Row: {
                     "created_at": string,"media_id": string,"profile_id": string,"workspace_id": string
@@ -714,13 +733,13 @@ isOneToOne: false
                   ]
                 },"user_accounts": {
                   Row: {
-                    "created_at": string,"deleted_at": string | null,"display_name": string | null,"id": string,"locale": string,"purge_after": string | null,"updated_at": string
+                    "created_at": string,"deleted_at": string | null,"display_name": string | null,"id": string,"locale": string,"notify_new_leads": boolean,"purge_after": string | null,"updated_at": string
                   }
                   Insert: {
-                    "created_at"?: string,"deleted_at"?: string | null,"display_name"?: string | null,"id": string,"locale"?: string,"purge_after"?: string | null,"updated_at"?: string
+                    "created_at"?: string,"deleted_at"?: string | null,"display_name"?: string | null,"id": string,"locale"?: string,"notify_new_leads"?: boolean,"purge_after"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"deleted_at"?: string | null,"display_name"?: string | null,"id"?: string,"locale"?: string,"purge_after"?: string | null,"updated_at"?: string
+                    "created_at"?: string,"deleted_at"?: string | null,"display_name"?: string | null,"id"?: string,"locale"?: string,"notify_new_leads"?: boolean,"purge_after"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -847,6 +866,11 @@ isOneToOne: false
               "normalized": string,"status": string
             }[]
                            },
+"claim_mail_outbox":
+{ Args: { "p_limit"?: number }; Returns: {
+              "attempts": number,"display_name": string,"email": string,"id": string,"kind": string,"payload": Json,"workspace_id": string
+            }[]
+                           },
 "claim_media_cleanup":
 { Args: { "p_limit"?: number }; Returns: {
               "media_id": string,"object_names": (string)[]
@@ -856,6 +880,9 @@ isOneToOne: false
 { Args: { "p_hostname": string,"p_profile_id": string }; Returns: {
               "challenge": string,"domain_id": string,"hostname": string
             }[]
+                           },
+"complete_mail_outbox":
+{ Args: { "p_error"?: string,"p_id": string,"p_outcome": string,"p_provider_message_id"?: string }; Returns: string
                            },
 "confirm_profile_domain":
 { Args: { "p_signature": string,"p_text": string }; Returns: Json
@@ -1040,6 +1067,9 @@ isOneToOne: false
                            },
 "run_billing_maintenance":
 { Args: { "p_limit"?: number,"p_now"?: string }; Returns: Json
+                           },
+"run_mail_maintenance":
+{ Args: { "p_now"?: string }; Returns: Json
                            },
 "run_retention_maintenance":
 { Args: { "p_limit"?: number }; Returns: Json

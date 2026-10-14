@@ -344,3 +344,21 @@ Verificado só no stack local.
 | Central de ajuda prometendo o que o produto não faz | respostas revisadas contra as telas; seção de cobrança conforme o modo; domínio próprio e pixels fora | revisado nesta entrega; **envelhece com o produto** | `pilot-readiness.mjs` confere a variante sem venda |
 
 **Riscos residuais:** a troca para o anual e o encerramento da assinatura na exclusão **nunca rodaram contra a Stripe** (a fatura proporcional, em especial, é a da Stripe, e o emulador só a aproxima); o endereço de suporte ainda não existe; `/status` não tem limite global; o funil é a primeira tela com dados de vários clientes e depende de `platform_admins` continuar restrito a linhas inseridas por SQL.
+
+## E-mail transacional (14/10/2026)
+
+| Ameaça | Controle | Estado | Evidência |
+|---|---|---|---|
+| Dados de visitante vazando para o provedor de e-mail ou para a caixa do dono | a fila não recebe o conteúdo do formulário; o aviso leva só a página | implementado + verificado | pgTAP 240 (nenhuma mensagem contém o que foi digitado); `mail-lifecycle.mjs` (navegador real) |
+| Formulário usado para inundar a caixa do dono | um aviso por página, por pessoa e por hora, além dos limites do formulário | implementado + verificado | pgTAP 240; `mail-lifecycle.mjs` |
+| Falha no e-mail derrubando o envio do formulário, a moderação ou o webhook | a fila é escrita por gatilho que engole os próprios erros; o envio roda depois da resposta | implementado + verificado | pgTAP 240 (fila quebrada à força, contato gravado); `mail-lifecycle.mjs` (resposta ao visitante antes do envio) |
+| E-mail duplicado em retentativa | chave única por fato e pessoa; id da fila como `Idempotency-Key` | implementado + verificado contra o substituto | Vitest; `mail-lifecycle.mjs` (mesma chave na falha e no reenvio) |
+| Aviso para endereço não confirmado ou de conta excluída | o endereço é lido na hora, só se confirmado; mensagens caem com a conta | implementado + verificado | pgTAP 240 |
+| Justificativa interna da moderação indo para a conta | o aviso de suspensão leva a categoria; o de contestação, só a resposta escrita para a conta | implementado + verificado | pgTAP 240; `mail-lifecycle.mjs` |
+| Injeção de HTML pelo título da página ou pela resposta | todo valor vindo de pessoa é escapado no HTML | implementado + verificado | Vitest |
+| Cabeçalho forjado pelo remetente configurado | `MAIL_FROM` validado, sem quebra de linha | implementado + verificado | Vitest |
+| Leitura ou escrita da fila por cliente | sem permissão para papel de cliente; retirar e concluir só com o papel de serviço | implementado + verificado | pgTAP 240 |
+| Chave da Resend vazando | variável de servidor; chave só de envio, restrita ao domínio (runbook) | implementado; **a chave não existe** | `MAIL.md` |
+| Convite aberto em outro aparelho virando redirecionamento aberto | só o `/auth/confirm` da própria aplicação é lido de `redirect_to`, e o caminho passa pela mesma lista permitida | implementado + verificado | Vitest (`/auth/confirm`: outra origem, endereço externo, caminho fora da lista); `mail-lifecycle.mjs` |
+
+**Riscos residuais:** a Resend nunca foi chamada de verdade; a entregabilidade (SPF, DKIM, DMARC, reputação do domínio) só se mede depois do primeiro envio real; e-mail aceito e não entregue não gera alerta.

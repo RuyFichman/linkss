@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { scheduleMailDrain } from "@/modules/mail/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { secretsMatch } from "@/lib/same-origin";
 import { runConfiguredBillingMaintenance } from "@/modules/billing/server";
@@ -51,6 +52,8 @@ async function runJob(request: Request): Promise<NextResponse> {
     if (result.kind === "not_deployed") return fail("not_deployed", 503);
     const { slugs, ...report } = result.report;
     for (const slug of new Set(slugs)) revalidatePublicPage(slug);
+    // A reconciliation that found a failed payment queued a notice (ADR 0021).
+    if (report.corrected > 0) scheduleMailDrain("billing_job");
     // `partial`: a provider read failed or the per-run bound was reached; the next run continues.
     const outcome = report.failed > 0 || report.pending > 0 ? "partial" : "ok";
     await recordJobRun("billing", outcome);

@@ -1744,3 +1744,66 @@ export const STATUS_COPY = {
   helpLink: "Abrir a ajuda",
   back: "Voltar para a página inicial",
 } as const;
+
+/**
+ * Transactional e-mails (modules/mail/templates.ts, ADR 0021). Sent to people who manage an account,
+ * never to visitors. The new-contact notice never quotes what the visitor typed.
+ */
+export const MAIL_COPY = {
+  greeting: (name: string | null) => (name ? `Olá, ${name}.` : "Olá."),
+  testPrefix: "[Teste] ",
+  testNote: "Este aviso é do ambiente de teste da cobrança: nenhum valor real foi cobrado.",
+  footerReply: "Para falar com a gente, responda a este e-mail.",
+  footerNoReply: "Este é um aviso automático: respostas a este endereço não são lidas.",
+  footerWhy: (product: string) => `Você recebe este aviso porque participa de uma conta no ${product}.`,
+  newLead: {
+    subject: (title: string) => `Novo contato na página ${title}`,
+    body: (title: string, address: string) => `Alguém preencheu o formulário da página ${title} (${address}).`,
+    detail: "Por segurança, o contato não vem neste e-mail: ele está no painel, em Contatos.",
+    oneAnHour: "Se chegarem outros contatos nesta mesma hora, não mandamos outro aviso.",
+    action: "Ver os contatos",
+    optOut: "Para deixar de receber este aviso, desligue em",
+    optOutAction: "Meus dados, Avisos por e-mail",
+  },
+  pageSuspended: {
+    subject: (title: string) => `A página ${title} foi suspensa`,
+    body: (title: string, category: string) => `A página ${title} foi tirada do ar pela moderação. Motivo: ${category}.`,
+    kept: "Nada foi apagado: o rascunho continua editável e os contatos e resultados continuam guardados.",
+    appeal: "Se você acha que foi um engano, envie uma contestação pela tela da página.",
+    action: "Ver o motivo e contestar",
+  },
+  appealDecided: {
+    subjectAccepted: (title: string) => `Contestação aceita: a página ${title} voltou ao ar`,
+    subjectDenied: (title: string) => `Resposta à contestação da página ${title}`,
+    accepted: (title: string) => `A contestação da página ${title} foi aceita, e a página voltou ao ar na versão publicada antes da suspensão.`,
+    denied: (title: string) => `A contestação da página ${title} não foi aceita, e a página continua fora do ar.`,
+    responseIntro: "Resposta da moderação:",
+    action: "Ver a página",
+  },
+  paymentFailed: {
+    subject: (plan: string) => `Não conseguimos cobrar o plano ${plan}`,
+    body: (plan: string, date: string) => `O último pagamento do plano ${plan} não foi aprovado. O plano continua valendo até ${date}.`,
+    fix: "Atualize a forma de pagamento até essa data para não perder o plano. Nada do que você criou é apagado.",
+    action: "Atualizar forma de pagamento",
+  },
+  renewalUpcoming: {
+    subject: (plan: string, date: string) => `Sua assinatura anual do plano ${plan} renova em ${date}`,
+    body: (plan: string, date: string, amount: string) => `Em ${date}, a assinatura anual do plano ${plan} será renovada e cobrada no valor de ${amount}.`,
+    nothing: "Para continuar, não é preciso fazer nada.",
+    cancel: "Se não quiser renovar, cancele antes dessa data. O plano continua valendo até o fim do período já pago.",
+    action: "Ver o plano",
+  },
+} as const;
+
+/** The e-mail preferences on "Meus dados" (only the new-contact notice can be turned off). */
+export const MAIL_PREFERENCES_COPY = {
+  title: "Avisos por e-mail",
+  lead: "Mandamos e-mail quando uma página sua é suspensa, quando uma contestação é respondida e, para quem é proprietário, quando um pagamento falha ou uma assinatura anual vai renovar. Esses avisos são sobre a conta e não podem ser desligados.",
+  newLeads: "Receber um e-mail quando alguém preencher o formulário de uma página que eu administro",
+  newLeadsHint: "No máximo um aviso por página a cada hora. O contato em si não vai no e-mail: ele fica em Contatos.",
+  save: "Salvar",
+  saved: "Preferência salva.",
+  error: "Não foi possível salvar agora. Tente novamente.",
+  notDeployed: "Os avisos por e-mail ainda não estão disponíveis neste ambiente.",
+  off: "Neste ambiente o envio de e-mail ainda não está ligado: a preferência fica guardada para quando estiver.",
+} as const;

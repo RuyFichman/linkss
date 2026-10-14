@@ -6,6 +6,7 @@ import { LEADS_COPY } from "@/content/pt-BR";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { allowRequest, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { scheduleMailDrain } from "@/modules/mail/server";
 import { FORM_FIELDS, type FormField } from "@/modules/blocks/form";
 import { getLeadsService } from "./server";
 import { createLeadSubmissionService, type LeadSubmitStatus } from "./service";
@@ -54,7 +55,11 @@ export async function submitLeadAction(slug: string, blockId: string, _previous:
     hashed: hash !== null,
     durationMs: Math.round(performance.now() - startedAt),
   });
-  if (result.status === "ok") return { status: "ok" };
+  if (result.status === "ok") {
+    // The notice to the page's managers was queued with the contact; it is sent after this answer.
+    scheduleMailDrain("lead");
+    return { status: "ok" };
+  }
   return { status: result.status, problems: result.problems, values, consent };
 }
 

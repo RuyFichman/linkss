@@ -338,3 +338,24 @@ Monitor (GitHub, de hora em hora) ── /api/health, /, /status, página de tes
 ```
 
 Invariantes: o valor cobrado identifica um único plano, à venda ou aposentado (`plan_prices_charge_key`); checkout, mudança de plano e troca de período usam só o preço à venda; uma mudança de preço entra pela migração **antes** do deploy; o motivo do cancelamento nunca é condição para cancelar; nenhuma conta é apagada com assinatura em curso, e nenhuma assinatura é encerrada para uma exclusão que seria recusada; o funil devolve contagens e nunca um identificador; `/status` não diz nada sobre jobs, filas ou clientes.
+
+## E-mail transacional (14/10/2026): fila no banco e Resend (ADR 0021)
+
+Implementado e verificado só no stack local.
+
+```text
+form_leads ──────────────┐
+moderation_suspensions ──┤ gatilhos (engolem os próprios erros)
+moderation_appeals ──────┤──▶ mail_outbox (um por fato e pessoa; id da pessoa, nunca o endereço)
+billing_subscriptions ───┘                ▲
+run_mail_maintenance (job) ── lembretes ──┘
+
+Requisição que causou o fato ── resposta ── after(): drainMailNow ── claim_mail_outbox (aluguel de 10 min, só endereço confirmado)
+Job diário 09:00 /api/jobs/mail ── run_mail_maintenance + drainMailNow           ── renderMail ── MailAdapter (Resend, Idempotency-Key = id)
+                                                                                 ── complete_mail_outbox (sent / retry com espera / failed / skipped)
+
+Cadastro por convite ── emailRedirectTo /auth/confirm?next=/app/convite/<token> ── modelo de confirmação leva redirect_to
+                    ── /auth/confirm: cookie (mesmo aparelho) ou redirect_to (outro aparelho) ── convite
+```
+
+Invariantes: escrever na fila nunca derruba a escrita original; o envio nunca acontece enquanto alguém espera; o aviso de contato nunca leva o que o visitante escreveu; uma mensagem é enviada no máximo uma vez por chave; o endereço só é lido no envio, e só se confirmado.

@@ -44,6 +44,9 @@ Severidades: **P1** = clientes afetados agora, agir no mesmo dia; **P2** = agir 
 | `queue:moderation_appeals` (diário) | contestação sem resposta há mais de 72 h | P2 | `MODERATION.md` §3 |
 | `queue:privacy_requests` (diário) | pedido de privacidade aberto há mais de 10 dias (a LGPD dá 15 dias para a resposta completa a um pedido de acesso; confirmar os prazos na revisão jurídica) | P1 | `ACCOUNT_DELETION.md` |
 | `retention:backlog` (diário) | página ou conta vencida há mais de 3 dias que não saiu | P3 | `RETENTION.md` |
+| `job:mail` | o job de e-mail não roda há mais de 36 h | P2 | `JOBS.md`, `MAIL.md` |
+| `mail:overdue` | com o e-mail ligado, há mensagens vencidas há mais de 1 h que ninguém enviou | P1 | `MAIL.md` §4 |
+| `mail:failed` (diário) | mensagens que desistiram nas últimas 24 h | P2 | `MAIL.md` §4 |
 
 Enquanto a causa não for resolvida, o e-mail se repete a cada execução (de hora em hora para o que é crítico). Para silenciar durante um conserto longo: *Actions* → *Monitor* → *Disable workflow*, e **reativar depois**.
 

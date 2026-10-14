@@ -17,11 +17,12 @@ function snapshot(overrides: Partial<OpsSnapshot> = {}): OpsSnapshot {
     billing: { stuckProcessing: 0, mismatches24h: 0 },
     queues: { reportsWaiting: 0, appealsWaiting: 0, privacyWaiting: 0 },
     purge: { profilesOverdue: 0, workspacesOverdue: 0 },
+    mail: { failed24h: 0, overdue: 0 },
     ...overrides,
   };
 }
 
-const billingOff = { billing: { asked: "off", mode: "off" as const, reason: "disabled" } };
+const billingOff = { billing: { asked: "off", mode: "off" as const, reason: "disabled" }, mailOn: true };
 const failing = (checks: ReturnType<typeof evaluateOps>) => checks.filter((check) => !check.ok).map((check) => check.name);
 
 describe("operational checks", () => {
@@ -41,14 +42,24 @@ describe("operational checks", () => {
   });
 
   it("fails when billing was asked for and resolved to off, with the reason", () => {
-    const checks = evaluateOps(snapshot(), { billing: { asked: "sandbox", mode: "off", reason: "key_mode_mismatch" } });
+    const checks = evaluateOps(snapshot(), { billing: { asked: "sandbox", mode: "off", reason: "key_mode_mismatch" }, mailOn: true });
     expect(failing(checks)).toEqual(["billing:mode"]);
     expect(checks.find((check) => check.name === "billing:mode")?.detail).toContain("key_mode_mismatch");
-    expect(failing(evaluateOps(snapshot(), { billing: { asked: "live", mode: "live", reason: "ok" } }))).toEqual([]);
+    expect(failing(evaluateOps(snapshot(), { billing: { asked: "live", mode: "live", reason: "ok" }, mailOn: true }))).toEqual([]);
   });
 
   it("fails on stuck or mismatched billing events", () => {
     expect(failing(evaluateOps(snapshot({ billing: { stuckProcessing: 1, mismatches24h: 2 } }), billingOff))).toEqual(["billing:stuck_events", "billing:mismatches"]);
+  });
+
+  it("fails on mail nobody sent when mail is on, and counts messages that gave up as attention", () => {
+    expect(failing(evaluateOps(snapshot({ mail: { failed24h: 0, overdue: 3 } }), billingOff))).toEqual(["mail:overdue"]);
+    // With mail off, waiting messages are expected: they expire.
+    expect(failing(evaluateOps(snapshot({ mail: { failed24h: 0, overdue: 3 } }), { ...billingOff, mailOn: false }))).toEqual([]);
+    const gaveUp = evaluateOps(snapshot({ mail: { failed24h: 2, overdue: 0 } }), billingOff);
+    expect(failing(gaveUp)).toEqual(["mail:failed"]);
+    expect(opsPasses(gaveUp, false)).toBe(true);
+    expect(opsPasses(gaveUp, true)).toBe(false);
   });
 
   it("counts work waiting for a person only when attention is asked for", () => {
@@ -60,7 +71,7 @@ describe("operational checks", () => {
 
   it("reads the database answer and refuses a malformed one", () => {
     expect(parseOpsSnapshot({ now: NOW, jobs: [{ job: "billing", lastOkAt: NOW, lastRunAt: NOW, lastOutcome: "ok" }], billing: { stuckProcessing: "3" }, queues: { reportsWaiting: 2.7 } }))
-      .toEqual({ now: NOW, jobs: [{ job: "billing", lastOkAt: NOW, lastRunAt: NOW, lastOutcome: "ok" }], billing: { stuckProcessing: 0, mismatches24h: 0 }, queues: { reportsWaiting: 2, appealsWaiting: 0, privacyWaiting: 0 }, purge: { profilesOverdue: 0, workspacesOverdue: 0 } });
+      .toEqual({ now: NOW, jobs: [{ job: "billing", lastOkAt: NOW, lastRunAt: NOW, lastOutcome: "ok" }], billing: { stuckProcessing: 0, mismatches24h: 0 }, queues: { reportsWaiting: 2, appealsWaiting: 0, privacyWaiting: 0 }, purge: { profilesOverdue: 0, workspacesOverdue: 0 }, mail: { failed24h: 0, overdue: 0 } });
     for (const value of [null, {}, { now: "yesterday", jobs: [] }, { now: NOW }]) expect(parseOpsSnapshot(value)).toBeNull();
   });
 });
@@ -87,7 +98,7 @@ describe("status route", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     const body = await response.json();
     expect(body).toMatchObject({ ok: true, failing: [], checkedAt: NOW });
-    expect(body.checks).toHaveLength(12);
+    expect(body.checks).toHaveLength(15); // six jobs, three billing, two mail, four queues and backlog
   });
 
   it("refuses a call without the secret, with a wrong one, or with the job secret, and reads nothing", async () => {

@@ -6,7 +6,7 @@
  * run of the monitor; `attention` checks are work waiting for a person and only fail the daily
  * run, so nobody gets an hourly e-mail about a queue. Every check names the runbook to open.
  */
-export const JOBS = ["analytics", "billing", "domains", "media-cleanup", "retention"] as const;
+export const JOBS = ["analytics", "billing", "domains", "mail", "media-cleanup", "retention"] as const;
 export type JobName = (typeof JOBS)[number];
 
 /** The jobs run once a day: a day and a half without a good run means one was missed. */
@@ -29,11 +29,15 @@ export interface OpsSnapshot {
   billing: { stuckProcessing: number; mismatches24h: number };
   queues: { reportsWaiting: number; appealsWaiting: number; privacyWaiting: number };
   purge: { profilesOverdue: number; workspacesOverdue: number };
+  /** Absent before migration 202610140001: read as zeros. */
+  mail: { failed24h: number; overdue: number };
 }
 
 export interface OpsContext {
   /** `BILLING_MODE` as written in the environment, and what it resolved to. */
   billing: { asked: string; mode: "off" | "sandbox" | "live"; reason: string };
+  /** Whether this environment sends e-mail: with it off, waiting messages are expected. */
+  mailOn: boolean;
 }
 
 function count(value: unknown): number {
@@ -56,12 +60,14 @@ export function parseOpsSnapshot(data: unknown): OpsSnapshot | null {
   const billing = record(row.billing);
   const queues = record(row.queues);
   const purge = record(row.purge);
+  const mail = record(row.mail);
   return {
     now,
     jobs: row.jobs.map(record).map((job) => ({ job: text(job.job) ?? "", lastRunAt: text(job.lastRunAt), lastOkAt: text(job.lastOkAt), lastOutcome: text(job.lastOutcome) })),
     billing: { stuckProcessing: count(billing.stuckProcessing), mismatches24h: count(billing.mismatches24h) },
     queues: { reportsWaiting: count(queues.reportsWaiting), appealsWaiting: count(queues.appealsWaiting), privacyWaiting: count(queues.privacyWaiting) },
     purge: { profilesOverdue: count(purge.profilesOverdue), workspacesOverdue: count(purge.workspacesOverdue) },
+    mail: { failed24h: count(mail.failed24h), overdue: count(mail.overdue) },
   };
 }
 
@@ -69,6 +75,7 @@ const JOB_RUNBOOK: Record<JobName, string> = {
   analytics: "docs/runbooks/JOBS.md",
   billing: "docs/runbooks/JOBS.md",
   domains: "docs/runbooks/JOBS.md",
+  mail: "docs/runbooks/MAIL.md",
   "media-cleanup": "docs/runbooks/JOBS.md",
   retention: "docs/runbooks/JOBS.md",
 };
@@ -102,6 +109,11 @@ export function evaluateOps(snapshot: OpsSnapshot, context: OpsContext): OpsChec
   });
   checks.push({ name: "billing:stuck_events", severity: "critical", ok: snapshot.billing.stuckProcessing === 0, detail: `${snapshot.billing.stuckProcessing} event(s) in processing for more than 1 h`, runbook: "docs/runbooks/BILLING.md" });
   checks.push({ name: "billing:mismatches", severity: "critical", ok: snapshot.billing.mismatches24h === 0, detail: `${snapshot.billing.mismatches24h} event(s) with an unknown customer, a mismatch or a conflict in 24 h`, runbook: "docs/runbooks/BILLING.md" });
+
+  // Mail (ADR 0021): messages due for an hour that nobody sent mean the sending is broken; with
+  // mail off they are expected and expire. Messages that gave up are worth a look, not a page.
+  checks.push({ name: "mail:overdue", severity: "critical", ok: !context.mailOn || snapshot.mail.overdue === 0, detail: context.mailOn ? `${snapshot.mail.overdue} message(s) due for more than 1 h` : "mail off by configuration", runbook: "docs/runbooks/MAIL.md" });
+  checks.push({ name: "mail:failed", severity: "attention", ok: snapshot.mail.failed24h === 0, detail: `${snapshot.mail.failed24h} message(s) given up in 24 h`, runbook: "docs/runbooks/MAIL.md" });
 
   const overdue = snapshot.purge.profilesOverdue + snapshot.purge.workspacesOverdue;
   checks.push({ name: "retention:backlog", severity: "attention", ok: overdue === 0, detail: `${snapshot.purge.profilesOverdue} page(s) and ${snapshot.purge.workspacesOverdue} workspace(s) more than 3 days past their purge date`, runbook: "docs/runbooks/RETENTION.md" });

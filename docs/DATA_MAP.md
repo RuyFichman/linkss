@@ -366,6 +366,23 @@ Verificado só no stack local; a migração `202610110005` não foi aplicada em 
 - **Reverificação diária de domínios:** os resolvedores públicos (Cloudflare, Google) passam a receber, uma vez por dia, a consulta do registro de comprovação de cada domínio ativo. Como antes, só o nome consultado e o endereço do servidor.
 - **Página pública:** a cor de fundo da página é declarada ao navegador e a primeira imagem é pedida antes; nada novo é coletado.
 
+## E-mail transacional (14/10/2026): fila de avisos e Resend
+
+Verificado só no stack local; a migração `202610140001` não foi aplicada em produção e nenhum e-mail foi enviado. Decisão: ADR 0021.
+
+**Novo subprocessador: Resend** (envio de e-mail, Estados Unidos). Recebe, por mensagem: o endereço e o nome de quem recebe (pessoas que administram contas, nunca visitantes), o título e o endereço da página e, numa contestação, a resposta escrita pela moderação para a conta. **Nunca** o que um visitante escreveu num formulário. Depois que o SMTP do Supabase for ligado, recebe também os e-mails do Auth (confirmação, recuperação, troca de e-mail), com o link de uso único. **Antes do primeiro envio:** contrato/DPA com a Resend, menção na política de privacidade e base para a transferência internacional (revisão jurídica).
+
+| Store | O que guarda | Dado pessoal? | Finalidade | Quem acessa | Retenção |
+|---|---|---|---|---|---|
+| `mail_outbox` | tipo do aviso, id de quem recebe (**nunca o endereço**), conta, dados do aviso (título e endereço da página, categoria da suspensão, resposta da contestação, plano, datas, valor), situação, tentativas, código do último erro, id da mensagem na Resend | identificador indireto; a resposta da contestação é texto da moderação | entregar o aviso uma vez e só uma | nenhum papel de cliente; papel de serviço | 30 dias depois de enviado ou desistido; o que não sai vence (2 a 14 dias); cascata com a conta e com a pessoa |
+| `user_accounts.notify_new_leads` | se a pessoa quer o aviso de contato | não | preferência | a própria pessoa | vida da conta |
+| Resend (fora do produto) | as mensagens enviadas e seus registros de entrega | **sim** | envio | o founder, no painel da Resend | a da Resend (conferir no contrato) |
+| Logs `mail.*` | tipo, contagens, código de erro, origem | não: nunca endereço, nome ou página | operação | retenção do provedor de logs |
+
+**Exportação:** `mail_outbox` não entra em `export_workspace_data` (é uma fila de entrega de vida curta, sem conteúdo que a pessoa não veja na tela). **Exclusão:** as mensagens da pessoa somem com a conta; o que está na Resend fica pela retenção dela, a anotar no dossiê.
+
+**Variáveis novas:** `RESEND_API_KEY` (segredo), `MAIL_FROM`, `MAIL_REPLY_TO`.
+
 ## Preparação do piloto (13/10/2026): motivo do cancelamento, funil de produto e contato de suporte
 
 Verificado só no stack local; a migração `202610130001` não foi aplicada em produção. **Nenhum subprocessador novo.** Decisões: ADR 0020 e adendo do ADR 0014.

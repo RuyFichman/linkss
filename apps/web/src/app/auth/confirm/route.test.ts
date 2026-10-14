@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { appUrl } from "@/lib/app-url";
 
 const mocks = vi.hoisted(() => ({
   verifyOtp: vi.fn(),
@@ -48,6 +49,21 @@ describe("/auth/confirm", () => {
     expect(await landing("token_hash=abc&type=email&next=/app", "lnk_after_confirm=https%3A%2F%2Fevil.test%2F")).toBe("/app");
     expect(await landing("token_hash=abc&type=email&next=/app", "lnk_after_confirm=/app/w/outra")).toBe("/app");
     expect(await landing("token_hash=abc&type=recovery&next=/redefinir-senha", `lnk_after_confirm=${invitation}`)).toBe("/redefinir-senha");
+  });
+
+  it("returns to the invitation from the confirmation e-mail on another device, and to nothing else it may name", async () => {
+    const invitation = `/app/convite/${"A".repeat(43)}`;
+    const origin = new URL(appUrl()).origin;
+    const asked = (next: string, base = origin) => encodeURIComponent(`${base}/auth/confirm?next=${next}`);
+    expect(await landing(`token_hash=abc&type=email&next=/app&redirect_to=${asked(invitation)}`)).toBe(invitation);
+    // The cookie of the same device still wins when both are there.
+    expect(await landing(`token_hash=abc&type=email&next=/app&redirect_to=${asked("/app")}`, `lnk_after_confirm=${invitation}`)).toBe(invitation);
+    expect(await landing(`token_hash=abc&type=email&next=/app&redirect_to=${asked(invitation, "https://evil.test")}`)).toBe("/app");
+    expect(await landing(`token_hash=abc&type=email&next=/app&redirect_to=${asked("https://evil.test/")}`)).toBe("/app");
+    expect(await landing(`token_hash=abc&type=email&next=/app&redirect_to=${asked("/entrar")}`)).toBe("/app");
+    // Auth replaced an address it did not allow with the bare site: the template's `next` applies.
+    expect(await landing(`token_hash=abc&type=email&next=/app&redirect_to=${encodeURIComponent(origin)}`)).toBe("/app");
+    expect(await landing("token_hash=abc&type=email&next=/app&redirect_to=not-an-address")).toBe("/app");
   });
 
   it("signs in and goes to the app when the PKCE code is exchanged", async () => {
