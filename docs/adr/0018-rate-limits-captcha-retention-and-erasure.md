@@ -1,6 +1,6 @@
 # ADR 0018 — Request limits, CAPTCHA, scheduled retention and account erasure
 
-- **Status:** accepted for implementation on 2026-10-11. Verified on the local stack only. **Nothing here was configured or run on the hosted environment: no firewall rule exists, CAPTCHA is off in Supabase Auth, the migration is not applied, and no account of a real person was erased.**
+- **Status:** accepted for implementation on 2026-10-11. Verified on the local stack only. **Nothing here was configured on the hosted environment: no firewall rule exists, CAPTCHA is off in Supabase Auth, and no account of a real person was erased.** The migrations were applied to production on 2026-10-14.
 - **Sprint:** 9 (continuation)
 - **Related:** ADR 0005 (auth), ADR 0009 (media cleanup), ADR 0014 (billing), ADR 0015 (privacy requests), ADR 0016 (domains)
 

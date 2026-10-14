@@ -1,6 +1,6 @@
 # Runbook — expurgo agendado
 
-**Owner:** founder técnico. **Decisão:** ADR 0018. **Rota:** `/api/jobs/retention` (Vercel Cron, 07:00 UTC, todo dia; `POST` para execução manual). **Função:** `public.run_retention_maintenance`. **Estado em 11/10/2026:** verificado só no stack local; a migração `202610110002` ainda não foi aplicada em produção.
+**Owner:** founder técnico. **Decisão:** ADR 0018. **Rota:** `/api/jobs/retention` (Vercel Cron, 07:00 UTC, todo dia; `POST` para execução manual). **Função:** `public.run_retention_maintenance`. **Estado em 11/10/2026:** verificado só no stack local. **Em 14/10/2026** a migração `202610110002` foi aplicada em produção, e o job passa a rodar lá todo dia.
 
 ## O que o job apaga
 

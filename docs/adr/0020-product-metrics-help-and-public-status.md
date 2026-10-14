@@ -1,6 +1,6 @@
 # ADR 0020 — Product funnel from existing records; help center, pricing and public status
 
-- **Status:** accepted for implementation on 2026-10-13. Verified on the local stack only. **The migration `202610130001` is not applied to production, `SUPPORT_EMAIL` is not set anywhere and no mailbox exists for it.**
+- **Status:** accepted for implementation on 2026-10-13. Verified on the local stack only. The migration `202610130001` was applied to production on 2026-10-14. **`SUPPORT_EMAIL` is not set anywhere and no mailbox exists for it.**
 - **Sprint:** preparation of Sprint 10 (private pilot)
 - **Related:** ADR 0011 (customer analytics), ADR 0014 (billing, addendum of the same date), ADR 0015 (platform administrators), ADR 0019 (external monitor)
 

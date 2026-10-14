@@ -27,6 +27,7 @@ const PORT_SHIFT = 200;
 const KEEP = process.argv.includes("--keep");
 const backup = resolve(process.argv.slice(2).find((argument) => !argument.startsWith("--")) ?? "");
 const FILES = ["roles.sql", "schema.sql", "data.sql", "migrations-schema.sql", "migrations-data.sql"];
+const PLATFORM_ONLY_ROLE_ERROR = /role "supabase_realtime_admin" does not exist/;
 
 if (!existsSync(join(backup, "manifest.json"))) {
   console.error("Usage: node scripts/db-restore-check.mjs backups/<folder written by db-backup.mjs>");
@@ -88,7 +89,12 @@ try {
   // foreign-key checks off (the rows are already consistent; the order of the tables is not).
   const read = (name) => readFileSync(join(backup, name), "utf8");
   const structure = psql(`${read("roles.sql")}\n${read("schema.sql")}\n${read("migrations-schema.sql")}`);
-  check("roles and structure load without errors", structure.errors.length === 0, structure.errors.slice(0, 3).join(" | "));
+  // The hosted platform grants a setting to Realtime's own role, which exists only when the
+  // Realtime service runs; this stack leaves Realtime out and a new hosted project has the role.
+  const platformOnly = structure.errors.filter((line) => PLATFORM_ONLY_ROLE_ERROR.test(line));
+  const structureErrors = structure.errors.filter((line) => !PLATFORM_ONLY_ROLE_ERROR.test(line));
+  check("roles and structure load without errors", structureErrors.length === 0, structureErrors.slice(0, 3).join(" | "));
+  if (platformOnly.length > 0) console.log(`  note ignored, the role belongs to a service this check does not start: ${platformOnly.join(" | ")}`);
   const data = psql(`SET session_replication_role = replica;\n${read("data.sql")}\n${read("migrations-data.sql")}`);
   check("rows load without errors", data.errors.length === 0, data.errors.slice(0, 3).join(" | "));
 

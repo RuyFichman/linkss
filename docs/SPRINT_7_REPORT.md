@@ -222,3 +222,22 @@ Entre a aplicação chegar e as migrações serem aplicadas (ou o contrário), n
 - **Plano Agência por SQL** é provisório e some com a cobrança.
 - **Domínio próprio e pixels** não devem ser copiados na duplicação (ADR 0012) nem aparecer no relatório (ADR 0013); o endereço mostrado no relatório vem de `NEXT_PUBLIC_APP_URL` e precisará considerar o domínio próprio.
 - **Ponto de partida recomendado:** ADR do provedor de pagamento e o modelo de assinatura que escreve `workspaces.plan_id`; depois, as decisões de rebaixamento acima, que dependem só de texto e de regras já centralizadas nas RPCs.
+
+## Adendo de 14/10/2026 — verificação em produção
+
+Primeira verificação da Sprint 7 no ambiente hospedado (`https://linkfav.com`, que é a produção desde 10/10). Feita pelo agente no Chrome, com a sessão do founder no workspace "Ruy" (plano Agency, criado em 07/10); o aceite do convite foi feito pelo founder com a segunda conta, numa janela anônima. Tudo que foi criado no teste foi desfeito.
+
+| Item | Resultado | Evidência |
+|---|---|---|
+| Lista de páginas | **verificado em produção**: "2 de 10 páginas", contadores por situação; `?q=caf&situacao=publicada&ordem=nome` mostra "1 página encontrada" e a ordem por nome | navegador |
+| Painel consolidado `/app/w/<workspace>/resultados` | **verificado em produção**: abre, troca o período pela URL (`?periodo=30d`) e mostra o estado vazio correto; coerente com o painel da página (as duas vazias até ontem; o painel da página mostrou a visita de hoje em "7 dias") | navegador |
+| Link de relatório | **verificado em produção**: criado na Café Ipê (30 dias, anotação de teste); `/r/<token>` sem sessão respondeu 200 com `Cache-Control: private, no-store`, `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex…`, **sem `Set-Cookie`**, sem o coletor (`/api/events`), sem script de terceiros, sem id de conta ou página, período de 30 dias **completos** (14/09 a 13/10); cancelado pela tela (confirmação no próprio produto) e a requisição seguinte respondeu **404** com os mesmos cabeçalhos | `curl` antes e depois; navegador |
+| Token inválido em `/r/` | 404 com os mesmos cabeçalhos | `curl` |
+| Convite | **verificado em produção**: criado para o e-mail da segunda conta do founder (Editor, vale 7 dias); sem sessão o link manda para `/entrar?next=…`; aberto com a conta errada mostra "Este convite é para outro e-mail" sem revelar conta ou destinatário; **aceito pelo founder com a conta convidada**; a tela de membros passou a "2 de 5 lugares" com 0 convites pendentes; o membro foi removido pela tela e voltou a "1 de 5" | navegador; aceite informado pelo founder |
+| Job de analytics | rodou todo dia de 06/10 a 13/10 (~04:36 UTC) e fechou cada dia | `analytics_day_status` no backup de 14/10 |
+
+**Por que os painéis estavam vazios:** as visitas de 06/10 a 09/10 que o founder viu são da página `teste-pagina`, no workspace da **outra** conta (Free, criado em 02/10). Não é defeito.
+
+**Achado (menor, UX):** depois de cancelar um link recém-criado, a caixa "Link do relatório" e o aviso "Link criado" continuam mostrando o endereço que já não abre, até a página ser recarregada. Registrado no `BACKLOG.md`.
+
+**Não verificado em produção:** arquivar e duplicar página, troca de papel, saída voluntária de um membro, o CSV do painel consolidado, o relatório com números (a única visita é de hoje e o relatório só mostra dias completos), e a recusa de um convite já usado ou vencido (coberta por pgTAP no local).

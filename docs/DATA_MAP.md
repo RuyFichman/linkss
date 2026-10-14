@@ -295,7 +295,7 @@ O plano Free do Supabase não tem backup gerenciado; os backups são feitos pelo
 
 ## Sprint 9, continuação (11/10/2026): CAPTCHA, limites, expurgo agendado e exclusão de conta
 
-Decisão: ADR 0018. Verificado só no stack local; **nada disto está ligado em produção** (o CAPTCHA depende de passos do founder; a migração não foi aplicada).
+Decisão: ADR 0018. Verificado só no stack local; **nada disto está ligado em produção** (o CAPTCHA depende de passos do founder). A migração foi aplicada em produção em 14/10/2026, então o expurgo agendado roda lá.
 
 **Novo subprocessador, quando o CAPTCHA for ligado: Cloudflare (Turnstile).** Nas telas de cadastro, login, reenvio de confirmação e recuperação de senha, o **navegador da pessoa** carrega o Turnstile, que recebe o endereço IP e sinais do navegador para decidir se é uma pessoa. O Supabase Auth confere o resultado com a Cloudflare. O produto não recebe nem guarda esses dados; só repassa o token. Tratamento fora do Brasil. **Antes de ligar:** menção no aviso de privacidade (revisão jurídica). Páginas públicas, relatórios e o painel não carregam o Turnstile.
 
@@ -344,7 +344,7 @@ A exclusão deixou de ser manual store a store: um administrador da plataforma a
 
 ## Sprint 9, parte 3 (11/10/2026): suspensão, contestação e monitor
 
-Decisão: ADR 0019. Verificado só no stack local; a migração não foi aplicada em produção. **Nenhum subprocessador novo:** o monitor roda no GitHub Actions, que já era usado para a integração contínua, e só lê contagens.
+Decisão: ADR 0019. Verificado só no stack local; as migrações foram aplicadas em produção em 14/10/2026. **Nenhum subprocessador novo:** o monitor roda no GitHub Actions, que já era usado para a integração contínua, e só lê contagens.
 
 | Store / tabela | Conteúdo | Dado pessoal? | Finalidade | Quem lê | Retenção |
 |---|---|---|---|---|---|
@@ -359,7 +359,7 @@ Decisão: ADR 0019. Verificado só no stack local; a migração não foi aplicad
 
 ## Sprints 8 e 9, lacunas fechadas em 11/10/2026
 
-Verificado só no stack local; a migração `202610110005` não foi aplicada em produção. Nenhum dado novo de pessoas e nenhum subprocessador novo.
+Verificado só no stack local; a migração `202610110005` foi aplicada em produção em 14/10/2026. Nenhum dado novo de pessoas e nenhum subprocessador novo.
 
 - **Exportação da conta** (`export_workspace_data`): passa a incluir `domains` (sem o valor de comprovação), `pixels`, `moderationSuspensions` e `moderationAppeals` (o texto da contestação e a resposta recebida). A pendência registrada nas seções da Sprint 8, parte 2, e da Sprint 9, parte 3, está resolvida. Os arquivos de mídia continuam fora da exportação.
 - **`profile_domains`** ganhou `recheck_misses` (dias seguidos sem a comprovação) e `lapse_reason`. Não são dados pessoais.
@@ -368,7 +368,7 @@ Verificado só no stack local; a migração `202610110005` não foi aplicada em 
 
 ## Preparação do piloto (13/10/2026): motivo do cancelamento, funil de produto e contato de suporte
 
-Verificado só no stack local; a migração `202610130001` não foi aplicada em produção. **Nenhum subprocessador novo.** Decisões: ADR 0020 e adendo do ADR 0014.
+Verificado só no stack local; a migração `202610130001` foi aplicada em produção em 14/10/2026. **Nenhum subprocessador novo.** Decisões: ADR 0020 e adendo do ADR 0014.
 
 | Store | O que guarda | Dado pessoal? | Finalidade | Quem acessa | Retenção |
 |---|---|---|---|---|---|
