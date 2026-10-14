@@ -343,7 +343,7 @@ Registrado a partir do que o founder fez e relatou no mesmo dia; o que foi confe
 
 ## Adendo de 11/10/2026 — lacunas da Sprint 8 fechadas depois
 
-Registradas em detalhe no adendo de mesma data de `docs/SPRINT_9_REPORT.md` ("lacunas das Sprints 8 e 9"). Verificado só no stack local; migração `202610110005` não aplicada em produção.
+Registradas em detalhe no adendo de mesma data de `docs/SPRINT_9_REPORT.md` ("lacunas das Sprints 8 e 9"). Verificado só no stack local; migração `202610110005` aplicada em produção em 14/10/2026.
 
 - **Domínios e pixels na exportação da conta:** feito.
 - **Reverificação agendada de domínios:** feita (job diário; sete dias seguidos sem a comprovação desligam o domínio; ADR 0016, adendo).

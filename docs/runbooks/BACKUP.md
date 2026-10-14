@@ -4,7 +4,9 @@
 
 **Por que existe:** por decisão do founder em 10/10/2026, o banco de produção fica no **plano Free do Supabase**, que **não tem backup gerenciado**. Não há cópia diária, nem restauração por data, do lado do Supabase. **O único backup é o que este procedimento produz.** Se ele não for feito, uma exclusão por engano, uma migração errada ou a perda do projeto não têm volta.
 
-**Estado em 10/10/2026:** os dois scripts foram escritos e ensaiados com o **banco local** (backup de 70 tabelas e 36 arquivos de mídia; restauração numa instância descartável; todas as verificações aprovadas). **Nenhum backup do banco de produção foi feito ainda:** a CLI desta máquina estava logada em uma conta sem acesso ao projeto (erro 403). **A restauração num projeto hospedado novo nunca foi ensaiada**, nem a recarga dos arquivos de mídia.
+**Estado em 10/10/2026:** os dois scripts foram escritos e ensaiados com o **banco local** (backup de 70 tabelas e 36 arquivos de mídia; restauração numa instância descartável; todas as verificações aprovadas). Naquele dia a CLI desta máquina estava logada em uma conta sem acesso ao projeto (erro 403).
+
+**Estado em 14/10/2026:** com a CLI logada na conta dona do projeto, foi feito o **primeiro backup da produção** (`backups/20261014T201546Z-production`: 67 tabelas, 205 linhas, 2 contas, 3 páginas, 9 versões publicadas, 3 contatos, 15 de 15 arquivos de mídia) e `db:restore-check` terminou com `PASS`, logo antes de aplicar as migrações de `202610110001` a `202610130001`. A conferência agora ignora, com um aviso, o `GRANT` que a plataforma faz ao papel `supabase_realtime_admin`: esse papel só existe quando o Realtime roda, e a instância descartável sobe sem ele (num projeto hospedado novo ele existe). **A cópia desse backup para fora desta máquina não está confirmada. A restauração num projeto hospedado novo nunca foi ensaiada**, nem a recarga dos arquivos de mídia.
 
 ## 1. Fazer um backup
 

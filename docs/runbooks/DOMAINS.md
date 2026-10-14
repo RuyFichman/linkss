@@ -92,7 +92,7 @@ delete from public.profile_domains where hostname = '<domínio>' returning id, w
 
 ## Reverificação diária (desde 11/10/2026)
 
-Verificado só no stack local; a migração `202610110005` ainda não foi aplicada em produção.
+Verificado só no stack local; a migração `202610110005` foi aplicada em produção em 14/10/2026 (a reverificação diária passa a rodar lá; nunca contra um domínio real).
 
 O job `/api/jobs/domains` (08:00 UTC) lê de novo o registro TXT de comprovação de cada domínio ativo. Log `domains.recheck` com contagens (`checked`, `found`, `missing`, `lapsed`, `dnsUnavailable`, `failed`), **nunca o nome do domínio**. Alerta: `job:domains` no monitor (`MONITORING.md`).
 

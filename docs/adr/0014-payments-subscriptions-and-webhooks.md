@@ -266,7 +266,7 @@ Also since this date, `POST /api/billing/webhook` logs **why** billing is off wh
 
 ## Addendum (2026-10-13): retired prices, monthly to yearly, the cancellation reason, erasure
 
-Verified on the local stack only (migration `202610130001`, pgTAP `230-pilot-readiness`, `scripts/billing-lifecycle.mjs` against the emulator). **Not applied to production and never run against Stripe.**
+Verified on the local stack only (migration `202610130001`, pgTAP `230-pilot-readiness`, `scripts/billing-lifecycle.mjs` against the emulator). Applied to production on 2026-10-14; **never run against Stripe.**
 
 ### A price change no longer breaks running subscriptions
 

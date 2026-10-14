@@ -2,7 +2,7 @@
 
 **Owner:** founder. **Decisão:** ADR 0014 (adendo de 13/10/2026). **Runbook da cobrança:** `BILLING.md`.
 
-**Estado em 13/10/2026:** o mecanismo existe e foi verificado só no stack local (pgTAP `230-pilot-readiness`, com um preço aposentado dentro de uma transação de teste). **Nenhum preço foi mudado até hoje, em nenhum ambiente, e a migração `202610130001` não está aplicada em produção.** O passo 6 (levar assinantes antigos ao preço novo) **não tem código**: é um procedimento manual que depende de decisão do founder, de revisão jurídica e de um canal de aviso.
+**Estado em 13/10/2026:** o mecanismo existe e foi verificado só no stack local (pgTAP `230-pilot-readiness`, com um preço aposentado dentro de uma transação de teste). **Nenhum preço foi mudado até hoje, em nenhum ambiente, A migração `202610130001` foi aplicada em produção em 14/10/2026.** O passo 6 (levar assinantes antigos ao preço novo) **não tem código**: é um procedimento manual que depende de decisão do founder, de revisão jurídica e de um canal de aviso.
 
 ## O que acontece com quem já assina
 

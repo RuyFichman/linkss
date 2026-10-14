@@ -382,3 +382,18 @@ Este adendo não conclui a Sprint 9 nem inicia a Sprint 10. Ele fecha, da lista 
 2. Backup conferido e `supabase db push` das migrações pendentes (11/10 e 13/10).
 3. Na área restrita da Stripe: trocar para o anual, cancelar com motivo, e excluir uma conta de teste com assinatura.
 4. Definir o endereço de suporte e a decisão sobre o leitor de logs.
+
+## Adendo de 14/10/2026 — primeiro backup da produção e migrações aplicadas
+
+**Feito pelo agente, com a CLI logada pelo founder na conta dona do projeto.** Nada de código de produto mudou.
+
+| Passo | Resultado | Evidência |
+|---|---|---|
+| Backup da produção | **feito** em `backups/20261014T201546Z-production` (só nesta máquina): 67 tabelas, 205 linhas, 22 migrações, 2 contas, 3 páginas, 9 versões publicadas, 3 contatos, 15 de 15 arquivos de mídia | saída de `npm run db:backup` |
+| Conferência da restauração | **PASS**, depois de um ajuste no script: o `GRANT` da plataforma ao papel `supabase_realtime_admin` falhava só porque a instância descartável sobe sem o Realtime; agora é mostrado como aviso e não conta como erro | `scripts/db-restore-check.mjs`; todas as outras verificações (linhas por tabela, histórico, página publicada, RLS) passaram antes e depois do ajuste |
+| `supabase db push` | **aplicadas** `202610110001` a `202610130001` (seis migrações); `202610140001` (e-mail) ficou de fora por decisão do founder, porque a branch não foi mergeada | `--dry-run` antes, `supabase migration list` depois |
+| Site depois do push | `https://linkfav.com/` e `/api/health` responderam 200 | `curl` |
+
+**Consequências:** os jobs diários de expurgo (`/api/jobs/retention`, 07:00 UTC) e de reverificação de domínios (`/api/jobs/domains`, 08:00 UTC) passam a rodar em produção; a exclusão de conta, a contestação de suspensão, o funil de produto, a troca para o anual e o motivo de cancelamento passam a ter banco em produção.
+
+**Pendente:** copiar o backup para fora desta máquina (founder); Turnstile na ordem documentada; regra do firewall; `OPS_STATUS_SECRET` na Vercel e no GitHub (sem ele o monitor falha); conferir na Stripe (área restrita) o que só rodou no emulador; a migração de e-mail depois do merge.

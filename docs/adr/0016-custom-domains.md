@@ -142,7 +142,7 @@ Verified locally: pgTAP `190-domains-pixels` (every role against every command, 
 
 ## Addendum (2026-10-11): scheduled re-verification
 
-Verified on the local stack only; migration `202610110005` is not applied to production.
+Verified on the local stack only; migration `202610110005` was applied to production on 2026-10-14.
 
 An active domain used to be looked at again only when somebody else proved the same hostname. A page therefore kept answering on a hostname whose owner had removed the proof, sold the domain or let it expire. Since this addendum a daily job (`/api/jobs/domains`, 08:00 UTC, fifth Vercel Cron) reads the TXT proof of every active domain again.
 
