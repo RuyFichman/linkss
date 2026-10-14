@@ -9,6 +9,27 @@ const DUMMY_ORIGIN = "https://lnk.invalid";
  * backslashes, control characters, encoded separators and anything outside the allowlist, so a
  * crafted link can never turn sign-in into an open redirect.
  */
+/**
+ * Where an e-mail confirmation link leads (ADR 0012, addendum). The confirmation template carries
+ * `redirect_to`, the address the sign-up asked for (`/auth/confirm?next=<invitation>`), so a
+ * person who signs up from an invitation on the phone and confirms on the laptop still lands on
+ * the invitation. Only this application's own `/auth/confirm` is read, and the `next` inside it
+ * passes the same allowlist as any other; a `redirect_to` that Auth replaced with the bare site
+ * address, or one from elsewhere, is ignored.
+ */
+export function emailLinkNextPath(next: string | null, redirectTo: string | null, appOrigin: string): string {
+  if (redirectTo && redirectTo.length <= 1024) {
+    try {
+      const url = new URL(redirectTo);
+      const inner = url.origin === appOrigin && url.pathname === "/auth/confirm" ? url.searchParams.get("next") : null;
+      if (inner) return safeNextPath(inner);
+    } catch {
+      // Not an address: fall back to `next`.
+    }
+  }
+  return safeNextPath(next);
+}
+
 export function safeNextPath(value: string | null | undefined, fallback: string = DEFAULT_AFTER_SIGN_IN): string {
   if (!value || value.length > 512) return fallback;
   if (!value.startsWith("/") || value.startsWith("//")) return fallback;

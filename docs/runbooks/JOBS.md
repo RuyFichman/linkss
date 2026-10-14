@@ -61,3 +61,11 @@ Rodar à mão nesta ordem: `analytics`, `billing`, `media-cleanup`, `retention`.
 | `/api/jobs/domains` | 08:00 | lê de novo o registro de comprovação de cada domínio próprio ativo; sete dias seguidos sem ele desligam o domínio | `domains.recheck` | `DOMAINS.md` |
 
 Vale tudo o que este runbook diz dos outros quatro: mesmo segredo, mesma forma de rodar à mão, mesmo alerta (`job:domains`). Parado, o efeito é só que um domínio abandonado continua abrindo a página: P3.
+
+## Sexto job: e-mail (desde 14/10/2026)
+
+| Rota | Horário (UTC) | O que faz | Log | Runbook |
+|---|---|---|---|---|
+| `/api/jobs/mail` | 09:00 | enfileira os lembretes de renovação anual, envia o que ficou para trás (a Resend fora do ar), vence o que esperou demais e apaga o que terminou há 30 dias | `mail.maintenance` | `MAIL.md` |
+
+Vale o mesmo dos outros: mesmo segredo, mesma forma de rodar à mão, mesmo alerta (`job:mail`). Quase todo e-mail sai minutos depois do fato, pela própria requisição que o causou; parado, o job atrasa só os lembretes de renovação e o reenvio depois de uma falha: P2. Com o e-mail desligado no ambiente ele roda a limpeza e responde `mail_off`, o que conta como execução boa.

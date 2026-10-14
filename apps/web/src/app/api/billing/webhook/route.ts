@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { scheduleMailDrain } from "@/modules/mail/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { resolveBillingMode } from "@/modules/billing/mode";
 import { configuredSync } from "@/modules/billing/server";
@@ -51,6 +52,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   const result = await processWebhook(sync, { rawBody, signatureHeader: request.headers.get("stripe-signature") });
   // A plan change reaches pages that are already published: drop their cached copies now.
   for (const slug of result.slugs) revalidatePublicPage(slug);
+  // A payment that just failed queued a notice for the owner (ADR 0021).
+  if (result.outcome === "applied") scheduleMailDrain("billing_webhook");
 
   const level = result.http === 503 || result.outcome === "price_mismatch" || result.outcome === "conflict" || result.outcome === "customer_mismatch" ? "error"
     : result.http === 400 || result.outcome === "unknown_customer" || result.outcome === "invalid" || result.outcome === "expired" || result.topic === "dispute" || result.topic === "refund" ? "warn"

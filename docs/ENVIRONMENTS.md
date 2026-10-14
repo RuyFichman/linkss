@@ -341,3 +341,22 @@ Checklist ao comprar o domínio:
 **Rollback da aplicação depois da migração:** suportado. O código antigo não chama as funções novas; as quatro funções trocadas mantêm assinatura e respostas enquanto nenhum preço for aposentado.
 
 **Variável nova:** `SUPPORT_EMAIL` (servidor, opcional, lida no build). Está em `.env.example`.
+
+## Passos de deploy do e-mail (14/10/2026)
+
+**Nada disto foi aplicado em produção.** Verificado só no stack local. Decisão: ADR 0021; passo a passo da Resend e do Supabase em `docs/runbooks/MAIL.md` §1.
+
+| # | Passo | Depois dele |
+|---|---|---|
+| 1 | **Merge do PR** | o sexto cron (`/api/jobs/mail`, 09:00 UTC) responde 503 `not_deployed` até a migração; formulários, moderação e cobrança funcionam como antes; *Meus dados* diz que os avisos ainda não estão disponíveis |
+| 2 | **Backup conferido** e `npx supabase db push`. Deve listar `202610140001_transactional_email`, depois das pendentes de 11/10 e 13/10. Acrescenta uma coluna com padrão, uma tabela, funções e quatro gatilhos, e troca `get_ops_status` pela mesma função com a chave `mail` | os fatos passam a enfileirar avisos; sem a Resend configurada eles esperam e vencem |
+| 3 | Resend: conta, domínio verificado, chave só de envio (`MAIL.md` §1, passos 1 a 3) | — |
+| 4 | Vercel: `RESEND_API_KEY`, `MAIL_FROM` e, se quiser, `MAIL_REPLY_TO`; novo deploy | os avisos passam a sair |
+| 5 | Supabase: SMTP da Resend, os três modelos de `supabase/templates/`, *Site URL* e `https://linkfav.com/auth/confirm**` nas *Redirect URLs* (`MAIL.md` §1, passos 5 a 7) | confirmação e recuperação saem da Resend; convite funciona em outro aparelho |
+| 6 | Conferir (`MAIL.md` §3) | — |
+
+**Ordem que importa:** o domínio verificado (passo 3) antes do SMTP do Supabase (passo 5), ou ninguém consegue confirmar o cadastro.
+
+**Rollback da aplicação depois da migração:** suportado; o código antigo não lê a fila (as mensagens vencem) e a função `get_ops_status` só ganhou uma chave.
+
+**Variáveis novas:** `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_REPLY_TO` (servidor). Estão em `.env.example`.

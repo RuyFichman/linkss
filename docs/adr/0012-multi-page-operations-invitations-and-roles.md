@@ -199,3 +199,13 @@ Every Server Action re-derives the role with `requireWorkspaceAccess` before cal
 - Account deletion and export (Sprint 9) must reach `workspace_invitations` by `email`, `invited_by` and `accepted_by`.
 - Sprint 8 decides what happens to members and open invitations above `team_members`, and to pages above `max_profiles`, after a downgrade. Today nothing is removed: existing members keep access and new invitations and pages are refused. **Resolved in ADR 0014:** that behaviour is kept as the rule, nothing else is blocked (publishing stays allowed above the limit), and the cancellation and plan-change screens list it with the workspace's real numbers before the person confirms.
 - Part 2 reads analytics per workspace: archived pages keep their aggregates and their `profile_id`; a duplicated page starts with none.
+
+## Addendum (2026-10-14): an invitation confirmed on another device
+
+Until now a person who signed up from an invitation link went back to it after confirming the e-mail only on the same device, through the `lnk_after_confirm` cookie. On another device the confirmation led to `/app` and the person had to find the invitation link again.
+
+Now the sign-up from an invitation asks Auth for `emailRedirectTo = <app>/auth/confirm?next=/app/convite/<token>`, the confirmation template (`supabase/templates/confirmation.html`) carries that address as `redirect_to`, and `/auth/confirm` reads the invitation path from it (`emailLinkNextPath` in `modules/identity/redirects.ts`). It reads only this application's own `/auth/confirm`, and the path inside passes the same allowlist as any `next`; an address from elsewhere, or the bare site address that Auth puts in place of one it does not allow, is ignored and the template's `next=/app` applies. The cookie still wins on the same device.
+
+The token travels in the confirmation e-mail, to the invited address only; it was already the invitee's to hold, and the invitation can be accepted only by that confirmed address. The resend of the confirmation (`/confirmar-email`) does not know the invitation and leads to `/app`.
+
+**Needs, in the hosted project:** the custom template (which Supabase allows only with custom SMTP, ADR 0021) and `https://linkfav.com/auth/confirm**` in the Redirect URLs. Without them the behaviour is the previous one. Verified locally end to end (`scripts/mail-lifecycle.mjs`: sign-up in one browser, the e-mail read from Mailpit, opened in another with no cookie in common, invitation accepted); **not in production.**

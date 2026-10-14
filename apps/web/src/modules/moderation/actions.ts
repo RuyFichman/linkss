@@ -12,6 +12,7 @@ import { allowRequest, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { createPublicSupabaseClient } from "@/lib/supabase/public";
 import { clientAddress, visitorHash } from "@/modules/leads/visitor-hash";
 import { getCurrentUserId, getSupabase } from "@/modules/identity/session";
+import { scheduleMailDrain } from "@/modules/mail/server";
 import { revalidatePublicPage } from "@/modules/publishing/cache";
 import { appealOutcome, parseAppealMessage, type AppealOutcome } from "./appeals";
 import { normalizeReportDetail, REPORT_REASONS, serializeReport, signReport, type ReportReason } from "./contract";
@@ -87,6 +88,8 @@ export async function decideAppealAction(formData: FormData): Promise<void> {
   if (error) redirect("/app/administracao/denuncias?erro=contestacao");
   const result = data as unknown as { slug?: string } | null;
   if (decision === "accept" && result?.slug && SLUG.test(result.slug)) revalidatePublicPage(result.slug);
+  // The answer was queued for the workspace with the decision.
+  scheduleMailDrain("appeal_decided");
   revalidatePath("/app/administracao/denuncias");
 }
 
@@ -121,5 +124,6 @@ export async function setPageModerationAction(formData: FormData): Promise<void>
   if (error) redirect("/app/administracao/denuncias?erro=acao");
   const result = data as unknown as { slug?: string } | null;
   if (result?.slug && SLUG.test(result.slug)) revalidatePublicPage(result.slug);
+  if (suspend === "yes") scheduleMailDrain("page_suspended");
   revalidatePath("/app/administracao/denuncias");
 }

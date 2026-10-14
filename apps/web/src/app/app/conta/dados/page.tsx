@@ -3,7 +3,11 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requestAccountDeletionAction, requestDataAccessAction } from "@/modules/privacy/actions";
 import { myLegalHistory, myPrivacyRequests } from "@/modules/privacy/server";
-import { resolveAccount } from "@/modules/identity/session";
+import { getSupabase, resolveAccount } from "@/modules/identity/session";
+import { MAIL_PREFERENCES_COPY } from "@/content/pt-BR";
+import { isMissingSchemaError } from "@/lib/supabase/missing-schema";
+import { MailPreferencesForm } from "@/modules/mail/components/mail-preferences-form";
+import { resolveMailConfig } from "@/modules/mail/config";
 
 export const metadata: Metadata = { title: "Meus dados e privacidade" };
 export const dynamic = "force-dynamic";
@@ -29,7 +33,14 @@ export default async function MyDataPage({ searchParams }: {
   const account = await resolveAccount();
   if (account.status === "anonymous") redirect("/entrar?next=/app/conta/dados");
   if (account.status !== "ready") return null;
-  const [requests, history] = await Promise.all([myPrivacyRequests(), myLegalHistory()]);
+  const supabase = await getSupabase();
+  const [requests, history, preference] = await Promise.all([
+    myPrivacyRequests(), myLegalHistory(),
+    supabase.from("user_accounts").select("notify_new_leads").eq("id", account.userId).maybeSingle(),
+  ]);
+  // Before the e-mail migration the column does not exist: the section says so instead of failing.
+  const mailDeployed = !(preference.error && isMissingSchemaError(preference.error));
+  const notifyNewLeads = preference.data?.notify_new_leads ?? true;
   const { erro } = await searchParams;
   const owned = account.workspaces.filter((workspace) => workspace.role === "owner");
 
@@ -40,6 +51,16 @@ export default async function MyDataPage({ searchParams }: {
       {erro ? <p role="alert" className="mt-4 text-red-700">Não foi possível registrar o pedido. Tente novamente.</p> : null}
 
       <div className="mt-6 grid gap-5">
+        <section id="avisos" className="surface-card scroll-mt-4 p-5" aria-labelledby="avisos-titulo">
+          <h2 id="avisos-titulo" className="text-xl font-bold">{MAIL_PREFERENCES_COPY.title}</h2>
+          <p className="mt-2 text-sm text-app-muted">{MAIL_PREFERENCES_COPY.lead}</p>
+          {!mailDeployed ? <p className="mt-3 text-sm">{MAIL_PREFERENCES_COPY.notDeployed}</p> : (
+            <>
+              {resolveMailConfig().mode === "off" ? <p className="mt-3 text-sm">{MAIL_PREFERENCES_COPY.off}</p> : null}
+              <MailPreferencesForm newLeads={notifyNewLeads} />
+            </>
+          )}
+        </section>
         <section className="surface-card p-5">
           <h2 className="text-xl font-bold">Exportação da pessoa</h2>
           <p className="mt-2 text-sm text-app-muted">Inclui cadastro, autenticação sem credenciais, participação em contas, convites relacionados, aceites e auditoria da sua pessoa.</p>
