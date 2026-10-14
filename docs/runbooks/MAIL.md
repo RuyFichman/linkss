@@ -2,7 +2,7 @@
 
 **Owner:** founder técnico. **Decisão:** ADR 0021. **Ensaio local:** `apps/web/scripts/mail-lifecycle.mjs`.
 
-**Estado em 14/10/2026:** código pronto e verificado só no stack local, contra um substituto da API da Resend e o Mailpit local. **Não existe conta na Resend, o domínio não está verificado, a migração `202610140001` não está aplicada em produção e nenhum e-mail foi enviado a ninguém.**
+**Estado em 14/10/2026:** código pronto e verificado só no stack local, contra um substituto da API da Resend e o Mailpit local. A migração `202610140001` foi aplicada em produção em 14/10/2026. **Não existe conta na Resend, o domínio não está verificado e nenhum e-mail foi enviado a ninguém.**
 
 ## O que sai por e-mail
 

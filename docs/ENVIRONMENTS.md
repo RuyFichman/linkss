@@ -344,7 +344,7 @@ Checklist ao comprar o domínio:
 
 ## Passos de deploy do e-mail (14/10/2026)
 
-**Nada disto foi aplicado em produção.** Verificado só no stack local. Decisão: ADR 0021; passo a passo da Resend e do Supabase em `docs/runbooks/MAIL.md` §1.
+**Em 14/10/2026 só o passo 2 foi feito, antes do passo 1:** a migração foi aplicada em produção antes do merge e sem backup novo, por decisão do founder (o backup conferido da mesma tarde é o mais recente). Isso é seguro porque o código anterior não lê a fila. Os outros passos não foram feitos. Verificado só no stack local. Decisão: ADR 0021; passo a passo da Resend e do Supabase em `docs/runbooks/MAIL.md` §1.
 
 | # | Passo | Depois dele |
 |---|---|---|

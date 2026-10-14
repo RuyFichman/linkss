@@ -1,6 +1,6 @@
 # ADR 0021 — Transactional e-mail through an outbox and Resend
 
-- **Status:** accepted for implementation on 2026-10-14. Verified on the local stack only, against a stand-in for Resend's API and the local Mailpit. **No Resend account exists, no domain is verified, migration `202610140001` is not applied to production and no e-mail has been sent to anyone.**
+- **Status:** accepted for implementation on 2026-10-14. Verified on the local stack only, against a stand-in for Resend's API and the local Mailpit. Migration `202610140001` was applied to production on 2026-10-14, before the code was merged. **No Resend account exists, no domain is verified and no e-mail has been sent to anyone.**
 - **Related:** ADR 0011 (customer analytics: third parties never block a visitor), ADR 0012 (invitations; addendum of the same date), ADR 0014 (billing), ADR 0019 (suspension, appeal, monitor), ADR 0020 (support address)
 
 ## Context

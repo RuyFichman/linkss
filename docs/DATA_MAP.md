@@ -368,7 +368,7 @@ Verificado só no stack local; a migração `202610110005` foi aplicada em produ
 
 ## E-mail transacional (14/10/2026): fila de avisos e Resend
 
-Verificado só no stack local; a migração `202610140001` não foi aplicada em produção e nenhum e-mail foi enviado. Decisão: ADR 0021.
+Verificado só no stack local; a migração `202610140001` foi aplicada em produção em 14/10/2026 e nenhum e-mail foi enviado (sem a Resend configurada, os avisos enfileirados só esperam e vencem). Decisão: ADR 0021.
 
 **Novo subprocessador: Resend** (envio de e-mail, Estados Unidos). Recebe, por mensagem: o endereço e o nome de quem recebe (pessoas que administram contas, nunca visitantes), o título e o endereço da página e, numa contestação, a resposta escrita pela moderação para a conta. **Nunca** o que um visitante escreveu num formulário. Depois que o SMTP do Supabase for ligado, recebe também os e-mails do Auth (confirmação, recuperação, troca de e-mail), com o link de uso único. **Antes do primeiro envio:** contrato/DPA com a Resend, menção na política de privacidade e base para a transferência internacional (revisão jurídica).
 
