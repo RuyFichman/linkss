@@ -243,6 +243,14 @@ export function Home() {
               <li><Link href="/privacidade">{copy.footer.privacy}</Link></li>
             </ul>
           </nav>
+          <nav aria-labelledby="rodape-ajuda">
+            <h2 id="rodape-ajuda">{copy.footer.helpTitle}</h2>
+            <ul>
+              <li><Link href="/ajuda">{copy.footer.help}</Link></li>
+              <li><Link href="/precos">{copy.footer.pricing}</Link></li>
+              <li><Link href="/status">{copy.footer.status}</Link></li>
+            </ul>
+          </nav>
         </footer>
       </div>
     </div>

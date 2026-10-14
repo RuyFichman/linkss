@@ -131,11 +131,13 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [ ] P2 Eventos de conversão nos pixels (lead, WhatsApp, Pix), registro de consentimento e Google Consent Mode.
 - [ ] P2 Invalidar o cache só do domínio da página publicada (hoje toda publicação derruba todas as cópias em domínio próprio).
 - [ ] P2 Conferir no navegador o que a parte 2 só cobriu por HTTP: seções da aba *Página*, página num domínio próprio, celular e leitor de tela.
-- [ ] P1 Trocar entre mensal e anual numa assinatura em curso — cortado na parte 1 (UX-079).
+- [x] P1 Trocar do mensal para o anual numa assinatura em curso (13/10/2026, UX-094; ADR 0014, adendo): vale na hora, com o desconto da parte do mês já paga. Verificado só contra o emulador; **nunca contra a Stripe**.
+- [ ] P2 Trocar do anual para o mensal no meio do ano pago: não oferecido (a tela ensina a cancelar a renovação e assinar o mensal no fim do período). Fazer direito exige agendamento no provedor; avaliar se o piloto pedir.
 - [ ] P1 Aviso por e-mail de pagamento que falhou e de renovação (depende do SMTP; hoje só na tela, e pelos e-mails da própria Stripe se forem ligados).
-- [ ] P1 Plano de migração para mudança de preço com assinaturas em curso (hoje o valor antigo viraria `price_mismatch`).
+- [x] P1 Plano de migração para mudança de preço com assinaturas em curso (13/10/2026): preços aposentados continuam concedendo o plano a quem assinou por eles; procedimento em `docs/runbooks/PRICE_CHANGE.md`. Verificado só no stack local; nenhum preço foi mudado até hoje.
+- [ ] P1 Decidir se assinantes antigos são levados ao preço novo (UX-096) e, se forem, construir o aviso e o reajuste: depende do SMTP e da revisão jurídica. Hoje continuam no valor antigo, sem prazo.
 - [ ] P1 Limite global e lista de IPs da Stripe na frente de `/api/billing/webhook` (Sprint 9).
-- [ ] P1 Incluir as tabelas de cobrança na exportação da conta; na exclusão da conta do titular, cancelar no provedor antes do expurgo (Sprint 9).
+- [x] P1 Tabelas de cobrança na exportação da conta (já estavam desde a Sprint 9; conferido por teste em 13/10/2026, com o motivo do cancelamento acrescentado); na exclusão da conta do titular, a assinatura é encerrada no provedor antes do expurgo (13/10/2026, sem reembolso automático). Verificado só contra o emulador.
 - [ ] P2 Reembolso automático da segunda assinatura paga por engano (hoje o cancelamento é automático e o reembolso é manual).
 - [ ] P2 Conferir no navegador o que a parte 1 só cobriu por teste ou HTTP: diálogo "Manter a assinatura", telas como administrador e editor, aplicação contra banco sem a migração, celular real e leitor de tela.
 
@@ -162,12 +164,33 @@ Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 s
 - [ ] P0 Backup/restauração e runbooks.
   - [x] Runbooks de jobs, monitor e moderação (`JOBS.md`, `MONITORING.md`, `MODERATION.md`) e primeiro mecanismo de alerta (workflow *Monitor* + `/api/ops/status`): código de 11/10/2026 (ADR 0019), verificado só no stack local.
   - [ ] **Founder:** aplicar as migrações `202610110003` e `202610110004` e criar `OPS_STATUS_SECRET` na Vercel e no GitHub (`docs/runbooks/MONITORING.md` §1). Até lá o monitor só confere que o site responde.
-  - [ ] Alertas para taxa de erro e latência do renderer, uploads, formulários, Auth e webhook que não chega (dependem de contratar um serviço que leia logs).
+  - [x] Tempo máximo de resposta da aplicação, da home, da página de situação e da página pública de teste no monitor, e alerta quando `/status` acusa instabilidade (13/10/2026, ADR 0020). Medido de hora em hora, de fora do Brasil: é disponibilidade e lentidão grosseira, **não taxa de erro**.
+  - [ ] **Founder:** decidir o serviço que lê os logs e o plano da Vercel que os envia (o *log drain* não existe no Hobby). Sem isso continuam sem alerta: taxa de erro e latência por requisição do renderer, uploads, formulários e Auth, Web Vitals e webhook que não chega.
   - [x] Backup lógico (`npm run db:backup`: banco, contas, histórico de migrações e mídia) e ensaio de restauração (`npm run db:restore-check`), aprovados com o banco local em 10/10/2026; runbook `docs/runbooks/BACKUP.md`.
   - [ ] **Primeiro backup de produção** e ensaio dele (a CLI precisa estar logada na conta dona do projeto) e cópia para fora da máquina.
   - [ ] Ensaiar a restauração num projeto Supabase novo, incluindo mídia, segredos do Vault e Auth.
   - [ ] Agendar o backup (hoje é manual) e definir onde a cópia externa fica.
 - [ ] P0 QA mobile/cross-browser e acessibilidade prioritária. **Parcial:** passagem automática em 11/10/2026 (`scripts/mobile-a11y.mjs`: 12 telas em 390 e 320 px, regras WCAG 2.2 A/AA do axe-core, tamanho de alvo, `/aceite` com textos ativos), sem pendências depois de aumentar duas caixas de seleção. **Falta:** aparelho real (iOS e Android), outros navegadores, leitor de tela e teclado.
+
+## Sprint 10 — piloto privado (preparação)
+
+O que dava para fazer em código antes de convidar alguém, feito em 13/10/2026 e **verificado só no stack local** (`docs/SPRINT_9_REPORT.md`, adendo de 13/10/2026; ADR 0020). **A sprint não começou:** ninguém foi convidado, e ela não deve começar antes do backup de produção, do SMTP e da decisão sobre o modo da cobrança.
+
+- [x] P0 Funil de produto e coortes de ativação (`/app/administracao/produto`, só administradores da plataforma), calculado do que o produto já registra. Mede o gate de 60% e a mediana do tempo até publicar.
+- [x] P0 Central curta de ajuda (`/ajuda`) com *Ajuda* no menu da conta.
+- [ ] P0 **Founder:** definir o endereço de suporte e configurar `SUPPORT_EMAIL`. Sem ele a página diz que o atendimento do piloto é com quem enviou o convite.
+- [x] P1 Primeiros passos na lista de páginas, até a primeira publicação (UX-097).
+- [x] P1 Página de preços (`/precos`), com valores só com a cobrança real ligada (UX-099).
+- [x] P1 Página de situação (`/status`), servida pela própria aplicação (UX-100). Uma página hospedada fora, com histórico, fica para a Sprint 12 e é decisão de fornecedor.
+- [x] P1 Cancelamento com motivo opcional (UX-095), com os motivos na tela do funil.
+- [ ] P0 **Founder:** aplicar a migração `202610130001` depois de um backup conferido (`docs/ENVIRONMENTS.md`, "Passos de deploy da preparação do piloto"), junto com as pendentes de 11/10.
+- [ ] P0 Conferir contra a Stripe (área restrita) o que só rodou no emulador: troca para o anual (a fatura proporcional é a da Stripe), cancelamento com motivo e exclusão de conta com assinatura em curso.
+- [ ] P1 Guardar quem foi convidado para o piloto: hoje o funil conta todas as contas criadas no período, e o gate fala de convidados.
+- [ ] P1 Onde as pessoas desistem **dentro** de uma tela (editor, cadastro): o funil mostra até que etapa cada conta chegou, não o que aconteceu no caminho. Exige telemetria de produto, não construída.
+- [ ] P1 Rever as respostas de `/ajuda` a cada mudança de tela ou de regra, e incluir domínio próprio e pixels quando tiverem rodado em produção.
+- [ ] P2 Acessibilidade da home, achada ao passar o axe-core em 13/10/2026 e **não corrigida** (fora do escopo; a home não estava na passagem de 11/10): contraste do texto de exemplo do endereço (`.home-claim-address span`) e a faixa de modelos (`.home-rail`) que rola e não recebe foco do teclado.
+- [ ] P2 Conferir as telas novas em aparelho real, outros navegadores, leitor de tela e teclado (a passagem de 13/10/2026 é automática, em Chrome).
+- [ ] Convite progressivo de 10 pessoas, onboarding assistido, registro estruturado de problemas, linha de base de performance e custo por perfil: dependem do piloto existir.
 
 ## Débito/decisões abertas
 
@@ -185,6 +208,7 @@ Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 s
 - [ ] Confirmar decisões provisórias UX-061 a UX-071 (painel da conta, relatório do cliente, validade e papéis dos links, sem registro de abertura) e os limites do ADR 0013 (5 links ativos por página, 30 criações por dia, retenção de 90 dias).
 - [x] Rebaixamento para relatórios, páginas, pessoas e convites: decidido na Sprint 8, parte 1 (ADR 0014, UX-077): nada é removido, só o que é novo é recusado, nada mais é bloqueado, e a tela lista o impacto com os números da conta antes de confirmar. **Provisório — founder confirmar.**
 - [ ] Confirmar decisões provisórias UX-074 a UX-084 (tela de planos, papéis na cobrança, tolerância de 7 dias, rebaixamento, quando cada mudança vale, retorno do checkout, link nas telas de limite, ambiente de teste e home, plano manual, chargeback e reembolso).
+- [ ] Confirmar decisões provisórias UX-094 a UX-101 (troca para o anual e a recusa da volta, motivo do cancelamento, preço antigo mantido, primeiros passos, central de ajuda, página de preços, página de situação, definição de ativação no funil).
 - [ ] `npm audit`: 5 avisos altos em ferramentas de desenvolvimento (`eslint-config-next` → `braces`), sem correção compatível em 06/10/2026; rever a cada atualização do Next. Em 09/10/2026 apareceu um sexto, **de produção**, no próprio `next` (item na Sprint 8).
 - [ ] Rate limit global e firewall na frente de `/api/events` (Sprint 9). Limite por instância desde 11/10/2026; o global é a regra do firewall, ainda não criada.
 - [ ] Contratar revisão jurídica/contábil antes do beta pago. A lista do que ela precisa resolver para a cobrança está no ADR 0014 ("For the legal and accounting review").

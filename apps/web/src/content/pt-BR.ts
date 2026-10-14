@@ -234,7 +234,7 @@ export const APP_COPY = {
     sessionExpired: "Sua sessão expirou. Entre novamente para continuar.",
     notDeployed: "Este recurso ainda não está disponível nesta conta. Tente novamente mais tarde.",
   },
-  nav: { home: "Início", skipToContent: "Pular para o conteúdo", workspace: "Seções da conta", account: "Conta", myData: "Meus dados", pages: "Páginas", results: "Resultados", members: "Membros", plan: "Plano" },
+  nav: { home: "Início", skipToContent: "Pular para o conteúdo", workspace: "Seções da conta", account: "Conta", myData: "Meus dados", help: "Ajuda", pages: "Páginas", results: "Resultados", members: "Membros", plan: "Plano" },
 } as const;
 
 /** Suspension notice and appeal (ADR 0019). */
@@ -1258,6 +1258,10 @@ export const HOME_COPY = {
     professionals: "Profissionais",
     recover: "Recuperar acesso",
     privacy: "Privacidade (versão provisória)",
+    helpTitle: "Ajuda",
+    help: "Central de ajuda",
+    pricing: "Planos e preços",
+    status: "Situação do serviço",
   },
   phones: {
     creator: { name: "Lia Moraes", bio: "Fotografia de viagem e histórias visuais", primary: "Fale comigo", secondary: "Meu último ensaio" },
@@ -1337,7 +1341,9 @@ export const BILLING_COPY = {
     subscribe: (plan: string, interval: string) => `Assinar ${plan} ${interval}`,
     changeTo: (plan: string) => `Mudar para o ${plan}`,
     freeAlways: "Sempre disponível, sem cobrança.",
-    intervalFixed: (interval: string) => `Sua assinatura é ${interval}. Para trocar entre mensal e anual, cancele e assine de novo ao fim do período pago.`,
+    toYearly: "Passar para o anual",
+    toYearlyHint: (saving: string) => `Sua assinatura é mensal. No anual você paga ${saving} a menos por ano.`,
+    yearlyOnly: "Sua assinatura é anual. Para voltar ao mensal, cancele a renovação e assine o mensal quando o período já pago terminar.",
     replacesManual: "Assinar um plano substitui o plano definido manualmente nesta conta.",
   },
   features: {
@@ -1384,6 +1390,13 @@ export const BILLING_COPY = {
     nothingDeleted: "Nada é apagado: páginas, pessoas, contatos, imagens e resultados continuam guardados.",
     noImpact: "Tudo o que esta conta usa hoje cabe no novo plano.",
     gainsTitle: "O que você passa a ter",
+    intervalTitle: "Passar para a cobrança anual",
+    intervalLead: (plan: string, amount: string) => `A assinatura do plano ${plan} passa a ser anual agora, por ${amount} por ano. O provedor de pagamento cobra hoje o valor do ano, descontando a parte do mês atual que já foi paga e ainda não foi usada. O novo período de um ano começa hoje.`,
+    intervalSaving: (saving: string) => `São ${saving} a menos do que 12 meses do mensal.`,
+    intervalSame: "O plano e tudo o que esta conta tem continuam iguais.",
+    intervalBack: "Para voltar ao mensal depois, será preciso cancelar a renovação e assinar o mensal quando o ano terminar.",
+    confirmInterval: "Passar para o anual",
+    changedInterval: "Cobrança alterada para anual. O novo período já começou.",
     confirmCancel: "Cancelar a assinatura",
     confirmChange: (plan: string) => `Mudar para o ${plan}`,
     keep: "Não mudar nada",
@@ -1391,6 +1404,22 @@ export const BILLING_COPY = {
     changedNow: "Plano alterado. A mudança já está valendo.",
     changedLater: "Mudança de plano agendada para o fim do período já pago.",
     notAvailable: "Esta mudança não está disponível para a situação atual da assinatura.",
+  },
+  cancelReason: {
+    label: "Por que você está cancelando? (opcional)",
+    hint: "A resposta ajuda a melhorar o produto. O cancelamento acontece com ou sem ela.",
+    none: "Prefiro não dizer",
+    options: {
+      too_expensive: "O preço não cabe no momento",
+      missing_feature: "Falta um recurso de que preciso",
+      not_using: "Não estou usando",
+      switching_tool: "Vou usar outra ferramenta",
+      technical_problems: "Tive problemas técnicos",
+      temporary: "É uma pausa: pretendo voltar",
+      other: "Outro motivo",
+    },
+    commentLabel: "Quer contar mais? (opcional)",
+    commentHint: (max: number) => `Até ${max} caracteres. Não inclua dados pessoais de outras pessoas.`,
   },
   impact: {
     kind: { kept: "Continua igual", blocked: "Fica acima do limite", stops: "Deixa de funcionar" },
@@ -1438,6 +1467,7 @@ export const BILLING_COPY = {
     no_subscription: "Esta conta não tem uma assinatura ativa.",
     invalid_state: "Esta mudança não está disponível para a situação atual da assinatura.",
     same_plan: "A conta já está neste plano.",
+    interval_unavailable: "Não é possível passar do anual para o mensal no meio do período pago. Cancele a renovação e assine o mensal quando o período terminar.",
     not_deployed: "A área de plano e cobrança ainda não está disponível neste ambiente. Tente novamente mais tarde.",
     not_configured: "O pagamento não está configurado neste ambiente. Nada foi cobrado.",
     provider_unavailable: "O provedor de pagamento não respondeu. Nada foi cobrado nem alterado. Tente novamente em alguns minutos.",
@@ -1569,4 +1599,148 @@ export const PIXELS_COPY = {
     unavailable: "Não foi possível salvar agora. Nada foi alterado. Tente novamente em instantes.",
     unauthenticated: "Sua sessão expirou. Entre de novo para continuar.",
   },
+} as const;
+
+/** First steps on the page list of a workspace that has not published yet (modules/profiles/onboarding.ts). */
+export const ONBOARDING_COPY = {
+  title: "Primeiros passos",
+  lead: "Três passos para ter a sua página no ar.",
+  done: "Feito",
+  current: "Agora",
+  next: "Depois",
+  steps: {
+    create: { title: "Crie a página", body: "Escolha o nome e o endereço que vai na sua bio. Dá para mudar os dois depois." },
+    publish: { title: "Monte e publique", body: "No editor, escolha um modelo, adicione links, WhatsApp, Pix ou formulário e toque em Publicar. Visitantes só veem a página depois disso." },
+    share: { title: "Divulgue e acompanhe", body: "Coloque o endereço na bio das suas redes. As visitas e os cliques aparecem em Resultados." },
+  },
+  actions: { create: "Criar a página", publish: "Abrir o editor", help: "Ver a ajuda" },
+} as const;
+
+/**
+ * Help center (`/ajuda`). Every answer describes something the deployed product does (AGENTS.md
+ * §10): when a screen or a rule changes, the answer changes with it. `billing` has one text for an
+ * environment where paid plans are on sale and one for where they are not.
+ */
+export const HELP_COPY = {
+  title: "Ajuda",
+  lead: "Respostas curtas para as dúvidas mais comuns. Se a sua não estiver aqui, fale com a gente.",
+  navLabel: "Assuntos",
+  sections: [
+    {
+      id: "comecar", title: "Começar",
+      items: [
+        { question: "Como crio a minha página?", answer: "Crie o acesso com seu e-mail, confirme pelo link que enviamos e toque em Nova página. Você escolhe o nome e o endereço, monta o conteúdo no editor e publica." },
+        { question: "Não recebi o e-mail de confirmação. E agora?", answer: "Confira a caixa de spam. Se não estiver lá, peça um novo link na tela de confirmação de e-mail, informando o mesmo endereço do cadastro." },
+        { question: "Esqueci a senha.", answer: "Use Recuperar acesso na tela de entrada. Enviamos um link para você criar uma senha nova." },
+        { question: "A página já fica no ar quando eu crio?", answer: "Não. O que você monta é um rascunho, salvo sozinho. A página só aparece para visitantes quando você toca em Publicar, e cada mudança só vai ao ar quando você publica de novo." },
+      ],
+    },
+    {
+      id: "pagina", title: "Página e conteúdo",
+      items: [
+        { question: "O que posso colocar na página?", answer: "Links, textos, imagens, ícones de redes sociais, botão de WhatsApp, vídeos do YouTube e do Vimeo, músicas do Spotify, chave Pix com botão de copiar, formulários e divisores." },
+        { question: "Que imagens são aceitas?", answer: "JPG, PNG ou WebP, com até 15 MB. A imagem é recortada por você e otimizada antes de ir para a página." },
+        { question: "Publiquei algo errado. Dá para voltar?", answer: "Sim. Nas configurações da página há o histórico de publicações: escolha uma versão anterior e restaure. Você também pode tirar a página do ar." },
+        { question: "Posso mudar o endereço da página?", answer: "Pode. O endereço muda na hora e, por 90 dias, quem abrir o link antigo é levado ao novo enquanto a página estiver publicada. Depois disso o link antigo deixa de funcionar: atualize-o onde você divulgou." },
+        { question: "Qual a diferença entre arquivar e excluir?", answer: "Arquivar tira a página do ar e guarda tudo: endereço, versões, resultados e contatos. Excluir tira a página da sua lista e o endereço deixa de funcionar; os dados ficam guardados por 30 dias e depois são apagados." },
+      ],
+    },
+    {
+      id: "resultados", title: "Resultados e contatos",
+      items: [
+        { question: "O que os resultados mostram?", answer: "Visitas, cliques, origens e ações de valor (WhatsApp, Pix e formulário) por dia. A contagem não usa cookies, e os números são aproximações." },
+        { question: "Abri a minha página e a visita não foi contada.", answer: "Visitas feitas no navegador em que você está com a conta aberta não entram na contagem, para os números mostrarem só o seu público. Para testar, abra a página em uma janela anônima ou em outro aparelho." },
+        { question: "Por quanto tempo os resultados ficam disponíveis?", answer: "O plano Gratuito mostra os últimos 7 dias; os planos pagos, os últimos 90. Os dias seguem o horário de Brasília." },
+        { question: "Onde vejo quem preencheu o formulário?", answer: "Em Contatos, na página que tem o formulário. Você pode exportar a lista em CSV e apagar contatos. Cada contato fica disponível por 90 dias e depois é apagado." },
+      ],
+    },
+    {
+      id: "equipe", title: "Várias páginas e equipe",
+      items: [
+        { question: "Como convido alguém para a minha conta?", answer: "Em Membros, crie o convite com o e-mail e o papel da pessoa e envie a ela o link gerado. O produto não manda o convite por e-mail: é você quem compartilha o link. Ele vale por 7 dias e só pode ser aceito por quem entrar com aquele e-mail." },
+        { question: "O que cada papel pode fazer?", answer: "O proprietário cuida do plano e da conta. Administradores gerenciam páginas e pessoas. Editores montam e publicam páginas. A tela Membros mostra o papel de cada pessoa." },
+        { question: "Como envio os resultados para um cliente?", answer: "No plano Agência, a tela de resultados de cada página cria um link de relatório com prazo de validade. Quem recebe o link vê os números sem precisar de conta, e você pode revogá-lo quando quiser." },
+      ],
+    },
+    {
+      id: "dados", title: "Privacidade e segurança",
+      items: [
+        { question: "Como exporto ou apago os meus dados?", answer: "Em Conta, Meus dados, você baixa uma cópia dos seus dados e pode pedir a exclusão da conta. O pedido de exclusão é analisado por uma pessoa da equipe antes de ser executado." },
+        { question: "Encontrei uma página que parece golpe ou se passa por outra pessoa.", answer: "Use o formulário de denúncia. A equipe analisa e pode tirar a página do ar." },
+        { question: "Minha página foi suspensa. O que faço?", answer: "A conta mostra um aviso com o motivo e, na própria página, um proprietário ou administrador pode enviar uma contestação. A resposta chega pela mesma tela." },
+      ],
+    },
+  ],
+  billing: {
+    id: "plano", title: "Plano e cobrança",
+    selling: [
+      { question: "Como assino um plano pago?", answer: "Na conta, em Plano, o proprietário escolhe o plano e o período. O pagamento é feito por cartão na página do provedor de pagamento: os dados do cartão não passam por nós." },
+      { question: "Como cancelo?", answer: "Em Plano, Cancelar assinatura. O plano continua valendo até o fim do período já pago e depois a conta volta para o Gratuito, sem nova cobrança. Nada do que você criou é apagado." },
+      { question: "Posso trocar de plano ou passar do mensal para o anual?", answer: "Sim, pela mesma tela. Um plano maior e a passagem para o anual valem na hora, com cobrança proporcional. Um plano menor vale a partir do fim do período já pago. Para voltar do anual ao mensal, cancele a renovação e assine o mensal quando o período terminar." },
+      { question: "Onde ficam os recibos?", answer: "Em Plano, Pagamentos. Cada pagamento tem um link para o recibo na página do provedor de pagamento." },
+    ],
+    notSelling: [
+      { question: "Quanto custa?", answer: "O plano Gratuito não tem cobrança. Os planos pagos ainda não estão à venda." },
+    ],
+  },
+  contact: {
+    title: "Falar com a gente",
+    withEmail: "Escreva para o endereço abaixo. Conte o que aconteceu, em que tela e, se for sobre uma página, qual é o endereço dela. Não envie senhas.",
+    withoutEmail: "Durante o piloto, o atendimento é feito pela pessoa que enviou o seu convite. Responda àquela mensagem contando o que aconteceu, em que tela e, se for sobre uma página, qual é o endereço dela. Não envie senhas.",
+    links: { report: "Denunciar uma página", data: "Meus dados e pedidos de privacidade", status: "Situação do serviço", privacy: "Aviso de privacidade" },
+  },
+  back: "Voltar para a página inicial",
+} as const;
+
+/** Public pricing page (`/precos`). Amounts come from the catalogue and are shown only where paid plans are on sale. */
+export const PRICING_COPY = {
+  title: "Planos e preços",
+  lead: "Comece de graça. Os planos pagos existem para quem quer acompanhar resultados por mais tempo ou cuidar de várias páginas em equipe.",
+  leadNotSelling: "Comece de graça. Os planos pagos ainda não estão à venda: a lista abaixo mostra o que cada um inclui.",
+  soon: "Em breve",
+  available: "Disponível",
+  perMonth: "por mês",
+  orPerYear: (amount: string, saving: string) => `ou ${amount} por ano (${saving} a menos do que 12 meses do mensal)`,
+  free: "R$ 0",
+  freeNote: "Sempre disponível, sem cartão.",
+  includes: (plan: string) => `O que o plano ${plan} inclui`,
+  cta: { free: "Criar minha página", paid: "Começar pelo gratuito" },
+  ctaNote: "Os planos pagos são assinados de dentro da conta, depois do cadastro.",
+  notes: {
+    title: "Como funciona a cobrança",
+    selling: [
+      "Preços em reais. O pagamento é por cartão, na página do provedor de pagamento: os dados do cartão não passam por nós.",
+      "Você cancela quando quiser, pela própria conta. O plano continua valendo até o fim do período já pago.",
+      "Cancelar, mudar para um plano menor ou deixar de pagar não apaga páginas, contatos nem resultados: só o que é novo fica limitado ao plano em vigor.",
+    ],
+    notSelling: [
+      "Nenhuma cobrança é feita hoje: só o plano Gratuito está disponível.",
+      "Quando os planos pagos forem abertos, a contratação será feita de dentro da conta, e nada do que você criou no Gratuito será perdido.",
+    ],
+  },
+  helpLink: "Dúvidas? Veja a ajuda",
+  back: "Voltar para a página inicial",
+} as const;
+
+/** Public status page (`/status`, modules/ops/public-status.ts). */
+export const STATUS_COPY = {
+  title: "Situação do serviço",
+  overall: {
+    operational: "Tudo funcionando",
+    degraded: "Instabilidade em parte do serviço",
+  },
+  overallDetail: {
+    operational: "As páginas públicas e o painel estão respondendo normalmente.",
+    degraded: "Páginas já publicadas costumam continuar abrindo a partir da cópia em cache. Entrar na conta, editar, publicar e ver resultados pode falhar por alguns minutos.",
+  },
+  components: {
+    application: { name: "Site e aplicação", description: "A página inicial, a entrada na conta e o painel." },
+    database: { name: "Páginas e dados", description: "A leitura das páginas publicadas, o editor, os resultados e os contatos." },
+  },
+  state: { operational: "Funcionando", degraded: "Com instabilidade" },
+  checkedAt: (when: string) => `Última verificação: ${when} (horário de Brasília). Recarregue a página para verificar de novo.`,
+  limits: "Esta página é servida pela própria aplicação. Se ela não abrir, o serviço está fora do ar.",
+  help: "Algo não funciona e esta página diz que está tudo bem? Fale com a gente pela ajuda.",
+  helpLink: "Abrir a ajuda",
+  back: "Voltar para a página inicial",
 } as const;

@@ -55,6 +55,7 @@ const SERVE = process.argv.includes("--serve");
 const EMAIL_PREFIX = "qa-billing-";
 const SLUG_PREFIX = "qa-billing-";
 const WORKSPACE = "QA Cobrança";
+const ERASURE_EVIDENCE = "QA-BILLING-ERASURE";
 // Local-only values for the emulator. They are not secrets of any real account.
 const STRIPE_KEY = "sk_test_local_emulator_0000000000000000";
 const WEBHOOK_SECRET = "whsec_local_emulator_0000000000000000";
@@ -86,6 +87,8 @@ function cleanup() {
     delete from public.profiles where workspace_id in (select w.id from public.workspaces w join auth.users u on u.id = w.created_by where u.email like '${EMAIL_PREFIX}%@example.test');
     delete from public.slug_history where slug like '${SLUG_PREFIX}%';
     delete from public.workspaces where created_by in (select id from auth.users where email like '${EMAIL_PREFIX}%@example.test');
+    delete from public.privacy_request_events where request_id in (select id from public.privacy_requests where evidence_reference = '${ERASURE_EVIDENCE}' or user_id in (select id from auth.users where email like '${EMAIL_PREFIX}%@example.test'));
+    delete from public.privacy_requests where evidence_reference = '${ERASURE_EVIDENCE}' or user_id in (select id from auth.users where email like '${EMAIL_PREFIX}%@example.test');
     delete from auth.users where email like '${EMAIL_PREFIX}%@example.test';`);
 }
 
@@ -564,6 +567,57 @@ async function lifecycle(fixtures, password) {
   check("at the end of the period the workspace is on the free plan", now.plan === "free" && now.live === "none");
   check("and every page, member and link is still there", now.pages === 3 && now.members === 3 && now.links === 1, JSON.stringify(now));
 
+  step("Monthly to yearly on a running subscription");
+  const third = await submit(owner, plano, formWith((await get(owner, plano)).html, "Assinar Pro mensal"));
+  const thirdPaid = emulator.completeCheckout(emulator.sessionIdFromUrl(third.location ?? ""));
+  await deliverBadly(thirdPaid.deliveries);
+  const monthlyPlan = await get(owner, plano);
+  check("the plan screen offers the yearly billing with what it saves", monthlyPlan.text.includes("Passar para o anual") && monthlyPlan.text.includes("R$ 29,80 a menos por ano"), monthlyPlan.text.slice(0, 600));
+  check("an admin is told the interval and not offered the change", !(await get(admin, plano)).text.includes("Passar para o anual"));
+  const yearlyPath = `${plano}/confirmar?acao=anual`;
+  const yearlyPage = await get(owner, yearlyPath);
+  check("the confirmation says what is charged today, what is saved and that the plan stays", yearlyPage.text.includes("R$ 149,00 por ano") && yearlyPage.text.includes("descontando a parte do mês atual") && yearlyPage.text.includes("R$ 29,80 a menos") && yearlyPage.text.includes("continuam iguais"), yearlyPage.text.slice(0, 600));
+  check("an admin cannot open the confirmation", (await get(admin, yearlyPath)).text.includes("Só o proprietário"));
+  const editorYearly = await outcomeOf("billing.change_interval", () => submit(editor, yearlyPath, formWith(yearlyPage.html, "Passar para o anual")));
+  check("an editor replaying the owner's change is refused", editorYearly.outcome === "forbidden" && state(workspaceId).live === "active:pro:month:false", editorYearly.outcome);
+  const outsiderYearly = await outcomeOf("billing.change_interval", () => submit(outsider, yearlyPath, formWith(yearlyPage.html, "Passar para o anual")));
+  check("a member of another workspace replaying it gets not found", outsiderYearly.outcome === "not_found" && state(workspaceId).live === "active:pro:month:false", outsiderYearly.outcome);
+  const invoicesBefore = state(workspaceId).invoices;
+  const changedInterval = await submit(owner, yearlyPath, formWith(yearlyPage.html, "Passar para o anual"));
+  now = state(workspaceId);
+  check("the subscription is yearly at once, on the same plan, without waiting for a webhook", now.live === "active:pro:year:false" && now.plan === "pro", `${changedInterval.status} ${JSON.stringify(now)}`);
+  const intervalRequest = emulator.requests.filter((request) => request.method === "POST" && request.path === `/v1/subscriptions/${thirdPaid.subscriptionId}`).at(-1)?.body ?? {};
+  check("the provider was asked for exactly R$ 149 per year, charged now", intervalRequest["items[0][price_data][unit_amount]"] === "14900" && intervalRequest["items[0][price_data][recurring][interval]"] === "year" && intervalRequest.proration_behavior === "always_invoice", JSON.stringify(intervalRequest));
+  const yearlyInvoice = Number(sql(`select amount_cents from public.billing_invoices where workspace_id = '${workspaceId}' order by issued_at desc, created_at desc limit 1`));
+  check("one invoice more: the year less the unused part of the month", now.invoices === invoicesBefore + 1 && yearlyInvoice >= 14900 - 1490 && yearlyInvoice < 14900, `${invoicesBefore} ${now.invoices} ${yearlyInvoice}`);
+  const yearlyPlan = await get(owner, plano);
+  check("the billing area says yearly, the next charge, and how to go back to monthly", /Plano Pro, cobrança anual\. Próxima cobrança: R\$ 149,00 em \d{2}\/\d{2}\/\d{4}\./.test(yearlyPlan.text) && yearlyPlan.text.includes("Sua assinatura é anual") && !yearlyPlan.text.includes("Passar para o anual"), yearlyPlan.text.slice(0, 600));
+  check("the confirmation is no longer available", (await get(owner, yearlyPath)).text.includes("não está disponível para a situação atual"));
+  const backToMonthly = await owner.supabase.rpc("begin_billing_interval_change", { p_workspace_id: workspaceId, p_interval: "month" });
+  check("yearly to monthly is refused by the database", backToMonthly.error?.code === "LK103" && backToMonthly.error?.details === "interval", `${backToMonthly.error?.code} ${backToMonthly.error?.details}`);
+  for (const [who, person, code] of [["an admin", admin, "42501"], ["a member of another workspace", outsider, "P0002"]]) {
+    const direct = await person.supabase.rpc("begin_billing_interval_change", { p_workspace_id: workspaceId, p_interval: "year" });
+    check(`${who} calling begin_billing_interval_change gets ${code}`, direct.error?.code === code, direct.error?.code);
+  }
+
+  step("Cancel with a reason");
+  const reasonPage = await get(owner, cancelPath);
+  check("the cancellation asks why and says the answer is optional", reasonPage.text.includes("Por que você está cancelando? (opcional)") && reasonPage.text.includes("O cancelamento acontece com ou sem ela") && reasonPage.text.includes("O preço não cabe no momento"));
+  const editorReason = await editor.supabase.rpc("record_cancellation_feedback", { p_workspace_id: workspaceId, p_reason: "other" });
+  check("an editor cannot record a reason", editorReason.error?.code === "42501", editorReason.error?.code);
+  await submit(owner, cancelPath, formWith(reasonPage.html, "Cancelar a assinatura"), [["reason", "too_expensive"], ["comment", "  caro para agora  "]]);
+  now = state(workspaceId);
+  check("the cancellation is scheduled", now.live === "active:pro:year:true" && now.plan === "pro", now.live);
+  check("the reason, the trimmed comment, the plan and the interval are stored", sql(`select reason, comment, plan_id, billing_interval from public.billing_cancellation_feedback where workspace_id = '${workspaceId}'`) === "too_expensive|caro para agora|pro|year");
+  check("the owner cannot read the stored answers", (await owner.supabase.from("billing_cancellation_feedback").select("id")).error?.code === "42501");
+  check("the log says the answer was stored and never carries the comment", outcomes("billing.cancel_feedback").at(-1) === "ok" && !appLogs.join("").includes("caro para agora"));
+  const exported = await owner.supabase.rpc("export_workspace_data", { p_workspace_id: workspaceId });
+  check("the workspace export has the answer and the billing records", exported.data?.billingCancellationFeedback?.length === 1 && exported.data.billingCancellationFeedback[0].reason === "too_expensive" && exported.data?.billingSubscriptions?.length === now.subscriptions && exported.data?.billingInvoices?.length === now.invoices,
+    `${exported.error?.code} ${exported.data?.billingCancellationFeedback?.length} ${exported.data?.billingSubscriptions?.length}/${now.subscriptions} ${exported.data?.billingInvoices?.length}/${now.invoices}`);
+  await deliverBadly(emulator.endPeriod(thirdPaid.subscriptionId));
+  now = state(workspaceId);
+  check("at the end of the paid year the workspace is on the free plan, with everything kept", now.plan === "free" && now.live === "none" && now.pages === 3 && now.members === 3, JSON.stringify(now));
+
   step("Webhooks nobody should believe (AC2)");
   const before = JSON.stringify(state(workspaceId));
   const sample = emulator.updated(second.subscriptionId)[0];
@@ -613,6 +667,34 @@ async function lifecycle(fixtures, password) {
   check("an editor reads no subscription", ((await editor.supabase.from("billing_subscriptions").select("id")).data ?? []).length === 0);
   check("an admin reads no invoice", ((await admin.supabase.from("billing_invoices").select("id")).data ?? []).length === 0);
   check("the owner reads their invoices", ((await owner.supabase.from("billing_invoices").select("id")).data ?? []).length > 0);
+
+  step("An account erasure ends a running subscription at the provider before deleting anything");
+  const lastCheckout = await submit(outsider, outsiderPlano, formWith((await get(outsider, outsiderPlano)).html, "Assinar Pro anual"));
+  const last = emulator.completeCheckout(emulator.sessionIdFromUrl(lastCheckout.location ?? ""));
+  await deliverAll(last.deliveries);
+  check("the person to erase is paying for a yearly plan", state(outsiderWorkspaceId).live === "active:pro:year:false", state(outsiderWorkspaceId).live);
+  const asked = await outsider.supabase.rpc("request_account_deletion");
+  check("they ask for the deletion of their account", !asked.error, asked.error?.code);
+  // The editor of the first workspace doubles as the platform administrator who runs the request.
+  sql(`insert into public.platform_admins (user_id) select id from auth.users where email = '${EMAIL_PREFIX}editor@example.test';`);
+  const requestId = sql(`select r.id from public.privacy_requests r join auth.users u on u.id = r.user_id where u.email = '${EMAIL_PREFIX}outsider@example.test';`);
+  const reviewed = await editor.supabase.rpc("review_privacy_request", { p_request_id: requestId, p_status: "processing", p_reason_code: "manual_review" });
+  check("a platform administrator puts the request in processing", !reviewed.error, reviewed.error?.code);
+  const listed = await owner.supabase.rpc("list_erasure_subscriptions", { p_request_id: requestId });
+  check("somebody who is not a platform administrator cannot list the subscriptions to end", listed.error?.code === "42501", listed.error?.code);
+  const queuePath = "/app/administracao/privacidade";
+  const queue = await get(editor, queuePath);
+  const eraseForm = formsOf(queue.html).find((form) => form.fields.some(([name, value]) => name === "requestId" && value === requestId) && form.fields.some(([name]) => name === "confirmation"));
+  check("the queue offers the erasure and says the subscription is ended without an automatic refund", Boolean(eraseForm) && queue.text.includes("encerrada agora no provedor de pagamento, sem reembolso automático"));
+  const deletesBefore = emulator.requests.filter((request) => request.method === "DELETE").length;
+  const typed = { fields: (eraseForm?.fields ?? []).filter(([name]) => name !== "evidence" && name !== "confirmation") };
+  const erased = await outcomeOf("privacy.erasure", () => submit(editor, queuePath, typed, [["evidence", ERASURE_EVIDENCE], ["confirmation", "EXCLUIR"]]));
+  check("the erasure runs to the end", erased.outcome === "erased" && (erased.result.location ?? "").includes("exclusao=erased"), `${erased.outcome} ${erased.result.status} ${erased.result.location}`);
+  check("the subscription was cancelled at the provider at once, by one request", emulator.subscriptionStatus(last.subscriptionId) === "canceled" && emulator.requests.filter((request) => request.method === "DELETE" && request.path === `/v1/subscriptions/${last.subscriptionId}`).length === 1 && emulator.requests.filter((request) => request.method === "DELETE").length === deletesBefore + 1);
+  check("the account and its workspaces are gone, with their billing rows", sql(`select (select count(*) from auth.users where email = '${EMAIL_PREFIX}outsider@example.test') + (select count(*) from public.workspaces where id = '${outsiderWorkspaceId}') + (select count(*) from public.billing_subscriptions where workspace_id = '${outsiderWorkspaceId}') + (select count(*) from public.billing_customers where workspace_id = '${outsiderWorkspaceId}')`) === "0");
+  check("the log says one subscription was ended and names nobody", appLogs.join("").split("\n").some((line) => line.includes('"event":"privacy.erasure"') && line.includes('"outcome":"erased"') && line.includes('"subscriptionsEnded":1') && !/example\.test|sub_emu|cus_emu/.test(line)));
+  now = state(workspaceId);
+  check("the other workspace is untouched", now.pages === 3 && now.members === 3 && now.plan === "free", JSON.stringify(now));
 }
 
 /** The same build with billing off: what staging does between the merge and the founder's configuration. */

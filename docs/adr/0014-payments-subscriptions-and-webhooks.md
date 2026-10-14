@@ -263,3 +263,37 @@ The Stripe webhook destination was created at API version `2026-02-25.clover`; t
 Revisit only if a future change starts trusting a field of the event body, or if Stripe retires the destination's version. When the destination is recreated for live mode, choose the adapter's version to remove the note.
 
 Also since this date, `POST /api/billing/webhook` logs **why** billing is off when it answers 503 (`reason`: `disabled`, `key_mode_mismatch`, `missing_webhook_secret`...), a reason code and never a value, and the external monitor reports the same condition (ADR 0019).
+
+## Addendum (2026-10-13): retired prices, monthly to yearly, the cancellation reason, erasure
+
+Verified on the local stack only (migration `202610130001`, pgTAP `230-pilot-readiness`, `scripts/billing-lifecycle.mjs` against the emulator). **Not applied to production and never run against Stripe.**
+
+### A price change no longer breaks running subscriptions
+
+`plan_prices` keeps the prices that stopped being sold: `retired_at` marks them, a partial unique index allows one price on sale per plan and interval, and the existing key over (interval, amount, currency) still covers every row, so an amount, retired or not, names exactly one plan. The snapshot path is unchanged: it looks the plan up by the amount charged and finds the retired row. **A subscription bought at an old price keeps its plan and keeps being charged that price** (it is grandfathered). `private.plan_rank`, `begin_billing_checkout` and `begin_billing_change` read only the price on sale. In the application, `RETIRED_PRICES` (`modules/billing/catalog.ts`) mirrors the retired rows; the drift test compares every amount any migration inserted with the catalogue plus that list.
+
+Changing a price is a procedure, in `docs/runbooks/PRICE_CHANGE.md`: one migration retires the row and inserts the new amount, the same change moves the old amount to `RETIRED_PRICES` and the new one to `lib/product.ts`, and the migration is applied **before** the deploy. Between the two a plan change is refused (the amounts disagree, so the service answers `unavailable`) and nothing is charged wrongly.
+
+Not built: moving grandfathered subscribers to the new price. It needs a notice in advance (no e-mail service yet), a legal reading of the terms, and a call to the provider per subscription. The runbook says how it would be done by hand.
+
+*Rejected:* a version number on the catalogue (the amount already identifies the price); deleting the old row and treating the mismatch as an error to fix by hand (every subscriber would lose the plan at the next snapshot); price ids at the provider (ADR, "Alternatives considered").
+
+### Monthly to yearly on a running subscription (replaces the cut of UX-079)
+
+`public.begin_billing_interval_change` authorizes it for the owner of a subscription that is active, not cancelling and not waiting on a cheaper plan; the server then asks the provider for the same plan at the yearly price on sale, **applied now**: the provider starts the yearly period at once and charges it less the unused part of the month already paid. The snapshot records the new interval; the plan and its rank do not change, so nothing is held or lost. Screens: a line on the plan screen and the confirmation `…/plano/confirmar?acao=anual`.
+
+**Yearly to monthly in the middle of a paid year is not offered** (SQLSTATE `LK103`, detail `interval`; the screen says how: cancel the renewal, subscribe monthly when the year ends). Doing it properly means keeping the paid year and switching at its end, which is a subscription schedule at the provider: the larger surface this ADR already declined for downgrades. Doing it at once would turn the rest of the paid year into a credit balance at the provider, which a person who then cancels never gets back.
+
+### Why a subscription was cancelled
+
+The confirmation of a cancellation asks for a reason (seven categories and "prefiro não dizer") and an optional comment of up to 500 characters. **Nothing is required and nothing can stop the cancellation:** the server cancels at the provider first and only then calls `record_cancellation_feedback`; a reason that cannot be stored is logged as `not_stored` and the cancellation stands. One row per subscription in `billing_cancellation_feedback`, which no client role reads; platform administrators see counts and comments through `get_product_metrics` (ADR 0020), and only for subscriptions that were in fact cancelled or are over. A cancellation made on the provider's own page asks nothing, so the answers are a sample, not a census.
+
+The categories exist in `modules/billing/cancellation.ts`, in the table check, in the function and in `BILLING_COPY.cancelReason.options`: a test compares them. No retention offer or discount is shown at this step: the plan asks for "ethical recovery", and the honest version of that today is to say what is kept and until when, which the screen already did.
+
+### An account erasure ends the subscription at the provider first
+
+`begin_account_erasure` refuses while a subscription of the person's workspaces is not over (ADR 0018). Until now the operator had to end it by hand at Stripe and wait. The erasure now does it: `list_erasure_subscriptions` (platform administrator, request in processing, no other member in the owned workspaces) lists them, the server cancels each **at once** at the provider (`endSubscriptionsNow`) and applies the snapshot through the attested path, and only then starts the erasure. If the environment cannot reach the provider (`billing_not_configured`) or the provider or the snapshot fails (`billing_failed`), nothing is deleted and no page leaves the air. **No refund is issued:** it is the operator's decision at the provider, and the screen says so before the button.
+
+### Export
+
+The workspace export already had the billing tables (since `202610090004`); it gains `billingCancellationFeedback`. The format version stays 1.

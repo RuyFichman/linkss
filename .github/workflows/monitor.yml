@@ -28,19 +28,55 @@ concurrency:
 
 env:
   BASE_URL: https://linkfav.com
+  # Slowest acceptable answer, in seconds, measured from a GitHub runner (outside Brazil, so these
+  # are availability thresholds, not the LCP target). A check passes when one of three attempts
+  # answers 200 within its limit: a single slow request is not an alert.
+  SLOW_HEALTH: "3"
+  SLOW_PAGE: "6"
 
 jobs:
   production:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      # Shared by the steps below: up to three requests, ten seconds apart; passes on the first that
+      # answers 200 inside the limit and contains the expected text (when one is given). The log has
+      # the status and the time of every attempt, which is the latency history this project has.
+      - name: Prepare the probe
+        run: |
+          cat > "$RUNNER_TEMP/probe.sh" <<'EOF'
+          #!/usr/bin/env bash
+          # probe.sh <url> <max seconds> [text the body must contain]
+          set -u
+          url="$1"; limit="$2"; expect="${3:-}"
+          for attempt in 1 2 3; do
+            result=$(curl --silent --show-error --max-time 30 --output "$RUNNER_TEMP/body" --write-out "%{http_code} %{time_total}" "$url" || true)
+            code="${result%% *}"; seconds="${result##* }"
+            echo "attempt $attempt: HTTP ${code:-none} in ${seconds:-?}s (limit ${limit}s)"
+            if [ "$code" = "200" ] && awk -v t="$seconds" -v l="$limit" 'BEGIN { exit !(t <= l) }'; then
+              if [ -z "$expect" ] || grep -q "$expect" "$RUNNER_TEMP/body"; then exit 0; fi
+              echo "the answer does not contain the expected text"
+            fi
+            [ "$attempt" = "3" ] || sleep 10
+          done
+          echo "::error::$url did not answer 200 within ${limit}s in three attempts. Open docs/runbooks/MONITORING.md."
+          exit 1
+          EOF
+          chmod +x "$RUNNER_TEMP/probe.sh"
+
       - name: The application answers
         run: |
-          curl --silent --show-error --fail --max-time 20 --retry 2 --retry-delay 10 "$BASE_URL/api/health" | grep -q '"status":"ok"'
+          "$RUNNER_TEMP/probe.sh" "$BASE_URL/api/health" "$SLOW_HEALTH" '"status":"ok"'
 
       - name: The home page renders
         run: |
-          curl --silent --show-error --fail --max-time 30 --retry 2 --retry-delay 10 "$BASE_URL/" | grep -q "Linkfav"
+          "$RUNNER_TEMP/probe.sh" "$BASE_URL/" "$SLOW_PAGE" "Linkfav"
+
+      # The status page reads the database on the server: it fails here when the database does not
+      # answer, even while cached public pages still open.
+      - name: The status page reports no instability
+        run: |
+          "$RUNNER_TEMP/probe.sh" "$BASE_URL/status" "$SLOW_PAGE" "Tudo funcionando"
 
       # Optional: set the repository variable MONITOR_PUBLIC_PAGE to the path of a published page
       # kept for this purpose (for example /teste) to exercise the public renderer and the database.
@@ -50,7 +86,7 @@ jobs:
           PAGE: ${{ vars.MONITOR_PUBLIC_PAGE }}
         run: |
           case "$PAGE" in /[a-z0-9]*) ;; *) echo "::error::MONITOR_PUBLIC_PAGE must look like /endereco"; exit 1 ;; esac
-          curl --silent --show-error --fail --max-time 30 --retry 2 --retry-delay 10 --output /dev/null "$BASE_URL$PAGE"
+          "$RUNNER_TEMP/probe.sh" "$BASE_URL$PAGE" "$SLOW_PAGE"
 
       - name: Jobs, billing and queues
         env:

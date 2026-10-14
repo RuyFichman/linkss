@@ -1,7 +1,7 @@
 import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { APP_COPY, TEAM_COPY, WORKSPACE_ANALYTICS_COPY } from "@/content/pt-BR";
+import { APP_COPY, ONBOARDING_COPY, TEAM_COPY, WORKSPACE_ANALYTICS_COPY } from "@/content/pt-BR";
 import { publicAddressLabel } from "@/lib/app-url";
 import { limitUsage } from "@/modules/entitlements";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
@@ -9,6 +9,7 @@ import { can } from "@/modules/identity/permissions";
 import { getSupabase } from "@/modules/identity/session";
 import { ArchiveControl } from "@/modules/profiles/components/archive-controls";
 import { ProfileAvatar } from "@/modules/profiles/components/profile-avatar";
+import { onboardingChecklist } from "@/modules/profiles/onboarding";
 import { hasActiveFilters, pageListHref, pageListPageCount, parsePageListParams, type PageListParams } from "@/modules/profiles/page-list";
 import { fetchPageList } from "@/modules/profiles/page-list-server";
 import { getProfileRepository } from "@/modules/profiles/server";
@@ -48,6 +49,9 @@ export default async function WorkspaceHomePage({ params, searchParams }: { para
     : single(query.convite) === "aceito" ? TEAM_COPY.accept.accepted
     : null;
   const here = (overrides: Partial<PageListParams>) => pageListHref(workspaceId, { ...listParams, ...overrides });
+  // First steps, until the first publication. Derived from the counts this screen already has.
+  const onboarding = onboardingChecklist({ total: list.total, published: list.counts.published, archived: list.counts.archived, canEdit: mayCreate });
+  const firstPage = !filtered ? list.items[0] : undefined;
 
   return (
     <div className="grid gap-6">
@@ -65,6 +69,29 @@ export default async function WorkspaceHomePage({ params, searchParams }: { para
           {mayCreate && !usage.reached ? <Link className="ui-button ui-button-primary" href={`/app/w/${workspaceId}/paginas/nova`}>+ {copy.create}</Link> : null}
         </div>
       </header>
+
+      {onboarding ? (
+        <section className="surface-card grid gap-4 p-5 sm:p-6" aria-labelledby="primeiros-passos">
+          <div className="grid gap-1">
+            <h2 id="primeiros-passos" className="text-xl font-bold">{ONBOARDING_COPY.title}</h2>
+            <p className="m-0 text-sm text-app-muted">{ONBOARDING_COPY.lead}</p>
+          </div>
+          <ol className="m-0 grid list-none gap-3 p-0">
+            {onboarding.steps.map((item, index) => (
+              <li key={item.step} className="grid gap-2 rounded-2xl border border-app-border p-4" aria-current={item.current ? "step" : undefined}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-bold">{index + 1}. {ONBOARDING_COPY.steps[item.step].title}</h3>
+                  <Badge tone={item.done ? "success" : item.current ? "accent" : "neutral"}>{item.done ? ONBOARDING_COPY.done : item.current ? ONBOARDING_COPY.current : ONBOARDING_COPY.next}</Badge>
+                </div>
+                <p className="m-0 text-sm">{ONBOARDING_COPY.steps[item.step].body}</p>
+                {item.current && item.step === "create" && !usage.reached ? <div><Link className="ui-button ui-button-primary" href={`/app/w/${workspaceId}/paginas/nova`}>{ONBOARDING_COPY.actions.create}</Link></div> : null}
+                {item.current && item.step === "publish" && firstPage ? <div><Link className="ui-button ui-button-primary" href={`/app/w/${workspaceId}/paginas/${firstPage.id}`}>{ONBOARDING_COPY.actions.publish}</Link></div> : null}
+              </li>
+            ))}
+          </ol>
+          <p className="m-0"><Link className="inline-flex min-h-11 items-center text-sm font-bold text-app-accent underline" href="/ajuda">{ONBOARDING_COPY.actions.help}</Link></p>
+        </section>
+      ) : null}
 
       {mayCreate && usage.reached ? <><Notice tone="warning">{copy.limitReached(usage.limit)}</Notice><UpgradeLink workspaceId={workspaceId} role={access.role} reason="max_profiles" /></> : null}
       {!mayCreate ? <p className="m-0 text-app-muted">{copy.createForbidden}</p> : null}

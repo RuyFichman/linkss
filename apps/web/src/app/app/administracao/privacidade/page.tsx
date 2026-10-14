@@ -24,7 +24,9 @@ const ERASURE_MESSAGES: Record<string, string> = {
   confirmation: "Nada foi feito: digite EXCLUIR no campo de confirmação.",
   invalid_evidence: "Nada foi feito: informe a referência do dossiê (4 a 120 caracteres, sem dados pessoais).",
   not_processing: "Nada foi excluído: o pedido precisa ser de exclusão e estar em análise. Se algo foi criado na conta depois do início, execute de novo.",
-  active_subscription: "Nada foi feito: há uma assinatura em curso numa conta desta pessoa. Ela precisa terminar antes (runbook, passo 2).",
+  active_subscription: "Nada foi excluído: ainda consta uma assinatura em curso numa conta desta pessoa. Confira no provedor de pagamento e execute de novo (runbook, passo 2).",
+  billing_not_configured: "Nada foi feito: há uma assinatura em curso e este ambiente não está configurado para falar com o provedor de pagamento. Encerre a assinatura no provedor ou configure a cobrança, e execute de novo.",
+  billing_failed: "Não foi possível encerrar a assinatura no provedor de pagamento ou registrar o encerramento. Nada foi excluído. Confira a assinatura no provedor e execute de novo.",
   shared_workspace: "Nada foi feito: uma conta desta pessoa tem outros membros. Eles precisam sair ou a conta ser transferida antes (runbook, passo 2).",
   domain_failed: "As páginas saíram do ar, mas um domínio próprio não pôde ser desanexado no provedor. Nada foi excluído. Execute de novo.",
   media_pending: "As páginas saíram do ar, mas ainda há imagens sendo removidas. Nada foi excluído. Execute de novo em alguns minutos.",
@@ -81,7 +83,7 @@ export default async function PrivacyQueue({ searchParams }: {
               <form action={eraseAccountAction} className="mt-4 grid gap-3 rounded-xl border border-app-danger/30 bg-app-danger/10 p-4">
                 <input type="hidden" name="requestId" value={item.id} />
                 <h3 className="text-lg font-bold text-app-danger">Executar a exclusão</h3>
-                <p className="m-0 text-sm">Tira do ar e apaga em definitivo as páginas, imagens, contatos, resultados e contas que pertencem a esta pessoa, e a conta de acesso. Não pode ser desfeito. Faça antes as conferências do runbook de exclusão de conta.</p>
+                <p className="m-0 text-sm">Tira do ar e apaga em definitivo as páginas, imagens, contatos, resultados e contas que pertencem a esta pessoa, e a conta de acesso. Se houver assinatura em curso, ela é encerrada agora no provedor de pagamento, sem reembolso automático. Não pode ser desfeito. Faça antes as conferências do runbook de exclusão de conta.</p>
                 <label htmlFor={"erase-evidence-" + item.id}>Referência do dossiê, sem dados pessoais</label>
                 <input id={"erase-evidence-" + item.id} name="evidence" required minLength={4} maxLength={120} className="ui-input" />
                 <label htmlFor={"erase-confirm-" + item.id}>Para confirmar, digite EXCLUIR</label>

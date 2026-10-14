@@ -322,3 +322,22 @@ Checklist ao comprar o domínio:
 **Ordem com os outros pendentes:** o monitor acusa `job:domains` se o código estiver no ar sem esta migração por mais de 36 horas depois de `OPS_STATUS_SECRET` existir. Aplique as três migrações de 11/10 juntas.
 
 **Rollback da aplicação depois da migração:** suportado; o código antigo não lê as colunas novas.
+
+## Passos de deploy da preparação do piloto (13/10/2026)
+
+**Nada disto foi aplicado em produção.** Verificado só no stack local. Decisões: ADR 0020 e adendo do ADR 0014.
+
+| # | Passo | Depois dele |
+|---|---|---|
+| 1 | **Merge do PR** | `/ajuda`, `/precos` e `/status` existem; a lista de páginas mostra os primeiros passos a quem ainda não publicou; o menu da conta tem *Ajuda*. Sem a migração: a tela *Plano* mostra *Passar para o anual* a quem tem assinatura mensal e a confirmação responde "ainda não está disponível neste ambiente"; o cancelamento funciona e o motivo não é gravado (`billing.cancel_feedback` com `not_stored`); o funil diz "migração pendente"; a exclusão de conta se comporta como antes (recusa enquanto houver assinatura) |
+| 2 | **Backup conferido** e `npx supabase db push`. Deve listar `202610130001_pilot_readiness`. Acrescenta duas colunas a `plan_prices` e troca a chave primária por uma coluna nova (a tabela tem quatro linhas), cria `billing_cancellation_feedback`, cria quatro funções e troca quatro (`plan_rank`, `begin_billing_checkout`, `begin_billing_change`, `export_workspace_data`) por versões com o mesmo contrato | troca para o anual, motivo do cancelamento, encerramento da assinatura na exclusão de conta e funil passam a funcionar |
+| 3 | Opcional, quando a caixa de e-mail existir: variável `SUPPORT_EMAIL` na Vercel (Production) e novo deploy | `/ajuda` mostra o endereço. Sem ela, a página diz que o atendimento do piloto é feito por quem enviou o convite |
+| 4 | Conferir: abrir `https://linkfav.com/status` ("Tudo funcionando"); abrir `/app/administracao/produto` com a conta de administrador da plataforma; *Actions* → *Monitor* → *Run workflow* | o monitor fica verde com os tempos de cada tentativa no log |
+
+**Depende das migrações anteriores:** `202610130001` usa `private.erasure_owned_workspaces` (`202610110002`) e troca a `export_workspace_data` de `202610110005`. Aplique todas as pendentes de 11/10 antes ou junto; `supabase db push` aplica na ordem.
+
+**O monitor falha uma vez** se rodar entre o merge e o fim do deploy, porque `/status` ainda não existe. É esperado; a execução seguinte passa.
+
+**Rollback da aplicação depois da migração:** suportado. O código antigo não chama as funções novas; as quatro funções trocadas mantêm assinatura e respostas enquanto nenhum preço for aposentado.
+
+**Variável nova:** `SUPPORT_EMAIL` (servidor, opcional, lida no build). Está em `.env.example`.

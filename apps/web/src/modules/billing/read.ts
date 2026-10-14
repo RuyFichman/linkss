@@ -14,7 +14,7 @@ export function billingErrorFromDatabase(error: { code?: string | null; details?
     case "22023": return "invalid_plan";
     case "LK100": return "already_subscribed";
     case "LK101": return "rate_limited";
-    case "LK103": return error.details === "none" ? "no_subscription" : error.details === "same" ? "same_plan" : "invalid_state";
+    case "LK103": return error.details === "none" ? "no_subscription" : error.details === "same" ? "same_plan" : error.details === "interval" ? "interval_unavailable" : "invalid_state";
     case "LK060": return error.details === "not_configured" ? "not_configured" : "unavailable";
     default: return "unavailable";
   }

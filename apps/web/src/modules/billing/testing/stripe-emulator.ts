@@ -193,7 +193,18 @@ export function createStripeEmulator(options: { webhookSecret: string; now: () =
           const product = body.get("items[0][price_data][product]") ?? "";
           if (!products.has(product)) return error(400, "resource_missing");
           const amount = Number(body.get("items[0][price_data][unit_amount]"));
-          if (body.get("proration_behavior") === "always_invoice" && amount > subscription.amount) addInvoice(subscription, "paid", amount - subscription.amount);
+          const interval = body.get("items[0][price_data][recurring][interval]");
+          if ((interval === "month" || interval === "year") && interval !== subscription.interval) {
+            // Prices with different intervals: the billing date moves to the date of the change and the
+            // customer is invoiced at once, less the unused part of what was paid for the old period.
+            const unused = Math.max(0, subscription.periodEnd - seconds());
+            const credit = Math.round(subscription.amount * Math.min(1, unused / periodEndFrom(0, subscription.interval)));
+            subscription.interval = interval;
+            subscription.periodEnd = periodEndFrom(seconds(), interval);
+            addInvoice(subscription, "paid", Math.max(0, amount - credit));
+          } else if (body.get("proration_behavior") === "always_invoice" && amount > subscription.amount) {
+            addInvoice(subscription, "paid", amount - subscription.amount);
+          }
           subscription.amount = amount;
           subscription.product = product;
         }

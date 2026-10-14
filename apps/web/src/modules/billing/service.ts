@@ -3,6 +3,7 @@ import type { PlanId } from "@/lib/product";
 import { AuthorizationError, requireWorkspaceAccess, type IdentityPort } from "@/modules/identity/guard";
 import { PaymentsError, type PaymentsAdapter } from "./adapter";
 import { MAX_SNAPSHOT_INVOICES, serializeBillingSnapshot, signBillingMessage, customerRegistrationMessage, type SnapshotReason } from "./attestation";
+import type { CancellationFeedback } from "./cancellation";
 import { isBillingInterval, isPaidPlan, isPlanId, planPrice, planRank, type BillingInterval } from "./catalog";
 import type { BillingMode } from "./mode";
 
@@ -70,6 +71,33 @@ export async function syncFromProvider(deps: SyncDeps, input: { eventId: string;
     await deps.adapter.cancelNow(subscription.id);
   }
   return outcome;
+}
+
+/**
+ * Ends subscriptions at the provider at once and copies the result, for an account erasure (ADR
+ * 0018, runbook ACCOUNT_DELETION.md): the database refuses to erase a person whose workspaces are
+ * still being charged. Stops at the first subscription that could not be ended or whose end could
+ * not be recorded, so the caller never goes on to delete an account that is still paying. Nothing
+ * is refunded here: that is the operator's decision at the provider.
+ */
+export async function endSubscriptionsNow(
+  sync: SyncDeps, subscriptions: ReadonlyArray<{ subscriptionId: string; customerId: string }>, newId: () => string,
+): Promise<{ ok: boolean; ended: number; slugs: string[] }> {
+  const slugs: string[] = [];
+  let ended = 0;
+  for (const subscription of subscriptions) {
+    try {
+      await sync.adapter.cancelNow(subscription.subscriptionId);
+      const outcome = await syncFromProvider(sync, { eventId: `erasure:${newId()}`, reason: "reconciliation", customerId: subscription.customerId, subscriptionId: subscription.subscriptionId });
+      // `unchanged`: the stored copy already said it was over (a retry of this same step).
+      if (outcome.status !== "applied" && outcome.status !== "unchanged") return { ok: false, ended, slugs };
+      slugs.push(...outcome.slugs);
+      ended += 1;
+    } catch {
+      return { ok: false, ended, slugs };
+    }
+  }
+  return { ok: true, ended, slugs };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -197,7 +225,7 @@ export async function runBillingMaintenance(deps: { tick: () => Promise<Maintena
 
 export type BillingErrorKind =
   | "unauthenticated" | "not_found" | "forbidden"
-  | "billing_off" | "invalid_plan" | "already_subscribed" | "rate_limited" | "no_subscription" | "invalid_state" | "same_plan"
+  | "billing_off" | "invalid_plan" | "already_subscribed" | "rate_limited" | "no_subscription" | "invalid_state" | "same_plan" | "interval_unavailable"
   | "not_deployed" | "not_configured" | "provider_unavailable" | "provider_rejected" | "unavailable";
 
 export type BillingResult<T> = { ok: true; value: T } | { ok: false; error: BillingErrorKind };
@@ -220,6 +248,10 @@ export interface BillingRepository {
   findCustomerId(workspaceId: string): Promise<string | null>;
   registerCustomer(workspaceId: string, customerId: string, signature: string): Promise<BillingRepositoryResult<string>>;
   beginChange(workspaceId: string, kind: "cancel" | "resume" | "change_plan", planId: PlanId | null): Promise<BillingRepositoryResult<SubscriptionHandle>>;
+  /** Authorizes moving the subscription to another interval; the handle carries the target interval and its price on sale. */
+  beginIntervalChange(workspaceId: string, interval: BillingInterval): Promise<BillingRepositoryResult<SubscriptionHandle>>;
+  /** Stores why the owner cancelled. Never decides whether the cancellation happens. */
+  recordCancellationFeedback(workspaceId: string, feedback: CancellationFeedback): Promise<BillingRepositoryResult<null>>;
 }
 
 export interface BillingServiceDeps {
@@ -321,8 +353,12 @@ export function createBillingService(deps: BillingServiceDeps) {
       }
     },
 
-    /** Cancels at the end of the paid period. Allowed whatever the billing mode says about new sales. */
-    async cancel(workspaceId: unknown): Promise<BillingResult<{ planChanged: boolean; slugs: string[] }>> {
+    /**
+     * Cancels at the end of the paid period. Allowed whatever the billing mode says about new sales.
+     * The reason is optional and is stored only after the provider accepted the cancellation: giving
+     * none, or failing to store it, never stands between the owner and the cancellation.
+     */
+    async cancel(workspaceId: unknown, feedback: CancellationFeedback | null = null): Promise<BillingResult<{ planChanged: boolean; slugs: string[]; feedbackStored: boolean }>> {
       const authorized = await authorize(workspaceId);
       if (!authorized.ok) return authorized;
       if (!deps.sync) return { ok: false, error: "billing_off" };
@@ -333,7 +369,15 @@ export function createBillingService(deps: BillingServiceDeps) {
       } catch (error) {
         return { ok: false, error: fromProvider(error) };
       }
-      return { ok: true, value: await syncAfterAction(deps.sync, handle.value) };
+      let feedbackStored = false;
+      if (feedback) {
+        try {
+          feedbackStored = (await repository.recordCancellationFeedback(authorized.value, feedback)).ok;
+        } catch {
+          feedbackStored = false;
+        }
+      }
+      return { ok: true, value: { ...(await syncAfterAction(deps.sync, handle.value)), feedbackStored } };
     },
 
     async resume(workspaceId: unknown): Promise<BillingResult<{ planChanged: boolean; slugs: string[] }>> {
@@ -377,6 +421,36 @@ export function createBillingService(deps: BillingServiceDeps) {
         return { ok: false, error: fromProvider(error) };
       }
       return { ok: true, value: { ...(await syncAfterAction(deps.sync, handle.value)), effective } };
+    },
+
+    /**
+     * Moves a running monthly subscription to yearly, same plan. It applies now: the provider starts
+     * the yearly period today and discounts what was already paid for the rest of the month. The
+     * other direction is not offered in the middle of a paid year (the database refuses it too).
+     */
+    async changeInterval(workspaceId: unknown, interval: unknown): Promise<BillingResult<{ planChanged: boolean; slugs: string[] }>> {
+      const authorized = await authorize(workspaceId);
+      if (!authorized.ok) return authorized;
+      if (deps.mode === "off" || !deps.sync) return { ok: false, error: "billing_off" };
+      if (!isBillingInterval(interval)) return { ok: false, error: "invalid_plan" };
+      const handle = await repository.beginIntervalChange(authorized.value, interval);
+      if (!handle.ok) return handle;
+      const planId = handle.value.planId;
+      if (!isPlanId(planId) || handle.value.interval !== interval) return { ok: false, error: "unavailable" };
+      const price = planPrice(planId, interval);
+      // The database and the code catalogue must agree on the amount (the drift test guards it).
+      if (!price || price.amountCents !== handle.value.amountCents) return { ok: false, error: "unavailable" };
+      try {
+        await deps.sync.adapter.changePlan({
+          subscriptionId: handle.value.subscriptionId, productKey: planId, productName: deps.productName(planId),
+          amountCents: price.amountCents, currency: price.currency, interval,
+          effective: "now",
+          idempotencyKey: `lnk-int-${deps.newId()}`,
+        });
+      } catch (error) {
+        return { ok: false, error: fromProvider(error) };
+      }
+      return { ok: true, value: await syncAfterAction(deps.sync, handle.value) };
     },
 
     /** The provider's own page to change the card and download invoices. */

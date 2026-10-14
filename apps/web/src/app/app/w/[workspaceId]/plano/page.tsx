@@ -30,7 +30,7 @@ const STATE_TONE: Record<BillingViewState["kind"], "neutral" | "success" | "warn
  * every command re-authorizes on the server and in the database. With billing off, or before the
  * migration, the screen shows the plan and the catalogue and offers nothing to buy.
  */
-const NOTICES = { cancelada: BILLING_COPY.confirm.canceled, mantida: BILLING_COPY.actions.resumed, alterada: BILLING_COPY.confirm.changedNow, agendada: BILLING_COPY.confirm.changedLater } as const;
+const NOTICES = { cancelada: BILLING_COPY.confirm.canceled, mantida: BILLING_COPY.actions.resumed, alterada: BILLING_COPY.confirm.changedNow, agendada: BILLING_COPY.confirm.changedLater, anual: BILLING_COPY.confirm.changedInterval } as const;
 
 export default async function PlanPage({ params, searchParams }: { params: Promise<{ workspaceId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { workspaceId } = await params;
@@ -71,6 +71,8 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   const subscribedInterval = billing.record && (state.kind === "active" || state.kind === "downgrading") ? billing.record.interval : null;
   // The plan the subscription is charged for: after a scheduled change to a cheaper plan it differs from the plan in force.
   const chargedPlan: PlanId | null = state.kind === "downgrading" ? state.nextPlanId : state.kind === "active" ? state.planId : null;
+  // Monthly to yearly is offered only to a subscription in good standing with nothing scheduled (the database checks it again).
+  const yearlySaving = state.kind === "active" && subscribedInterval === "month" && planPrice(state.planId, "year") ? yearlySavingCents(state.planId) : null;
 
   return (
     <div className="grid gap-6">
@@ -113,7 +115,13 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
           <p className="m-0 text-app-muted">{copy.plans.lead}</p>
           {selling ? <p className="m-0 text-sm text-app-muted">{copy.provider}</p> : null}
           {selling && isOwner && state.kind === "manual" ? <p className="m-0 text-sm text-app-muted">{copy.plans.replacesManual}</p> : null}
-          {subscribedInterval ? <p className="m-0 text-sm text-app-muted">{copy.plans.intervalFixed(copy.intervalAdjective[subscribedInterval])}</p> : null}
+          {subscribedInterval === "year" ? <p className="m-0 text-sm text-app-muted">{copy.plans.yearlyOnly}</p> : null}
+          {yearlySaving !== null ? (
+            <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-app-muted">
+              <span>{copy.plans.toYearlyHint(formatMoney(yearlySaving))}</span>
+              {selling && isOwner && !suspended ? <Link className="inline-flex min-h-11 items-center font-bold text-app-accent underline" href={`${base}/confirmar?acao=anual`}>{copy.plans.toYearly}</Link> : null}
+            </p>
+          ) : null}
         </div>
         <ul className="m-0 grid list-none gap-4 p-0 lg:grid-cols-3">
           {PLAN_IDS.map((planId) => {

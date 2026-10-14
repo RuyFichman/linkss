@@ -107,6 +107,37 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"billing_cancellation_feedback": {
+                  Row: {
+                    "billing_interval": Database["public"]['Enums']["billing_interval"],"comment": string | null,"created_at": string,"created_by": string | null,"id": string,"plan_id": string,"reason": string,"subscription_id": string,"updated_at": string,"workspace_id": string
+                  }
+                  Insert: {
+                    "billing_interval": Database["public"]['Enums']["billing_interval"],"comment"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"plan_id": string,"reason": string,"subscription_id": string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "billing_interval"?: Database["public"]['Enums']["billing_interval"],"comment"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"plan_id"?: string,"reason"?: string,"subscription_id"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "billing_cancellation_feedback_plan_id_fkey"
+      columns: ["plan_id"]
+isOneToOne: false
+      referencedRelation: "plans"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "billing_cancellation_feedback_subscription_id_fkey"
+      columns: ["subscription_id"]
+isOneToOne: true
+      referencedRelation: "billing_subscriptions"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "billing_cancellation_feedback_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"billing_customers": {
                   Row: {
                     "created_at": string,"created_by": string | null,"provider": string,"provider_customer_id": string,"workspace_id": string
@@ -436,13 +467,13 @@ isOneToOne: false
                   ]
                 },"plan_prices": {
                   Row: {
-                    "amount_cents": number,"billing_interval": Database["public"]['Enums']["billing_interval"],"created_at": string,"currency": string,"plan_id": string
+                    "amount_cents": number,"billing_interval": Database["public"]['Enums']["billing_interval"],"created_at": string,"currency": string,"id": string,"plan_id": string,"retired_at": string | null
                   }
                   Insert: {
-                    "amount_cents": number,"billing_interval": Database["public"]['Enums']["billing_interval"],"created_at"?: string,"currency": string,"plan_id": string
+                    "amount_cents": number,"billing_interval": Database["public"]['Enums']["billing_interval"],"created_at"?: string,"currency": string,"id"?: string,"plan_id": string,"retired_at"?: string | null
                   }
                   Update: {
-                    "amount_cents"?: number,"billing_interval"?: Database["public"]['Enums']["billing_interval"],"created_at"?: string,"currency"?: string,"plan_id"?: string
+                    "amount_cents"?: number,"billing_interval"?: Database["public"]['Enums']["billing_interval"],"created_at"?: string,"currency"?: string,"id"?: string,"plan_id"?: string,"retired_at"?: string | null
                   }
                   Relationships: [
                     {
@@ -800,6 +831,11 @@ isOneToOne: false
 "begin_billing_checkout":
 { Args: { "p_interval": Database["public"]['Enums']["billing_interval"],"p_plan_id": string,"p_workspace_id": string }; Returns: number
                            },
+"begin_billing_interval_change":
+{ Args: { "p_interval": Database["public"]['Enums']["billing_interval"],"p_workspace_id": string }; Returns: {
+              "amount_cents": number,"billing_interval": Database["public"]['Enums']["billing_interval"],"plan_id": string,"provider_customer_id": string,"provider_subscription_id": string
+            }[]
+                           },
 "change_member_role":
 { Args: { "p_membership_id": string,"p_role": Database["public"]['Enums']["workspace_role"] }; Returns: undefined
                            },
@@ -879,6 +915,9 @@ isOneToOne: false
 "get_page_moderation":
 { Args: { "p_profile_id": string }; Returns: Json
                            },
+"get_product_metrics":
+{ Args: { "p_weeks"?: number }; Returns: Json
+                           },
 "get_profile_analytics":
 { Args: { "p_from": string,"p_profile_id": string,"p_to": string }; Returns: Json
                            },
@@ -911,6 +950,11 @@ isOneToOne: false
               "challenge": string,"domain_id": string,"hostname": string
             }[]
                            },
+"list_erasure_subscriptions":
+{ Args: { "p_request_id": string }; Returns: {
+              "provider_customer_id": string,"provider_subscription_id": string
+            }[]
+                           },
 "list_moderation_appeals":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
@@ -940,6 +984,9 @@ isOneToOne: false
                            },
 "record_auth_event":
 { Args: { "p_action": Database["public"]['Enums']["audit_action"],"p_metadata"?: Json }; Returns: undefined
+                           },
+"record_cancellation_feedback":
+{ Args: { "p_comment"?: string,"p_reason": string,"p_workspace_id": string }; Returns: undefined
                            },
 "record_domain_recheck":
 { Args: { "p_signature": string,"p_text": string }; Returns: Json

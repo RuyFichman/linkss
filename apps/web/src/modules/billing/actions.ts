@@ -6,6 +6,7 @@ import { BILLING_COPY } from "@/content/pt-BR";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { revalidatePublicPage } from "@/modules/publishing/cache";
+import { parseCancellationFeedback } from "./cancellation";
 import { getBillingService } from "./server";
 import { billingHomePath } from "./service";
 import type { BillingErrorKind } from "./service";
@@ -25,7 +26,7 @@ function failure(error: BillingErrorKind): FormState {
  * After a change the person goes back to the plan screen, which says what happened and shows the
  * new state. Staying on the confirmation would re-render it for a state it no longer applies to.
  */
-function done(workspaceId: string, notice: "cancelada" | "mantida" | "alterada" | "agendada"): never {
+function done(workspaceId: string, notice: "cancelada" | "mantida" | "alterada" | "agendada" | "anual"): never {
   redirect(`${billingHomePath(workspaceId)}?aviso=${notice}`);
 }
 
@@ -47,10 +48,17 @@ export async function startCheckoutAction(workspaceId: string, planId: string, i
   redirect(result.value.url);
 }
 
-export async function cancelSubscriptionAction(workspaceId: string): Promise<FormState> {
-  const result = await (await getBillingService()).cancel(workspaceId);
+/**
+ * Cancels at the end of the paid period. The form may carry a reason and a comment; both are
+ * optional, and what cannot be read or stored is dropped rather than turned into an error.
+ */
+export async function cancelSubscriptionAction(workspaceId: string, _previous?: FormState, formData?: FormData): Promise<FormState> {
+  const feedback = parseCancellationFeedback(formData?.get("reason"), formData?.get("comment"));
+  const result = await (await getBillingService()).cancel(workspaceId, feedback);
   await logCommand("billing.cancel", result.ok ? "ok" : result.error);
   if (!result.ok) return failure(result.error);
+  // The reason category is not personal data; the comment is never logged.
+  if (feedback) await logCommand("billing.cancel_feedback", result.value.feedbackStored ? "ok" : "not_stored");
   revalidatePages(result.value.slugs);
   done(workspaceId, "cancelada");
 }
@@ -69,6 +77,15 @@ export async function changePlanAction(workspaceId: string, planId: string): Pro
   if (!result.ok) return failure(result.error);
   revalidatePages(result.value.slugs);
   done(workspaceId, result.value.effective === "now" ? "alterada" : "agendada");
+}
+
+/** Monthly to yearly, same plan, applied now. The interval is validated by the service and by the database. */
+export async function changeIntervalAction(workspaceId: string, interval: string): Promise<FormState> {
+  const result = await (await getBillingService()).changeInterval(workspaceId, interval);
+  await logCommand("billing.change_interval", result.ok ? "ok" : result.error);
+  if (!result.ok) return failure(result.error);
+  revalidatePages(result.value.slugs);
+  done(workspaceId, "anual");
 }
 
 /** Sends the owner to the provider's own page for the card and the receipts. */

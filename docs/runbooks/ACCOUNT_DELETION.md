@@ -2,7 +2,7 @@
 
 **Owner:** founder (administrador da plataforma). **Decisão:** ADR 0018 (e ADR 0015 para a fila). **Tela:** `/app/administracao/privacidade`. **Ensaio local:** `apps/web/scripts/account-erasure.mjs`.
 
-**Estado em 11/10/2026:** ensaiado só no stack local (18 verificações, com arquivos reais no bucket local). **Nunca executado em produção, e nunca com um domínio anexado na Vercel nem com uma assinatura na Stripe.** O texto de resposta ao titular abaixo é uma minuta que precisa da revisão jurídica.
+**Estado em 13/10/2026:** ensaiado só no stack local (`account-erasure.mjs`, 20 verificações, com arquivos reais no bucket local; o encerramento da assinatura, em `billing-lifecycle.mjs`, contra o emulador da Stripe). **Nunca executado em produção, e nunca com um domínio anexado na Vercel nem com uma assinatura na Stripe real.** O texto de resposta ao titular abaixo é uma minuta que precisa da revisão jurídica.
 
 **A exclusão é definitiva.** Depois do último passo não há botão de desfazer; só um backup traz os dados de volta.
 
@@ -18,7 +18,7 @@ Na fila, o pedido já mostra o motivo quando há bloqueio. Marque **Aguardando p
 
 | Bloqueio | Como resolver |
 |---|---|
-| **Assinatura em curso** numa conta da pessoa | A pessoa cancela em *Plano*; a assinatura só termina no fim do período pago. Para excluir antes, cancele **imediatamente** no painel da Stripe (*Customers* → assinatura → *Cancel immediately*) e espere o webhook ou o job diário marcar a assinatura como encerrada. Reembolso é decisão do founder. |
+| **Assinatura em curso** numa conta da pessoa | Desde 13/10/2026 **a própria exclusão encerra a assinatura na Stripe, na hora**, antes de apagar qualquer coisa (ADR 0014, adendo). Não há reembolso automático: decida antes, com a pessoa, se a parte não usada do período será devolvida, e faça o reembolso na Stripe (`BILLING.md` §3) antes ou depois de executar. Só é preciso agir à mão se a tela disser que não conseguiu falar com o provedor (passo 4). |
 | **Conta com outros membros** | A pessoa (ou você, com a concordância dela registrada no dossiê) remove os outros membros em *Membros*. Não existe transferência de propriedade: se os outros precisam do conteúdo, eles exportam ou recriam antes. |
 
 Uma conta em que a pessoa é só **membro** (não proprietária) não bloqueia nada: o conteúdo fica com a conta e o acesso dela some.
@@ -44,14 +44,16 @@ Antes de executar, confirme com a pessoa (o produto ainda não envia e-mail; use
 | Ainda há imagens sendo removidas | as páginas já saíram do ar; nada foi apagado | executar de novo em alguns minutos |
 | Um domínio próprio não pôde ser desanexado | as páginas já saíram do ar; nada foi apagado | conferir o token da Vercel (`DOMAINS.md`) e executar de novo |
 | A limpeza de imagens não está configurada | falta `SUPABASE_SECRET_KEY` no ambiente | corrigir a variável, novo deploy, executar de novo |
-| Assinatura em curso / outros membros | nada foi feito | passo 2 |
+| Não foi possível encerrar a assinatura no provedor | a Stripe não respondeu, ou o encerramento não pôde ser registrado; nada foi apagado e nenhuma página saiu do ar | conferir a assinatura no painel da Stripe (ela pode já estar cancelada) e executar de novo |
+| Este ambiente não está configurado para falar com o provedor | há assinatura em curso e a cobrança está desligada ou sem chave aqui; nada foi feito | cancelar **imediatamente** no painel da Stripe (*Customers* → assinatura → *Cancel immediately*), esperar o webhook ou o job diário marcar a assinatura como encerrada e executar de novo |
+| Assinatura em curso / outros membros | nada foi apagado | passo 2 |
 | O pedido precisa estar em análise | nada foi apagado; ou a pessoa criou uma página depois do início | marcar *Em análise* e executar de novo |
 
 Executar de novo é sempre seguro: cada etapa confere tudo outra vez.
 
 ## 5. Depois
 
-1. **Stripe:** o cliente e as faturas continuam lá (obrigação fiscal do founder). Não apague sem orientação contábil. Anote no dossiê.
+1. **Stripe:** confira que a assinatura aparece como cancelada. O cliente e as faturas continuam lá (obrigação fiscal do founder): não apague sem orientação contábil. Se combinou devolver a parte não usada, faça o reembolso. Anote tudo no dossiê.
 2. **Vercel:** se a pessoa tinha domínio próprio, confira em *Domains* que ele saiu do projeto.
 3. **Backups:** os dados continuam nos backups anteriores até eles vencerem. Anote no dossiê a data do backup mais antigo guardado; **se um backup anterior for restaurado, a exclusão precisa ser refeita**.
 4. **Responder ao titular** (minuta, sujeita à revisão jurídica):

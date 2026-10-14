@@ -86,6 +86,18 @@ export function createSupabaseBillingRepository(supabase: SupabaseServerClient):
       if (!data || !isBillingInterval(data.billing_interval)) return { ok: false, error: "unavailable" };
       return { ok: true, value: { subscriptionId: data.provider_subscription_id, customerId: data.provider_customer_id, planId: data.plan_id, interval: data.billing_interval, amountCents: data.amount_cents } };
     },
+
+    async beginIntervalChange(workspaceId, interval) {
+      const { data, error } = await supabase.rpc("begin_billing_interval_change", { p_workspace_id: workspaceId, p_interval: interval }).maybeSingle();
+      if (error) return { ok: false, error: billingErrorFromDatabase(error) };
+      if (!data || !isBillingInterval(data.billing_interval)) return { ok: false, error: "unavailable" };
+      return { ok: true, value: { subscriptionId: data.provider_subscription_id, customerId: data.provider_customer_id, planId: data.plan_id, interval: data.billing_interval, amountCents: data.amount_cents } };
+    },
+
+    async recordCancellationFeedback(workspaceId, feedback) {
+      const { error } = await supabase.rpc("record_cancellation_feedback", { p_workspace_id: workspaceId, p_reason: feedback.reason, ...(feedback.comment ? { p_comment: feedback.comment } : {}) });
+      return error ? { ok: false, error: billingErrorFromDatabase(error) } : { ok: true, value: null };
+    },
   };
 }
 
