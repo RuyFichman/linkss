@@ -1,6 +1,6 @@
 # ADR 0019 — Suspension notice and appeal; job heartbeat and external monitor
 
-- **Status:** accepted for implementation on 2026-10-11. Verified on the local stack only. **The migrations are not applied to production, the monitor's secret does not exist, and the workflow has never run against production.**
+- **Status:** accepted for implementation on 2026-10-11. Verified on the local stack only. The migrations were applied to production on 2026-10-14. **The monitor's secret does not exist, and the workflow has never run against production.**
 - **Sprint:** 9 (continuation)
 - **Related:** ADR 0015 (moderation, privacy queue), ADR 0018 (retention, erasure), ADR 0014 (billing)
 

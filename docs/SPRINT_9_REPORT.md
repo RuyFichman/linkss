@@ -385,7 +385,7 @@ Este adendo não conclui a Sprint 9 nem inicia a Sprint 10. Ele fecha, da lista 
 
 ## Adendo de 14/10/2026 — e-mail transacional (Resend) e convite em outro aparelho
 
-**Branch:** `feat/transactional-email`, criada de `feat/pilot-readiness` (PR ainda aberto), **sem commit**. **Estado: implementado e verificado só no stack local. Nada em produção:** não há conta na Resend nem domínio verificado, a migração `202610140001` não foi aplicada e nenhum e-mail foi enviado a ninguém. Decisões: ADR 0021 e adendo do ADR 0012.
+**Branch:** `feat/transactional-email`, criada de `feat/pilot-readiness` (mergeada em `main` pelo PR #36), ainda sem merge em `main`. **Estado: implementado e verificado só no stack local. Nada em produção:** não há conta na Resend nem domínio verificado, a migração `202610140001` não foi aplicada e nenhum e-mail foi enviado a ninguém. Decisões: ADR 0021 e adendo do ADR 0012.
 
 ### Objetivo e resultado
 
@@ -426,3 +426,18 @@ O founder pediu os quatro itens que dependiam do SMTP, já que a Resend foi esco
 - E-mail aceito pela Resend e não entregue não gera alerta.
 - Duplicidade com os e-mails da própria Stripe depende de decisão do founder.
 - O reenvio da confirmação em `/confirmar-email` não carrega o convite.
+
+## Adendo de 14/10/2026 — primeiro backup da produção e migrações aplicadas
+
+**Feito pelo agente, com a CLI logada pelo founder na conta dona do projeto.** Nada de código de produto mudou.
+
+| Passo | Resultado | Evidência |
+|---|---|---|
+| Backup da produção | **feito** em `backups/20261014T201546Z-production` (só nesta máquina): 67 tabelas, 205 linhas, 22 migrações, 2 contas, 3 páginas, 9 versões publicadas, 3 contatos, 15 de 15 arquivos de mídia | saída de `npm run db:backup` |
+| Conferência da restauração | **PASS**, depois de um ajuste no script: o `GRANT` da plataforma ao papel `supabase_realtime_admin` falhava só porque a instância descartável sobe sem o Realtime; agora é mostrado como aviso e não conta como erro | `scripts/db-restore-check.mjs`; todas as outras verificações (linhas por tabela, histórico, página publicada, RLS) passaram antes e depois do ajuste |
+| `supabase db push` | **aplicadas** `202610110001` a `202610130001` (seis migrações); `202610140001` (e-mail) ficou de fora por decisão do founder, porque a branch não foi mergeada | `--dry-run` antes, `supabase migration list` depois |
+| Site depois do push | `https://linkfav.com/` e `/api/health` responderam 200 | `curl` |
+
+**Consequências:** os jobs diários de expurgo (`/api/jobs/retention`, 07:00 UTC) e de reverificação de domínios (`/api/jobs/domains`, 08:00 UTC) passam a rodar em produção; a exclusão de conta, a contestação de suspensão, o funil de produto, a troca para o anual e o motivo de cancelamento passam a ter banco em produção.
+
+**Pendente:** copiar o backup para fora desta máquina (founder); Turnstile na ordem documentada; regra do firewall; `OPS_STATUS_SECRET` na Vercel e no GitHub (sem ele o monitor falha); conferir na Stripe (área restrita) o que só rodou no emulador; a migração de e-mail depois do merge.

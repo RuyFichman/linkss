@@ -12,7 +12,7 @@ Uma vez por dia (09:43 de Brasília) ele também conta trabalho esperando por um
 
 ## 1. Ligar (uma vez)
 
-1. Aplicar as migrações `202610110003` e `202610110004` (`docs/ENVIRONMENTS.md`).
+1. Aplicar as migrações `202610110003` e `202610110004` (`docs/ENVIRONMENTS.md`). Feito em produção em 14/10/2026. Feito em produção em 14/10/2026.
 2. Gerar um segredo de 64 caracteres (`openssl rand -hex 32`). **Não reutilizar o `CRON_SECRET`.**
 3. **Vercel:** variável `OPS_STATUS_SECRET` (*Sensitive*, Production). Novo deploy.
 4. **GitHub:** repositório → *Settings* → *Secrets and variables* → *Actions* → *New repository secret* → nome `OPS_STATUS_SECRET`, o mesmo valor.

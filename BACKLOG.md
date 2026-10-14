@@ -68,7 +68,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + Lighthouse em `next star
 - [ ] P1 Aviso ao dono da página quando chega um contato (depende do SMTP).
 - [ ] P1 Imagem Open Graph com o tema e a foto da página.
 - [ ] P2 CAPTCHA no formulário público e limite global por IP (Sprint 9). Limite por instância no envio desde 11/10/2026; CAPTCHA no formulário não feito; o limite global é a regra do firewall.
-- [x] P2 Purge agendado de leads vencidos e de `form_submission_hits` (job `/api/jobs/retention`, 11/10/2026). Código, testes e runbook prontos em 11/10/2026 (ADR 0018), verificados só no stack local. **Migração não aplicada em produção.**
+- [x] P2 Purge agendado de leads vencidos e de `form_submission_hits` (job `/api/jobs/retention`, 11/10/2026). Código, testes e runbook prontos em 11/10/2026 (ADR 0018), verificados só no stack local. Migrações aplicadas em produção em 14/10/2026.
 
 ## Sprint 6 — analytics
 
@@ -96,7 +96,8 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [x] P0 Dashboard consolidado, com exportação CSV (ADR 0013).
 - [x] P1 Relatório público revogável e com expiração (ADR 0013).
 - [x] P0 Medir a criação da décima página e a lista com 1, 10 e 50 páginas (AC5; `apps/web/scripts/agency-scale.mjs`).
-- [ ] P0 Fechar a Sprint 7 em staging: `supabase db push` das duas migrações da parte 2 (`202610060003`, `202610060004`), enviar a branch, abrir e fazer o merge do PR, pôr a conta de teste no plano Agência por SQL e conferir um link de relatório de ponta a ponta (passos em `docs/ENVIRONMENTS.md`).
+- [x] P0 Fechar a Sprint 7 em staging (feito: migrações aplicadas e merge; verificada em produção em 14/10/2026; adendo em `docs/SPRINT_7_REPORT.md`): `supabase db push` das duas migrações da parte 2 (`202610060003`, `202610060004`), enviar a branch, abrir e fazer o merge do PR, pôr a conta de teste no plano Agência por SQL e conferir um link de relatório de ponta a ponta (passos em `docs/ENVIRONMENTS.md`).
+- [ ] P2 Link de relatório: depois de cancelar um link recém-criado, esconder a caixa "Link do relatório" e o aviso "Link criado", que continuam mostrando um endereço que já não abre (visto em produção em 14/10/2026).
 - [ ] P1 Limite global (firewall/rate limit) na frente de `/r/` e da RPC do relatório (Sprint 9). `/r/` ganhou limite por instância em 11/10/2026; a RPC chamada direto e o limite global seguem dependendo do firewall.
 - [x] P1 Expurgo agendado de links de relatório terminados há mais de 90 dias e dos contadores de tentativas (job `/api/jobs/retention`, 11/10/2026). Código, testes e runbook prontos em 11/10/2026 (ADR 0018), verificados só no stack local.
 - [x] P1 Incluir `report_links` na exportação e na exclusão de conta (exportação na Sprint 9; exclusão em 11/10/2026, por cascata da conta).
@@ -125,7 +126,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [ ] P0 Decidir o plano da Vercel para domínios de clientes (o Hobby não cobre uso comercial nem muitos domínios por projeto) antes de oferecer o recurso.
 - [ ] P0 Conferir a parte 2 em produção (PR #29 mergeado e migrações aplicadas em 10/10/2026; passos em `docs/ENVIRONMENTS.md`, "Passos de deploy da Sprint 8, parte 2") com um subdomínio de teste e IDs reais de Meta e Google; **comparar a Vercel real com o emulador** e conferir no console que as bibliotecas carregam sem violação de CSP.
 - [ ] P0 Revisão jurídica do aviso de consentimento e dos papéis no uso de pixels (lista no ADR 0017), junto com as minutas de `docs/legal/`.
-- [x] P1 Reverificação agendada dos domínios (job diário `/api/jobs/domains`; sete dias seguidos sem a prova desligam o domínio): código de 11/10/2026, verificado só no stack local; **migração `202610110005` não aplicada em produção**. Falta confirmar o prazo de sete dias e avisar o dono por e-mail (depende do SMTP).
+- [x] P1 Reverificação agendada dos domínios (job diário `/api/jobs/domains`; sete dias seguidos sem a prova desligam o domínio): código de 11/10/2026, verificado só no stack local; migração `202610110005` aplicada em produção em 14/10/2026. Falta confirmar o prazo de sete dias e avisar o dono por e-mail (depende do SMTP).
 - [x] P1 Incluir `profile_domains` e `profile_pixels` em `export_workspace_data` (11/10/2026, com suspensões e contestações); na exclusão de conta o domínio é desanexado pelo procedimento de 11/10/2026 (ADR 0018). Verificado só no stack local.
 - [ ] P1 Limite global nas verificações de domínio e em `/d/<host>` (Sprint 9).
 - [ ] P2 Eventos de conversão nos pixels (lead, WhatsApp, Pix), registro de consentimento e Google Consent Mode.
@@ -161,11 +162,11 @@ Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 s
 - [ ] P0 Headers, CSP, rate limits e revisão de autorização.
   - [x] Headers de segurança e CSP (ainda com `unsafe-inline`); leitura limitada do corpo em `/api/events` e `/api/vitals`; origem com esquema nas rotas com sessão.
   - [x] Limite por instância nas rotas públicas, CAPTCHA nos formulários de acesso (desligado até ser configurado) e expurgo agendado: código de 11/10/2026 (ADR 0018), verificado só no stack local.
-  - [ ] **Founder:** criar a regra do firewall da Vercel (`docs/runbooks/RATE_LIMITS.md`), ligar o Turnstile e aplicar as migrações `202610110001` e `202610110002` depois de um backup conferido (`docs/ENVIRONMENTS.md`, "Sprint 9, continuação").
+  - [ ] **Founder:** criar a regra do firewall da Vercel (`docs/runbooks/RATE_LIMITS.md`), ligar o Turnstile (`docs/ENVIRONMENTS.md`, "Sprint 9, continuação"). As migrações `202610110001` e `202610110002` foram aplicadas em produção em 14/10/2026, depois de um backup conferido.
   - [ ] Confirmar os prazos provisórios novos (denúncias 180 dias; pedidos de privacidade 5 anos) e os limites (300/min na regra; seis limites por rota).
 - [ ] P0 Backup/restauração e runbooks.
   - [x] Runbooks de jobs, monitor e moderação (`JOBS.md`, `MONITORING.md`, `MODERATION.md`) e primeiro mecanismo de alerta (workflow *Monitor* + `/api/ops/status`): código de 11/10/2026 (ADR 0019), verificado só no stack local.
-  - [ ] **Founder:** aplicar as migrações `202610110003` e `202610110004` e criar `OPS_STATUS_SECRET` na Vercel e no GitHub (`docs/runbooks/MONITORING.md` §1). Até lá o monitor só confere que o site responde.
+  - [ ] **Founder:** criar `OPS_STATUS_SECRET` na Vercel e no GitHub (`docs/runbooks/MONITORING.md` §1). As migrações `202610110003` e `202610110004` foram aplicadas em produção em 14/10/2026. Até lá o monitor só confere que o site responde.
   - [x] Tempo máximo de resposta da aplicação, da home, da página de situação e da página pública de teste no monitor, e alerta quando `/status` acusa instabilidade (13/10/2026, ADR 0020). Medido de hora em hora, de fora do Brasil: é disponibilidade e lentidão grosseira, **não taxa de erro**.
   - [ ] **Founder:** decidir o serviço que lê os logs e o plano da Vercel que os envia (o *log drain* não existe no Hobby). Sem isso continuam sem alerta: taxa de erro e latência por requisição do renderer, uploads, formulários e Auth, Web Vitals e webhook que não chega.
   - [x] Backup lógico (`npm run db:backup`: banco, contas, histórico de migrações e mídia) e ensaio de restauração (`npm run db:restore-check`), aprovados com o banco local em 10/10/2026; runbook `docs/runbooks/BACKUP.md`.
@@ -200,7 +201,7 @@ O que dava para fazer em código antes de convidar alguém, feito em 13/10/2026 
 - [x] P1 Página de preços (`/precos`), com valores só com a cobrança real ligada (UX-099).
 - [x] P1 Página de situação (`/status`), servida pela própria aplicação (UX-100). Uma página hospedada fora, com histórico, fica para a Sprint 12 e é decisão de fornecedor.
 - [x] P1 Cancelamento com motivo opcional (UX-095), com os motivos na tela do funil.
-- [ ] P0 **Founder:** aplicar a migração `202610130001` depois de um backup conferido (`docs/ENVIRONMENTS.md`, "Passos de deploy da preparação do piloto"), junto com as pendentes de 11/10.
+- [x] P0 **Founder:** aplicar a migração `202610130001` depois de um backup conferido, junto com as pendentes de 11/10: aplicadas em produção em 14/10/2026 (backup `20261014T201546Z-production`, conferido com `PASS`).
 - [ ] P0 Conferir contra a Stripe (área restrita) o que só rodou no emulador: troca para o anual (a fatura proporcional é a da Stripe), cancelamento com motivo e exclusão de conta com assinatura em curso.
 - [ ] P1 Guardar quem foi convidado para o piloto: hoje o funil conta todas as contas criadas no período, e o gate fala de convidados.
 - [ ] P1 Onde as pessoas desistem **dentro** de uma tela (editor, cadastro): o funil mostra até que etapa cada conta chegou, não o que aconteceu no caminho. Exige telemetria de produto, não construída.
