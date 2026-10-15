@@ -385,7 +385,7 @@ Este adendo não conclui a Sprint 9 nem inicia a Sprint 10. Ele fecha, da lista 
 
 ## Adendo de 14/10/2026 — e-mail transacional (Resend) e convite em outro aparelho
 
-**Branch:** `feat/transactional-email`, criada de `feat/pilot-readiness` (mergeada em `main` pelo PR #36), ainda sem merge em `main`. **Estado: implementado e verificado só no stack local.** A migração `202610140001` foi aplicada em produção em 14/10/2026, antes do merge e sem backup novo (decisão do founder). **Não há conta na Resend nem domínio verificado, e nenhum e-mail foi enviado a ninguém.** Decisões: ADR 0021 e adendo do ADR 0012.
+**Branch:** `feat/transactional-email`, criada de `feat/pilot-readiness` (mergeada em `main` pelo PR #36), mergeada em `main` pelo PR #39. **Estado: no ar em produção desde 14/10/2026.** A migração `202610140001` foi aplicada antes do merge e sem backup novo (decisão do founder); depois o founder configurou a Resend, a Vercel e o Supabase, e a recuperação de senha e o aviso de novo contato chegaram (relato do founder; detalhes no adendo "e-mail ligado em produção" no fim deste arquivo). **Sem contrato com a Resend e sem revisão jurídica ainda.** Decisões: ADR 0021 e adendo do ADR 0012.
 
 ### Objetivo e resultado
 
@@ -440,4 +440,22 @@ O founder pediu os quatro itens que dependiam do SMTP, já que a Resend foi esco
 
 **Consequências:** os jobs diários de expurgo (`/api/jobs/retention`, 07:00 UTC) e de reverificação de domínios (`/api/jobs/domains`, 08:00 UTC) passam a rodar em produção; a exclusão de conta, a contestação de suspensão, o funil de produto, a troca para o anual e o motivo de cancelamento passam a ter banco em produção.
 
-**Pendente:** copiar o backup para fora desta máquina (founder); Turnstile na ordem documentada; regra do firewall; `OPS_STATUS_SECRET` na Vercel e no GitHub (sem ele o monitor falha); conferir na Stripe (área restrita) o que só rodou no emulador; o merge do e-mail e a configuração da Resend.
+**Pendente:** copiar o backup para fora desta máquina (founder); Turnstile na ordem documentada; regra do firewall; `OPS_STATUS_SECRET` na Vercel e no GitHub (sem ele o monitor falha); conferir na Stripe (área restrita) o que só rodou no emulador; o merge do e-mail e a configuração da Resend.
+## Adendo de 14/10/2026 — e-mail ligado em produção
+
+Depois do merge do PR #39, o founder ligou o envio em produção seguindo `docs/runbooks/MAIL.md` §1.
+
+| Passo | Resultado | Evidência |
+|---|---|---|
+| Conta na Resend e domínio `linkfav.com` | criados; região São Paulo (sa-east-1); Return-Path `send`; **sem domínio de rastreamento** (rastreamento de cliques e de abertura desligado) | capturas do founder |
+| DNS | publicado na **Hostinger**, que serve a zona (`solar`/`lunar.dns-parking.com`; só os registros do site apontam para a Vercel): TXT `resend._domainkey` (DKIM), CNAME `rsend` → `rsend-sae1.forge.rmta.net`, CNAME `send` → `send.forge.rmta.net` (que entrega o SPF e o MX de retorno), TXT `_dmarc` = `v=DMARC1; p=none;` | **conferido daqui** no servidor da Hostinger, no 8.8.8.8 e no 1.1.1.1 |
+| Supabase | SMTP da Resend (`avisos@linkfav.com`), os três modelos, *Site URL* `https://linkfav.com`, *Redirect URLs* `https://linkfav.com/auth/confirm` e `https://linkfav.com/auth/confirm**` | relato e captura do founder |
+| Vercel | `RESEND_API_KEY` e `MAIL_FROM`; **o primeiro teste falhou porque faltava o novo deploy** (o envio fica desligado sem erro nem log); depois do redeploy funcionou | relato do founder |
+| E-mail do Auth | recuperação de senha chegou de `avisos@linkfav.com`; o link aponta direto para `https://linkfav.com/auth/confirm?token_hash=…&type=recovery&next=/redefinir-senha` (sem redirecionamento da Resend) | link colado pelo founder |
+| Aviso do produto | "novo contato" chegou depois de um formulário enviado numa janela anônima | relato do founder |
+
+**Não verificado em produção:** avisos de suspensão, contestação, pagamento falhou e renovação anual; convite aceito em outro aparelho; entrega em provedores diferentes do Gmail; o job `/api/jobs/mail` agendado.
+
+**Pendente e bloqueante para pessoas de fora:** contrato/DPA com a Resend, menção no aviso de privacidade e revisão jurídica da transferência internacional. Como o SMTP do Supabase já passa pela Resend, qualquer cadastro novo já gera um envio por ela.
+
+**Ajuste no runbook:** `MAIL.md` §1, passo 4, agora diz que o novo deploy é obrigatório e como conferir (`mail_off` no job manual).

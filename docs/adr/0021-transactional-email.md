@@ -1,6 +1,6 @@
 # ADR 0021 — Transactional e-mail through an outbox and Resend
 
-- **Status:** accepted for implementation on 2026-10-14. Verified on the local stack only, against a stand-in for Resend's API and the local Mailpit. Migration `202610140001` was applied to production on 2026-10-14, before the code was merged. **No Resend account exists, no domain is verified and no e-mail has been sent to anyone.**
+- **Status:** accepted for implementation on 2026-10-14. Verified on the local stack only, against a stand-in for Resend's API and the local Mailpit. Migration `202610140001` was applied to production on 2026-10-14, before the code was merged. Live on production since 2026-10-14 (PR #39): Resend account, `linkfav.com` verified in the São Paulo region without a tracking domain, custom SMTP in Supabase; the founder reported a password-recovery e-mail and a new-contact notice arriving. **No contract or DPA with Resend and no legal review yet.**
 - **Related:** ADR 0011 (customer analytics: third parties never block a visitor), ADR 0012 (invitations; addendum of the same date), ADR 0014 (billing), ADR 0019 (suspension, appeal, monitor), ADR 0020 (support address)
 
 ## Context
