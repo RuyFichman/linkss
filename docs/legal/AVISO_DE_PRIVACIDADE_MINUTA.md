@@ -1,6 +1,6 @@
-# Aviso de Privacidade — minuta v0.1
+# Aviso de Privacidade — minuta v0.2
 
-**Preparada em:** 09/10/2026. **Estado:** revisão jurídica pendente; não é aviso aprovado nem parecer. **Responsável pelo produto:** [RAZÃO SOCIAL/NOME, CNPJ/CPF, ENDEREÇO E CANAL DE PRIVACIDADE PENDENTES]. Não há encarregado confirmado. O texto descreve o código desta branch; o ambiente hospedado pode ter outra versão.
+**Preparada em:** 09/10/2026; **v0.2 em 15/10/2026:** inclui a Resend (e-mail transacional), ligada em produção desde 14/10/2026 sem contrato/DPA assinado. **Estado:** revisão jurídica pendente; não é aviso aprovado nem parecer. **Responsável pelo produto:** [RAZÃO SOCIAL/NOME, CNPJ/CPF, ENDEREÇO E CANAL DE PRIVACIDADE PENDENTES]. Não há encarregado confirmado. O texto descreve o código desta branch; o ambiente hospedado pode ter outra versão.
 
 ## 1. Pessoas e papéis
 
@@ -15,6 +15,7 @@ O produto trata dados de cadastrados e convidados, visitantes de páginas, pesso
 | Formulário | nome, e-mail, telefone, mensagem e registro de consentimento quando exigido | entregar o contato ao dono da página; membros autorizados podem consultar, exportar e apagar leads. O dono responde pelo uso posterior. |
 | Métricas | tipo e horário de evento, bloco, origem como categoria, UTM validada, aparelho, país e hash diário; depois totais | resultados aproximados por página. Links de relatório podem compartilhar totais com quem os possui; não revelam respostas do formulário. |
 | Segurança e operação | auditoria, códigos de resultado, correlação e contadores de limite | prevenir fraude e investigar incidentes. Os logs da aplicação foram desenhados sem e-mail, token, IP completo ou conteúdo de lead; a retenção dos provedores precisa ser verificada. |
+| Avisos por e-mail | endereço e nome de quem administra a conta; no corpo, título e endereço da página e, conforme o aviso, categoria da suspensão, resposta da moderação a uma contestação, plano, datas e valor | e-mails de conta (confirmação de cadastro, recuperação de senha, troca de e-mail) e avisos de serviço (novo contato num formulário, página suspensa, contestação respondida, pagamento recusado, renovação anual em 7 dias). O aviso de novo contato **não** traz o que o visitante escreveu. Quem recebe o aviso de contato pode desligá-lo em `/app/conta/dados`. Visitantes de páginas não recebem e-mail do produto. |
 | Lista de espera | nome, e-mail, WhatsApp opcional, respostas profissionais, consentimento e origem | contato sobre pesquisa/piloto e avaliação do produto. |
 | Cobrança, se ativada | IDs do cliente/assinatura no provedor, plano, valor, situação, datas, recibo | gestão da assinatura. Cartão, CPF/CNPJ e endereço de faturamento não são coletados pelo produto; o provedor pode pedi-los diretamente. |
 | Denúncia pública | endereço da página, categoria, detalhes opcionais limitados e histórico da apuração | formulário em `/denunciar?pagina=<slug>`; investigar abuso e auditar decisões. Não há campo de contato do denunciante no formulário atual. [VALIDAR: retenção e revisão do processo.] |
@@ -33,7 +34,16 @@ IP e identificação do navegador são usados na requisição para classificaç�
 
 Supabase fornece Auth, Postgres e Storage; Vercel hospeda a aplicação e as páginas. Esses serviços podem envolver dados fora do Brasil: local, contrato, suboperadores e mecanismo de transferência devem ser confirmados antes da publicação. YouTube, Vimeo e Spotify só recebem a requisição de embed depois do clique do visitante. Abrir WhatsApp, agenda, site ou link de pagamento externo leva ao serviço escolhido pelo dono da página. O dono também pode compartilhar a página e links de relatório.
 
-O código da integração Stripe existe, mas está desligado por padrão, sem conta real ou sandbox verificado. Se ativado, o nome e ID do workspace, plano e URLs de retorno são enviados; dados digitados no checkout vão diretamente ao provedor. SMTP próprio, Sentry e monitor externo constam como pendentes, **não como fornecedores já contratados**. [VALIDAR: contratos/DPA, local de processamento, mecanismo da Resolução ANPD 19/2024 e informação ao titular.]
+O código da integração Stripe existe, mas está desligado por padrão, sem conta real ou sandbox verificado. Se ativado, o nome e ID do workspace, plano e URLs de retorno são enviados; dados digitados no checkout vão diretamente ao provedor. Sentry e monitor externo constam como pendentes, **não como fornecedores já contratados**. [VALIDAR: contratos/DPA, local de processamento, mecanismo da Resolução ANPD 19/2024 e informação ao titular.]
+
+**E-mail: Resend.** [FATO, `docs/DATA_MAP.md` e ADR 0021] A Resend (Resend, Inc., Estados Unidos) envia todos os e-mails do produto: os de conta, enviados pelo Supabase Auth por SMTP, e os avisos de serviço, enviados pela aplicação. Por mensagem, ela recebe:
+
+- o endereço de e-mail e o nome de quem recebe (sempre uma pessoa com conta; nunca um visitante);
+- o assunto e o texto do e-mail: título e endereço da página e, conforme o aviso, categoria da suspensão, resposta escrita pela moderação a uma contestação, plano, datas e valor de cobrança;
+- links para o produto, com identificadores internos da conta e da página; nos e-mails de conta, um link de uso único (confirmação, recuperação de senha, troca de e-mail) e, num cadastro feito a partir de um convite, o endereço do convite;
+- uma etiqueta com o tipo do aviso, e os registros de entrega que ela mesma produz.
+
+Ela **não** recebe o que um visitante escreveu num formulário, dados de métricas nem dados de cartão. O rastreamento de cliques e de abertura está desligado. O domínio de envio foi configurado na região de São Paulo do painel da Resend; [VALIDAR] isso indica onde o envio é feito, mas não garante que conta, registros, painel e suporte fiquem no Brasil: a empresa é dos Estados Unidos e deve ser tratada como **transferência internacional**. [PROPOSTA A VALIDAR] A Resend atua como operadora do Linkfav (e suboperadora quando o aviso trata de dados que o dono da página controla, como a existência de um novo contato); a transferência se apoiaria nas cláusulas-padrão contratuais da Resolução CD/ANPD 19/2024, incorporadas ao contrato com a Resend, ou em outro mecanismo que o advogado indicar. Até o contrato e esta revisão, o envio só deve chegar a endereços do próprio founder; o SMTP do Supabase já passa pela Resend, então qualquer cadastro novo também passa. Perguntas para o advogado: `docs/legal/RESEND_PERGUNTAS_DPA.md`.
 
 ## 6. Retenção e exclusão
 
@@ -47,6 +57,7 @@ O código da integração Stripe existe, mas está desligado por padrão, sem co
 | Links de relatório | expiram em até 90 dias; metadados por 90 dias provisórios após o fim; token só em hash. Falha de consulta: hash por até 24 horas. |
 | Auditoria, endereços e logs | um ano para auditoria e reserva de endereço por 90 dias mais um ano são propostas técnicas; retenção de logs de fornecedores não confirmada. |
 | Cobrança | registros locais durante a vida da conta; eventual guarda fiscal no provedor e exceção à exclusão dependem de advogado/contador. Ledger de webhook: 90 dias no desenho. |
+| E-mails | fila interna (`mail_outbox`, sem o endereço): 30 dias depois do envio ou da desistência; o que não sai vence entre 2 e 14 dias. Na Resend, mensagens e registros de entrega ficam pela retenção dela [VALIDAR no contrato]; não somem com a exclusão da conta no produto. |
 | Lista de espera | durante pesquisa/piloto; revisão de inativos em até 12 meses, prazo final a validar. |
 
 A tela autenticada `/app/conta/dados` oferece JSON dos dados da pessoa e, apenas para proprietários, JSON de workspaces administrados (rascunhos, publicações, leads, agregados, convites, relatórios e cobrança). O JSON contém inventário da mídia, **não os arquivos**; o pacote completo exige solicitação e conferência. A tela registra pedido de acesso ou exclusão pessoal com estado e histórico auditável. O pedido de exclusão não executa apagamento imediato: assinatura em curso, dados de terceiros em workspace compartilhado, publicações e retenções aplicáveis exigem revisão humana. Cada exceção deve ser justificada ao titular. Não anunciar exportação de mídia nem purge integral como automático ou concluído.
