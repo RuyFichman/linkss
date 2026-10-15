@@ -27,7 +27,7 @@ function errorMessage(error: ReportLinkCommandError): string {
 
 export interface ReportLinkFormState extends FormState<ReportLinkField> {
   /** Present once, right after creation: the only time the link exists outside its creator's hands. */
-  link?: { url: string; expiresAt: string };
+  link?: { id: string; url: string; expiresAt: string };
 }
 
 /**
@@ -46,7 +46,7 @@ export async function createReportLinkAction(profileId: string, historyDays: num
     };
   }
   refresh();
-  return { status: "success", message: REPORTS_COPY.form.created, link: { url: appUrl(reportPath(result.value.token)), expiresAt: result.value.expiresAt } };
+  return { status: "success", message: REPORTS_COPY.form.created, link: { id: result.value.id, url: appUrl(reportPath(result.value.token)), expiresAt: result.value.expiresAt } };
 }
 
 export async function revokeReportLinkAction(linkId: string): Promise<FormState> {

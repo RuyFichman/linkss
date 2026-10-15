@@ -6,7 +6,7 @@ import { formatDateTime } from "@/lib/format-date";
 import { Button, FormStatus, SelectField, TextField } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
 import type { ReportLinkFormState } from "../actions";
-import { DEFAULT_REPORT_EXPIRY, DEFAULT_REPORT_PERIOD, REPORT_EXPIRY_OPTIONS, REPORT_LABEL_MAX_LENGTH, type ReportPeriod } from "../links";
+import { DEFAULT_REPORT_EXPIRY, DEFAULT_REPORT_PERIOD, REPORT_EXPIRY_OPTIONS, REPORT_LABEL_MAX_LENGTH, shownCreatedLink, type ReportPeriod } from "../links";
 
 type CreateAction = (previous: ReportLinkFormState, formData: FormData) => Promise<ReportLinkFormState>;
 
@@ -15,15 +15,18 @@ const IDLE: ReportLinkFormState = { status: "idle" };
 /**
  * Creates a report link and shows it once, to be copied and sent by its creator. The address is
  * not kept anywhere after this screen (only a hash is stored): a lost link means a new one.
+ * `activeLinkIds` comes from the list rendered by the server: when the link is revoked there, the
+ * address and its "created" message leave the screen with it.
  */
-export function ReportLinkForm({ action, periods }: { action: CreateAction; periods: readonly ReportPeriod[] }) {
+export function ReportLinkForm({ action, periods, activeLinkIds }: { action: CreateAction; periods: readonly ReportPeriod[]; activeLinkIds: readonly string[] }) {
   const [state, formAction, pending] = useActionState(action, IDLE);
   const formRef = useRef<HTMLFormElement>(null);
   const linkRef = useRef<HTMLInputElement>(null);
   const [copyStatus, setCopyStatus] = useState<{ url: string; text: string } | null>(null);
   useFocusFirstError(formRef, state);
   const copy = REPORTS_COPY.form;
-  const link = state.link;
+  const link = shownCreatedLink(state.link, activeLinkIds);
+  const formState = state.link && !link ? IDLE : state;
   const defaultPeriod = periods.includes(DEFAULT_REPORT_PERIOD) ? DEFAULT_REPORT_PERIOD : periods[periods.length - 1];
 
   async function copyLink(url: string) {
@@ -48,7 +51,7 @@ export function ReportLinkForm({ action, periods }: { action: CreateAction; peri
           </SelectField>
         </div>
         <TextField id="report-label" name="label" label={copy.label} hint={copy.labelHint} autoComplete="off" maxLength={REPORT_LABEL_MAX_LENGTH} defaultValue={state.status === "error" ? state.values?.label : ""} error={state.fieldErrors?.label} />
-        <FormStatus id="report-link-status" state={state.fieldErrors && Object.keys(state.fieldErrors).length > 0 ? { status: "idle" } : state} />
+        <FormStatus id="report-link-status" state={formState.fieldErrors && Object.keys(formState.fieldErrors).length > 0 ? IDLE : formState} />
         <Button type="submit" loading={pending} className="w-full sm:w-fit">{copy.submit}</Button>
       </form>
 

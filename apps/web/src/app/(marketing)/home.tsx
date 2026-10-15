@@ -139,7 +139,8 @@ export function Home() {
           <h2 className="home-display" id="modelos-titulo">{copy.templates.title}</h2>
           <p>{copy.templates.lead}</p>
         </div>
-        <ul className="home-rail">
+        {/* Scrolls sideways below 1240px: focusable so the keyboard can scroll it, named by the heading. */}
+        <ul className="home-rail" tabIndex={0} aria-labelledby="modelos-titulo">
           {TEMPLATE_RAIL.map(({ phone, name }) => (
             <li key={phone}><PhoneMock phone={phone} /><span className="home-rail-name">{name}</span></li>
           ))}

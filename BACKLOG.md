@@ -97,7 +97,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [x] P1 Relatório público revogável e com expiração (ADR 0013).
 - [x] P0 Medir a criação da décima página e a lista com 1, 10 e 50 páginas (AC5; `apps/web/scripts/agency-scale.mjs`).
 - [x] P0 Fechar a Sprint 7 em staging (feito: migrações aplicadas e merge; verificada em produção em 14/10/2026; adendo em `docs/SPRINT_7_REPORT.md`): `supabase db push` das duas migrações da parte 2 (`202610060003`, `202610060004`), enviar a branch, abrir e fazer o merge do PR, pôr a conta de teste no plano Agência por SQL e conferir um link de relatório de ponta a ponta (passos em `docs/ENVIRONMENTS.md`).
-- [ ] P2 Link de relatório: depois de cancelar um link recém-criado, esconder a caixa "Link do relatório" e o aviso "Link criado", que continuam mostrando um endereço que já não abre (visto em produção em 14/10/2026).
+- [x] P2 Link de relatório (corrigido em 14/10/2026: o formulário só mostra o link criado enquanto ele está ativo na lista): depois de cancelar um link recém-criado, esconder a caixa "Link do relatório" e o aviso "Link criado", que continuam mostrando um endereço que já não abre (visto em produção em 14/10/2026).
 - [ ] P1 Limite global (firewall/rate limit) na frente de `/r/` e da RPC do relatório (Sprint 9). `/r/` ganhou limite por instância em 11/10/2026; a RPC chamada direto e o limite global seguem dependendo do firewall.
 - [x] P1 Expurgo agendado de links de relatório terminados há mais de 90 dias e dos contadores de tentativas (job `/api/jobs/retention`, 11/10/2026). Código, testes e runbook prontos em 11/10/2026 (ADR 0018), verificados só no stack local.
 - [x] P1 Incluir `report_links` na exportação e na exclusão de conta (exportação na Sprint 9; exclusão em 11/10/2026, por cascata da conta).
@@ -208,7 +208,7 @@ O que dava para fazer em código antes de convidar alguém, feito em 13/10/2026 
 - [ ] P1 Guardar quem foi convidado para o piloto: hoje o funil conta todas as contas criadas no período, e o gate fala de convidados.
 - [ ] P1 Onde as pessoas desistem **dentro** de uma tela (editor, cadastro): o funil mostra até que etapa cada conta chegou, não o que aconteceu no caminho. Exige telemetria de produto, não construída.
 - [ ] P1 Rever as respostas de `/ajuda` a cada mudança de tela ou de regra, e incluir domínio próprio e pixels quando tiverem rodado em produção.
-- [ ] P2 Acessibilidade da home, achada ao passar o axe-core em 13/10/2026 e **não corrigida** (fora do escopo; a home não estava na passagem de 11/10): contraste do texto de exemplo do endereço (`.home-claim-address span`) e a faixa de modelos (`.home-rail`) que rola e não recebe foco do teclado.
+- [x] P2 Acessibilidade da home, achada ao passar o axe-core em 13/10/2026 e corrigida em 14/10/2026 (texto de exemplo com `--home-muted`; faixa com `tabIndex=0` e nome pelo título; axe-core sem achados em 390 e 1024 px, build de produção local): contraste do texto de exemplo do endereço (`.home-claim-address span`) e a faixa de modelos (`.home-rail`) que rola e não recebe foco do teclado.
 - [ ] P2 Conferir as telas novas em aparelho real, outros navegadores, leitor de tela e teclado (a passagem de 13/10/2026 é automática, em Chrome).
 - [ ] Convite progressivo de 10 pessoas, onboarding assistido, registro estruturado de problemas, linha de base de performance e custo por perfil: dependem do piloto existir.
 

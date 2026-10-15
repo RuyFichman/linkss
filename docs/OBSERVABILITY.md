@@ -225,6 +225,7 @@ Decisão: ADR 0021. Verificado só no stack local, contra um substituto da Resen
 | Evento | O que é | Quando agir |
 |---|---|---|
 | `mail.drain` (`source`: `lead`, `page_suspended`, `appeal_decided`, `billing_webhook`, `billing_job`; `claimed`, `sent`, `retried`, `failed`, `skipped`) | envio logo depois da requisição que causou o aviso | `failed` ou `retried` repetidos → `MAIL.md` §4 |
+| `mail.off` (`source`; `reason`: `missing_api_key`, `missing_from`, `invalid_from`, `base_url_not_allowed`, `not_configured`, `not_deployed`) | uma requisição pôs um aviso na fila, mas o envio está desligado neste ambiente; aviso (`warn`) a cada requisição | num ambiente que devia enviar → P2: corrigir a variável e fazer novo deploy (`MAIL.md` §1, passo 4) |
 | `mail.maintenance` (`outcome`: `ok`, `partial`, `mail_off`, `not_configured`, `unauthorized`, `not_deployed`, `unavailable`; contagens; `reason` quando desligado) | o job diário | `unavailable` → P2; `mail_off` com `reason` num ambiente que devia enviar → P2 |
 | `mail.complete_failed`, `mail.drain_failed` | o banco não registrou um envio, ou a fila não pôde ser lida | repetido → P1 se `mail:overdue` também acusar |
 | `mail.preference` (`outcome`, `enabled`) | alguém ligou ou desligou o aviso de contato | não |

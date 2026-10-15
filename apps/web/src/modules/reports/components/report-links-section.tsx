@@ -46,7 +46,7 @@ export async function ReportLinksSection({ workspaceId, profileId, role }: { wor
   return frame(
     <>
       {inPlan && periods.length > 0 && can(role, "reports.create") ? (
-        <ReportLinkForm action={createReportLinkAction.bind(null, profileId, entitlements.limits.analytics_days)} periods={periods} />
+        <ReportLinkForm action={createReportLinkAction.bind(null, profileId, entitlements.limits.analytics_days)} periods={periods} activeLinkIds={sorted.filter((link) => link.status === "active").map((link) => link.id)} />
       ) : (
         // The reason in words; the way to a plan that has it only for who can buy, and only when plans are for sale.
         <><Notice>{copy.notInPlan}</Notice>{inPlan ? null : <UpgradeLink workspaceId={workspaceId} role={role} reason="shareable_reports" />}</>

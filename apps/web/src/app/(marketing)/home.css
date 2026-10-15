@@ -34,7 +34,7 @@
 .home-hero-lead { max-width: 30rem; margin: 1.5rem 0 0; font-size: 1.125rem; line-height: 1.6; }
 .home-claim { display: flex; max-width: 31rem; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 2rem; border-radius: 2rem; background: #ffffff; padding: 0.5rem 0.5rem 0.5rem 1.5rem; box-shadow: 0 10px 30px rgb(40 30 90 / 0.1); }
 .home-claim-address { flex: 1 1 12rem; min-width: 0; overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.home-claim-address span { color: #8b90a0; font-weight: 400; }
+.home-claim-address span { color: var(--home-muted); font-weight: 400; }
 .home-claim .home-cta { flex: 1 0 auto; }
 @media (min-width: 960px) { .home-hero { grid-template-columns: 1fr 1fr; } .home-claim .home-cta { flex: none; } }
 
