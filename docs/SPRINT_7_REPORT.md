@@ -241,3 +241,18 @@ Primeira verificação da Sprint 7 no ambiente hospedado (`https://linkfav.com`,
 **Achado (menor, UX):** depois de cancelar um link recém-criado, a caixa "Link do relatório" e o aviso "Link criado" continuam mostrando o endereço que já não abre, até a página ser recarregada. Registrado no `BACKLOG.md`.
 
 **Não verificado em produção:** arquivar e duplicar página, troca de papel, saída voluntária de um membro, o CSV do painel consolidado, o relatório com números (a única visita é de hoje e o relatório só mostra dias completos), e a recusa de um convite já usado ou vencido (coberta por pgTAP no local).
+
+## Adendo de 15/10/2026 — mais verificação em produção e correção do diálogo de arquivar
+
+Feita pelo agente no Chrome, com a sessão do founder no mesmo workspace. O que foi criado ficou registrado abaixo.
+
+| Item | Resultado | Evidência |
+|---|---|---|
+| Duplicar | **verificado em produção**: "teste" duplicada como "Cópia de teste" (`/teste-copia`), aberta no editor como rascunho, com "Cópia criada como rascunho" e o aviso "Revise antes de publicar". A origem não tem blocos, então a troca dos ids de bloco não foi exercitada | navegador |
+| Arquivar | **verificado em produção**: a cópia arquivada; a lista passou a "3 de 10 páginas", "Arquivadas (1)" e "Páginas arquivadas contam neste total"; a página abre só para leitura com "Desarquivar". **A cópia continua arquivada em produção** | navegador |
+| CSV do painel consolidado | **verificado em produção**: 7 e 90 dias responderam 200 com `Cache-Control: no-store`; os números batem com a tela (Café Ipê: 3 visitas, 3 resultados, 3 formulários, 100 a cada 100 visitas); sem sessão, a exportação redireciona e não entrega o arquivo | `fetch` na página (sem salvar arquivo) |
+| Link de relatório cancelado (PR #41) | **verificado em produção**: link "QA 15/10 (revogar)" criado, abriu sem sessão (200); cancelado, o endereço e "Link criado" saíram da tela, a linha ficou como "Cancelado" e `/r/<token>` passou a 404 | navegador e `fetch` sem credenciais |
+
+**Achado e correção:** logo depois de arquivar, o diálogo trocava o título para "Desarquivar esta página?" enquanto mostrava "Página arquivada.", e a abertura seguinte mostrava esse resultado antigo em vez de pedir para desarquivar (só recarregando a página). Causa: o `ConfirmDialog` guardava o resultado da ação enquanto o servidor redesenhava o mesmo controle com as props do comando oposto. Agora cada abertura guarda o título e a ação com que foi aberta e começa com resultado novo (`apps/web/src/ui/confirm-dialog.tsx`); vale também para os outros usos do diálogo (membros, plano, domínio, links de relatório). Regressão: `apps/web/scripts/archive-dialog.mjs` (build de produção local, Chrome, conta `qa-archive-*@example.test` removida no fim), que falha sem a correção e passa 8 checagens com ela.
+
+**Ainda não verificado em produção:** troca de papel e saída voluntária de um membro (a conta só tem o founder; precisa de um convite aceito pela segunda conta), o relatório com números e a suspensão com contestação (precisa da conta do founder em `platform_admins`, por SQL, com autorização).
