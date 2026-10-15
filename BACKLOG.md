@@ -184,7 +184,9 @@ Código de 14/10/2026 (ADR 0021), **verificado só no stack local** contra um su
 - [x] P1 E-mail de suspensão e de resposta à contestação.
 - [x] P1 E-mail de pagamento que falhou e lembrete de renovação anual.
 - [x] P1 Convite que funciona em outro aparelho.
-- [ ] P0 **Founder:** conta na Resend, domínio `linkfav.com` verificado (SPF, DKIM, DMARC), chave só de envio, variáveis na Vercel, SMTP e modelos no Supabase, *Redirect URL* com `**` (`docs/runbooks/MAIL.md` §1). **Sem o domínio verificado antes do SMTP, ninguém confirma o cadastro.**
+- [x] P0 **Founder:** conta na Resend, domínio `linkfav.com` verificado (SPF, DKIM, DMARC), chave só de envio, variáveis na Vercel, SMTP e modelos no Supabase, *Redirect URL* com `**` (`docs/runbooks/MAIL.md` §1): feito em 14/10/2026; recuperação de senha e aviso de novo contato chegaram (relato do founder).
+- [ ] P0 **Founder:** contrato/DPA com a Resend, menção no aviso de privacidade e revisão jurídica da transferência internacional. Até lá, e-mail só para endereços do próprio founder.
+- [ ] P2 Conferir em produção os avisos que ainda não saíram (suspensão, contestação, pagamento falhou, renovação anual) e o convite aceito em outro aparelho.
 - [x] P0 **Founder:** aplicar a migração `202610140001`: aplicada em produção em 14/10/2026, antes do merge e sem backup novo (decisão do founder; o backup conferido da mesma tarde é o mais recente).
 - [ ] P0 Revisão jurídica: Resend como subprocessador, transferência internacional, menção na política de privacidade.
 - [ ] P1 Primeiro envio real: conferir entrega, caixa de spam e aparência no Gmail e no Outlook, no celular.

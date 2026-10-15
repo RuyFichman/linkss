@@ -2,7 +2,7 @@
 
 **Owner:** founder técnico. **Decisão:** ADR 0021. **Ensaio local:** `apps/web/scripts/mail-lifecycle.mjs`.
 
-**Estado em 14/10/2026:** código pronto e verificado só no stack local, contra um substituto da API da Resend e o Mailpit local. A migração `202610140001` foi aplicada em produção em 14/10/2026. **Não existe conta na Resend, o domínio não está verificado e nenhum e-mail foi enviado a ninguém.**
+**Estado em 14/10/2026:** código pronto e verificado só no stack local, contra um substituto da API da Resend e o Mailpit local. A migração `202610140001` foi aplicada em produção em 14/10/2026. **Ligado em produção na mesma data:** passos 1 a 7 abaixo feitos pelo founder (DNS na Hostinger, que serve a zona; os quatro registros conferidos no DNS público); recuperação de senha e aviso de novo contato chegaram (relato do founder). **Sem contrato/DPA com a Resend e sem revisão jurídica ainda.**
 
 ## O que sai por e-mail
 
@@ -22,7 +22,7 @@ O e-mail de contato **nunca traz o que o visitante escreveu**: manda a pessoa pa
 1. **Conta na Resend** (decisão do founder em 11/10/2026). Anote o plano e os limites de envio por dia e por mês.
 2. **Domínio:** em *Domains*, adicione `linkfav.com` e publique no DNS os registros que a Resend mostrar (SPF e DKIM; acrescente um DMARC, mesmo que só `p=none`, para começar). Espere aparecer *Verified*.
 3. **Chave:** em *API Keys*, crie uma chave **só de envio** (*Sending access*) restrita ao domínio. Ela aparece uma vez.
-4. **Vercel** (Production): `RESEND_API_KEY` (*Sensitive*), `MAIL_FROM` = `Linkfav <avisos@linkfav.com>`, e opcionalmente `MAIL_REPLY_TO`; sem ela as respostas vão para `SUPPORT_EMAIL`, e sem nenhuma das duas o e-mail diz que respostas não são lidas. Novo deploy.
+4. **Vercel** (Production): `RESEND_API_KEY` (*Sensitive*), `MAIL_FROM` = `Linkfav <avisos@linkfav.com>`, e opcionalmente `MAIL_REPLY_TO`; sem ela as respostas vão para `SUPPORT_EMAIL`, e sem nenhuma das duas o e-mail diz que respostas não são lidas. **Novo deploy, obrigatório:** sem ele o envio continua desligado sem erro nem log (a mensagem só espera na fila); foi o que aconteceu no primeiro teste em produção. Para conferir, rode o job à mão (§3, item 4): `mail_off` quer dizer desligado.
 5. **Supabase → Authentication → Emails → SMTP Settings:** ligar *Custom SMTP*; remetente `avisos@linkfav.com`, nome `Linkfav`; host `smtp.resend.com`, porta `465`, usuário `resend`, senha = uma chave da Resend (pode ser outra, também só de envio).
 6. **Supabase → Authentication → Emails → Templates:** colar os três modelos de `supabase/templates/` (*Confirm signup*, *Reset password*, *Change email address*). **O de confirmação é o que faz o convite funcionar em outro aparelho.**
 7. **Supabase → Authentication → URL Configuration:** *Site URL* `https://linkfav.com`; em *Redirect URLs*, `https://linkfav.com/auth/confirm**` (com os dois asteriscos, por causa do `?next=`).
