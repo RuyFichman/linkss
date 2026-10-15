@@ -93,6 +93,15 @@ export function sortReportLinks(links: readonly ReportLinkSummary[], now: Date):
       || (a.id < b.id ? -1 : 1));
 }
 
+/**
+ * The link just created is shown once, to be copied. It stays on screen only while the list still
+ * has it as active: once it is revoked (or expires), the address no longer opens a report and must
+ * not keep being offered for copying.
+ */
+export function shownCreatedLink<T extends { id: string }>(created: T | undefined, activeLinkIds: readonly string[]): T | null {
+  return created && activeLinkIds.includes(created.id) ? created : null;
+}
+
 export type ReportLinkErrorKind =
   | "invalid"
   | "not_in_plan"

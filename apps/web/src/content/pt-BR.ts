@@ -1651,7 +1651,8 @@ export const HELP_COPY = {
         { question: "O que os resultados mostram?", answer: "Visitas, cliques, origens e ações de valor (WhatsApp, Pix e formulário) por dia. A contagem não usa cookies, e os números são aproximações." },
         { question: "Abri a minha página e a visita não foi contada.", answer: "Visitas feitas no navegador em que você está com a conta aberta não entram na contagem, para os números mostrarem só o seu público. Para testar, abra a página em uma janela anônima ou em outro aparelho." },
         { question: "Por quanto tempo os resultados ficam disponíveis?", answer: "O plano Gratuito mostra os últimos 7 dias; os planos pagos, os últimos 90. Os dias seguem o horário de Brasília." },
-        { question: "Onde vejo quem preencheu o formulário?", answer: "Em Contatos, na página que tem o formulário. Você pode exportar a lista em CSV e apagar contatos. Cada contato fica disponível por 90 dias e depois é apagado." },
+        { question: "Onde vejo quem preencheu o formulário?", answer: "Em Contatos, na página que tem o formulário. Você pode exportar a lista em CSV e apagar contatos. Cada contato fica disponível por 90 dias e depois é apagado. Quando chega um contato, proprietários e administradores recebem um e-mail avisando, no máximo um por página a cada hora; o que a pessoa escreveu não vai no e-mail." },
+        { question: "Como paro de receber o e-mail de novo contato?", answer: "Em Conta, Meus dados, Avisos por e-mail, desmarque a opção e salve. Isso vale só para você. Os outros avisos (página suspensa, contestação respondida e, para o proprietário, pagamento que falhou e renovação anual) são sobre a conta e não podem ser desligados." },
       ],
     },
     {
@@ -1667,7 +1668,7 @@ export const HELP_COPY = {
       items: [
         { question: "Como exporto ou apago os meus dados?", answer: "Em Conta, Meus dados, você baixa uma cópia dos seus dados e pode pedir a exclusão da conta. O pedido de exclusão é analisado por uma pessoa da equipe antes de ser executado." },
         { question: "Encontrei uma página que parece golpe ou se passa por outra pessoa.", answer: "Use o formulário de denúncia. A equipe analisa e pode tirar a página do ar." },
-        { question: "Minha página foi suspensa. O que faço?", answer: "A conta mostra um aviso com o motivo e, na própria página, um proprietário ou administrador pode enviar uma contestação. A resposta chega pela mesma tela." },
+        { question: "Minha página foi suspensa. O que faço?", answer: "A conta mostra um aviso com o motivo, e proprietários e administradores também recebem um e-mail. Na própria página, um deles pode enviar uma contestação. A resposta aparece na mesma tela e também chega por e-mail." },
       ],
     },
   ],
@@ -1678,6 +1679,7 @@ export const HELP_COPY = {
       { question: "Como cancelo?", answer: "Em Plano, Cancelar assinatura. O plano continua valendo até o fim do período já pago e depois a conta volta para o Gratuito, sem nova cobrança. Nada do que você criou é apagado." },
       { question: "Posso trocar de plano ou passar do mensal para o anual?", answer: "Sim, pela mesma tela. Um plano maior e a passagem para o anual valem na hora, com cobrança proporcional. Um plano menor vale a partir do fim do período já pago. Para voltar do anual ao mensal, cancele a renovação e assine o mensal quando o período terminar." },
       { question: "Onde ficam os recibos?", answer: "Em Plano, Pagamentos. Cada pagamento tem um link para o recibo na página do provedor de pagamento." },
+      { question: "Vou ser avisado antes de uma cobrança ou se um pagamento falhar?", answer: "Sim, o proprietário recebe um e-mail 7 dias antes da renovação de uma assinatura anual e outro quando um pagamento falha. Depois de uma falha, o plano continua valendo por 7 dias para você atualizar a forma de pagamento em Plano. Se não for regularizado, a conta volta aos limites do plano Gratuito, sem apagar nada." },
     ],
     notSelling: [
       { question: "Quanto custa?", answer: "O plano Gratuito não tem cobrança. Os planos pagos ainda não estão à venda." },

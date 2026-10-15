@@ -5,7 +5,7 @@ import { can, WORKSPACE_ROLES, type WorkspaceRole } from "@/modules/identity/per
 import nextConfig from "../../../next.config";
 import {
   availableReportPeriods, isReportToken, normalizeReportLabel, parseReportLinkInput, reportLinkErrorFromDatabase, reportLinkStatus, reportPath,
-  sortReportLinks, REPORT_LINK_MAX_EXPIRY_DAYS, REPORT_EXPIRY_OPTIONS, type ReportLinkSummary,
+  shownCreatedLink, sortReportLinks, REPORT_LINK_MAX_EXPIRY_DAYS, REPORT_EXPIRY_OPTIONS, type ReportLinkSummary,
 } from "./links";
 import { REPORT_RESPONSE_HEADERS, REPORT_ROUTE_SOURCE } from "./response-headers";
 import { createReportLinksService, type ReportLinksRepository } from "./service";
@@ -88,6 +88,14 @@ describe("report link rules", () => {
     expect(reportLinkStatus({ expiresAt: "2026-10-09T12:00:00Z", revokedAt: null }, now)).toBe("expired");
     expect(reportLinkStatus({ expiresAt: "2026-11-10T12:00:00Z", revokedAt: "2026-10-01T00:00:00Z" }, now)).toBe("revoked");
     expect(reportLinkStatus({ expiresAt: "not a date", revokedAt: null }, now)).toBe("expired");
+  });
+
+  it("keeps the link just created on screen only while it is still active", () => {
+    const created = { id: "link-1", url: "https://linkfav.example/r/x", expiresAt: "2026-11-09T15:00:00Z" };
+    expect(shownCreatedLink(created, ["link-1", "link-2"])).toBe(created);
+    expect(shownCreatedLink(created, ["link-2"])).toBeNull();
+    expect(shownCreatedLink(created, [])).toBeNull();
+    expect(shownCreatedLink(undefined, ["link-1"])).toBeNull();
   });
 
   it("lists active links first, the one that ends soonest on top", () => {
@@ -311,7 +319,7 @@ describe("report links service", () => {
   it("sends the hash to the database and returns the token once, never the other way round", async () => {
     const fake = repository();
     const result = await createReportLinksService(identityFor("u1", { [WS_A]: "admin" }), fake, tokens).create(PAGE_A, { period: "7", expires: "90", label: "  Outubro  " }, 90);
-    expect(result).toEqual({ ok: true, value: { token: TOKEN, expiresAt: "2026-11-09T15:00:00Z" } });
+    expect(result).toEqual({ ok: true, value: { id: LINK_A, token: TOKEN, expiresAt: "2026-11-09T15:00:00Z" } });
     expect(fake.createLink).toHaveBeenCalledWith({ profileId: PAGE_A, tokenHash: hashReportToken(TOKEN), periodDays: 7, expiresInDays: 90, label: "Outubro" });
     expect(JSON.stringify(vi.mocked(fake.createLink).mock.calls)).not.toContain(TOKEN);
   });

@@ -80,3 +80,30 @@ export async function drainOutbox(deps: {
   }
   return report;
 }
+
+export type MailDrainResult = { kind: "done"; report: DrainReport } | { kind: "mail_off"; reason: string } | { kind: "not_configured" } | { kind: "not_deployed" };
+
+export interface DrainLogEntry {
+  level: "info" | "warn";
+  event: "mail.drain" | "mail.off";
+  fields: Record<string, string | number>;
+}
+
+/**
+ * What the request that queued a message logs after trying to send it. Mail that is off, or a
+ * server without the database secret, is a warning on every such request: otherwise a missing
+ * variable or a deploy that predates it leaves no trace while messages wait and expire. A drain
+ * that found nothing to send logs nothing. Reasons and counts only, never an address.
+ */
+export function drainLogEntry(source: string, result: MailDrainResult): DrainLogEntry | null {
+  switch (result.kind) {
+    case "done":
+      if (result.report.claimed === 0) return null;
+      return { level: result.report.failed + result.report.retried > 0 ? "warn" : "info", event: "mail.drain", fields: { source, ...result.report } };
+    case "mail_off":
+      return { level: "warn", event: "mail.off", fields: { source, reason: result.reason } };
+    case "not_configured":
+    case "not_deployed":
+      return { level: "warn", event: "mail.off", fields: { source, reason: result.kind } };
+  }
+}

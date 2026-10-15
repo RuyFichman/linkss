@@ -34,10 +34,10 @@ describe("report link Server Actions", () => {
   });
 
   it("returns the link once and logs neither the token nor the path", async () => {
-    mocks.service.create.mockResolvedValue({ ok: true, value: { token: TOKEN, expiresAt: "2026-11-09T15:00:00Z" } });
+    mocks.service.create.mockResolvedValue({ ok: true, value: { id: "link-1", token: TOKEN, expiresAt: "2026-11-09T15:00:00Z" } });
     const state = await createReportLinkAction(PAGE, 90, { status: "idle" }, form({ period: "30", expires: "30", label: "Setembro" }));
     expect(state.status).toBe("success");
-    expect(state.link).toEqual({ url: `http://localhost:3000/r/${TOKEN}`, expiresAt: "2026-11-09T15:00:00Z" });
+    expect(state.link).toEqual({ id: "link-1", url: `http://localhost:3000/r/${TOKEN}`, expiresAt: "2026-11-09T15:00:00Z" });
     expect(mocks.service.create).toHaveBeenCalledWith(PAGE, { period: "30", expires: "30", label: "Setembro" }, 90);
     expect(mocks.refresh).toHaveBeenCalledTimes(1);
     expect(logged).toHaveLength(1);

@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { MailError, type MailAdapter } from "./adapter";
 import { resolveMailConfig } from "./config";
-import { drainOutbox, type ClaimedMail, type CompletionOutcome, type OutboxPort } from "./outbox";
+import { drainLogEntry, drainOutbox, EMPTY_DRAIN, type ClaimedMail, type CompletionOutcome, type OutboxPort } from "./outbox";
 import { createResendAdapter } from "./resend-adapter";
 import { MAIL_KINDS, escapeHtml, renderMail, type MailContext } from "./templates";
 
@@ -191,5 +191,19 @@ describe("draining the outbox", () => {
     const w = world(Array.from({ length: 7 }, (_, index) => message(`m${index}`)), async () => ({ id: "x" }));
     expect((await drainOutbox({ outbox: w.outbox, adapter: w.adapter, render: w.render, batchSize: 3, maxBatches: 2 })).sent).toBe(6);
     expect((await drainOutbox({ outbox: w.outbox, adapter: w.adapter, render: w.render, batchSize: 3, maxBatches: 2 })).sent).toBe(1);
+  });
+});
+
+describe("logging a drain after a request", () => {
+  it("warns on every request while mail is off, with the reason and never a value", () => {
+    expect(drainLogEntry("lead", { kind: "mail_off", reason: "missing_api_key" })).toEqual({ level: "warn", event: "mail.off", fields: { source: "lead", reason: "missing_api_key" } });
+    expect(drainLogEntry("lead", { kind: "not_configured" })).toEqual({ level: "warn", event: "mail.off", fields: { source: "lead", reason: "not_configured" } });
+    expect(drainLogEntry("billing_webhook", { kind: "not_deployed" })).toEqual({ level: "warn", event: "mail.off", fields: { source: "billing_webhook", reason: "not_deployed" } });
+  });
+
+  it("logs counts when something was claimed, as a warning if any send failed or will be retried", () => {
+    expect(drainLogEntry("lead", { kind: "done", report: EMPTY_DRAIN })).toBeNull();
+    expect(drainLogEntry("lead", { kind: "done", report: { ...EMPTY_DRAIN, claimed: 1, sent: 1 } })).toEqual({ level: "info", event: "mail.drain", fields: { source: "lead", ...EMPTY_DRAIN, claimed: 1, sent: 1 } });
+    expect(drainLogEntry("lead", { kind: "done", report: { ...EMPTY_DRAIN, claimed: 2, sent: 1, retried: 1 } })?.level).toBe("warn");
   });
 });

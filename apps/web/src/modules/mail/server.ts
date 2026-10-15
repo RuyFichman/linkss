@@ -7,7 +7,7 @@ import { logEvent } from "@/lib/observability/logger";
 import { isMissingSchemaError } from "@/lib/supabase/missing-schema";
 import { resolveBillingMode } from "@/modules/billing/mode";
 import { resolveMailConfig } from "./config";
-import { drainOutbox, EMPTY_DRAIN, type DrainReport, type OutboxPort } from "./outbox";
+import { drainLogEntry, drainOutbox, EMPTY_DRAIN, type MailDrainResult, type OutboxPort } from "./outbox";
 import { createResendAdapter } from "./resend-adapter";
 import { renderMail } from "./templates";
 
@@ -24,7 +24,7 @@ function serviceClient() {
   return createClient<Database>(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-export type MailDrainResult = { kind: "done"; report: DrainReport } | { kind: "mail_off"; reason: string } | { kind: "not_configured" } | { kind: "not_deployed" };
+export type { MailDrainResult } from "./outbox";
 
 function outboxPort(client: NonNullable<ReturnType<typeof serviceClient>>): OutboxPort {
   return {
@@ -71,12 +71,13 @@ export async function drainMailNow(options: { batchSize?: number; maxBatches?: n
 /**
  * After the current response, send what the request just put in the outbox. Only from a Server
  * Action or a Route Handler. A failure here is a log line: the job of the next day sends it.
+ * Mail that is off is a `mail.off` warning here too (`drainLogEntry`).
  */
 export function scheduleMailDrain(source: string): void {
   try {
     after(async () => {
-      const result = await drainMailNow();
-      if (result.kind === "done" && result.report.claimed > 0) logEvent(result.report.failed + result.report.retried > 0 ? "warn" : "info", "mail.drain", { source, ...result.report });
+      const entry = drainLogEntry(source, await drainMailNow());
+      if (entry) logEvent(entry.level, entry.event, entry.fields);
     });
   } catch {
     // Outside a request (a unit test, a script): the daily job sends it.

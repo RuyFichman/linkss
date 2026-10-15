@@ -46,7 +46,7 @@ export function createReportLinksService(identity: IdentityPort, repository: Rep
      * Creates a link for one page and returns its token, once. `historyDays` is the workspace's
      * `analytics_days` entitlement as the page read it; the database checks the period again.
      */
-    async create(profileId: unknown, raw: { period: unknown; expires: unknown; label: unknown }, historyDays: number): Promise<ReportLinkResult<{ token: string; expiresAt: string }>> {
+    async create(profileId: unknown, raw: { period: unknown; expires: unknown; label: unknown }, historyDays: number): Promise<ReportLinkResult<{ id: string; token: string; expiresAt: string }>> {
       let authorized: string;
       try {
         authorized = await authorizeProfile(profileId, "reports.create");
@@ -58,7 +58,7 @@ export function createReportLinksService(identity: IdentityPort, repository: Rep
       const token = tokens.generate();
       const created = await repository.createLink({ profileId: authorized, tokenHash: tokens.hash(token), ...input.value });
       if (!created.ok) return created;
-      return { ok: true, value: { token, expiresAt: created.value.expiresAt } };
+      return { ok: true, value: { id: created.value.id, token, expiresAt: created.value.expiresAt } };
     },
 
     async revoke(linkId: unknown): Promise<ReportLinkResult<null>> {

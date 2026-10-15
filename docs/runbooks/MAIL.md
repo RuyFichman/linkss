@@ -22,7 +22,7 @@ O e-mail de contato **nunca traz o que o visitante escreveu**: manda a pessoa pa
 1. **Conta na Resend** (decisão do founder em 11/10/2026). Anote o plano e os limites de envio por dia e por mês.
 2. **Domínio:** em *Domains*, adicione `linkfav.com` e publique no DNS os registros que a Resend mostrar (SPF e DKIM; acrescente um DMARC, mesmo que só `p=none`, para começar). Espere aparecer *Verified*.
 3. **Chave:** em *API Keys*, crie uma chave **só de envio** (*Sending access*) restrita ao domínio. Ela aparece uma vez.
-4. **Vercel** (Production): `RESEND_API_KEY` (*Sensitive*), `MAIL_FROM` = `Linkfav <avisos@linkfav.com>`, e opcionalmente `MAIL_REPLY_TO`; sem ela as respostas vão para `SUPPORT_EMAIL`, e sem nenhuma das duas o e-mail diz que respostas não são lidas. **Novo deploy, obrigatório:** sem ele o envio continua desligado sem erro nem log (a mensagem só espera na fila); foi o que aconteceu no primeiro teste em produção. Para conferir, rode o job à mão (§3, item 4): `mail_off` quer dizer desligado.
+4. **Vercel** (Production): `RESEND_API_KEY` (*Sensitive*), `MAIL_FROM` = `Linkfav <avisos@linkfav.com>`, e opcionalmente `MAIL_REPLY_TO`; sem ela as respostas vão para `SUPPORT_EMAIL`, e sem nenhuma das duas o e-mail diz que respostas não são lidas. **Novo deploy, obrigatório:** sem ele o envio continua desligado e a mensagem só espera na fila; foi o que aconteceu no primeiro teste em produção, quando isso não deixava rastro. Desde a correção de 14/10/2026 (depois do merge e do deploy), cada aviso enfileirado com o envio desligado gera um `mail.off` (`warn`) com o motivo nos logs da Vercel. Para conferir, rode o job à mão (§3, item 4): `mail_off` quer dizer desligado.
 5. **Supabase → Authentication → Emails → SMTP Settings:** ligar *Custom SMTP*; remetente `avisos@linkfav.com`, nome `Linkfav`; host `smtp.resend.com`, porta `465`, usuário `resend`, senha = uma chave da Resend (pode ser outra, também só de envio).
 6. **Supabase → Authentication → Emails → Templates:** colar os três modelos de `supabase/templates/` (*Confirm signup*, *Reset password*, *Change email address*). **O de confirmação é o que faz o convite funcionar em outro aparelho.**
 7. **Supabase → Authentication → URL Configuration:** *Site URL* `https://linkfav.com`; em *Redirect URLs*, `https://linkfav.com/auth/confirm**` (com os dois asteriscos, por causa do `?next=`).
@@ -49,7 +49,7 @@ A Stripe pode avisar pagamento que falhou e mandar recibo. Com os dois ligados, 
 | `mail:overdue` | há mensagens vencidas há mais de 1 h que ninguém enviou, com o e-mail ligado | P1 | o envio parou: ver `mail.drain_failed` e `mail.maintenance` nos logs; conferir `RESEND_API_KEY` e `SUPABASE_SECRET_KEY`; rodar o job à mão |
 | `mail:failed` (diário) | mensagens desistiram nas últimas 24 h | P2 | consulta abaixo; `rejected:*` é recusa da Resend (domínio, remetente, endereço inválido); `unavailable` cinco vezes é a Resend fora |
 | `job:mail` | o job diário não roda há mais de 36 h | P2 | `JOBS.md` |
-| `mail.maintenance` com `reason` | o e-mail está desligado neste ambiente, e por quê (`missing_api_key`, `invalid_from`...) | P2 se devia estar ligado | corrigir a variável e novo deploy |
+| `mail.off` (a cada aviso enfileirado) ou `mail.maintenance` com `reason` | o e-mail está desligado neste ambiente, e por quê (`missing_api_key`, `invalid_from`...) | P2 se devia estar ligado | corrigir a variável e novo deploy |
 
 ```sql
 -- O que desistiu e por quê (sem endereço: a tabela não guarda).
