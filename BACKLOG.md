@@ -2,6 +2,20 @@
 
 Convenção: `P0` bloqueia o MVP; `P1` pode ter versão simples; `P2` fica após lançamento. Ordem reflete dependências, não estimativa.
 
+## Fechamento do piloto — revisão de 27/10/2026
+
+Conciliação com os adendos de 14/10 de `docs/SPRINT_9_REPORT.md`; não é uma nova auditoria da produção. A Sprint 9 continua parcial e o piloto ainda não começou.
+
+- [x] SMTP/Resend, DNS, modelos do Auth e domínio `linkfav.com` configurados em 14/10; recuperação de senha e aviso de novo contato recebidos pelo founder.
+- [x] Primeiro backup de produção com mídia e conferência de restauração `PASS`, em 14/10. A cópia externa, o agendamento e a restauração completa num projeto hospedado continuam pendentes.
+- [x] Migrações de 11/10, 13/10 e de e-mail de 14/10 aplicadas em produção, conforme o relatório.
+- [x] Exportação individual das variantes WebP em *Meus dados → Baixar imagens desta conta*: implementada e verificada localmente (adendo de 27/10 do relatório). Pacote único continua pelo atendimento manual.
+- [x] Atualização de segurança: Next e `eslint-config-next` 16.4.1, com correções compatíveis das ferramentas de desenvolvimento no lockfile; `npm audit` sem achados em 27/10. O build com 16.4.0 havia parado por alerta crítico.
+- [ ] Publicar estas alterações e conferir em produção o download de uma imagem do proprietário, a recusa a outro membro e os erros de arquivo ausente. A correção de segurança também só passa a proteger a produção depois do deploy.
+- [ ] Código ainda pendente: transferência de propriedade; aviso ao titular sobre pedido de privacidade; aviso/contestação de suspensão da conta inteira; limites de Server Actions sensíveis; identificação dos convidados no funil.
+- [ ] Configuração externa: Turnstile, firewall, monitor completo (`OPS_STATUS_SECRET`), confirmação dos crons, backup externo/agendado e `SUPPORT_EMAIL`.
+- [ ] Decisão/validação do founder: cobrança `off` ou `live` (último registro: `sandbox`), cenários restantes contra a Stripe, QA em aparelhos reais e revisão jurídica, incluindo Resend/DPA e documentos ativos.
+
 ## Sprint 1 — protótipo
 
 - [x] P0 Mapear cadastro → publicar → analytics.
@@ -23,7 +37,7 @@ Verificado no stack Supabase local (pgTAP + navegador); nada foi aplicado em pro
 - [x] P0 Reservar, normalizar e validar slugs.
 - [x] P1 Registrar auditoria de ações sensíveis (`profile.published` preparado para a Sprint 3).
 - [ ] P0 Provisionar staging (Supabase + Vercel), aplicar migrações e configurar Auth conforme `docs/ENVIRONMENTS.md` — parcial: projeto Supabase criado, migrações aplicadas e deploy na Vercel no ar (`https://linkss-black.vercel.app`) em 2026-10-01; o founder fez cadastro → publicação no ambiente hospedado em 2026-10-02; falta o checklist de Auth.
-- [ ] P0 Escolher e contratar SMTP para e-mails de Auth (ADR `MailAdapter`) e atualizar o mapa de dados. **Escolhido pelo founder em 11/10/2026: Resend.** Falta criar a conta, os registros DNS (SPF/DKIM), configurar no Supabase Auth e atualizar o mapa de dados.
+- [x] P0 Escolher e configurar SMTP para e-mails de Auth: Resend escolhida em 11/10 e configurada em produção em 14/10, com DNS, SMTP, modelos e mapa de dados (ADR 0021; adendo de 14/10 do relatório da Sprint 9). Contrato/DPA e revisão jurídica seguem bloqueantes na seção de e-mail.
 - [ ] P1 Ativar CAPTCHA (Turnstile) no Auth antes do piloto externo. O formulário já envia o token quando o ambiente tem a chave (ADR 0018, 11/10/2026); **falta o founder criar o widget na Cloudflare, pôr a chave na Vercel e ligar no Supabase, nessa ordem** (`docs/ENVIRONMENTS.md`).
 
 ## Sprint 3 — página pública
@@ -36,7 +50,7 @@ Verificado localmente (pgTAP + `next start` de produção + Lighthouse); nada pr
 - [x] P0 Adicionar metadados/OG/canonical e estados 404/suspenso.
 - [x] P1 Instrumentar Web Vitals e erros (logs estruturados; Sentry/dashboards dependem de provisionamento).
 - [ ] P0 Medir em staging (CDN real): publicação visível em ≤ 30 s, LCP/CLS de campo e prévia OG no WhatsApp/Instagram — parcial em 2026-10-02 (`docs/SPRINT_5_REPORT.md`, "Verificações no staging depois da correção"): publicação visível em ~5 s e prévia OG conferida nos dois apps; os logs `web_vital` ficaram dentro da meta, mas só com acessos do founder e Lighthouse. Falta LCP/CLS de visitantes reais.
-- [ ] P0 Trocar `NEXT_PUBLIC_APP_URL` e o Auth para o domínio comprado (checklist em `docs/ENVIRONMENTS.md`). `NEXT_PUBLIC_APP_URL` já é `https://linkfav.com` (conferido em 10/10/2026); **falta confirmar Site URL e Redirect URL do Auth**, que nesse dia ainda apontavam para `linkss-black.vercel.app`.
+- [x] P0 Trocar `NEXT_PUBLIC_APP_URL` e o Auth para o domínio comprado: URL pública conferida em 10/10; Site URL e Redirect URLs do Auth configuradas para `https://linkfav.com` em 14/10, conforme relato/captura do founder e recuperação de senha recebida (relatório da Sprint 9, "e-mail ligado em produção").
 - [ ] P1 Rate limit/firewall para `/api/vitals` e para flood de endereços inexistentes no renderer (Sprint 9). `/api/vitals` ganhou limite por instância em 11/10/2026; **o renderer depende da regra do firewall da Vercel, ainda não criada** (`docs/runbooks/RATE_LIMITS.md`).
 
 ## Sprint 4 — editor
@@ -65,7 +79,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + Lighthouse em `next star
 - [x] P0 Agendar a limpeza de mídia órfã: Vercel Cron diário (`GET /api/jobs/media-cleanup`, `apps/web/vercel.json`), em 02/10/2026.
 - [ ] P1 Pix "copia e cola" (BR Code) e QR code — cortados nesta sprint (ADR 0010).
 - [ ] P1 Imagem de fundo no tema — cortada nesta sprint.
-- [ ] P1 Aviso ao dono da página quando chega um contato (depende do SMTP).
+- [x] P1 Aviso ao dono da página quando chega um contato: ADR 0021, Resend ligada e aviso recebido pelo founder em produção em 14/10 (relatório da Sprint 9). Entrega para usuários externos depende da revisão jurídica.
 - [ ] P1 Imagem Open Graph com o tema e a foto da página.
 - [ ] P2 CAPTCHA no formulário público e limite global por IP (Sprint 9). Limite por instância no envio desde 11/10/2026; CAPTCHA no formulário não feito; o limite global é a regra do firewall.
 - [x] P2 Purge agendado de leads vencidos e de `form_submission_hits` (job `/api/jobs/retention`, 11/10/2026). Código, testes e runbook prontos em 11/10/2026 (ADR 0018), verificados só no stack local. Migrações aplicadas em produção em 14/10/2026.
@@ -106,7 +120,7 @@ Verificado no stack local (pgTAP + Vitest + navegador + teste de precisão + Lig
 - [ ] P2 Página 404 do relatório sem JavaScript fica em branco (o framework renderiza o estado no cliente); avaliar uma resposta estática.
 - [ ] P2 Relatório com intervalo fixo de datas ("setembro") e campanha (UTM), se as agências do piloto pedirem.
 - [ ] P1 Lembrar a última conta usada em `/app` — cortado na parte 1 (UX-060).
-- [x] P1 Levar o convite no modelo de e-mail de confirmação do Auth, para o cadastro por convite funcionar em outro aparelho (14/10/2026, ADR 0012 adendo; verificado localmente de ponta a ponta). **Depende de colar o modelo no Supabase hospedado, o que exige o SMTP da Resend.**
+- [x] P1 Levar o convite no modelo de e-mail de confirmação do Auth, para o cadastro por convite funcionar em outro aparelho (14/10/2026, ADR 0012 adendo; verificado localmente de ponta a ponta). SMTP e modelos configurados em produção em 14/10; **aceitação em outro aparelho ainda não verificada em produção**.
 - [ ] P2 Expurgo agendado de convites terminados há mais de 30 dias e limite global nas ações de convite (Sprint 9). Expurgo feito em 11/10/2026 (job `/api/jobs/retention`); **limite global nas ações de convite não feito**.
 - [ ] P2 Verificar no navegador o que a parte 1 só cobriu por teste: cadastro novo a partir de convite, alterar papel e sair pela interface, aplicação contra banco sem a migração, leitor de tela.
 
@@ -153,7 +167,8 @@ Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 s
   - [x] Exportação JSON da pessoa e da conta (só proprietário), com inventário por store em `docs/DATA_MAP.md`.
   - [x] Pedido de exclusão e de acesso com estados, fila administrativa e auditoria.
   - [x] Execução da exclusão de conta pela fila do administrador, com runbook (`docs/runbooks/ACCOUNT_DELETION.md`) e ensaio local (`scripts/account-erasure.mjs`, 18 verificações) em 11/10/2026. **Nunca executada em produção.**
-  - [ ] Exportação dos arquivos de mídia; transferência de propriedade de conta com outros membros; aviso por e-mail ao titular.
+  - [x] Download individual das variantes WebP prontas da conta, apenas pelo proprietário (27/10/2026; verificação local; produção pendente). Inventário no JSON, sem originais; pacote único e arquivos ausentes/incompletos continuam pela solicitação manual.
+  - [ ] Transferência de propriedade de conta com outros membros; aviso por e-mail ao titular sobre pedido de privacidade.
   - [ ] Minutas em `docs/legal/` revisadas pelo advogado e ativadas.
 - [ ] P0 Denúncia, moderação, suspensão e auditoria.
   - [x] Denúncia pública, fila, suspensão e reativação por página, auditadas.
@@ -171,14 +186,15 @@ Estado em `docs/SPRINT_9_REPORT.md`: a sprint **não está concluída**. Os P0 s
   - [x] Tempo máximo de resposta da aplicação, da home, da página de situação e da página pública de teste no monitor, e alerta quando `/status` acusa instabilidade (13/10/2026, ADR 0020). Medido de hora em hora, de fora do Brasil: é disponibilidade e lentidão grosseira, **não taxa de erro**.
   - [ ] **Founder:** decidir o serviço que lê os logs e o plano da Vercel que os envia (o *log drain* não existe no Hobby). Sem isso continuam sem alerta: taxa de erro e latência por requisição do renderer, uploads, formulários e Auth, Web Vitals e webhook que não chega.
   - [x] Backup lógico (`npm run db:backup`: banco, contas, histórico de migrações e mídia) e ensaio de restauração (`npm run db:restore-check`), aprovados com o banco local em 10/10/2026; runbook `docs/runbooks/BACKUP.md`.
-  - [ ] **Primeiro backup de produção** e ensaio dele (a CLI precisa estar logada na conta dona do projeto) e cópia para fora da máquina.
+  - [x] **Primeiro backup de produção e conferência da restauração:** feitos em 14/10 (`backups/20261014T201546Z-production`, `PASS`; 67 tabelas e 15 de 15 arquivos de mídia). Evidência no adendo do relatório da Sprint 9.
+  - [ ] Copiar o backup para fora desta máquina e registrar o destino e o controle de acesso.
   - [ ] Ensaiar a restauração num projeto Supabase novo, incluindo mídia, segredos do Vault e Auth.
   - [ ] Agendar o backup (hoje é manual) e definir onde a cópia externa fica.
 - [ ] P0 QA mobile/cross-browser e acessibilidade prioritária. **Parcial:** passagem automática em 11/10/2026 (`scripts/mobile-a11y.mjs`: 12 telas em 390 e 320 px, regras WCAG 2.2 A/AA do axe-core, tamanho de alvo, `/aceite` com textos ativos), sem pendências depois de aumentar duas caixas de seleção. **Falta:** aparelho real (iOS e Android), outros navegadores, leitor de tela e teclado.
 
 ## E-mail transacional (14/10/2026)
 
-Código de 14/10/2026 (ADR 0021), **verificado só no stack local** contra um substituto da API da Resend e o Mailpit. Nenhum e-mail foi enviado a ninguém.
+Código de 14/10/2026 (ADR 0021), verificado localmente contra um substituto da API da Resend e o Mailpit e **ligado em produção em 14/10**: recuperação de senha e aviso de novo contato recebidos em endereços do founder. Os demais cenários de entrega continuam pendentes.
 
 - [x] P0 Fila de avisos no banco, envio pela Resend atrás de um adaptador, job diário de reserva, alertas no monitor.
 - [x] P1 E-mail de novo contato para o dono da página (sem o conteúdo do contato; um por hora; pode ser desligado).
@@ -195,7 +211,7 @@ Código de 14/10/2026 (ADR 0021), **verificado só no stack local** contra um su
 
 ## Sprint 10 — piloto privado (preparação)
 
-O que dava para fazer em código antes de convidar alguém, feito em 13/10/2026 e **verificado só no stack local** (`docs/SPRINT_9_REPORT.md`, adendo de 13/10/2026; ADR 0020). **A sprint não começou:** ninguém foi convidado, e ela não deve começar antes do backup de produção, do SMTP e da decisão sobre o modo da cobrança.
+A preparação em código começou em 13/10/2026 (`docs/SPRINT_9_REPORT.md`, ADR 0020); as migrações foram aplicadas em produção em 14/10. **A sprint não começou:** ninguém foi convidado. Primeiro backup conferido e SMTP já foram feitos; faltam os demais bloqueios listados no fechamento do piloto acima, incluindo revisão jurídica e decisão sobre o modo da cobrança.
 
 - [x] P0 Funil de produto e coortes de ativação (`/app/administracao/produto`, só administradores da plataforma), calculado do que o produto já registra. Mede o gate de 60% e a mediana do tempo até publicar.
 - [x] P0 Central curta de ajuda (`/ajuda`) com *Ajuda* no menu da conta.
@@ -231,6 +247,6 @@ O que dava para fazer em código antes de convidar alguém, feito em 13/10/2026 
 - [ ] Confirmar decisões provisórias UX-074 a UX-084 (tela de planos, papéis na cobrança, tolerância de 7 dias, rebaixamento, quando cada mudança vale, retorno do checkout, link nas telas de limite, ambiente de teste e home, plano manual, chargeback e reembolso).
 - [ ] Confirmar decisões provisórias UX-102 a UX-105 (avisos por e-mail, para quem e quando; convite em outro aparelho).
 - [ ] Confirmar decisões provisórias UX-094 a UX-101 (troca para o anual e a recusa da volta, motivo do cancelamento, preço antigo mantido, primeiros passos, central de ajuda, página de preços, página de situação, definição de ativação no funil).
-- [ ] `npm audit`: 5 avisos altos em ferramentas de desenvolvimento (`eslint-config-next` → `braces`), sem correção compatível em 06/10/2026; rever a cada atualização do Next. Em 09/10/2026 apareceu um sexto, **de produção**, no próprio `next` (item na Sprint 8).
+- [x] `npm audit`: em 27/10/2026, zero achados após Next/`eslint-config-next` 16.4.1 e correções compatíveis no lockfile (Vitest/Vite/Zod e dependências). Substitui os avisos históricos de 06/10 e 09/10. Rever nas próximas atualizações; deploy ainda pendente.
 - [ ] Rate limit global e firewall na frente de `/api/events` (Sprint 9). Limite por instância desde 11/10/2026; o global é a regra do firewall, ainda não criada.
 - [ ] Contratar revisão jurídica/contábil antes do beta pago. A lista do que ela precisa resolver para a cobrança está no ADR 0014 ("For the legal and accounting review").

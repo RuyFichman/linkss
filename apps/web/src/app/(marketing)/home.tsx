@@ -8,6 +8,7 @@ import { HOME_COPY } from "@/content/pt-BR";
 import { publicAddressLabel } from "@/lib/app-url";
 import { PRODUCT } from "@/lib/product";
 import "./home.css";
+import { Showcase } from "./showcase";
 
 const displayFont = Schibsted_Grotesk({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-home-display", display: "swap" });
 
@@ -25,14 +26,6 @@ const PHONE_LOOKS: Record<PhoneKey, PhoneLook> = {
   service: { bg: "#eef5f2", text: "#16352d", muted: "#49665e", button: "#225e50", buttonText: "#ffffff", radius: "0.6rem", cover: "linear-gradient(150deg, #b7dccf, #225e50)", outline: true },
   event: { bg: "#100f12", text: "#ffffff", muted: "#c9c5ce", button: "#c21870", buttonText: "#ffffff", radius: "0.25rem", cover: "linear-gradient(150deg, #c21870, #3b1d6e)" },
 };
-
-const TEMPLATE_RAIL: readonly { phone: PhoneKey; name: string }[] = [
-  { phone: "local", name: "Negócio local" },
-  { phone: "creator", name: "Criador e lançamento" },
-  { phone: "service", name: "Profissional independente" },
-  { phone: "shop", name: "Pequena loja" },
-  { phone: "event", name: "Evento e artista" },
-];
 
 function initials(name: string): string {
   return name.split(" ").map((word) => word[0]).join("").slice(0, 2).toUpperCase();
@@ -139,12 +132,7 @@ export function Home() {
           <h2 className="home-display" id="modelos-titulo">{copy.templates.title}</h2>
           <p>{copy.templates.lead}</p>
         </div>
-        {/* Scrolls sideways below 1240px: focusable so the keyboard can scroll it, named by the heading. */}
-        <ul className="home-rail" tabIndex={0} aria-labelledby="modelos-titulo">
-          {TEMPLATE_RAIL.map(({ phone, name }) => (
-            <li key={phone}><PhoneMock phone={phone} /><span className="home-rail-name">{name}</span></li>
-          ))}
-        </ul>
+        <Showcase />
         <p className="home-center m-0"><Link className="home-cta" href={SIGN_UP_PATH}>{copy.templates.cta}</Link></p>
       </section>
 

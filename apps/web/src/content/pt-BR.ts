@@ -1183,8 +1183,8 @@ export const HOME_COPY = {
   },
   marquee: ["Botão de WhatsApp", "Pix copia e cola", "Formulários e contatos", "Resultados da página", "Vídeo e música", "Várias páginas", "Relatório para o cliente", "Modelos prontos", "Sem código"],
   templates: {
-    title: "Comece por um modelo pronto",
-    lead: "Cinco visuais para sair do zero. Escolha um, troque cores, fontes e botões e deixe com a sua cara.",
+    title: "Uma página. O seu mundo inteiro.",
+    lead: "Do primeiro contato ao próximo lançamento. Explore cinco maneiras de dar vida à sua presença online.",
     cta: "Criar minha página",
   },
   editor: {

@@ -1,5 +1,11 @@
 # Mapa inicial de dados pessoais
 
+## Atualização de 27/10/2026 — exportação de imagens
+
+O proprietário passa a listar e baixar individualmente as variantes WebP prontas registradas em `media_assets`, em *Meus dados → Baixar imagens desta conta*. Não há novo store, fornecedor ou prazo de retenção. A RPC existente `export_workspace_data`, executada com a sessão do proprietário, limita o inventário à conta e audita cada consulta/tentativa de download. O servidor lê somente a chave autorizada no armazenamento público, sem chave de serviço e sem repassar cookies, e entrega um anexo privado sem cache. O log `privacy.media_export` leva somente correlation id, resultado e tamanho, nunca identificador de conta/imagem ou endereço.
+
+O JSON continua trazendo o inventário, sem bytes. A mídia pode ser obtida separadamente em arquivos WebP de até 2 MiB; originais não são mantidos. Uploads incompletos/em remoção e arquivos já ausentes exigem conferência no pedido de acesso. Pacote único continua manual. As menções históricas abaixo a "arquivos fora da exportação" descrevem o estado anterior a esta atualização.
+
 | Categoria | Exemplos | Finalidade | Retenção inicial |
 |---|---|---|---|
 | Conta | e-mail, nome, identificadores de auth | acesso e comunicação operacional | vida da conta + prazo legal/segurança definido |

@@ -35,6 +35,7 @@ O plano Hobby inclui 1.000.000 de requisições permitidas por mês nessa regra;
 | `/r/<token>` | 60 | o mesmo 404 de um link inexistente (log `report.read` com `outcome=rate_limited`) |
 | envio de formulário público | 20 | a mensagem de "muitas tentativas" do próprio formulário (log `lead.submit`) |
 | denúncia pública | 10 | a resposta neutra "recebido", sem gravar |
+| `POST /app/conta/dados/exportar` (JSON e imagens) | 60 por **usuário autenticado** por minuto, por instância | 429, `Retry-After: 60`; repetir após a janela |
 
 Para mudar um limite: `RATE_LIMITS` no arquivo acima, com deploy. **Estes contadores não são um limite global:** cada instância tem os seus e um início a frio os zera. Servem para cortar o caso comum (um endereço insistindo numa instância quente) sem custo; quem segura um ataque distribuído é a regra do firewall.
 

@@ -1,5 +1,9 @@
 # Ambientes e entrega
 
+## Preparação do piloto — 27/10/2026 (publicação pendente)
+
+Esta alteração acrescenta a exportação individual das variantes WebP em *Meus dados → Baixar imagens desta conta* e atualiza Next/`eslint-config-next` para 16.4.1 por segurança. **Não requer migração, segredo ou serviço novo.** Publicar o código e o lockfile juntos, depois de `npm run check` aprovado. Após o deploy, como proprietário, conferir inventário e download de uma imagem; como administrador/editor ou outra conta, conferir recusa; conferir também o JSON já existente. Uma falha de arquivo deve oferecer nova tentativa ou pedido manual, sem devolver bytes parciais. A correção do Next só alcança a produção depois do deploy.
+
 ## Ambientes
 
 | Ambiente | Aplicação | Dados | Uso |

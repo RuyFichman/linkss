@@ -1,0 +1,87 @@
+/* The scale belongs to the presentation frame; the page inside has a readable 360px canvas. */
+.showcase-rail { display: flex; gap: clamp(1rem, 2vw, 2rem); max-width: 1600px; margin: 3rem auto 0; overflow-x: auto; padding: 0 1.5rem 2.5rem; list-style: none; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+.showcase-item { width: 248px; flex: none; scroll-snap-align: center; }
+.showcase-frame { position: relative; width: 248px; height: 540px; overflow: hidden; border: 1px solid rgb(36 35 52 / 0.07); border-radius: 30px; box-shadow: 0 18px 42px rgb(61 38 93 / 0.13); isolation: isolate; transition: transform 200ms, box-shadow 200ms; }
+.showcase-frame:hover, .showcase-frame:focus-within { transform: translateY(-6px); box-shadow: 0 24px 48px rgb(61 38 93 / 0.2); }
+.showcase-miniature { width: 360px; transform: scale(0.688889); transform-origin: top left; pointer-events: none; user-select: none; }
+.showcase-open { position: absolute; inset: 0; width: 100%; border: 0; border-radius: inherit; background: transparent; cursor: pointer; }
+.showcase-open:focus-visible { outline: 3px solid var(--app-focus); outline-offset: -4px; }
+.showcase-open-label { position: absolute; right: 12px; bottom: 12px; left: 12px; padding: 11px; border: 1px solid rgb(255 255 255 / 0.6); border-radius: 999px; color: #ffffff; background: #24232e; font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(8px); transition: opacity 160ms, transform 160ms; }
+.showcase-open:hover .showcase-open-label, .showcase-open:focus-visible .showcase-open-label { opacity: 1; transform: none; }
+.showcase-caption { margin-top: 20px; text-align: center; }
+.showcase-caption h3 { margin: 0; font-family: var(--home-display); font-size: 16px; font-weight: 700; }
+.showcase-caption p { margin: 5px 0 0; color: var(--home-muted); font-size: 12px; }
+@media (min-width: 1400px) { .showcase-rail { justify-content: center; } }
+@media (max-width: 600px) { .showcase-rail { padding-inline: max(1.25rem, calc((100vw - 280px) / 2)); } .showcase-open-label { opacity: 1; transform: none; font-size: 12px; padding: 8px; } }
+
+.showcase-page { width: 360px; min-height: 790px; color: #272b27; font-size: 13px; font-weight: 400; line-height: 1.5; letter-spacing: normal; text-align: center; }
+.showcase-page img { display: block; width: 100%; height: auto; object-fit: cover; }
+.showcase-page p, .showcase-page h4, .showcase-page h5 { margin: 0; }
+.showcase-page-body { display: grid; align-content: start; gap: 18px; padding: 26px 20px 36px; }
+.showcase-page .showcase-eyebrow { font-size: 9px; font-weight: 700; line-height: 1.6; letter-spacing: 2px; }
+.showcase-page .showcase-bio { font-size: 12px; line-height: 1.7; }
+.showcase-socials { display: flex; justify-content: center; gap: 16px; padding: 4px 0; }
+.showcase-socials svg { width: 23px; height: 23px; }
+.showcase-link { display: grid; gap: 3px; min-height: 61px; align-content: center; padding: 13px 16px; border: 1px solid currentColor; border-radius: 10px; font-size: 13px; font-weight: 700; line-height: 1.4; }
+.showcase-link small { display: block; margin-top: 5px; font-size: 9px; font-weight: 400; line-height: 1.5; }
+.showcase-page .showcase-feature-photo { height: 226px; border-radius: 12px; }
+.showcase-page .showcase-photo-caption { font-size: 11px; font-style: italic; }
+.showcase-page .showcase-avatar { width: 96px; height: 96px; margin: 0 auto; border: 3px solid rgb(255 255 255 / 0.8); border-radius: 50%; box-shadow: 0 4px 14px rgb(25 20 35 / 0.15); }
+.showcase-image-card { overflow: hidden; border-radius: 16px; background: #ffffff; color: #24252a; box-shadow: 0 7px 18px rgb(20 20 30 / 0.1); }
+.showcase-image-card > div { padding: 17px 12px 20px; }
+.showcase-image-card h5 { font-size: 18px; line-height: 1.4; }
+.showcase-image-card p { margin-top: 6px; font-size: 10px; }
+
+.showcase-photographer { background: #eeece2; color: #465347; }
+.showcase-photographer .showcase-photo-cover { height: 310px; object-position: center 41%; }
+.showcase-photographer .showcase-page-body { gap: 16px; padding-top: 25px; }
+.showcase-page .showcase-photo-name { font-family: Georgia, serif; font-size: 45px; font-style: italic; font-weight: 400; line-height: 1; letter-spacing: -2px; }
+.showcase-page .showcase-photo-subtitle { font-family: Arial, sans-serif; font-size: 9px; letter-spacing: 4px; }
+.showcase-photographer .showcase-link { min-height: 48px; border-radius: 28px; font-size: 12px; font-weight: 500; }
+.showcase-photographer .showcase-feature-photo { object-position: center 65%; }
+
+.showcase-cooking { background: #6e5e72; color: #fff8ed; }
+.showcase-cooking .showcase-page-body { gap: 19px; padding-top: 40px; }
+.showcase-page .showcase-cooking-name { font-size: 45px; font-weight: 500; line-height: 0.98; letter-spacing: -2px; }
+.showcase-cooking-name em { font-weight: 400; }
+.showcase-cooking .showcase-bio { padding-top: 8px; }
+.showcase-cooking .showcase-link { border: 0; color: #443b43; background: #f5efe5; }
+.showcase-cooking .showcase-pill { min-height: 45px; border-radius: 99px; }
+.showcase-page .showcase-section-label { margin-top: 2px; font-size: 9px; letter-spacing: 3px; }
+.showcase-cooking .showcase-image-card > img { height: 285px; object-position: center 56%; }
+
+.showcase-coach { background: #f17eb6; color: #3b1832; }
+.showcase-coach .showcase-page-body { gap: 20px; padding-top: 46px; }
+.showcase-page .showcase-coach-name { font-size: 15px; font-weight: 700; letter-spacing: 1px; }
+.showcase-coach .showcase-eyebrow { margin-top: -11px; font-size: 8px; }
+.showcase-coach .showcase-link { border: 0; border-radius: 15px; color: #3c1e34; background: #fffaf7; box-shadow: 0 5px 12px rgb(91 29 66 / 0.1); }
+.showcase-coach .showcase-link small { font-size: 8px; letter-spacing: 0.7px; }
+.showcase-coach-feature { overflow: hidden; border-radius: 15px; color: #ffffff; background: #281521; }
+.showcase-coach-feature img { height: 240px; object-position: center top; }
+.showcase-coach-feature > div { padding: 19px; font-size: 22px; font-weight: 700; line-height: 1.2; letter-spacing: -0.7px; }
+
+.showcase-farm { background: #f4f0e4; color: #374732; }
+.showcase-page .showcase-farm-cover { height: 192px; object-position: center 48%; }
+.showcase-farm .showcase-page-body { gap: 19px; }
+.showcase-page .showcase-farm-name { margin-top: -5px; font-size: 33px; font-weight: 400; line-height: 1.15; letter-spacing: -1.5px; }
+.showcase-page .showcase-farm-subtitle { margin-top: -10px; font-family: Arial, sans-serif; font-size: 8px; letter-spacing: 1.5px; }
+.showcase-farm .showcase-link { border: 0; color: #fff9ee; background: #344d3b; font-size: 13px; font-weight: 500; }
+.showcase-farm .showcase-feature-photo { height: 240px; object-position: center 53%; }
+
+.showcase-music { background: #a3dce6; color: #0d3546; }
+.showcase-music .showcase-page-body { gap: 19px; padding-top: 42px; }
+.showcase-page .showcase-music-name { font-size: 17px; font-weight: 700; letter-spacing: 2px; }
+.showcase-music .showcase-bio { margin-top: -10px; }
+.showcase-music .showcase-link { border: 0; color: #f3fbfc; background: #0b4258; box-shadow: 0 7px 16px rgb(13 53 70 / 0.1); }
+.showcase-music .showcase-link small { font-size: 8px; letter-spacing: 1px; }
+.showcase-music .showcase-image-card { color: #e8f5fb; background: #09536a; }
+.showcase-music .showcase-image-card > img { height: 295px; object-position: center 35%; }
+.showcase-music .showcase-image-card h5 { font-size: 30px; letter-spacing: -1px; }
+.showcase-music .showcase-image-card .showcase-eyebrow { font-size: 8px; letter-spacing: 2px; }
+
+.showcase-description { margin: 0 0 20px; color: var(--app-muted); font-size: 14px; line-height: 1.6; }
+.showcase-full { width: min(360px, 100%); margin: auto; overflow: hidden; border-radius: 22px; }
+.showcase-full .showcase-page { width: 100%; }
+.showcase-detail-cta { display: flex; justify-content: center; padding-top: 24px; }
+.showcase-detail .showcase-page .showcase-bio { font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .showcase-frame, .showcase-open-label { transition: none; transform: none; } }

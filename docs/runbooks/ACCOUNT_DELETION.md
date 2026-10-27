@@ -28,7 +28,7 @@ Uma conta em que a pessoa é só **membro** (não proprietária) não bloqueia n
 Antes de executar, confirme com a pessoa (o produto ainda não envia e-mail; use o seu):
 
 - as páginas saem do ar na hora e os endereços ficam reservados por 90 dias;
-- contatos recebidos, resultados, imagens e links de relatório são apagados; se ela quer uma cópia, a exportação está em *Meus dados* (**as imagens não vão na exportação**);
+- contatos recebidos, resultados, imagens e links de relatório são apagados; se ela quer uma cópia, o JSON e os downloads individuais das variantes WebP estão em *Meus dados* (desde 27/10/2026; publicação desta alteração ainda pendente). Para um pacote único ou arquivos ausentes/incompletos, atender o pedido de acesso antes de executar a exclusão;
 - não dá para desfazer.
 
 ## 4. Executar
