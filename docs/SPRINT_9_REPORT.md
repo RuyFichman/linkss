@@ -459,3 +459,39 @@ Depois do merge do PR #39, o founder ligou o envio em produção seguindo `docs/
 **Pendente e bloqueante para pessoas de fora:** contrato/DPA com a Resend, menção no aviso de privacidade e revisão jurídica da transferência internacional. Como o SMTP do Supabase já passa pela Resend, qualquer cadastro novo já gera um envio por ela.
 
 **Ajuste no runbook:** `MAIL.md` §1, passo 4, agora diz que o novo deploy é obrigatório e como conferir (`mail_off` no job manual).
+
+## Adendo de 27/10/2026 — exportação de imagens e segurança para o piloto
+
+**Estado:** implementado e verificado localmente, sem commit ou deploy nesta sessão. A Sprint 9 continua parcial; a Sprint 10 não foi declarada iniciada ou concluída. Esta entrega fecha uma parte das pendências de código e reconcilia o backlog com evidências existentes, sem nova auditoria da produção.
+
+### Objetivo e resultado
+
+O proprietário pode abrir *Meus dados → Baixar imagens desta conta*, ver as variantes WebP prontas e baixar cada arquivo. A lista tem 30 arquivos por página, estado vazio, carregamento, indisponibilidade e navegação por links. O download é POST de mesma origem, autenticado, limitado por usuário e com resposta privada sem cache. O servidor confere o papel de proprietário; a RPC existente `export_workspace_data` confere de novo no banco e audita a tentativa. Somente chaves e tamanhos do inventário autorizado chegam ao leitor de armazenamento; ele não usa chave de serviço, não envia cookies, recusa redirecionamentos, tem timeout de 10 segundos e recusa conteúdo diferente do tamanho esperado ou sem assinatura WebP. Cada arquivo tem no máximo 2 MiB.
+
+O primeiro `npm run check` revelou um bloqueio de segurança no build do Next 16.4.0. `npm audit --omit=dev` confirmou os achados críticos/alto. Next e `eslint-config-next` foram atualizados para **16.4.1**, conforme o [boletim oficial de 14/10](https://nextjs.org/blog/nextjs-security-update-october-14-2026). A auditoria completa identificou também Vitest/mocker, Vite e Zod no desenvolvimento; correções compatíveis foram aplicadas ao lockfile (Vitest 5.0.5, Vite 8.3.5, Zod 4.6.7 e suas dependências). Nenhuma dependência direta nova foi adicionada.
+
+### Critérios e evidências
+
+| Critério desta entrega | Estado | Evidência |
+|---|---|---|
+| Inventário e download de variantes prontas | Implementado e verificado por testes automatizados | `media-export.test.ts`, `media-export-page.test.ts`, `conta/dados/exportar/route.test.ts` |
+| Negar anônimo, administrador/editor, outra conta e seleção ausente/inválida | Verificado com dependências simuladas | testes da rota e da tela; RPC existente permanece sem alteração |
+| Recusar URL arbitrária, arquivo ausente, corpo excessivo/truncado e falha de rede | Verificado com armazenamento simulado | `storage/public-reader.test.ts` |
+| Pacote único e atendimento de arquivos incompletos/ausentes | Manual, não automatizado | solicitação de acesso existente em *Meus dados* |
+| Correções de dependências sem achados conhecidos no npm | Verificado localmente | `npm audit --json --cache .npm-cache`: zero em todas as severidades |
+| Produção e aparelhos reais | Não verificado | smoke após deploy em `ENVIRONMENTS.md` |
+
+### Verificação final de 27/10/2026
+
+- `npm run check`: **PASS**, código de saída 0. Lint sem avisos; TypeScript sem erros; **1.391 testes em 61 arquivos**; build de produção com Next 16.4.1 aprovado.
+- **48 testes novos**, em quatro arquivos, incluindo os estados da tela renderizada no servidor. Não houve teste visual no navegador nem ensaio com arquivos do bucket real nesta sessão.
+- `npm audit --json --cache .npm-cache`: **0 vulnerabilidades** (produção e desenvolvimento); a auditoria de produção também passou depois da atualização do Next.
+- Nenhuma alteração de schema, policy, tipo gerado, segredo, integração ou configuração hospedada. pgTAP não foi executado nesta entrega; os testes de aplicação simulam a resposta da RPC, não substituem os testes de isolamento do banco.
+
+### Implicações, limites e continuação
+
+- **Privacidade:** nenhum store, fornecedor ou prazo novo; originais não são guardados. O JSON mantém o inventário, os arquivos são separados. Uploads pendentes/falhos/em remoção não são oferecidos. A solicitação manual continua disponível para o pacote completo.
+- **Segurança:** limite de 60 downloads por usuário/minuto **por instância**, sem substituir o firewall. O registro de auditoria existente é uma tentativa de exportação; sucesso/falha da leitura de mídia vai para `privacy.media_export`, sem ids ou conteúdo. Correções de dependências só chegam à produção depois do deploy.
+- **Acessibilidade/performance:** HTML semântico, links visíveis, foco global existente, status de carregamento e alerta de erro; lista paginada e nenhuma biblioteca cliente nova. A leitura usa o export completo da conta já existente; não é uma nova consulta paginada no banco. Celular real, leitor de tela e medição de desempenho continuam pendentes.
+- **Backlog reconciliado:** SMTP/modelos/DNS, domínio do Auth, aviso de novo contato e primeiro backup de produção com restauração conferida já tinham evidência de 14/10. Foram marcados como feitos; cópia externa, agendamento e recuperação completa hospedada continuam abertos.
+- **Próximas pendências de código:** limites das Server Actions sensíveis; transferência de propriedade; avisos de pedidos de privacidade; suspensão/contestação da conta inteira; identificação de convidados no funil. Permanecem também revisão jurídica/Resend, configuração de Turnstile/firewall/monitor/suporte, decisão do modo de cobrança e validações reais na Stripe. Nenhuma dessas etapas foi marcada como concluída por esta entrega.

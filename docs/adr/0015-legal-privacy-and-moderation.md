@@ -16,4 +16,10 @@ The application already holds Auth accounts, tenant content, immutable publicati
 
 ## Consequences and limits
 
+### Media downloads (2026-10-27)
+
+Owners can list ready WebP variants at `/app/conta/dados/midia?workspace=…` and download each file through the same-origin POST export route. The server checks active owner membership; `export_workspace_data` independently enforces ownership and audits the export attempt before storage is read. Keys and byte counts come exclusively from that authorized inventory. The public storage reader uses no privileged credentials, refuses redirects, times out after ten seconds and checks the actual byte count (at most 2 MiB) and WebP signature before returning a private attachment. It never accepts an input URL. Downloads are limited to 60 per authenticated user per minute per instance; the global firewall remains necessary.
+
+No originals are stored or reconstructed. All ready variants are offered, including assets retained by older publications; unfinished/deleting assets are excluded. The list shows 30 files per page. A single archive, incomplete uploads and missing files still use the reviewed data-access request path. No database migration or retention change is introduced.
+
 A missing legal migration keeps the current private app behavior; no draft becomes active. A partially activated set of Terms and privacy blocks app access until the operator repairs the configuration. A missing moderation secret makes report submission unavailable while the renderer stays available. The export JSON has an 8 MiB HTTP limit; larger exports use the reviewed manual request path. Deletion remains a human-operated process pending an isolated restore and complete store-by-store evidence. Global edge controls, managed backups and alert delivery require the hosting accounts. The Marco Civil application-log question, legal roles, retention exceptions, billing/cancellation wording, and identity/contact fields require counsel/founder decisions before activating texts or opening the paid beta.

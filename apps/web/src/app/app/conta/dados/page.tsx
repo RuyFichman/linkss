@@ -8,6 +8,7 @@ import { MAIL_PREFERENCES_COPY } from "@/content/pt-BR";
 import { isMissingSchemaError } from "@/lib/supabase/missing-schema";
 import { MailPreferencesForm } from "@/modules/mail/components/mail-preferences-form";
 import { resolveMailConfig } from "@/modules/mail/config";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "Meus dados e privacidade" };
 export const dynamic = "force-dynamic";
@@ -70,12 +71,13 @@ export default async function MyDataPage({ searchParams }: {
         </section>
         <section className="surface-card p-5">
           <h2 className="text-xl font-bold">Dados de contas que você administra</h2>
-          <p className="mt-2 text-sm text-app-muted">Apenas proprietários podem exportar rascunhos, publicações, contatos, resultados agregados, convites, relatórios e cobrança da conta. O JSON traz o inventário da mídia; o pacote dos arquivos deve ser solicitado abaixo.</p>
+          <p className="mt-2 text-sm text-app-muted">Apenas proprietários podem exportar rascunhos, publicações, contatos, resultados agregados, convites, relatórios e cobrança da conta. O JSON traz o inventário da mídia; as imagens armazenadas podem ser baixadas individualmente.</p>
           {owned.length === 0 ? <p className="mt-3 text-sm">Você não é proprietário de nenhuma conta.</p> : (
             <ul className="mt-4 grid gap-3">
               {owned.map((workspace) => (
                 <li key={workspace.workspaceId} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-app-border p-3">
                   <span>{workspace.name}</span>
+                  <Link className="inline-flex min-h-6 items-center underline underline-offset-4" href={`/app/conta/dados/midia?workspace=${workspace.workspaceId}`}>Baixar imagens desta conta</Link>
                   <form action={"/app/conta/dados/exportar?workspace=" + encodeURIComponent(workspace.workspaceId)} method="post">
                     <button className="ui-button ui-button-secondary" type="submit">Baixar JSON desta conta</button>
                   </form>
