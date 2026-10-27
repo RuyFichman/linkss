@@ -74,12 +74,6 @@
 .home-heading p { margin: 1rem auto 0; max-width: 38rem; color: var(--home-muted); font-size: 1.125rem; line-height: 1.6; }
 .home-center { margin-top: 2.5rem; text-align: center; }
 
-/* Templates rail */
-.home-rail { display: flex; gap: 1.5rem; margin: 3rem 0 0; overflow-x: auto; padding: 0 1.25rem 2.5rem; list-style: none; scroll-snap-type: x mandatory; }
-.home-rail li { display: grid; flex: none; justify-items: center; gap: 1rem; scroll-snap-align: center; }
-.home-rail-name { font-weight: 700; }
-@media (min-width: 1240px) { .home-rail { justify-content: center; overflow: visible; } }
-
 /* Editor mock-up */
 .home-editor { display: grid; gap: 1.5rem; margin-top: 3rem; border: 1px solid var(--home-line); border-radius: 1.75rem; background: #f6f6fb; padding: 1.25rem; box-shadow: 0 30px 80px rgb(120 90 220 / 0.18), 0 10px 30px rgb(255 150 200 / 0.14); }
 .home-editor-panel { border: 1px solid var(--home-line); border-radius: 1.25rem; background: #ffffff; padding: 1.25rem; }
