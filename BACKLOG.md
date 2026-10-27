@@ -18,6 +18,8 @@ Conciliação com os adendos de 14/10 de `docs/SPRINT_9_REPORT.md`; não é uma 
 
 ## Sprint 1 — protótipo
 
+- [x] Identidade visual solicitada em 27/10/2026: logo vetorial Linkfav, versão para fundo escuro, PNGs transparentes e favicon SVG/ICO/Apple, aplicados na home, landings, autenticação e painel. Arquivos e uso em `docs/BRAND_IDENTITY.md`; deploy e aprovação visual do founder pendentes.
+
 - [x] P0 Mapear cadastro → publicar → analytics.
 - [x] P0 Mapear agência → perfil → duplicar → relatório.
 - [x] P0 Criar wireframes mobile/desktop e protótipo clicável.

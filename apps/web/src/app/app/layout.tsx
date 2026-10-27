@@ -10,6 +10,7 @@ import { resolveAccount } from "@/modules/identity/session";
 import { legalAcceptanceRequired } from "@/modules/legal/server";
 import { EmptyState } from "@/ui";
 import { BRAND_CLASS } from "@/ui/brand-font";
+import { BrandLogo } from "@/ui/brand-logo";
 
 export const metadata: Metadata = { title: { default: "Painel", template: `%s | ${PRODUCT.name}` }, robots: { index: false, follow: false } };
 
@@ -26,7 +27,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <header data-app-chrome="">
         <div className="app-header">
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <Link className="app-brand" href="/app">{PRODUCT.name}</Link>
+            <Link className="app-brand" href="/app"><BrandLogo /></Link>
             {account.status === "ready" ? <WorkspaceSwitcher workspaces={account.workspaces.map((workspace) => ({ id: workspace.workspaceId, name: workspace.name, kind: workspace.kind, role: workspace.role }))} /> : null}
           </div>
           <AccountMenu />

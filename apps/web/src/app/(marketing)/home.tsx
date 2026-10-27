@@ -7,6 +7,7 @@ import { Schibsted_Grotesk } from "next/font/google";
 import { HOME_COPY } from "@/content/pt-BR";
 import { publicAddressLabel } from "@/lib/app-url";
 import { PRODUCT } from "@/lib/product";
+import { BrandLogo } from "@/ui/brand-logo";
 import "./home.css";
 import { Showcase } from "./showcase";
 
@@ -90,7 +91,7 @@ export function Home() {
   return (
     <div className={`home ${displayFont.variable}`}>
       <header className="home-shell home-header">
-          <Link className="home-brand" href="/">{PRODUCT.name}</Link>
+          <Link className="home-brand" href="/"><BrandLogo /></Link>
           <nav className="home-nav" aria-label={copy.nav.label}>
             <a href="#recursos">{copy.nav.features}</a>
             <a href="#modelos">{copy.nav.templates}</a>
@@ -204,7 +205,7 @@ export function Home() {
         </section>
         <footer className="home-shell home-footer">
           <div className="home-footer-about">
-            <span className="home-brand">{PRODUCT.name}</span>
+            <span className="home-brand"><BrandLogo /></span>
             <p>{copy.footer.tagline}</p>
           </div>
           <nav aria-labelledby="rodape-produto">
