@@ -23,7 +23,7 @@ export async function BillingBanner({ workspaceId, role }: { workspaceId: string
   if (!sentence) return null;
   const copy = BILLING_COPY.banner;
   return (
-    <div data-app-chrome="" role="status" className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-app-danger/30 bg-app-danger/10 p-3 text-app-danger">
+    <div data-app-chrome="" data-billing-banner="" role="status" className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-app-danger/30 bg-app-danger/10 p-3 text-app-danger">
       <p className="m-0 min-w-0 flex-1 basis-64 font-bold"><span>{copy.label}: </span>{sentence}</p>
       {can(role, "billing.manage")
         ? <Link className="ui-button ui-button-secondary" href={`/app/w/${workspaceId}/plano`}>{copy.ownerAction}</Link>
