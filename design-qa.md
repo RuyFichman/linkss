@@ -74,3 +74,69 @@ Implementation checklist: five distinct pages, original photos, local assets, de
 Follow-up polish: real-device and screen-reader testing; if acquisition traffic warrants it, create additional static image sizes. Those do not block this visual delivery.
 
 final result: passed
+
+## Features illustration follow-up — 2026-10-28
+
+The founder requested the same realism for the Lia Moraes illustration beside the home features. `#recursos` now uses `FeaturePagePreview`, a compact rendering of the gallery's Olivia Hart identity: the same original editorial photographs, Lora font, social glyphs, biography and portfolio actions. Reusing the existing identity avoids depicting the same generated person under two names. The hero and editor illustrations retain their existing compositions.
+
+`PhotographerPage` keeps its full version in the gallery and dialog. Its compact version omits the eyebrow, subtitle, link note and final caption to keep the whole page visible in the smaller frame. The features version has a portrait cover, ivory surface, forest-green primary action, outlined secondary action and wedding photograph, all rendered as HTML. Styles are scoped to `.home-feature-page`.
+
+The illustration stays `aria-hidden`, with no focusable controls, navigation or event collector. It represents an example composition, not a customer endorsement. No new image assets, fonts, dependencies, services, routes or data collection were added. Both photographs remain local, dimensioned and lazy-loaded; their URLs match the gallery's existing assets.
+
+Visual checks used the integrated browser against the local production build at `http://localhost:3101/#recursos`: 320 × 900 and 1440 × 1100 CSS pixels, plus the normal panel viewport. At 320px the 272px frame fits the page with no horizontal overflow, both images load, and the section stacks vertically. At 1440px the two-column layout and full illustration fit, with both images loaded and no horizontal overflow. The browser console reported no warnings or errors. The gallery's default full composition is unchanged. These are viewport checks, not real-device or screen-reader tests.
+
+Evidence:
+
+- `docs/ux/evidence/feature-page-mobile.png`: features illustration at 320px.
+- `docs/ux/evidence/feature-page-desktop.png`: features section at 1440px.
+- `docs/ux/evidence/feature-page-preview.png`: focused detail of the new illustration.
+
+Verification: `npm run check` passed — lint without warnings, typecheck without errors, 1,391 tests in 61 files and successful production build (Next 16.4.1). No new unit tests were needed for this decorative visual change. Deployment and production verification remain pending.
+
+## Gallery expansion — 2026-10-28
+
+The founder requested five additional presentations in the `#modelos` gallery shown in the supplied screenshot. The five existing pages and the compact features illustration are preserved. Five new original English identities bring the gallery to ten:
+
+| Identity | Composition |
+|---|---|
+| Sable Studio | Handmade ceramics; warm sand, sienna, serif wordmark and a tactile product still life. |
+| Form & Field | Interior design; architectural photography, warm white, charcoal, strong typography and a left-aligned portfolio composition. |
+| Petal Theory | Florist; seasonal flowers, burgundy, blush, large serif name and rounded cream action. |
+| The Salt House | Coastal guesthouse; terrace photography, chalk white, sea blue and quiet editorial typography. |
+| Sunday Social | Coffeehouse; amber, espresso brown, a coffee-and-pastry photograph and a warm menu-style composition. |
+
+Implementation: `showcase.tsx` contains the five new page compositions and gallery entries; `showcase.css` contains their scoped styles. At widths of 1400px or more the gallery uses two rows of five fixed-size frames. Below that it retains the focusable horizontal rail and scroll snapping. This also avoids centering ten overflowing cards and making the first cards unreachable. `HOME_COPY.templates.lead` now correctly says ten ways.
+
+Five photographs were generated with the built-in ImageGen tool, inspected and compressed into local 720 × 1080 WebP files: 605,108 bytes total (about 591 KiB added; 1,517,540 bytes for the gallery's fourteen image assets if all are fetched). They use the existing lazy-loaded, dimensioned image component. No new font, dependency, route, service, analytics, destination or editor-template capability was added. Identities are illustrative, with no invented customer, testimonial or performance claim. Asset paths and the exact final prompts are recorded in `docs/ux/SHOWCASE_EXPANSION_ASSETS.md`.
+
+Verification used the integrated browser against the local production build at `http://localhost:3101/#modelos`:
+
+- All ten matching dialogs opened with one page, loaded images and a `/cadastro` creation link. Escape closed every dialog and returned focus to the correct trigger.
+- The five new dialogs were also opened at 320px; none overflowed the document or dialog horizontally, and every image loaded. The Petal Theory mobile view was captured and inspected.
+- Layouts at 320, 390, 768, 1400 and 1440px had ten frames and no document overflow. At 1400 and 1440px, five equal columns produced exactly two rows with no horizontal rail overflow.
+- The five new page frames were inspected together in the desktop gallery. The console reported no warnings or errors.
+- `npm run check`: PASS — lint without warnings, typecheck without errors, 1,391 tests in 61 files and successful Next 16.4.1 production build. `git diff --check` passed. No implementation-mirroring unit tests were added for the decorative compositions.
+
+Evidence: `docs/ux/evidence/showcase-expanded-desktop.png`, `showcase-expanded-new-row.webp`, `showcase-expanded-mobile-detail.png` and `showcase-expanded-qa.json`. The new-row board combines actual screenshots of the five gallery frames at the normal panel size, normalized to 248 × 607px each; the desktop capture separately records the two-row layout. These checks do not establish real-device, screen-reader, formal WCAG or field-performance results. Deployment and production verification remain pending.
+
+## Continuous, draggable gallery — 2026-10-28
+
+The founder requested automatic continuous horizontal movement and press-and-drag navigation on desktop and mobile. This supersedes the earlier two-row layout: all ten presentations now form one row at every width. Existing page compositions, photographs and enlarged previews are preserved.
+
+`showcase-gallery.tsx` renders the accessible original sequence between two visual copies. Only the ten original buttons are in the accessibility tree and tab order; clicking a visual copy opens the matching page and returns dialog focus to its accessible original. Before JavaScript initialises, CSS shows only the original sequence as a native scroller. The copies reuse existing image URLs rather than adding image assets.
+
+`use-showcase-motion.ts` coordinates native scrolling, animation and Pointer Events. Animation advances at 32 CSS pixels per second and rebases to the identical middle sequence when crossing either seam. Dragging locks to a horizontal gesture after an 8px threshold, captures the pointer and suppresses the following click; an ordinary click still opens the preview. `touch-action: pan-y pinch-zoom` retains vertical page scrolling and pinch zoom. Release, cancellation, lost capture and window blur end the drag. There is no new library, dependency, service, collection or public route.
+
+The visible pause/resume control is in `SHOWCASE_COPY`. Automatic motion stops while holding the pointer, showing a preview, navigating the gallery by keyboard, hiding the document or moving the gallery offscreen. The operating-system reduced-motion preference disables autoplay and leaves manual navigation available. Fractional animation progress survives scroll rounding, and elapsed frames are bounded to avoid jumps after a stalled/backgrounded frame. Resize preserves the place in the repeated sequence.
+
+Verification against the local production build at `http://localhost:3101/#modelos`:
+
+- Automatic movement changed the measured scroll offset from 3865 to 4495px. Pause held 4716px unchanged across observations; resume advanced again. Captures were taken with motion paused because the integrated screenshot tool waits for visual stability.
+- A real mouse drag of 900px at a 1440px viewport crossed the forward seam: 4716 → 2848px with a 2768px cycle. Reversing the drag returned to 4716px. Neither drag opened a dialog or left the dragging state active.
+- Clicking the visible trailing copy of Olivia Hart opened her matching dialog; closing returned focus to `data-showcase-original="photography"`, outside any hidden ancestor.
+- Tab focused the rail with visible focus and held the scroll offset at 4343px. The next Tab reached Olivia's original button; Enter opened her preview and Escape restored focus.
+- At 320px, dragging by 200px changed 4741 → 4941px; reversing returned to 4741px without opening a preview. A subsequent ordinary click opened The Salt House, with no horizontal dialog overflow. The document did not overflow, and computed touch behaviour retained `pan-y pinch-zoom`. This was a mouse pointer in a mobile-sized viewport, not a physical finger/device test.
+- Ten original buttons and zero tabbable visual-copy buttons were observed. The application console had no warnings or errors.
+- Thirteen deterministic tests cover both loop seams, multiple cycles, equal speed at 60/120Hz, background-frame bounds, click tolerance and horizontal/vertical gesture intent. `npm run check`: PASS — lint without warnings, typecheck without errors, 1,404 tests in 62 files, successful Next 16.4.1 production build. An earlier full run hit the existing Sprint 5 markup-test timeout; the affected suite and the new suite passed together (24 tests), and the unchanged full gate then passed. No timeout, sanitisation or security control was weakened.
+
+Evidence: `docs/ux/evidence/showcase-motion-desktop.png`, `showcase-motion-mobile.png` and `showcase-motion-qa.json`. Physical iOS/Android touch, a screen reader and changing the OS reduced-motion preference were not exercised. Deployment and production verification remain pending.

@@ -1,0 +1,49 @@
+{
+  "automatic": {
+    "before": 3865,
+    "after": 4495,
+    "resumeBefore": 4723,
+    "resumeAfter": 4343
+  },
+  "pause": {
+    "before": 4716,
+    "after": 4716
+  },
+  "desktopDrag": {
+    "cycle": 2768,
+    "before": 4716,
+    "forward": 2848,
+    "reverse": 4716,
+    "noAccidentalDialog": true
+  },
+  "visualCopyPreview": {
+    "title": "Página de Olivia Hart",
+    "focus": {
+      "hiddenAncestor": false,
+      "original": "photography"
+    }
+  },
+  "keyboard": {
+    "pausedBefore": 4343,
+    "pausedAfter": 4343,
+    "firstButton": "photography",
+    "preview": "Página de Olivia Hart"
+  },
+  "narrowViewport": {
+    "width": 320,
+    "before": 4741,
+    "after": 4941,
+    "reverse": 4741,
+    "preview": {
+      "noOverflow": true,
+      "title": "Página de The Salt House"
+    },
+    "touchAction": "pan-y pinch-zoom",
+    "inputTested": "mouse pointer in a narrow viewport; no physical touch device tested"
+  },
+  "accessibility": {
+    "originalButtons": 10,
+    "tabbableVisualCopies": 0
+  },
+  "console": []
+}
