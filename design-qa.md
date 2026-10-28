@@ -140,3 +140,30 @@ Verification against the local production build at `http://localhost:3101/#model
 - Thirteen deterministic tests cover both loop seams, multiple cycles, equal speed at 60/120Hz, background-frame bounds, click tolerance and horizontal/vertical gesture intent. `npm run check`: PASS — lint without warnings, typecheck without errors, 1,404 tests in 62 files, successful Next 16.4.1 production build. An earlier full run hit the existing Sprint 5 markup-test timeout; the affected suite and the new suite passed together (24 tests), and the unchanged full gate then passed. No timeout, sanitisation or security control was weakened.
 
 Evidence: `docs/ux/evidence/showcase-motion-desktop.png`, `showcase-motion-mobile.png` and `showcase-motion-qa.json`. Physical iOS/Android touch, a screen reader and changing the OS reduced-motion preference were not exercised. Deployment and production verification remain pending.
+
+## Plan screen (UX-106) — 2026-10-28
+
+Scope: the signed-in billing screen `/app/w/<workspace>/plano`, presentation only. Server actions, `availableBillingActions`, routes, query parameters, data reads, prices and entitlements are unchanged. The screen now renders `planScreen` (`modules/billing/plan-screen.ts`, pure and unit-tested) through `modules/billing/components/plan-screen.tsx`. The route keeps loading and authorization. The changes:
+
+- The current plan comes first: a large plan name, a status badge, then either facts (amount and next charge) for a subscription in good standing or the state sentence, boxed when there is something to fix.
+- Each state has at most one primary action. Cancelling is a quiet link, separate from the buttons.
+- The environment notices sit between the plan and the catalogue.
+- The workspace's failing-payment banner is hidden on this screen through `body:has([data-plan-screen])`, the pattern the editor already uses.
+- Without a subscription, the catalogue offers a Monthly/Yearly choice made of native radios plus `:has`, so it works without JavaScript; where `:has` is missing, both intervals stay visible. With a subscription, the catalogue shows that subscription's own interval.
+- On wide screens the three cards line up their rows with CSS subgrid.
+- The payment history is a list with named values instead of a table that needed sideways scrolling.
+
+Before/after measurements on the local production build, sandbox billing with the Stripe emulator (`scripts/billing-lifecycle.mjs --serve`). The qa-billing workspace was put into each state by SQL on the local stack only:
+
+- Each capture set covered ten states (free, manual, incomplete, active monthly, active yearly, canceling, downgrading, past due, grace expired, ended) for the owner, the admin for free, active monthly and past due, at 320/390/768/1280 px or 390/1280 px. Billing off and an `?aviso=` notice were captured separately.
+- Every capture answered 200 with no document overflow, no visible text under 12px and no non-inline control under 44px. Before the change, axe-core 4.13 WCAG 2.2 A/AA reported no violation at 320/390/1280 px; after it, axe again reported none, in every state and both billing modes.
+- Past due, owner: the bottom of the "Atualizar forma de pagamento" button moved from y=867 to 646 at 390px, and from 1041 to 741 at 320px. Before, the banner, the title and the test-environment notice all came first.
+- The payment history at 390px used to hide the "Recibo" column behind sideways scrolling, and at 320px also part of "Situação". Now each row is date and amount, then status badge and receipt, with nothing to scroll.
+
+Interaction (Chrome, 390px, touch emulation): monthly prices and buttons show first. Tapping "Anual" shows yearly prices, the saving and the yearly buttons only. The radios are a group named "Mostrar preços". The arrow keys move the choice. Keyboard focus draws a 3px outline, and each choice is 44px tall. The failing-payment banner shows on the pages list and is hidden on the plan screen. No console error, page error or CSP violation. 11 checks pass.
+
+Product typeface note: `tabular-nums` widens the decimal comma of an amount in Schibsted Grotesk ("R$ 14 , 90"), so tabular figures are applied to dates only.
+
+Gates: `node scripts/billing-lifecycle.mjs` passes 156 checks. Two checks that read the old active-state sentence now read the facts list. `npm run check` passes: lint without warnings, typecheck without errors, 1,444 tests in 64 files (40 of them new for this screen), and a successful Next 16.4.1 production build.
+
+Screenshots were kept outside the repository. Not verified: a real phone, Safari/iOS or Firefox, a screen reader, a real Stripe sandbox or live account (the provider portal and checkout were not opened), deployment and production.

@@ -442,7 +442,7 @@ async function lifecycle(fixtures, password) {
   const confirmed = await get(owner, `${plano}/retorno?resultado=sucesso`);
   check("the return page now says the payment is confirmed", confirmed.text.includes("Pagamento confirmado. O plano Pro já está valendo"));
   const billing = await get(owner, plano);
-  check("the billing area says plan, interval, next charge and amount in words", /Plano Pro, cobrança mensal\. Próxima cobrança: R\$ 14,90 em \d{2}\/\d{2}\/\d{4}\./.test(billing.text), billing.text.slice(0, 400));
+  check("the billing area says plan, state, amount per interval and next charge", /Seu plano Pro Ativo Valor R\$ 14,90 por mês Próxima cobrança \d{2}\/\d{2}\/\d{4}/.test(billing.text), billing.text.slice(0, 400));
   check("the payment history has the receipt link", billing.text.includes("Ver recibo") && billing.html.includes("https://invoice.stripe.example.test/"));
   check("an admin does not see the payment history", !(await get(admin, plano)).text.includes("Ver recibo"));
   const blocked = await outcomeOf("billing.checkout", () => submit(owner, plano, subscribeForm));
@@ -591,7 +591,7 @@ async function lifecycle(fixtures, password) {
   const yearlyInvoice = Number(sql(`select amount_cents from public.billing_invoices where workspace_id = '${workspaceId}' order by issued_at desc, created_at desc limit 1`));
   check("one invoice more: the year less the unused part of the month", now.invoices === invoicesBefore + 1 && yearlyInvoice >= 14900 - 1490 && yearlyInvoice < 14900, `${invoicesBefore} ${now.invoices} ${yearlyInvoice}`);
   const yearlyPlan = await get(owner, plano);
-  check("the billing area says yearly, the next charge, and how to go back to monthly", /Plano Pro, cobrança anual\. Próxima cobrança: R\$ 149,00 em \d{2}\/\d{2}\/\d{4}\./.test(yearlyPlan.text) && yearlyPlan.text.includes("Sua assinatura é anual") && !yearlyPlan.text.includes("Passar para o anual"), yearlyPlan.text.slice(0, 600));
+  check("the billing area says yearly, the next charge, and how to go back to monthly", /Valor R\$ 149,00 por ano Próxima cobrança \d{2}\/\d{2}\/\d{4}/.test(yearlyPlan.text) && yearlyPlan.text.includes("Sua assinatura é anual") && !yearlyPlan.text.includes("Passar para o anual"), yearlyPlan.text.slice(0, 600));
   check("the confirmation is no longer available", (await get(owner, yearlyPath)).text.includes("não está disponível para a situação atual"));
   const backToMonthly = await owner.supabase.rpc("begin_billing_interval_change", { p_workspace_id: workspaceId, p_interval: "month" });
   check("yearly to monthly is refused by the database", backToMonthly.error?.code === "LK103" && backToMonthly.error?.details === "interval", `${backToMonthly.error?.code} ${backToMonthly.error?.details}`);

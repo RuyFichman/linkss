@@ -1315,6 +1315,8 @@ export const BILLING_COPY = {
   current: {
     title: "Seu plano",
     badge: "Plano atual",
+    amount: "Valor",
+    nextCharge: "Próxima cobrança",
   },
   statusLabel: {
     free: "Gratuito",
@@ -1356,7 +1358,8 @@ export const BILLING_COPY = {
     toYearly: "Passar para o anual",
     toYearlyHint: (saving: string) => `Sua assinatura é mensal. No anual você paga ${saving} a menos por ano.`,
     yearlyOnly: "Sua assinatura é anual. Para voltar ao mensal, cancele a renovação e assine o mensal quando o período já pago terminar.",
-    replacesManual: "Assinar um plano substitui o plano definido manualmente nesta conta.",
+    intervalLegend: "Mostrar preços",
+    pricesFor: (interval: string) => `Valores com cobrança ${interval}, como a sua assinatura.`,
   },
   features: {
     max_profiles: (count: number) => (count === 1 ? "1 página" : `${count} páginas`),
