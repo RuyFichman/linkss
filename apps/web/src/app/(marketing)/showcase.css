@@ -1,17 +1,24 @@
 /* The scale belongs to the presentation frame; the page inside has a readable 360px canvas. */
-.showcase-rail { display: flex; gap: clamp(1rem, 2vw, 2rem); max-width: 1600px; margin: 3rem auto 0; overflow-x: auto; padding: 0 1.5rem 2.5rem; list-style: none; scroll-snap-type: x mandatory; scrollbar-width: thin; }
-.showcase-item { width: 248px; flex: none; scroll-snap-align: center; }
+.showcase-controls { display: flex; min-height: 44px; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-top: 2rem; }
+.showcase-controls p { margin: 0; color: var(--home-muted); font-size: 0.8125rem; }
+.showcase-motion-toggle { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid var(--home-line); border-radius: 999px; padding: 0.5rem 1rem; color: var(--home-ink); background: #ffffff; font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
+.showcase-motion-toggle:hover { background: #f6f6fb; }
+.showcase-motion-status { display: inline-flex; min-height: 44px; align-items: center; padding: 0.5rem 1rem; color: var(--home-muted); font-size: 0.8125rem; }
+.showcase-rail { position: relative; display: flex; gap: clamp(1rem, 2vw, 2rem); max-width: 1600px; margin: 1.25rem auto 0; overflow-x: auto; padding: 8px 1.5rem 2.5rem; list-style: none; scrollbar-width: none; touch-action: pan-y pinch-zoom; cursor: grab; user-select: none; -webkit-user-select: none; overflow-anchor: none; }
+.showcase-rail::-webkit-scrollbar { display: none; }
+.showcase-rail:not([data-looping]) .showcase-item[aria-hidden="true"] { display: none; }
+.showcase-rail[data-dragging], .showcase-rail[data-dragging] .showcase-open { cursor: grabbing; }
+.showcase-item { width: 248px; flex: none; }
 .showcase-frame { position: relative; width: 248px; height: 540px; overflow: hidden; border: 1px solid rgb(36 35 52 / 0.07); border-radius: 30px; box-shadow: 0 18px 42px rgb(61 38 93 / 0.13); isolation: isolate; transition: transform 200ms, box-shadow 200ms; }
 .showcase-frame:hover, .showcase-frame:focus-within { transform: translateY(-6px); box-shadow: 0 24px 48px rgb(61 38 93 / 0.2); }
 .showcase-miniature { width: 360px; transform: scale(0.688889); transform-origin: top left; pointer-events: none; user-select: none; }
-.showcase-open { position: absolute; inset: 0; width: 100%; border: 0; border-radius: inherit; background: transparent; cursor: pointer; }
+.showcase-open { position: absolute; inset: 0; width: 100%; border: 0; border-radius: inherit; background: transparent; cursor: grab; }
 .showcase-open:focus-visible { outline: 3px solid var(--app-focus); outline-offset: -4px; }
 .showcase-open-label { position: absolute; right: 12px; bottom: 12px; left: 12px; padding: 11px; border: 1px solid rgb(255 255 255 / 0.6); border-radius: 999px; color: #ffffff; background: #24232e; font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(8px); transition: opacity 160ms, transform 160ms; }
 .showcase-open:hover .showcase-open-label, .showcase-open:focus-visible .showcase-open-label { opacity: 1; transform: none; }
 .showcase-caption { margin-top: 20px; text-align: center; }
 .showcase-caption h3 { margin: 0; font-family: var(--home-display); font-size: 16px; font-weight: 700; }
 .showcase-caption p { margin: 5px 0 0; color: var(--home-muted); font-size: 12px; }
-@media (min-width: 1400px) { .showcase-rail { justify-content: center; } }
 @media (max-width: 600px) { .showcase-rail { padding-inline: max(1.25rem, calc((100vw - 280px) / 2)); } .showcase-open-label { opacity: 1; transform: none; font-size: 12px; padding: 8px; } }
 
 .showcase-page { width: 360px; min-height: 790px; color: #272b27; font-size: 13px; font-weight: 400; line-height: 1.5; letter-spacing: normal; text-align: center; }
@@ -78,6 +85,54 @@
 .showcase-music .showcase-image-card > img { height: 295px; object-position: center 35%; }
 .showcase-music .showcase-image-card h5 { font-size: 30px; letter-spacing: -1px; }
 .showcase-music .showcase-image-card .showcase-eyebrow { font-size: 8px; letter-spacing: 2px; }
+
+.showcase-ceramics { background: #efe4d5; color: #653b2d; }
+.showcase-ceramics .showcase-page-body { gap: 14px; padding: 30px 22px; }
+.showcase-page .showcase-ceramics-name { font-size: 44px; font-weight: 400; line-height: 0.98; letter-spacing: -2px; }
+.showcase-page .showcase-ceramics-photo { height: 254px; border-radius: 8px; object-position: center 55%; }
+.showcase-ceramics .showcase-link { min-height: 48px; border-color: #a77759; border-radius: 4px; font-size: 11px; font-weight: 400; }
+.showcase-ceramics .showcase-link:has(small) { color: #fff8ef; background: #824e37; border-color: #824e37; }
+.showcase-ceramics .showcase-link small { font-size: 8px; letter-spacing: 0.7px; }
+
+.showcase-architecture { background: #f3f2ee; color: #252723; }
+.showcase-page .showcase-architecture-cover { height: 270px; object-position: center 52%; }
+.showcase-architecture .showcase-page-body { gap: 16px; padding: 28px 24px 34px; text-align: left; }
+.showcase-architecture .showcase-eyebrow { font-size: 8px; letter-spacing: 1.8px; }
+.showcase-page .showcase-architecture-name { font-size: 46px; font-weight: 700; line-height: 0.98; letter-spacing: -2.5px; }
+.showcase-architecture .showcase-socials { justify-content: flex-start; }
+.showcase-architecture .showcase-link { min-height: 48px; border-radius: 2px; font-size: 11px; text-align: center; }
+.showcase-architecture .showcase-link:has(small) { color: #f8f6f0; background: #252723; }
+.showcase-architecture .showcase-link small { font-size: 8px; letter-spacing: 1px; }
+
+.showcase-florist { background: #66283f; color: #fff0df; }
+.showcase-page .showcase-florist-cover { height: 270px; object-position: center 43%; }
+.showcase-florist .showcase-page-body { gap: 16px; padding: 26px 22px 30px; }
+.showcase-page .showcase-florist-name { font-size: 42px; font-weight: 400; line-height: 1.15; letter-spacing: -1.5px; }
+.showcase-florist .showcase-eyebrow { font-size: 8px; letter-spacing: 2.5px; }
+.showcase-florist .showcase-link { min-height: 48px; border-color: #d3a5ac; border-radius: 99px; font-size: 12px; font-weight: 400; }
+.showcase-florist .showcase-link:has(small) { color: #66283f; background: #fff0df; border-color: #fff0df; }
+.showcase-florist .showcase-link small { font-family: Arial, sans-serif; font-size: 8px; letter-spacing: 1px; }
+
+.showcase-guesthouse { background: #f8f3e9; color: #17475a; }
+.showcase-page .showcase-guesthouse-cover { height: 288px; object-position: center 48%; }
+.showcase-guesthouse .showcase-page-body { gap: 15px; padding: 25px 22px 32px; }
+.showcase-page .showcase-guesthouse-name { font-size: 36px; font-weight: 400; line-height: 1.2; letter-spacing: -1.5px; }
+.showcase-guesthouse .showcase-eyebrow { font-family: Arial, sans-serif; font-size: 8px; letter-spacing: 2.5px; }
+.showcase-guesthouse .showcase-link { min-height: 48px; border-radius: 5px; font-size: 13px; font-weight: 400; }
+.showcase-guesthouse .showcase-link:has(small) { color: #fffdf5; background: #17475a; }
+.showcase-guesthouse .showcase-link small { font-family: Arial, sans-serif; font-size: 8px; letter-spacing: 1px; }
+
+.showcase-coffeehouse { background: #efbe66; color: #462a1d; }
+.showcase-coffeehouse .showcase-page-body { gap: 14px; padding: 26px 22px; }
+.showcase-page .showcase-coffeehouse-name { font-size: 44px; font-weight: 400; line-height: 1; letter-spacing: -2px; }
+.showcase-coffeehouse .showcase-eyebrow { font-size: 8px; letter-spacing: 1.5px; }
+.showcase-coffeehouse .showcase-image-card { border-radius: 10px; color: #462a1d; background: #fff4da; box-shadow: none; }
+.showcase-coffeehouse .showcase-image-card > img { height: 225px; object-position: center 62%; }
+.showcase-coffeehouse .showcase-image-card > div { padding: 10px 12px; }
+.showcase-coffeehouse .showcase-image-card p { margin: 0; font-size: 10px; }
+.showcase-coffeehouse .showcase-link { min-height: 48px; border: 1px solid #462a1d; border-radius: 99px; font-size: 11px; }
+.showcase-coffeehouse .showcase-link:has(small) { color: #fff5e3; background: #462a1d; }
+.showcase-coffeehouse .showcase-link small { font-size: 8px; letter-spacing: 0.6px; }
 
 .showcase-description { margin: 0 0 20px; color: var(--app-muted); font-size: 14px; line-height: 1.6; }
 .showcase-full { width: min(360px, 100%); margin: auto; overflow: hidden; border-radius: 22px; }

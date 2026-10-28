@@ -9,7 +9,7 @@ import { publicAddressLabel } from "@/lib/app-url";
 import { PRODUCT } from "@/lib/product";
 import { BrandLogo } from "@/ui/brand-logo";
 import "./home.css";
-import { Showcase } from "./showcase";
+import { FeaturePagePreview, Showcase } from "./showcase";
 
 const displayFont = Schibsted_Grotesk({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-home-display", display: "swap" });
 
@@ -160,7 +160,7 @@ export function Home() {
           <p>{copy.features.lead}</p>
         </div>
         <div className="home-features">
-          <div className="home-features-phone"><PhoneMock phone="creator" /></div>
+          <div className="home-features-phone"><FeaturePagePreview /></div>
           <ul className="home-features-list">
             {copy.features.items.map((feature) => (
               <li key={feature.title}><h3 className="home-display">{feature.title}</h3><p>{feature.body}</p></li>

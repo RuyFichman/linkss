@@ -1,0 +1,189 @@
+{
+  "desktopAndPanelPreviews": [
+    {
+      "name": "Olivia Hart — Fotografia",
+      "cta": "/cadastro",
+      "images": true,
+      "noOverflow": true,
+      "open": true,
+      "pages": 1,
+      "focusReturned": true
+    },
+    {
+      "name": "The Green Table — Culinária & conteúdo",
+      "cta": "/cadastro",
+      "images": true,
+      "noOverflow": true,
+      "open": true,
+      "pages": 1,
+      "focusReturned": true
+    },
+    {
+      "name": "Maya Bennett — Coaching & bem-estar",
+      "cta": "/cadastro",
+      "images": true,
+      "noOverflow": true,
+      "open": true,
+      "pages": 1,
+      "focusReturned": true
+    },
+    {
+      "name": "Willow & Wild — Marca & loja",
+      "cta": "/cadastro",
+      "images": true,
+      "noOverflow": true,
+      "open": true,
+      "pages": 1,
+      "focusReturned": true
+    },
+    {
+      "name": "Nova Reed — Música & lançamentos",
+      "cta": "/cadastro",
+      "images": true,
+      "noOverflow": true,
+      "open": true,
+      "pages": 1,
+      "focusReturned": true
+    },
+    {
+      "name": "Sable Studio — Cerâmica & design",
+      "cta": "/cadastro",
+      "images": true,
+      "noOverflow": true,
+      "open": true,
+      "pages": 1,
+      "focusReturned": true
+    },
+    {
+      "name": "Form & Field — Arquitetura & interiores",
+      "cta": "/cadastro",
+      "images": true,
+      "noOverflow": true,
+      "open": true,
+      "pages": 1,
+      "focusReturned": true
+    },
+    {
+      "name": "Petal Theory — Flores & celebrações",
+      "cta": "/cadastro",
+      "images": true,
+      "noOverflow": true,
+      "open": true,
+      "pages": 1,
+      "focusReturned": true
+    },
+    {
+      "name": "The Salt House — Hospedagem & experiências",
+      "cta": "/cadastro",
+      "images": true,
+      "noOverflow": true,
+      "open": true,
+      "pages": 1,
+      "focusReturned": true
+    },
+    {
+      "name": "Sunday Social — Café & encontros",
+      "cta": "/cadastro",
+      "images": true,
+      "noOverflow": true,
+      "open": true,
+      "pages": 1,
+      "focusReturned": true
+    }
+  ],
+  "mobilePreviews": [
+    {
+      "name": "Sable Studio — Cerâmica & design",
+      "images": true,
+      "noDialogOverflow": true,
+      "noDocumentOverflow": true,
+      "width": 320
+    },
+    {
+      "name": "Form & Field — Arquitetura & interiores",
+      "images": true,
+      "noDialogOverflow": true,
+      "noDocumentOverflow": true,
+      "width": 320
+    },
+    {
+      "name": "Petal Theory — Flores & celebrações",
+      "images": true,
+      "noDialogOverflow": true,
+      "noDocumentOverflow": true,
+      "width": 320
+    },
+    {
+      "name": "The Salt House — Hospedagem & experiências",
+      "images": true,
+      "noDialogOverflow": true,
+      "noDocumentOverflow": true,
+      "width": 320
+    },
+    {
+      "name": "Sunday Social — Café & encontros",
+      "images": true,
+      "noDialogOverflow": true,
+      "noDocumentOverflow": true,
+      "width": 320
+    }
+  ],
+  "viewports": [
+    {
+      "columns": "none",
+      "count": 10,
+      "display": "flex",
+      "documentWidth": 320,
+      "frameWidth": 248,
+      "railScrollWidth": 2664,
+      "railWidth": 320,
+      "rows": 1,
+      "width": 320
+    },
+    {
+      "columns": "none",
+      "count": 10,
+      "display": "flex",
+      "documentWidth": 375,
+      "frameWidth": 248,
+      "railScrollWidth": 2734,
+      "railWidth": 375,
+      "rows": 1,
+      "width": 390
+    },
+    {
+      "columns": "none",
+      "count": 10,
+      "display": "flex",
+      "documentWidth": 753,
+      "frameWidth": 248,
+      "railScrollWidth": 2672,
+      "railWidth": 753,
+      "rows": 1,
+      "width": 768
+    },
+    {
+      "columns": "248px 248px 248px 248px 248px",
+      "count": 10,
+      "display": "grid",
+      "documentWidth": 1385,
+      "frameWidth": 248,
+      "railScrollWidth": 1385,
+      "railWidth": 1385,
+      "rows": 2,
+      "width": 1400
+    },
+    {
+      "columns": "248px 248px 248px 248px 248px",
+      "count": 10,
+      "display": "grid",
+      "documentWidth": 1425,
+      "frameWidth": 248,
+      "railScrollWidth": 1425,
+      "railWidth": 1425,
+      "rows": 2,
+      "width": 1440
+    }
+  ],
+  "console": []
+}

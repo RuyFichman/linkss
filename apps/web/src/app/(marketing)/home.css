@@ -92,12 +92,23 @@
 /* Features: phone on one side, the list on the other. */
 .home-features { display: grid; gap: 3rem; margin-top: 3.5rem; }
 .home-features-phone { display: grid; justify-items: center; }
+.home-feature-page { width: min(17rem, 100%); overflow: hidden; border: 5px solid #ffffff; border-radius: 1.9rem; background: #eeece2; box-shadow: 0 24px 60px rgb(40 30 90 / 0.22); }
+.home-feature-page .showcase-page { width: 100%; min-height: 0; }
+.home-feature-page .showcase-photographer .showcase-photo-cover { height: 136px; object-position: center 42%; }
+.home-feature-page .showcase-photographer .showcase-page-body { gap: 10px; padding: 16px 16px 20px; }
+.home-feature-page .showcase-page .showcase-photo-name { font-size: 32px; letter-spacing: -1.5px; }
+.home-feature-page .showcase-page .showcase-bio { font-size: 11px; line-height: 1.65; }
+.home-feature-page .showcase-socials { gap: 18px; padding-block: 3px; }
+.home-feature-page .showcase-socials svg { width: 19px; height: 19px; }
+.home-feature-page .showcase-photographer .showcase-link { min-height: 40px; padding: 10px 12px; font-size: 11px; }
+.home-feature-page .showcase-photographer .home-feature-primary { color: #fffdf5; background: #465347; }
+.home-feature-page .showcase-page .showcase-feature-photo { height: 112px; object-position: center 45%; }
 .home-features-list { display: grid; gap: 2rem; margin: 0; padding: 0; list-style: none; }
 .home-features-list li { border-left: 3px solid var(--home-line); padding-left: 1.5rem; }
 .home-features-list li:first-child { border-left-color: var(--home-ink); }
 .home-features-list h3 { margin: 0; font-size: clamp(1.4rem, 3.4vw, 1.75rem); line-height: 1.2; }
 .home-features-list p { margin: 0.5rem 0 0; color: var(--home-muted); font-size: 1.0625rem; line-height: 1.6; }
-@media (min-width: 860px) { .home-features { grid-template-columns: 0.9fr 1.1fr; align-items: center; } .home-features-phone .home-phone { --phone-width: 17rem; } }
+@media (min-width: 860px) { .home-features { grid-template-columns: 0.9fr 1.1fr; align-items: center; } }
 
 /* Plans */
 .home-plans { display: grid; gap: 1.5rem; margin-top: 3rem; }

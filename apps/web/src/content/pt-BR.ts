@@ -1184,7 +1184,7 @@ export const HOME_COPY = {
   marquee: ["Botão de WhatsApp", "Pix copia e cola", "Formulários e contatos", "Resultados da página", "Vídeo e música", "Várias páginas", "Relatório para o cliente", "Modelos prontos", "Sem código"],
   templates: {
     title: "Uma página. O seu mundo inteiro.",
-    lead: "Do primeiro contato ao próximo lançamento. Explore cinco maneiras de dar vida à sua presença online.",
+    lead: "Do primeiro contato ao próximo lançamento. Explore dez maneiras de dar vida à sua presença online.",
     cta: "Criar minha página",
   },
   editor: {
@@ -1270,6 +1270,18 @@ export const HOME_COPY = {
     service: { name: "Davi Rocha", bio: "Treino funcional para iniciantes", primary: "Ver horários disponíveis", secondary: "Conversar sobre seu treino" },
     event: { name: "Noite Aberta", bio: "Música ao vivo, toda sexta", primary: "Comprar ingresso", secondary: "Entrar na lista VIP" },
   },
+} as const;
+
+export const SHOWCASE_COPY = {
+  dragHint: "Arraste para explorar os modelos",
+  pause: "Pausar movimento",
+  resume: "Retomar movimento",
+  manual: "Navegação manual",
+  explore: "Explorar página",
+  openLabel: (name: string, category: string) => `Explorar página de ${name} — ${category}`,
+  dialogTitle: (name: string) => `Página de ${name}`,
+  dialogFallback: "Visualização da página",
+  create: "Criar minha página",
 } as const;
 
 /**
