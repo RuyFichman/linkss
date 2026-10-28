@@ -1,0 +1,41 @@
+{
+  "viewports": [
+    1440,
+    768,
+    390,
+    320
+  ],
+  "routes": [
+    "/",
+    "/entrar",
+    "/cadastro",
+    "/agencias",
+    "/profissionais"
+  ],
+  "icons": [
+    {
+      "rel": "icon",
+      "href": "http://localhost:3100/favicon.ico?favicon.2n4egclyb_nyx.ico",
+      "type": "image/x-icon",
+      "sizes": "48x48"
+    },
+    {
+      "rel": "icon",
+      "href": "http://localhost:3100/icon.svg?icon.1n4xcjj088bpk.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "rel": "apple-touch-icon",
+      "href": "http://localhost:3100/apple-icon.png?apple-icon.3o3t-0txxg0rk.png",
+      "type": "image/png",
+      "sizes": "180x180"
+    }
+  ],
+  "icoFrames": [
+    16,
+    32,
+    48
+  ],
+  "errors": []
+}
