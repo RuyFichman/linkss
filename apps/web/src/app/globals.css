@@ -52,9 +52,10 @@
   --app-danger-soft: #fff0ee;
   --app-focus: #7047eb;
   --plan-line: #ebe8f5;
-  --plan-featured-line: #cdbfff;
+  --plan-featured-line: rgb(118 110 255 / 0.35);
   --plan-check: #c9f0dc;
-  --plan-badge: linear-gradient(90deg, #7c3aed, #b62bd0 55%, #d02670);
+  /* The liinks.co reference hues (#7a6cff, #ff6cc0), darkened until white 12px text passes WCAG AA (4.77:1 at its lowest). */
+  --plan-badge: linear-gradient(135deg, #6a5cf0, #d02a8a);
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -189,14 +190,12 @@ button, a, input, select, textarea, summary { outline: none; }
 [data-interval-scope]:has(.plan-interval input[value="year"]:checked) [data-interval="month"] { display: none; }
 
 .plan-offers { display: grid; gap: 2rem; margin: 0; padding: 0; list-style: none; }
-.plan-offer { position: relative; display: flex; flex-direction: column; border: 1px solid var(--plan-line); border-radius: var(--radius-card); background: var(--app-surface); padding: 2rem 1.6rem 1.6rem; box-shadow: 0 22px 50px rgb(240 150 200 / 0.18); }
-.plan-offer:nth-child(3) { box-shadow: 0 22px 50px rgb(120 170 240 / 0.2); }
-.plan-offer[data-featured] { border-color: var(--plan-featured-line); box-shadow: 0 24px 60px rgb(150 110 240 / 0.28); }
-.plan-offer-badge { position: absolute; top: 0; left: 50%; margin: 0; border-radius: 999px; color: #ffffff; background: var(--plan-badge); padding: 0.3rem 0.85rem; font-size: 0.75rem; font-weight: 700; white-space: nowrap; transform: translate(-50%, -50%); }
+.plan-offer { position: relative; display: flex; flex-direction: column; border: 1px solid var(--plan-line); border-radius: var(--radius-card); background: var(--app-surface); padding: 2rem 1.6rem 1.6rem; box-shadow: -10px 16px 32px -12px rgb(118 110 255 / 0.4), 10px 16px 32px -12px rgb(255 108 192 / 0.32), 0 4px 12px rgb(31 31 40 / 0.04); }
+.plan-offer[data-featured] { border-color: var(--plan-featured-line); box-shadow: -14px 22px 40px -12px rgb(118 110 255 / 0.5), 14px 22px 40px -12px rgb(255 108 192 / 0.42), 0 6px 16px rgb(31 31 40 / 0.05); }
+.plan-offer-badge { position: absolute; top: -12px; left: 50%; margin: 0; border-radius: 999px; color: #ffffff; background: var(--plan-badge); padding: 4px 16px; font-family: var(--home-display, var(--brand-display, inherit)); font-size: 12px; font-weight: 700; line-height: 1.2; white-space: nowrap; box-shadow: 0 4px 16px rgb(31 31 40 / 0.06); transform: translateX(-50%); }
 .plan-offer h3 { margin: 0; font-size: 1.75rem; line-height: 1.1; }
 .plan-offer-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.45rem; margin: 0.9rem 0 0; color: var(--app-muted); }
 .plan-offer-price b { color: var(--app-ink); font-size: 2.6rem; font-weight: 800; line-height: 1; letter-spacing: -0.04em; }
-.plan-offer-price[data-soon] b { color: var(--app-muted); font-size: 2rem; letter-spacing: -0.03em; }
 .plan-offer-saving { margin: 0.75rem 0 0; color: var(--app-success); font-size: 0.8125rem; font-weight: 700; }
 .plan-offer-saving:empty { margin: 0; }
 .plan-offer-description { margin: 1rem 0 0; color: var(--app-muted); line-height: 1.55; }

@@ -1,5 +1,3 @@
-import { paidPlansAreOnSale } from "@/modules/billing/marketing";
-import { resolveBillingMode } from "@/modules/billing/mode";
 import { domainsSignerFromEnv } from "@/modules/domains/config";
 import type { CSSProperties } from "react";
 import Link from "next/link";
@@ -65,14 +63,9 @@ function ClaimBar() {
 
 export function Home() {
   const copy = HOME_COPY;
-  // Paid plans are offered here only when a visitor can actually buy them. Read at build time:
-  // changing the billing mode needs a redeploy, like every other value this static page shows.
-  const selling = paidPlansAreOnSale(resolveBillingMode().mode);
+  // Read at build time: configuring custom domains needs a redeploy, like every other value this static page shows.
   const customDomains = domainsSignerFromEnv() !== null;
-  const faqAnswer = (entry: (typeof copy.faq.items)[number]) => {
-    if ("answerDomains" in entry) return selling && customDomains ? entry.answerDomains : entry.answer;
-    return selling && "answerSelling" in entry ? entry.answerSelling : entry.answer;
-  };
+  const faqAnswer = (entry: (typeof copy.faq.items)[number]) => customDomains && "answerDomains" in entry ? entry.answerDomains : entry.answer;
   return (
     <div className={`home ${displayFont.variable}`}>
       <header className="home-shell home-header">
@@ -154,7 +147,7 @@ export function Home() {
         </div>
       </section>
 
-      <Pricing selling={selling} customDomains={customDomains} />
+      <Pricing customDomains={customDomains} />
       <PlanComparison customDomains={customDomains} />
 
       <section className="home-section home-shell" id="duvidas" aria-labelledby="duvidas-titulo">
