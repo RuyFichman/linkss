@@ -208,3 +208,43 @@ Interaction on the on-sale build, Chrome at 390px with touch emulation:
 Gates: `npm run check` passes, with lint showing no warnings, typecheck showing no errors, 1,462 tests in 66 files, and a successful Next 16.4.1 production build. 18 of those tests are new, covering the comparison model, the render of both billing modes and the free-months label.
 
 Not verified: a real phone, Safari/iOS or Firefox, a screen reader, deployment and production.
+
+## Plan screen refinement (UX-108) — 2026-10-28
+
+Scope: `/app/w/<workspace>/plano`, on top of UX-106, and the parts it now shares with the home plans (UX-107).
+
+New on the plan screen:
+
+- A **Uso desta conta** card. It shows pages, people and image space against the plan in force, with a bar and the state in words ("No limite", "Acima do limite"). Open invitations count as seats, and archived pages are named when pages are at the limit.
+  - Usage is read with `fetchWorkspaceUsage`, the same reader the confirmation screen uses, and owners and admins may read every count. When it fails the card is left out and the rest of the screen renders.
+  - The rows come from `planScreen` (pure, unit-tested), with limits from the workspace's plan (`workspaces.plan_id`).
+- The catalogue cards now have the home's anatomy: large price, the yearly saving when there is an interval choice, "Tudo do" the previous plan plus only what grows, the action at the bottom, rows aligned with subgrid, and a "Plano atual" badge.
+  - The Monthly/Yearly choice carries "2 meses grátis" (`yearlyFreeMonths`).
+- **Comparar todos os recursos** opens the home's comparison table under the cards, with the plan names sticky at the top of the viewport.
+- The test-environment notice is a compact line. It still contains the full sentence.
+
+Shared with the home: `.plan-interval`, `.plan-offer*` and `.plan-compare*` live in `globals.css`. `PlanComparisonTable` is in `modules/billing/components/plan-comparison.tsx`, and `planHighlightText` is in `modules/billing/presentation.ts`. The words are in `BILLING_COPY.highlights` and `BILLING_COPY.comparison`, moved out of `HOME_COPY`. `home.css` keeps only the home's own spacing and the sticky offset under its floating bar. Server actions, gating, routes, query parameters, prices and entitlements are unchanged.
+
+Measurements on the local production build, sandbox billing with the Stripe emulator (`scripts/billing-lifecycle.mjs --serve`, qa-billing workspace put into each state by SQL on the local stack only):
+
+- Ten states for the owner, and three for the admin, at 320/390/768/1280 px or 390/1280 px. Every capture answered 200 with no document overflow, no text under 12px, no control under 44px and no axe-core 4.13 WCAG 2.2 A/AA violation.
+- With the comparison open: axe clean and no overflow at 320/390/1280 px.
+- Past due, owner: the bottom of "Atualizar forma de pagamento" is at y=650 at 390px and y=745 at 320px (UX-106: 646 and 741; the larger plan name adds 4px).
+  - A first version put usage inside the plan card, which pushed the action to 855 and 974. Usage is now a card of its own, after the plan on phones, and a render test pins the order.
+- Home plans and comparison, rechecked after the CSS moved: still clean at 320/390/768/1280 px.
+
+Interaction (Chrome, 390px, touch emulation), 16 checks pass:
+
+- The interval choice works by tap and arrow keys, with visible focus and 44px targets.
+- The comparison starts closed, and its 44px summary opens a table named by it.
+- The table head stays at the top while scrolling.
+- The usage card shows.
+- The failing-payment banner is hidden on this screen only, and the fix sits inside the first 700px.
+- No console error, page error or CSP violation.
+
+Gates:
+
+- `node scripts/billing-lifecycle.mjs` passes 156 checks, with 0 leaking log lines. The yearly-saving check now reads "Economize R$ 29,80 por ano".
+- `npm run check` passes: lint without warnings, typecheck without errors, 1,474 tests in 66 files, and a successful Next 16.4.1 production build.
+
+Not verified: a real phone, Safari/iOS or Firefox, a screen reader, a real Stripe sandbox or live account, deployment and production.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HOME_COPY } from "@/content/pt-BR";
+import { BILLING_COPY } from "@/content/pt-BR";
 import { FEATURE_KEYS, planEntitlementsFromProduct } from "@/modules/entitlements";
 import { PLAN_IDS } from "./catalog";
 import { COMPARISON_GROUPS, planComparison, planHighlights, type ComparisonRow } from "./comparison";
@@ -11,11 +11,11 @@ describe("plan comparison (home)", () => {
   it("has a value for every plan in every row, and words for every group and row", () => {
     for (const group of planComparison({ customDomains: true })) {
       expect(group.rows.length).toBeGreaterThan(0);
-      expect(HOME_COPY.comparison.groups[group.key]).toBeTruthy();
+      expect(BILLING_COPY.comparison.groups[group.key]).toBeTruthy();
       for (const { key, values } of group.rows) {
-        expect(HOME_COPY.comparison.rows[key]).toBeTruthy();
+        expect(BILLING_COPY.comparison.rows[key]).toBeTruthy();
         expect(Object.keys(values).sort()).toEqual([...PLAN_IDS].sort());
-        for (const value of Object.values(values)) if (value.kind === "limit") expect(key in HOME_COPY.comparison.limits).toBe(true);
+        for (const value of Object.values(values)) if (value.kind === "limit") expect(key in BILLING_COPY.comparison.limits).toBe(true);
       }
     }
     expect(rows().map((candidate) => candidate.key)).toEqual(Object.values(COMPARISON_GROUPS).flat());

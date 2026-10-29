@@ -4,7 +4,8 @@ import { PlanHeading, PlanScreenView } from "@/modules/billing/components/plan-s
 import { resolveBillingMode } from "@/modules/billing/mode";
 import { planScreen } from "@/modules/billing/plan-screen";
 import type { WorkspaceBilling } from "@/modules/billing/read";
-import { fetchWorkspaceBilling } from "@/modules/billing/server";
+import type { WorkspaceUsage } from "@/modules/billing/downgrade-impact";
+import { fetchWorkspaceBilling, fetchWorkspaceUsage } from "@/modules/billing/server";
 import { domainsSignerFromEnv } from "@/modules/domains/config";
 import { can } from "@/modules/identity/permissions";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
@@ -18,7 +19,8 @@ export const metadata: Metadata = { title: BILLING_COPY.title };
  * the owner sees the payment history and the actions; editors are told who can. Everything shown
  * is what the database holds (a copy of the provider's state); the buttons are a convenience and
  * every command re-authorizes on the server and in the database. With billing off, or before the
- * migration, the screen shows the plan and the catalogue and offers nothing to buy.
+ * migration, the screen shows the plan and the catalogue and offers nothing to buy. Usage (pages,
+ * people, image space) is read with the viewer's session; owners and admins may read every count.
  */
 const NOTICES = { cancelada: BILLING_COPY.confirm.canceled, mantida: BILLING_COPY.actions.resumed, alterada: BILLING_COPY.confirm.changedNow, agendada: BILLING_COPY.confirm.changedLater, anual: BILLING_COPY.confirm.changedInterval } as const;
 
@@ -41,6 +43,8 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   const isOwner = can(access.role, "billing.manage");
   const mode = resolveBillingMode().mode;
   let billing: WorkspaceBilling;
+  // Usage is secondary: when it cannot be read the screen leaves it out instead of failing.
+  const usage = fetchWorkspaceUsage(workspaceId).catch((): WorkspaceUsage | null => null);
   try {
     billing = await fetchWorkspaceBilling(workspaceId, isOwner);
   } catch {
@@ -53,7 +57,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   }
   const account = await resolveAccount();
   const suspended = account.status === "ready" && account.workspaces.find((item) => item.workspaceId === workspaceId)?.status === "suspended";
-  const screen = planScreen({ billing, mode, isOwner, suspended, now: new Date() });
+  const screen = planScreen({ billing, mode, isOwner, suspended, now: new Date(), usage: await usage });
 
   return <PlanScreenView workspaceId={workspaceId} screen={screen} invoices={billing.invoices} mode={mode} deployed={billing.deployed} suspended={suspended} customDomains={domainsSignerFromEnv() !== null} notice={notice} />;
 }

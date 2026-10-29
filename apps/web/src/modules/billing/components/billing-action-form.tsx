@@ -10,18 +10,20 @@ import { FormStatus } from "@/ui/form-status";
  * a Server Action already bound to its workspace; it re-authorizes on the server and in the
  * database, so this component decides nothing.
  */
-export function BillingActionForm({ action, label, ariaLabel, variant = "primary", hideOnSuccess = false }: {
+export function BillingActionForm({ action, label, ariaLabel, variant = "primary", hideOnSuccess = false, fullWidth = false }: {
   action: (previous: FormState) => Promise<FormState>;
   label: string;
   ariaLabel?: string;
   variant?: "primary" | "secondary" | "danger";
   /** After a change that cannot be repeated, the button gives way to the result. */
   hideOnSuccess?: boolean;
+  /** As wide as its container at every width (a plan card); otherwise only on phones. */
+  fullWidth?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, IDLE_FORM_STATE);
   return (
     <form action={formAction} className="grid gap-2">
-      {hideOnSuccess && state.status === "success" ? null : <Button type="submit" variant={variant} loading={pending} aria-label={ariaLabel} className="w-full sm:w-auto">{label}</Button>}
+      {hideOnSuccess && state.status === "success" ? null : <Button type="submit" variant={variant} loading={pending} aria-label={ariaLabel} className={fullWidth ? "w-full" : "w-full sm:w-auto"}>{label}</Button>}
       <FormStatus state={state} />
     </form>
   );

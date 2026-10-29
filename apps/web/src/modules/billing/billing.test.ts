@@ -328,7 +328,7 @@ describe("marketing (D6)", () => {
     expect(plans.lead).toContain("ainda não estão à venda");
     expect(plans.lead).not.toMatch(/R\$|preço/);
     expect(plans.leadSelling).not.toContain("em breve");
-    expect(plans.saving(formatMoney(yearlySavingCents("pro")))).toBe("Economize R$ 29,80 por ano no plano anual");
+    expect(BILLING_COPY.yearlySaving(formatMoney(yearlySavingCents("pro")))).toBe("Economize R$ 29,80 por ano no plano anual");
     for (const entry of HOME_COPY.faq.items) {
       if ("answerSelling" in entry) expect(entry.answerSelling).not.toContain("ainda não");
       if ("answerDomains" in entry) expect(entry.answerDomains).not.toContain("ainda não");
@@ -339,8 +339,8 @@ describe("marketing (D6)", () => {
     // R$ 149 = 10 x R$ 14,90 and R$ 579 = 10 x R$ 57,90.
     expect(yearlyFreeMonths()).toBe(2);
     for (const planId of PAID_PLAN_IDS) expect(yearlySavingCents(planId)).toBe(2 * PRODUCT.plans[planId].monthlyPriceInCents);
-    expect(HOME_COPY.plans.freeMonths(2)).toBe("2 meses grátis");
-    expect(HOME_COPY.plans.freeMonths(1)).toBe("1 mês grátis");
+    expect(BILLING_COPY.freeMonths(2)).toBe("2 meses grátis");
+    expect(BILLING_COPY.freeMonths(1)).toBe("1 mês grátis");
   });
 });
 
