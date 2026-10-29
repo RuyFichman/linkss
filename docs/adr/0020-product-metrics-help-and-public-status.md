@@ -46,7 +46,7 @@ Plus the median minutes from sign-up to the first publication, and the cancellat
 
 ### 2. Help center and support contact
 
-- `/ajuda` is a static page of questions and answers written in `content/pt-BR.ts` (`HELP_COPY`). **Every answer must describe something the deployed product does**; the billing section has one text for where paid plans are on sale and another for where they are not, chosen by the same rule as the home (`paidPlansAreOnSale`). Custom domains and pixels are left out until they have run in production.
+- `/ajuda` is a static page of questions and answers written in `content/pt-BR.ts` (`HELP_COPY`). **Every answer must describe something the deployed product does**; the billing section had one text for where paid plans are on sale and another for where they are not, chosen by the same rule as the home (`paidPlansAreOnSale`); since 2026-10-29 it always explains how to subscribe (addendum in ADR 0014). Custom domains and pixels are left out until they have run in production.
 - The contact is an address in `SUPPORT_EMAIL` (server-side, read at build time). **While it is empty the page shows no address** and says support is handled by whoever sent the invitation, which is true of the private pilot. An address nobody reads is worse than none.
 - The account menu and the first-steps checklist link to it.
 

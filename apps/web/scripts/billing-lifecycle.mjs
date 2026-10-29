@@ -712,7 +712,7 @@ async function billingOff(fixtures, password) {
   const job = await runJob();
   check("the job still runs the clock and reads nothing at the provider", job.status === 200 && job.body.checked === 0, JSON.stringify(job.body));
   const home = await fetch(`${BASE_URL}/`).then((response) => response.text());
-  check("the marketing home lists paid plans as 'em breve', without prices", visibleText(home).includes("Em breve") && !visibleText(home).includes("R$ 14,90") && !visibleText(home).includes("R$ 57,90"));
+  check("the marketing home still shows the paid plans with their prices", !visibleText(home).includes("Em breve") && visibleText(home).includes("R$ 14,90") && visibleText(home).includes("R$ 57,90"));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -737,7 +737,7 @@ try {
   } else {
     await lifecycle(fixtures, password);
     const sandboxHome = visibleText(await fetch(`${BASE_URL}/`).then((response) => response.text()));
-    check("in sandbox the marketing home does not offer the test checkout as a real plan", sandboxHome.includes("Em breve") && !sandboxHome.includes("R$ 14,90"));
+    check("in sandbox the marketing home shows the paid plans with their prices", !sandboxHome.includes("Em breve") && sandboxHome.includes("R$ 14,90"));
     const sandboxLogs = app.logs;
     app.child.kill();
     await new Promise((resolve) => app.child.once("exit", resolve));

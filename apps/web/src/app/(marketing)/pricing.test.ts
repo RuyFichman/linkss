@@ -6,38 +6,25 @@ vi.mock("next/link", () => ({ default: "a" }));
 
 const { PlanComparison, Pricing } = await import("./pricing");
 
-const pricing = (selling: boolean, customDomains = true) => renderToStaticMarkup(createElement(Pricing, { selling, customDomains }));
+const pricing = (customDomains = true) => renderToStaticMarkup(createElement(Pricing, { customDomains }));
 const comparison = (customDomains = true) => renderToStaticMarkup(createElement(PlanComparison, { customDomains }));
 const count = (html: string, text: string) => html.split(text).length - 1;
 // What a screen reader gets: hidden elements dropped, then the tags.
 const text = (html: string) => html.replace(/<(span|svg)[^>]*aria-hidden="true"[^>]*>.*?<\/\1>/g, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
 
-describe("home plans while paid plans are not on sale", () => {
-  const html = pricing(false);
-
-  it("shows no paid price, no interval choice and no subscribe button", () => {
-    expect(html).not.toMatch(/R\$ \d+,\d{2}/);
-    expect(html).not.toContain('type="radio"');
-    expect(html).not.toContain("Criar conta e assinar");
-    expect(html).not.toContain("Economize");
-  });
-
-  it("marks the free plan as available and the paid ones as coming, each with a way to start", () => {
-    expect(html).toContain("Disponível agora");
-    expect(count(html, "Em breve")).toBe(2);
-    expect(text(html)).toContain("R$ 0 por mês");
-    expect(count(html, 'href="/cadastro"')).toBe(3);
-    expect(count(html, "Criar minha página")).toBe(1);
-    expect(count(html, "Começar no Gratuito")).toBe(2);
-  });
+describe("home plans", () => {
+  const html = pricing();
 
   it("links to the comparison table", () => {
     expect(html).toContain('href="#comparar"');
   });
-});
 
-describe("home plans while paid plans are on sale", () => {
-  const html = pricing(true);
+  it("marks the free plan as the place to start, every plan with a way to sign up", () => {
+    expect(html).toContain("Comece por aqui");
+    expect(text(html)).toContain("R$ 0 por mês");
+    expect(count(html, 'href="/cadastro"')).toBe(3);
+    expect(count(html, "Criar minha página")).toBe(1);
+  });
 
   it("offers a monthly/yearly choice, monthly first, with the months the yearly price leaves out", () => {
     expect(count(html, 'type="radio"')).toBe(2);
@@ -64,7 +51,7 @@ describe("home plans while paid plans are on sale", () => {
 
   it("names custom domains only when they are configured", () => {
     expect(html).toContain("Domínio próprio");
-    expect(pricing(true, false)).not.toContain("Domínio próprio");
+    expect(pricing(false)).not.toContain("Domínio próprio");
   });
 });
 

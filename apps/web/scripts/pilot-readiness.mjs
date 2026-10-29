@@ -189,7 +189,7 @@ try {
   let body = await text(page);
   check(body.includes("Como crio a minha página?") && body.includes("Falar com a gente"), "/ajuda shows the questions and the contact section");
   check(body.includes("Durante o piloto, o atendimento é feito pela pessoa que enviou o seu convite") && await page.locator('a[href^="mailto:"]').count() === 0, "Without a support address configured, it says how support works and shows no address");
-  check(body.includes("Os planos pagos ainda não estão à venda") && !body.includes("Como assino um plano pago?"), "Where paid plans are not on sale, the billing answers say so");
+  check(body.includes("Como assino um plano pago?") && !body.includes("ainda não estão à venda"), "The billing answers explain how to subscribe");
   check(await page.locator('a[href="/denunciar"]').count() === 1 && await page.locator('a[href="/status"]').count() === 1, "It links the report form and the status page");
   await audit(page, "/ajuda");
 
@@ -197,8 +197,8 @@ try {
   await page.locator("h1").waitFor();
   body = await text(page);
   check(body.includes("Gratuito") && body.includes("Pro") && body.includes("Agência") && body.includes("10 páginas"), "/precos lists the three plans with what each includes");
-  check(body.includes("Em breve") && !/R\$ ?14,90|R\$ ?57,90/.test(body), "Outside live billing it shows no price for the paid plans and marks them as coming");
-  check(body.includes("Nenhuma cobrança é feita hoje"), "It says no charge is made today");
+  check(!body.includes("Em breve") && /R\$ ?14,90/.test(body) && /R\$ ?57,90/.test(body), "It shows the price of every paid plan, whatever the billing mode");
+  check(body.includes("Os planos pagos são assinados de dentro da conta"), "It says paid plans are bought inside the account");
   await audit(page, "/precos");
 
   await page.goto(`${base}/status`);

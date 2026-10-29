@@ -179,7 +179,7 @@ Scope: the `#planos` section of the marketing home, redrawn after a reference th
 - Kept from the reference only what is true of the product:
   - The badge says "Disponível agora", or "Comece por aqui" while paid plans are on sale, never "Mais popular".
   - There is no trial button.
-  - Paid amounts, the Monthly/Yearly choice and the subscribe buttons still appear only with `live` billing (ADR 0014). Before that, paid cards say "Em breve", and their button ("Começar no Gratuito") leads to sign-up, which starts on the free plan.
+  - Paid amounts, the Monthly/Yearly choice and the subscribe buttons appeared only with `live` billing (ADR 0014); before that, paid cards said "Em breve". Since 2026-10-29 (founder decision, UX-109) they always appear and the badge says "Comece por aqui".
 - The comparison is a real `<table>`: column headers for the plans, a `rowgroup` header per group and a row header per feature.
   - "Sim" and "Não" are words with a check or a dash. Below 480px only the icon shows, and the word stays for screen readers.
   - Limits are amounts.

@@ -1209,17 +1209,10 @@ export const HOME_COPY = {
   },
   plans: {
     title: "Planos e preços",
-    // What is said about paid plans depends on whether anybody can buy them (ADR 0014): `lead` and the
-    // "em breve" cards while they cannot; `leadSelling`, the prices and the interval choice only with
-    // live billing.
-    lead: "O plano gratuito já está disponível. Os planos pagos ainda não estão à venda.",
-    leadSelling: "Comece no gratuito e mude de plano quando precisar, de dentro da sua conta. Preços em reais; cancele quando quiser.",
+    // Paid plans are always presented as on sale, with prices (founder decision, 2026-10-29).
+    lead: "Comece no gratuito e mude de plano quando precisar, de dentro da sua conta. Preços em reais; cancele quando quiser.",
     paidCta: "Criar conta e assinar",
-    // On a paid card while it cannot be bought: the account starts on the free plan.
-    paidCtaNotSelling: "Começar no Gratuito",
-    available: "Disponível agora",
     startHere: "Comece por aqui",
-    soon: "Em breve",
     free: { name: "Gratuito", description: "Tudo o que você precisa para publicar a sua página.", cta: "Criar minha página" },
     pro: { name: "Pro", description: "Para quem quer a página sem o selo e os resultados por mais tempo." },
     agency: { name: "Agência", description: "Para quem cuida das páginas de vários clientes, em equipe." },
@@ -1230,11 +1223,11 @@ export const HOME_COPY = {
     items: [
       { question: "O que é?", answer: "Uma página feita para o link da sua bio. Você reúne links, textos, imagens, vídeos, WhatsApp, Pix e formulários em um só endereço e acompanha as visitas e os cliques." },
       { question: "Quanto tempo leva para montar?", answer: "Poucos minutos. Crie o acesso, escolha um modelo, troque os textos e publique. Dá para editar depois quantas vezes quiser." },
-      { question: "É de graça?", answer: "Sim. O plano gratuito inclui uma página, todos os tipos de bloco e os resultados dos últimos 7 dias. Os planos pagos ainda não estão à venda.", answerSelling: "Sim. O plano gratuito inclui uma página, todos os tipos de bloco e os resultados dos últimos 7 dias. Os planos pagos são assinados de dentro da conta e podem ser cancelados quando você quiser." },
+      { question: "É de graça?", answer: "Sim. O plano gratuito inclui uma página, todos os tipos de bloco e os resultados dos últimos 7 dias. Os planos pagos são assinados de dentro da conta e podem ser cancelados quando você quiser." },
       { question: "Que conteúdo posso colocar?", answer: "Links, textos, imagens, ícones de redes sociais, botão de WhatsApp, vídeos do YouTube e do Vimeo, músicas do Spotify, chave Pix, formulários e divisores." },
       { question: "Consigo ver os resultados?", answer: "Sim. A página mostra visitas, cliques, origens e ações de valor por dia. A contagem não usa cookies e os números são aproximações." },
-      { question: "Posso cuidar de várias páginas?", answer: "A lista de páginas, os convites para a equipe, o painel consolidado e o relatório para o cliente já existem e fazem parte do plano Agência, que ainda não está à venda.", answerSelling: "Sim. A lista de páginas, os convites para a equipe, o painel consolidado e o relatório para o cliente fazem parte do plano Agência." },
-      // `answerDomains` only while paid plans are on sale and custom domains are configured (ADR 0016).
+      { question: "Posso cuidar de várias páginas?", answer: "Sim. A lista de páginas, os convites para a equipe, o painel consolidado e o relatório para o cliente fazem parte do plano Agência." },
+      // `answerDomains` only while custom domains are configured (ADR 0016).
       { question: "Posso usar meu próprio domínio?", answer: "Ainda não. Por enquanto a página fica em um endereço nosso, com o nome que você escolher.", answerDomains: "Sim, nos planos Pro e Agência. Você liga um domínio que já é seu a uma página depois de provar no DNS que ele é seu." },
       { question: "A página altera depois de publicada?", answer: "Só quando você publicar de novo. O rascunho fica separado e você pode voltar para uma versão anterior." },
     ],
@@ -1755,15 +1748,12 @@ export const HELP_COPY = {
   ],
   billing: {
     id: "plano", title: "Plano e cobrança",
-    selling: [
+    items: [
       { question: "Como assino um plano pago?", answer: "Na conta, em Plano, o proprietário escolhe o plano e o período. O pagamento é feito por cartão na página do provedor de pagamento: os dados do cartão não passam por nós." },
       { question: "Como cancelo?", answer: "Em Plano, Cancelar assinatura. O plano continua valendo até o fim do período já pago e depois a conta volta para o Gratuito, sem nova cobrança. Nada do que você criou é apagado." },
       { question: "Posso trocar de plano ou passar do mensal para o anual?", answer: "Sim, pela mesma tela. Um plano maior e a passagem para o anual valem na hora, com cobrança proporcional. Um plano menor vale a partir do fim do período já pago. Para voltar do anual ao mensal, cancele a renovação e assine o mensal quando o período terminar." },
       { question: "Onde ficam os recibos?", answer: "Em Plano, Pagamentos. Cada pagamento tem um link para o recibo na página do provedor de pagamento." },
       { question: "Vou ser avisado antes de uma cobrança ou se um pagamento falhar?", answer: "Sim, o proprietário recebe um e-mail 7 dias antes da renovação de uma assinatura anual e outro quando um pagamento falha. Depois de uma falha, o plano continua valendo por 7 dias para você atualizar a forma de pagamento em Plano. Se não for regularizado, a conta volta aos limites do plano Gratuito, sem apagar nada." },
-    ],
-    notSelling: [
-      { question: "Quanto custa?", answer: "O plano Gratuito não tem cobrança. Os planos pagos ainda não estão à venda." },
     ],
   },
   contact: {
@@ -1775,12 +1765,10 @@ export const HELP_COPY = {
   back: "Voltar para a página inicial",
 } as const;
 
-/** Public pricing page (`/precos`). Amounts come from the catalogue and are shown only where paid plans are on sale. */
+/** Public pricing page (`/precos`). Amounts come from the catalogue. */
 export const PRICING_COPY = {
   title: "Planos e preços",
   lead: "Comece de graça. Os planos pagos existem para quem quer acompanhar resultados por mais tempo ou cuidar de várias páginas em equipe.",
-  leadNotSelling: "Comece de graça. Os planos pagos ainda não estão à venda: a lista abaixo mostra o que cada um inclui.",
-  soon: "Em breve",
   available: "Disponível",
   perMonth: "por mês",
   orPerYear: (amount: string, saving: string) => `ou ${amount} por ano (${saving} a menos do que 12 meses do mensal)`,
@@ -1791,14 +1779,10 @@ export const PRICING_COPY = {
   ctaNote: "Os planos pagos são assinados de dentro da conta, depois do cadastro.",
   notes: {
     title: "Como funciona a cobrança",
-    selling: [
+    items: [
       "Preços em reais. O pagamento é por cartão, na página do provedor de pagamento: os dados do cartão não passam por nós.",
       "Você cancela quando quiser, pela própria conta. O plano continua valendo até o fim do período já pago.",
       "Cancelar, mudar para um plano menor ou deixar de pagar não apaga páginas, contatos nem resultados: só o que é novo fica limitado ao plano em vigor.",
-    ],
-    notSelling: [
-      "Nenhuma cobrança é feita hoje: só o plano Gratuito está disponível.",
-      "Quando os planos pagos forem abertos, a contratação será feita de dentro da conta, e nada do que você criou no Gratuito será perdido.",
     ],
   },
   helpLink: "Dúvidas? Veja a ajuda",

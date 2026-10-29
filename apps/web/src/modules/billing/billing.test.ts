@@ -1,14 +1,14 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { BILLING_COPY, HOME_COPY } from "@/content/pt-BR";
+import { BILLING_COPY, HELP_COPY, HOME_COPY, PRICING_COPY } from "@/content/pt-BR";
 import { PRODUCT } from "@/lib/product";
 import { planEntitlementsFromProduct } from "@/modules/entitlements";
 import { WORKSPACE_ROLES } from "@/modules/identity/permissions";
 import { customerRegistrationMessage, serializeBillingSnapshot, signBillingMessage } from "./attestation";
 import { BILLING_INTERVALS, PAID_PLAN_IDS, PLAN_IDS, PRICE_CATALOG, RETIRED_PRICES, formatMoney, isPaidPlan, planForCharge, planPrice, planRank, yearlySavingCents } from "./catalog";
 import { downgradeImpact, hasImpact, type WorkspaceUsage } from "./downgrade-impact";
-import { paidPlansAreOnSale, yearlyFreeMonths } from "./marketing";
+import { yearlyFreeMonths } from "./marketing";
 import { billingSecrets, resolveBillingMode } from "./mode";
 import { billingBannerSentence, billingStateSentence, formatBillingDate, impactSentence, planFeatureLines, priceLabel, upgradeHref } from "./presentation";
 import { billingErrorFromDatabase, pickCurrentSubscription, toInvoiceView, toSubscriptionRecord } from "./read";
@@ -317,22 +317,15 @@ describe("billing mode", () => {
 });
 
 describe("marketing (D6)", () => {
-  it("offers paid plans on the public home only with live billing", () => {
-    expect(paidPlansAreOnSale("off")).toBe(false);
-    expect(paidPlansAreOnSale("sandbox")).toBe(false);
-    expect(paidPlansAreOnSale("live")).toBe(true);
-  });
-
-  it("keeps the not-for-sale copy free of prices and the for-sale copy free of 'em breve'", () => {
-    const plans = HOME_COPY.plans;
-    expect(plans.lead).toContain("ainda não estão à venda");
-    expect(plans.lead).not.toMatch(/R\$|preço/);
-    expect(plans.leadSelling).not.toContain("em breve");
+  it("presents paid plans on public pages as on sale, never as coming", () => {
+    expect(HOME_COPY.plans.lead).not.toMatch(/em breve|ainda não/i);
     expect(BILLING_COPY.yearlySaving(formatMoney(yearlySavingCents("pro")))).toBe("Economize R$ 29,80 por ano no plano anual");
     for (const entry of HOME_COPY.faq.items) {
-      if ("answerSelling" in entry) expect(entry.answerSelling).not.toContain("ainda não");
-      if ("answerDomains" in entry) expect(entry.answerDomains).not.toContain("ainda não");
+      // Only custom domains depend on configuration; their "not yet" answer is the fallback.
+      if (!("answerDomains" in entry)) expect(entry.answer).not.toMatch(/ainda não (está|estão) à venda/);
     }
+    expect(JSON.stringify(PRICING_COPY)).not.toMatch(/em breve|ainda não estão à venda/i);
+    expect(JSON.stringify(HELP_COPY.billing)).not.toContain("ainda não estão à venda");
   });
 
   it("labels the yearly choice with the whole months it leaves unpaid, the same for every paid plan", () => {
