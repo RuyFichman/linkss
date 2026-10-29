@@ -113,6 +113,7 @@ export const APP_COPY = {
     publishHint: "Visitantes só veem uma página depois que ela é publicada. Abra o editor da página para montar os blocos e publicar.",
     usageNote: "Páginas arquivadas contam neste total.",
     unpublishedChanges: "Alterações não publicadas",
+    opensInNewTab: "(abre a página publicada em nova aba)",
     results: "Resultados",
     search: {
       label: "Buscar páginas",
