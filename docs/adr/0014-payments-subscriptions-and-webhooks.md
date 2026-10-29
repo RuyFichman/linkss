@@ -297,3 +297,9 @@ The categories exist in `modules/billing/cancellation.ts`, in the table check, i
 ### Export
 
 The workspace export already had the billing tables (since `202610090004`); it gains `billingCancellationFeedback`. The format version stays 1.
+
+## Addendum (2026-10-29): paid plans always on sale on the public pages
+
+The founder decided that the public pages present the paid plans as on sale in every billing mode. The home, `/precos` and `/ajuda` always show the prices, the monthly/yearly choice, "Criar conta e assinar" and the billing answers. `paidPlansAreOnSale` was removed, and with it the "em breve" copy; the "Marketing home" column of the mode table above no longer applies. The plan screen inside the account is unchanged: it offers a checkout whenever billing is not `off`.
+
+This departs from AGENTS.md §10 ("marketing claims must describe functionality that exists in the deployed product") while billing is not `live`. In `sandbox`, which production runs today, a visitor who signs up and subscribes with a test card pays nothing; in `off`, the account offers no checkout at all, so the home promises a subscription that does not exist. Choosing `BILLING_MODE` before inviting anyone is therefore still required.

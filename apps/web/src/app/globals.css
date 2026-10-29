@@ -196,7 +196,6 @@ button, a, input, select, textarea, summary { outline: none; }
 .plan-offer h3 { margin: 0; font-size: 1.75rem; line-height: 1.1; }
 .plan-offer-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.45rem; margin: 0.9rem 0 0; color: var(--app-muted); }
 .plan-offer-price b { color: var(--app-ink); font-size: 2.6rem; font-weight: 800; line-height: 1; letter-spacing: -0.04em; }
-.plan-offer-price[data-soon] b { color: var(--app-muted); font-size: 2rem; letter-spacing: -0.03em; }
 .plan-offer-saving { margin: 0.75rem 0 0; color: var(--app-success); font-size: 0.8125rem; font-weight: 700; }
 .plan-offer-saving:empty { margin: 0; }
 .plan-offer-description { margin: 1rem 0 0; color: var(--app-muted); line-height: 1.55; }

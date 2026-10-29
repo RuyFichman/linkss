@@ -3,8 +3,6 @@ import Link from "next/link";
 import { HELP_COPY } from "@/content/pt-BR";
 import { PRODUCT } from "@/lib/product";
 import { supportEmail } from "@/lib/support";
-import { paidPlansAreOnSale } from "@/modules/billing/marketing";
-import { resolveBillingMode } from "@/modules/billing/mode";
 import { BRAND_CLASS } from "@/ui/brand-font";
 
 export const metadata: Metadata = { title: `${HELP_COPY.title} | ${PRODUCT.name}`, description: HELP_COPY.lead };
@@ -13,15 +11,14 @@ const LINK = "inline-flex min-h-11 items-center font-bold text-app-accent underl
 
 /**
  * Short help center and the support contact. Static: the answers are copy (content/pt-BR.ts) and
- * the two settings it reads (whether paid plans are on sale, the support address) are read at
- * build time, like every other value on the public marketing pages. Questions are plain headings
+ * the one setting it reads (the support address) is read at build time, like every other value
+ * on the public marketing pages. Questions are plain headings
  * and paragraphs, so the page works without JavaScript and the browser's own search finds them.
  */
 export default function HelpPage() {
   const copy = HELP_COPY;
-  const selling = paidPlansAreOnSale(resolveBillingMode().mode);
   const email = supportEmail();
-  const sections = [...copy.sections, { id: copy.billing.id, title: copy.billing.title, items: selling ? copy.billing.selling : copy.billing.notSelling }];
+  const sections = [...copy.sections, copy.billing];
   return (
     <main className={`${BRAND_CLASS} py-8 sm:py-16`}>
       <div className="app-shell grid max-w-3xl gap-6">
