@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { PlanId } from "@/lib/product";
+import type { WorkspaceUsage } from "../downgrade-impact";
 import type { BillingMode } from "../mode";
 import { planScreen } from "../plan-screen";
 import type { InvoiceView, WorkspaceBilling } from "../read";
@@ -23,10 +24,10 @@ const INVOICES: InvoiceView[] = [
   { id: "b", amountCents: 1490, status: "open", issuedAt: "2026-10-08T15:00:00Z", paidAt: null, receiptUrl: null },
 ];
 
-function render(record: SubscriptionRecord | null, planId: PlanId, options: { mode?: BillingMode; isOwner?: boolean; suspended?: boolean; deployed?: boolean; invoices?: InvoiceView[]; notice?: string | null } = {}) {
+function render(record: SubscriptionRecord | null, planId: PlanId, options: { mode?: BillingMode; isOwner?: boolean; suspended?: boolean; deployed?: boolean; invoices?: InvoiceView[]; notice?: string | null; usage?: WorkspaceUsage | null } = {}) {
   const { mode = "sandbox", isOwner = true, suspended = false, deployed = true, invoices = [], notice = null } = options;
   const billing: WorkspaceBilling = { deployed, planId, record, amountCents: record ? (record.planId === "agency" ? 5790 : 1490) : null, invoices };
-  const screen = planScreen({ billing, mode, isOwner, suspended, now: T0 });
+  const screen = planScreen({ billing, mode, isOwner, suspended, now: T0, usage: options.usage ?? null });
   const html = renderToStaticMarkup(createElement(PlanScreenView, { workspaceId: WORKSPACE, screen, invoices: isOwner ? invoices : [], mode, deployed, suspended, customDomains: true, notice }));
   return { html, text: html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ") };
 }
@@ -101,7 +102,7 @@ describe("plan screen: one state at a time", () => {
     expect(html).toContain(`href="/app/w/${WORKSPACE}/plano/confirmar?acao=mudar&amp;plano=agency"`);
     expect(html).not.toContain("plano=pro");
     expect(html).not.toContain("Assinar");
-    expect(html).toMatch(/<li class="plan-card[^"]*" aria-current="true"><div[^>]*><div[^>]*><h3[^>]*>Pro<\/h3>/);
+    expect(html).toContain('<li class="plan-offer" data-featured="" aria-current="true"><h3 class="brand-display font-extrabold">Pro</h3><p class="plan-offer-badge">Plano atual</p>');
   });
 
   it("active yearly: yearly prices, how to go back to monthly, no yearly offer", () => {
@@ -122,10 +123,8 @@ describe("plan screen: one state at a time", () => {
     expect(html).not.toContain("acao=cancelar");
     expect(html).not.toContain("<button");
     expect(count(html, "Só o proprietário")).toBe(1);
-    // No card offers anything: no empty row is kept for it.
-    expect(count(html, "lg:row-span-3")).toBe(3);
-    expect(html).not.toContain("lg:row-span-4");
-    expect(html).not.toContain("max-lg:empty:hidden");
+    // No card offers anything: every action row is empty (and collapses on phones).
+    expect(count(html, '<div class="plan-offer-action"></div>')).toBe(3);
   });
 
   it("cancelled: when the plan ends and the one way back", () => {
@@ -154,12 +153,16 @@ describe("plan screen: one state at a time", () => {
     expect(html).toMatch(/<input type="radio" name="plan-interval" value="year"\/>/);
     for (const label of ["Assinar Pro mensal", "Assinar Pro anual", "Assinar Agência mensal", "Assinar Agência anual"]) expect(text).toContain(label);
     expect(html).toContain('aria-label="Assinar Pro mensal: R$ 14,90 por mês"');
-    expect(count(html, 'data-interval="month"')).toBe(4);
-    expect(count(html, 'data-interval="year"')).toBe(4);
-    // The free card keeps an empty offer row so the three feature lists line up.
-    expect(count(html, "lg:row-span-4")).toBe(3);
-    expect(text).toContain("R$ 29,80 a menos");
-    expect(text).toContain("R$ 115,80 a menos");
+    // A price per interval on each card, a button per interval on each paid card.
+    expect(count(html, 'data-interval="month"')).toBe(5);
+    expect(count(html, 'data-interval="year"')).toBe(5);
+    expect(text).toContain("Anual 2 meses grátis");
+    // The free card keeps an empty action row so the three lists line up.
+    expect(count(html, '<div class="plan-offer-action"></div>')).toBe(1);
+    expect(text).toContain("Economize R$ 29,80 por ano no plano anual");
+    expect(text).toContain("Economize R$ 115,80 por ano no plano anual");
+    expect(text).toContain("Tudo do Gratuito");
+    expect(text).toContain("Tudo do Pro");
     expect(text).toContain("Nenhum pagamento até agora.");
   });
 
@@ -223,5 +226,54 @@ describe("plan screen: heading", () => {
   it("is the same title in every state, with the lead only on the full screen", () => {
     expect(renderToStaticMarkup(createElement(PlanHeading))).toBe('<header class="grid gap-2"><h1 class="text-3xl font-bold">Plano e cobrança</h1></header>');
     expect(renderToStaticMarkup(createElement(PlanHeading, { lead: true }))).toContain("O plano define quantas páginas");
+  });
+});
+
+describe("plan screen: usage, cards and comparison", () => {
+  const usage = (overrides: Partial<WorkspaceUsage> = {}): WorkspaceUsage => ({ pages: 1, members: 1, pendingInvitations: 0, activeReportLinks: 0, storageBytes: 3.2 * 1048576, activeDomains: 0, pagesWithPixels: 0, ...overrides });
+
+  it("shows what the workspace uses against its plan, with the state in words", () => {
+    const { html, text } = render(null, "free", { usage: usage() });
+    expect(text).toContain("Uso desta conta");
+    expect(text).toContain("Páginas 1 de 1 No limite");
+    expect(text).toContain("Páginas arquivadas também contam.");
+    expect(text).toContain("Pessoas 1 de 1 No limite");
+    expect(text).toContain("Espaço para imagens 3,2 MB de 20 MB");
+    expect(html).toContain('<section class="surface-card grid content-start gap-4 p-5 sm:p-6" aria-labelledby="usage-title"><h2 id="usage-title"');
+  });
+
+  it("counts open invitations as seats and says so", () => {
+    const { text } = render(null, "agency", { usage: usage({ pages: 3, members: 2, pendingInvitations: 1 }) });
+    expect(text).toContain("Páginas 3 de 10");
+    expect(text).toContain("Pessoas 3 de 5");
+    expect(text).toContain("Inclui 1 convite pendente.");
+    expect(text).not.toContain("No limite");
+  });
+
+  it("says when the workspace is above a limit, after a cheaper plan", () => {
+    const { text } = render(null, "free", { usage: usage({ pages: 3 }) });
+    expect(text).toContain("Páginas 3 de 1 Acima do limite");
+  });
+
+  it("comes after the plan and its actions, so on a phone it never pushes the fix down", () => {
+    const { html } = render({ ...base, status: "past_due", graceUntil: days(5) }, "pro", { usage: usage() });
+    expect(html.indexOf("Atualizar forma de pagamento")).toBeGreaterThan(0);
+    expect(html.indexOf("Atualizar forma de pagamento")).toBeLessThan(html.indexOf("Uso desta conta"));
+  });
+
+  it("leaves usage out when it could not be read", () => {
+    expect(render(null, "free").text).not.toContain("Uso desta conta");
+  });
+
+  it("keeps the comparison one tap away, named by its summary", () => {
+    const { html } = render(null, "free");
+    expect(html).toContain('<details class="plan-compare-details"><summary id="compare-title">Comparar todos os recursos</summary>');
+    expect(html).toContain('<table aria-labelledby="compare-title">');
+    expect(count(html, 'scope="rowgroup"')).toBe(4);
+  });
+
+  it("says it is a test environment in a compact line", () => {
+    const { html } = render(null, "free");
+    expect(html).toMatch(/<p class="m-0 rounded-xl[^"]*text-sm[^"]*">Ambiente de teste\./);
   });
 });

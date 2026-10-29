@@ -388,7 +388,7 @@ async function lifecycle(fixtures, password) {
   const plans = await get(owner, plano);
   check("it opens for the owner and says it is a test environment", plans.status === 200 && plans.text.includes("Ambiente de teste"));
   for (const price of ["R$ 14,90", "R$ 149,00", "R$ 57,90", "R$ 579,00"]) check(`it shows ${price}`, plans.text.includes(price));
-  check("it states the yearly saving in reais", plans.text.includes("R$ 29,80 a menos") && plans.text.includes("R$ 115,80 a menos"));
+  check("it states the yearly saving in reais", plans.text.includes("Economize R$ 29,80 por ano") && plans.text.includes("Economize R$ 115,80 por ano"));
   check("it marks the current plan", plans.text.includes("Plano atual"));
   const adminPlans = await get(admin, plano);
   check("an admin sees the plan and no way to buy", adminPlans.status === 200 && adminPlans.text.includes("Só o proprietário") && !formsOf(adminPlans.html).some((form) => form.text.includes("Assinar")));

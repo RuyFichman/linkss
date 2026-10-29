@@ -1,8 +1,9 @@
 import { BILLING_COPY } from "@/content/pt-BR";
-import type { PlanId } from "@/lib/product";
+import { PRODUCT, type PlanId } from "@/lib/product";
 import { planEntitlementsFromProduct } from "@/modules/entitlements";
 import { can, type WorkspaceRole } from "@/modules/identity/permissions";
 import { formatMoney, type BillingInterval } from "./catalog";
+import type { PlanHighlight } from "./comparison";
 import type { ImpactItem } from "./downgrade-impact";
 import type { BillingMode } from "./mode";
 import type { BillingViewState } from "./subscription";
@@ -39,6 +40,21 @@ export function planFeatureLines(planId: PlanId, options: { customDomains?: bool
     ...(options.customDomains === false ? [] : [features.custom_domain ? copy.custom_domain.on : copy.custom_domain.off]),
     features.tracking_pixels ? copy.tracking_pixels.on : copy.tracking_pixels.off,
   ];
+}
+
+/** One line of a plan card: the home and the plan screen word them the same way. */
+export function planHighlightText(item: PlanHighlight): string {
+  const copy = BILLING_COPY.highlights;
+  switch (item.kind) {
+    case "everythingIn":
+      return copy.everythingIn(BILLING_COPY.planNames[item.planId]);
+    case "product":
+      return copy[item.key];
+    case "limit":
+      return copy[item.key](item.value);
+    case "feature":
+      return item.key === "remove_badge" ? copy.remove_badge(PRODUCT.name) : copy[item.key];
+  }
 }
 
 export function priceLabel(amountCents: number, interval: BillingInterval): string {

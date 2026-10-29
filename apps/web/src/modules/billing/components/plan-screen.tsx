@@ -5,11 +5,14 @@ import { Badge, Notice } from "@/ui";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { openSelfServiceAction, resumeSubscriptionAction, startCheckoutAction } from "../actions";
 import { BILLING_INTERVALS, PLAN_IDS, formatMoney, isPaidPlan, planPrice, yearlySavingCents, type BillingInterval } from "../catalog";
+import { planHighlights } from "../comparison";
+import { yearlyFreeMonths } from "../marketing";
 import type { BillingMode } from "../mode";
-import { INVOICE_TONE, STATE_TONE, type PlanScreen, type PlanSummary } from "../plan-screen";
-import { formatBillingDate, planFeatureLines, priceLabel } from "../presentation";
+import { INVOICE_TONE, STATE_TONE, type PlanScreen, type PlanSummary, type PlanUsageRow, type UsageLevel } from "../plan-screen";
+import { formatBillingDate, planHighlightText, priceLabel } from "../presentation";
 import type { InvoiceView } from "../read";
 import { BillingActionForm } from "./billing-action-form";
+import { PlanComparisonTable } from "./plan-comparison";
 
 const copy = BILLING_COPY;
 
@@ -45,6 +48,51 @@ function Summary({ summary }: { summary: PlanSummary }) {
   return <p className={summary.tone === "neutral" ? "m-0" : `m-0 ${SUMMARY_BOX[summary.tone]}`}>{summary.text}</p>;
 }
 
+const MEGABYTES = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+/** "3,2"; anything stored shows as at least 0,1. */
+function formatMegabytes(megabytes: number): string {
+  return MEGABYTES.format(megabytes > 0 && megabytes < 0.1 ? 0.1 : megabytes);
+}
+
+const USAGE_BAR: Record<UsageLevel, string> = { ok: "bg-app-ink", full: "bg-app-warning", over: "bg-app-danger" };
+
+function UsageRow({ row }: { row: PlanUsageRow }) {
+  const value = row.key === "storage" ? copy.usage.megabytes(formatMegabytes(row.used), row.limit) : copy.usage.count(row.used, row.limit);
+  const filled = row.limit > 0 ? Math.min(1, row.used / row.limit) : 1;
+  const note = row.key === "seats" && row.pending > 0 ? copy.usage.pending(row.pending) : row.key === "pages" && row.level !== "ok" ? copy.usage.archived : null;
+  return (
+    <li className="grid gap-1.5">
+      <p className="m-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
+        <span>{copy.usage[row.key]}</span>
+        <span className="flex items-center gap-2 font-semibold">
+          {value}
+          {row.level === "ok" ? null : <Badge tone={row.level === "over" ? "danger" : "warning"}>{row.level === "over" ? copy.usage.over : copy.usage.full}</Badge>}
+        </span>
+      </p>
+      {/* The words above carry the state; the bar only shows it at a glance. */}
+      <span className="block h-1.5 overflow-hidden rounded-full bg-app-surface-soft" aria-hidden="true">
+        <span className={`block h-full rounded-full ${USAGE_BAR[row.level]}`} style={{ width: `${Math.round(filled * 100)}%` }} />
+      </span>
+      {note ? <p className="m-0 text-sm text-app-muted">{note}</p> : null}
+    </li>
+  );
+}
+
+/**
+ * What the workspace uses against the plan in force: what decides whether a bigger plan is needed.
+ * A card of its own, after the plan on phones, so it never pushes the plan's actions down.
+ */
+function Usage({ rows }: { rows: PlanUsageRow[] }) {
+  return (
+    <section className="surface-card grid content-start gap-4 p-5 sm:p-6" aria-labelledby="usage-title">
+      <h2 id="usage-title" className="text-sm font-semibold text-app-muted">{copy.usage.title}</h2>
+      <ul className="m-0 grid list-none gap-4 p-0">
+        {rows.map((row) => <UsageRow key={row.key} row={row} />)}
+      </ul>
+    </section>
+  );
+}
+
 /**
  * The plan of the workspace first: what it is, what it costs or what is wrong, and the one thing to
  * do about it. The catalogue and the payment history follow.
@@ -54,22 +102,24 @@ function CurrentPlan({ workspaceId, screen }: { workspaceId: string; screen: Pla
   const hasCommands = commands !== null && (commands.fixPayment || commands.resume || commands.managePayment || commands.cancel);
   return (
     <section className="surface-card overflow-hidden" aria-labelledby="current-plan-title">
-      <div className="grid gap-4 p-5 sm:p-6">
-        <div className="grid gap-1">
-          <h2 id="current-plan-title" className="text-sm font-semibold text-app-muted">{copy.current.title}</h2>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <p className="brand-display m-0 text-2xl font-bold">{copy.planNames[screen.currentPlan]}</p>
-            {state.kind === "free" ? null : <Badge tone={STATE_TONE[state.kind]}>{copy.statusLabel[state.kind]}</Badge>}
+      <div className="grid gap-5 p-5 sm:p-6">
+        <div className="grid content-start gap-4">
+          <div className="grid gap-1">
+            <h2 id="current-plan-title" className="text-sm font-semibold text-app-muted">{copy.current.title}</h2>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <p className="brand-display m-0 text-3xl font-extrabold">{copy.planNames[screen.currentPlan]}</p>
+              {state.kind === "free" ? null : <Badge tone={STATE_TONE[state.kind]}>{copy.statusLabel[state.kind]}</Badge>}
+            </div>
           </div>
+          <Summary summary={screen.summary} />
+          {yearly ? (
+            <div className="flex flex-wrap items-center gap-x-4 text-sm">
+              <p className="m-0 text-app-muted">{copy.plans.toYearlyHint(formatMoney(yearly.savingCents))}</p>
+              {yearly.offered ? <Link className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4" href={`/app/w/${workspaceId}/plano/confirmar?acao=anual`}>{copy.plans.toYearly}</Link> : null}
+            </div>
+          ) : null}
+          {screen.yearlyOnly ? <p className="m-0 text-sm text-app-muted">{copy.plans.yearlyOnly}</p> : null}
         </div>
-        <Summary summary={screen.summary} />
-        {yearly ? (
-          <div className="flex flex-wrap items-center gap-x-4 text-sm">
-            <p className="m-0 text-app-muted">{copy.plans.toYearlyHint(formatMoney(yearly.savingCents))}</p>
-            {yearly.offered ? <Link className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4" href={`/app/w/${workspaceId}/plano/confirmar?acao=anual`}>{copy.plans.toYearly}</Link> : null}
-          </div>
-        ) : null}
-        {screen.yearlyOnly ? <p className="m-0 text-sm text-app-muted">{copy.plans.yearlyOnly}</p> : null}
       </div>
       {commands === null ? (
         <p className="m-0 border-t border-app-border bg-app-surface-soft/50 px-5 py-4 text-sm text-app-muted sm:px-6">{copy.ownerOnly}</p>
@@ -92,65 +142,54 @@ function CurrentPlan({ workspaceId, screen }: { workspaceId: string; screen: Pla
   );
 }
 
-function PlanCard({ workspaceId, planId, screen, intervals, choice, withOffers, customDomains }: {
+function PlanCard({ workspaceId, planId, screen, intervals, choice, customDomains }: {
   workspaceId: string;
   planId: PlanId;
   screen: PlanScreen;
   intervals: readonly BillingInterval[];
   choice: boolean;
-  /** Some card offers something: every card keeps a row for it so the features line up. */
-  withOffers: boolean;
   customDomains: boolean;
 }) {
   const name = copy.planNames[planId];
+  const paid = isPaidPlan(planId);
   const isCurrent = planId === screen.currentPlan;
   const offer = screen.offers[planId];
   const saving = yearlySavingCents(planId);
   // Under a choice of interval each price and its button belong to one interval; CSS shows the chosen one.
   const intervalOf = (interval: BillingInterval) => (choice ? interval : undefined);
   return (
-    <li className={`plan-card surface-card grid content-start gap-4 p-5 lg:grid-rows-subgrid ${withOffers ? "lg:row-span-4" : "lg:row-span-3"}`} aria-current={isCurrent ? "true" : undefined}>
-      <div className="grid content-start gap-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-lg font-bold">{name}</h3>
-          {isCurrent ? <Badge tone="accent">{copy.current.badge}</Badge> : null}
-        </div>
-        <p className="m-0 text-sm text-app-muted">{copy.planDescriptions[planId]}</p>
-      </div>
-      <div className="grid content-start gap-1">
-        {isPaidPlan(planId) ? intervals.map((interval) => {
-          const price = planPrice(planId, interval);
-          return price ? (
-            <div key={interval} className="grid gap-1" data-interval={intervalOf(interval)}>
-              <p className="m-0 flex flex-wrap items-baseline gap-x-1.5"><span className="brand-display text-2xl font-bold">{formatMoney(price.amountCents)}</span><span className="text-sm text-app-muted">{copy.perInterval[interval]}</span></p>
-              {interval === "year" && saving > 0 ? <p className="m-0 text-sm text-app-muted">{copy.yearlySaving(formatMoney(saving))}</p> : null}
-            </div>
-          ) : null;
-        }) : (
-          <>
-            <p className="m-0"><span className="brand-display text-2xl font-bold">{copy.freePrice}</span></p>
-            <p className="m-0 text-sm text-app-muted">{copy.plans.freeAlways}</p>
-          </>
-        )}
-      </div>
-      {/* Kept empty on wide screens so every card's features start on the same line. */}
-      {withOffers ? <div className="grid content-start gap-2 max-lg:empty:hidden">
+    <li className="plan-offer" data-featured={isCurrent ? "" : undefined} aria-current={isCurrent ? "true" : undefined}>
+      <h3 className="brand-display font-extrabold">{name}</h3>
+      {isCurrent ? <p className="plan-offer-badge">{copy.current.badge}</p> : null}
+      {intervals.map((interval) => {
+        const price = paid ? planPrice(planId, interval) : null;
+        if (paid && !price) return null;
+        return (
+          <p key={interval} className="plan-offer-price" data-interval={intervalOf(interval)}>
+            {/* The spaces keep the words apart for screen readers; the flex layout does not render them. */}
+            <b className="brand-display">{price ? formatMoney(price.amountCents) : copy.freePrice}</b>{" "}
+            <span aria-hidden="true">{copy.perShort[interval]}</span>
+            <span className="sr-only">{copy.perInterval[interval]}</span>
+          </p>
+        );
+      })}
+      {/* Always present, empty when there is nothing to say: the cards share their rows (globals.css). */}
+      <p className="plan-offer-saving">{paid && choice && saving > 0 ? copy.yearlySaving(formatMoney(saving)) : null}</p>
+      <p className="plan-offer-description">{copy.planDescriptions[planId]}</p>
+      <ul className="plan-offer-items">
+        {planHighlights(planId, { customDomains }).map((item) => <li key={item.kind === "everythingIn" ? item.kind : item.key}>{planHighlightText(item)}</li>)}
+      </ul>
+      <div className="plan-offer-action">
         {offer === "subscribe" ? intervals.map((interval) => {
           const price = planPrice(planId, interval);
           const label = copy.plans.subscribe(name, copy.intervalAdjective[interval]);
           return price ? (
             <div key={interval} data-interval={intervalOf(interval)}>
-              <BillingActionForm action={startCheckoutAction.bind(null, workspaceId, planId, interval)} label={label} ariaLabel={`${label}: ${priceLabel(price.amountCents, interval)}`} />
+              <BillingActionForm action={startCheckoutAction.bind(null, workspaceId, planId, interval)} label={label} ariaLabel={`${label}: ${priceLabel(price.amountCents, interval)}`} fullWidth />
             </div>
           ) : null;
         }) : null}
-        {offer === "change" ? <Link className="ui-button ui-button-secondary w-full sm:w-auto sm:justify-self-start" href={`/app/w/${workspaceId}/plano/confirmar?acao=mudar&plano=${planId}`}>{copy.plans.changeTo(name)}</Link> : null}
-      </div> : null}
-      <div className="grid content-start gap-2 border-t border-app-border pt-4">
-        <h4 className="text-sm font-semibold">{copy.plans.includes(name)}</h4>
-        <ul className="m-0 grid list-disc gap-1 pl-5 text-sm marker:text-app-muted">
-          {planFeatureLines(planId, { customDomains }).map((line) => <li key={line}>{line}</li>)}
-        </ul>
+        {offer === "change" ? <Link className="ui-button ui-button-secondary w-full" href={`/app/w/${workspaceId}/plano/confirmar?acao=mudar&plano=${planId}`}>{copy.plans.changeTo(name)}</Link> : null}
       </div>
     </li>
   );
@@ -160,9 +199,9 @@ function Catalogue({ workspaceId, screen, customDomains }: { workspaceId: string
   const { prices } = screen;
   const choice = prices.kind === "choice";
   const intervals = prices.kind === "fixed" ? [prices.interval] : BILLING_INTERVALS;
-  const withOffers = PLAN_IDS.some((planId) => screen.offers[planId] !== null);
+  const freeMonths = yearlyFreeMonths();
   return (
-    <section className="plan-catalogue grid gap-4" aria-labelledby="plans-title">
+    <section className="plan-catalogue grid gap-6" aria-labelledby="plans-title" data-interval-scope="">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="grid gap-1">
           <h2 id="plans-title" className="text-xl font-bold">{copy.plans.title}</h2>
@@ -176,16 +215,20 @@ function Catalogue({ workspaceId, screen, customDomains }: { workspaceId: string
             {BILLING_INTERVALS.map((interval) => (
               <label key={interval}>
                 <input type="radio" name="plan-interval" value={interval} defaultChecked={interval === prices.initial} />
-                <span>{copy.intervals[interval]}</span>
+                <span>{copy.intervals[interval]}{interval === "year" && freeMonths ? <>{" "}<b className="plan-interval-badge">{copy.freeMonths(freeMonths)}</b></> : null}</span>
               </label>
             ))}
           </fieldset>
         ) : null}
       </div>
-      <ul className="m-0 grid list-none gap-4 p-0 lg:grid-cols-3">
-        {PLAN_IDS.map((planId) => <PlanCard key={planId} workspaceId={workspaceId} planId={planId} screen={screen} intervals={intervals} choice={choice} withOffers={withOffers} customDomains={customDomains} />)}
+      <ul className="plan-offers">
+        {PLAN_IDS.map((planId) => <PlanCard key={planId} workspaceId={workspaceId} planId={planId} screen={screen} intervals={intervals} choice={choice} customDomains={customDomains} />)}
       </ul>
       {screen.selling ? <p className="m-0 text-sm text-app-muted">{copy.provider}</p> : null}
+      <details className="plan-compare-details">
+        <summary id="compare-title">{copy.plans.compare}</summary>
+        <PlanComparisonTable customDomains={customDomains} labelledBy="compare-title" />
+      </details>
     </section>
   );
 }
@@ -236,7 +279,7 @@ function PaymentHistory({ invoices }: { invoices: InvoiceView[] }) {
 }
 
 /**
- * Plan and billing of one workspace (ADR 0014, UX-106). Server-rendered presentation of planScreen:
+ * Plan and billing of one workspace (ADR 0014, UX-106, UX-108). Server-rendered presentation of planScreen:
  * the route loads and authorizes, the actions re-authorize, and nothing here decides who may do what.
  * `data-plan-screen` hides the workspace's failing-payment banner here, where the card says the same
  * thing next to the way to fix it (globals.css).
@@ -256,9 +299,14 @@ export function PlanScreenView({ workspaceId, screen, invoices, mode, deployed, 
       <PlanHeading lead />
       {notice ? <Notice tone="success">{notice}</Notice> : null}
       {suspended ? <Notice tone="warning">{copy.suspended}</Notice> : null}
-      <CurrentPlan workspaceId={workspaceId} screen={screen} />
+      {screen.usage ? (
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)]">
+          <CurrentPlan workspaceId={workspaceId} screen={screen} />
+          <Usage rows={screen.usage} />
+        </div>
+      ) : <CurrentPlan workspaceId={workspaceId} screen={screen} />}
       {/* About selling, not about this workspace's plan: right before the catalogue and its buttons. */}
-      {mode === "sandbox" ? <Notice tone="warning">{copy.sandbox}</Notice> : null}
+      {mode === "sandbox" ? <p className="m-0 rounded-xl border border-app-warning/30 bg-app-warning-soft px-4 py-2.5 text-sm text-app-warning">{copy.sandbox}</p> : null}
       {!deployed ? <Notice>{copy.notDeployed}</Notice> : mode === "off" ? <Notice>{copy.off}</Notice> : null}
       <Catalogue workspaceId={workspaceId} screen={screen} customDomains={customDomains} />
       {screen.showHistory ? <PaymentHistory invoices={invoices} /> : null}

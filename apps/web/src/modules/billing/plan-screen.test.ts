@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlanId } from "@/lib/product";
+import type { WorkspaceUsage } from "./downgrade-impact";
 import type { BillingMode } from "./mode";
 import { planScreen, type PlanScreenInput } from "./plan-screen";
 import type { WorkspaceBilling } from "./read";
@@ -13,7 +14,7 @@ const base: SubscriptionRecord = { status: "active", planId: "pro", interval: "m
 function input(record: SubscriptionRecord | null, planId: PlanId, overrides: Partial<Omit<PlanScreenInput, "billing">> & { amountCents?: number | null; deployed?: boolean } = {}): PlanScreenInput {
   const { amountCents = record ? 1490 : null, deployed = true, ...rest } = overrides;
   const billing: WorkspaceBilling = { deployed, planId, record, amountCents, invoices: [] };
-  return { billing, mode: "sandbox" as BillingMode, isOwner: true, suspended: false, now: T0, ...rest };
+  return { billing, mode: "sandbox" as BillingMode, isOwner: true, suspended: false, now: T0, usage: null, ...rest };
 }
 
 describe("plan screen: what the current plan says", () => {
@@ -146,5 +147,37 @@ describe("plan screen: the catalogue", () => {
   it("shows the payment history to the owner once billing exists, whether or not plans are for sale", () => {
     expect(planScreen(input(base, "pro", { mode: "off" })).showHistory).toBe(true);
     expect(planScreen(input(null, "free", { deployed: false })).showHistory).toBe(false);
+  });
+});
+
+describe("plan screen: usage against the plan in force", () => {
+  const usage = (overrides: Partial<WorkspaceUsage> = {}): WorkspaceUsage => ({ pages: 1, members: 1, pendingInvitations: 0, activeReportLinks: 0, storageBytes: 0, activeDomains: 0, pagesWithPixels: 0, ...overrides });
+
+  it("is left out when it could not be read", () => {
+    expect(planScreen(input(null, "free")).usage).toBeNull();
+  });
+
+  it("compares pages, seats and image space with the plan's limits", () => {
+    expect(planScreen(input(null, "free", { usage: usage({ storageBytes: 5 * 1048576 }) })).usage).toEqual([
+      { key: "pages", used: 1, limit: 1, level: "full", pending: 0 },
+      { key: "seats", used: 1, limit: 1, level: "full", pending: 0 },
+      { key: "storage", used: 5, limit: 20, level: "ok", pending: 0 },
+    ]);
+  });
+
+  it("counts open invitations as seats", () => {
+    const [, seats] = planScreen(input(null, "agency", { usage: usage({ members: 2, pendingInvitations: 2 }) })).usage ?? [];
+    expect(seats).toEqual({ key: "seats", used: 4, limit: 5, level: "ok", pending: 2 });
+  });
+
+  it("marks what is above the limit, as after a cheaper plan", () => {
+    const [pages] = planScreen(input(null, "free", { usage: usage({ pages: 4 }) })).usage ?? [];
+    expect(pages).toMatchObject({ used: 4, limit: 1, level: "over" });
+  });
+
+  it("uses the limits of the plan the workspace has today, not of a plan only scheduled", () => {
+    // Agency paid until the change: the workspace still has Agency's limits.
+    const screen = planScreen(input({ ...base, planId: "pro", heldPlanId: "agency", heldUntil: days(10) }, "agency", { usage: usage({ pages: 6 }) }));
+    expect(screen.usage?.[0]).toMatchObject({ used: 6, limit: 10, level: "ok" });
   });
 });

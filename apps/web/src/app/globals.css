@@ -51,6 +51,10 @@
   --app-danger: #b42318;
   --app-danger-soft: #fff0ee;
   --app-focus: #7047eb;
+  --plan-line: #ebe8f5;
+  --plan-featured-line: #cdbfff;
+  --plan-check: #c9f0dc;
+  --plan-badge: linear-gradient(90deg, #7c3aed, #b62bd0 55%, #d02670);
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -168,18 +172,85 @@ button, a, input, select, textarea, summary { outline: none; }
   .page-card-actions { display: flex; flex-wrap: wrap; padding-inline: 1.25rem; }
 }
 
-/* Plan screen (UX-106). The interval choice is two native radios; the other interval's prices and
-   buttons hide through :has, so it works without JavaScript, and where :has is missing both stay
-   visible. The failing-payment banner is hidden there: the plan card says the same next to the fix. */
-.plan-card[aria-current="true"] { border-color: var(--app-ink); box-shadow: inset 0 0 0 1px var(--app-ink), var(--shadow-soft); }
-.plan-interval { display: inline-flex; min-width: 0; gap: 0.25rem; margin: 0; border: 1px solid var(--app-border); border-radius: 999px; background: var(--app-surface); padding: 0.25rem; }
+/* Plans, shared by the home (UX-107) and the plan screen (UX-106, UX-108): the monthly/yearly choice,
+   the plan cards and the comparison table. The choice is two native radios inside a
+   `[data-interval-scope]`; the other interval's prices and buttons hide through :has, so it works
+   without JavaScript, and where :has is missing both stay visible. Fonts come from each context
+   (`home-display` or `brand-display` on the element). */
+.plan-interval { display: flex; width: fit-content; min-width: 0; max-width: 100%; gap: 0.25rem; margin: 0; border: 1px solid var(--app-border); border-radius: 999px; background: var(--app-surface); padding: 0.25rem; box-shadow: 0 6px 20px rgb(40 30 90 / 0.08); }
 .plan-interval label { position: relative; display: inline-flex; }
 .plan-interval input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
-.plan-interval span { display: inline-flex; min-width: 6rem; min-height: 44px; align-items: center; justify-content: center; border-radius: 999px; padding: 0 1rem; font-weight: 600; }
+.plan-interval label > span { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 999px; padding: 0 1rem; font-weight: 600; white-space: nowrap; }
 .plan-interval input:checked + span { color: var(--app-surface); background: var(--app-ink); }
 .plan-interval input:focus-visible + span { outline: 3px solid var(--app-focus); outline-offset: 2px; }
-.plan-catalogue:has(.plan-interval input[value="month"]:checked) [data-interval="year"],
-.plan-catalogue:has(.plan-interval input[value="year"]:checked) [data-interval="month"] { display: none; }
+.plan-interval-badge { border-radius: 999px; color: var(--app-surface); background: var(--app-success); padding: 0.15rem 0.55rem; font-size: 0.75rem; font-weight: 700; }
+@media (min-width: 480px) { .plan-interval label > span { min-width: 9rem; } }
+[data-interval-scope]:has(.plan-interval input[value="month"]:checked) [data-interval="year"],
+[data-interval-scope]:has(.plan-interval input[value="year"]:checked) [data-interval="month"] { display: none; }
+
+.plan-offers { display: grid; gap: 2rem; margin: 0; padding: 0; list-style: none; }
+.plan-offer { position: relative; display: flex; flex-direction: column; border: 1px solid var(--plan-line); border-radius: var(--radius-card); background: var(--app-surface); padding: 2rem 1.6rem 1.6rem; box-shadow: 0 22px 50px rgb(240 150 200 / 0.18); }
+.plan-offer:nth-child(3) { box-shadow: 0 22px 50px rgb(120 170 240 / 0.2); }
+.plan-offer[data-featured] { border-color: var(--plan-featured-line); box-shadow: 0 24px 60px rgb(150 110 240 / 0.28); }
+.plan-offer-badge { position: absolute; top: 0; left: 50%; margin: 0; border-radius: 999px; color: #ffffff; background: var(--plan-badge); padding: 0.3rem 0.85rem; font-size: 0.75rem; font-weight: 700; white-space: nowrap; transform: translate(-50%, -50%); }
+.plan-offer h3 { margin: 0; font-size: 1.75rem; line-height: 1.1; }
+.plan-offer-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.45rem; margin: 0.9rem 0 0; color: var(--app-muted); }
+.plan-offer-price b { color: var(--app-ink); font-size: 2.6rem; font-weight: 800; line-height: 1; letter-spacing: -0.04em; }
+.plan-offer-price[data-soon] b { color: var(--app-muted); font-size: 2rem; letter-spacing: -0.03em; }
+.plan-offer-saving { margin: 0.75rem 0 0; color: var(--app-success); font-size: 0.8125rem; font-weight: 700; }
+.plan-offer-saving:empty { margin: 0; }
+.plan-offer-description { margin: 1rem 0 0; color: var(--app-muted); line-height: 1.55; }
+.plan-offer-items { display: grid; gap: 0.75rem; margin: 1.5rem 0 2rem; padding: 0; list-style: none; }
+.plan-offer-items li { display: flex; gap: 0.65rem; line-height: 1.4; }
+.plan-offer-items li::before { display: grid; width: 1.25rem; height: 1.25rem; flex: none; place-items: center; border-radius: 50%; color: var(--app-success); background: var(--plan-check); font-size: 0.75rem; font-weight: 800; content: "✓"; }
+.plan-offer-action { display: grid; gap: 0.5rem; margin-top: auto; }
+.plan-offer-action:empty { display: none; }
+/* Side by side, the cards share six rows (name, price, saving, description, list, action), so the
+   lists and the buttons line up whatever each card has to say. */
+@media (min-width: 960px) {
+  .plan-offers { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 1.5rem; row-gap: 0; }
+  .plan-offer { display: grid; grid-row: span 6; grid-template-rows: subgrid; row-gap: 0; }
+  .plan-offer-items { align-self: start; }
+  .plan-offer-action:empty { display: block; }
+}
+
+/* Comparison table. The plan names stay at the top while the rows scroll; a context with a sticky
+   bar sets --plan-compare-top below it. */
+.plan-compare { overflow: clip; border: 1px solid var(--plan-line); border-radius: var(--radius-card); background: var(--app-surface); box-shadow: -14px 24px 60px rgb(150 110 240 / 0.14), 14px 24px 60px rgb(240 150 200 / 0.14); }
+.plan-compare table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.875rem; }
+.plan-compare-plan { width: 3.75rem; }
+.plan-compare th, .plan-compare td { border-top: 1px solid var(--app-border); padding: 0.8rem 0.25rem; font-weight: 400; line-height: 1.35; text-align: center; vertical-align: middle; }
+.plan-compare th:first-child { padding-left: 0.85rem; text-align: left; }
+.plan-compare thead th { position: sticky; top: var(--plan-compare-top, 0); z-index: 1; border-top: 0; background: var(--app-surface-soft); padding-block: 1.1rem; font-weight: 600; }
+.plan-compare-group th { padding-top: 1.6rem; font-size: 0.9375rem; font-weight: 600; }
+.plan-compare-group th::before { display: inline-block; width: 3px; height: 1rem; margin-right: 0.6rem; border-radius: 2px; background: var(--group-color); content: ""; vertical-align: -0.15em; }
+.plan-compare [data-group="page"] { --group-color: #7cc4f2; }
+.plan-compare [data-group="blocks"] { --group-color: #6fd6a8; }
+.plan-compare [data-group="results"] { --group-color: #b49cf5; }
+.plan-compare [data-group="team"] { --group-color: #f3c46f; }
+.plan-compare-mark { display: inline-flex; min-width: 1.75rem; min-height: 1.75rem; align-items: center; justify-content: center; gap: 0.3rem; border-radius: 999px; color: var(--app-muted); background: var(--app-surface-soft); font-size: 0.75rem; font-weight: 700; }
+.plan-compare-mark[data-included] { color: var(--app-success); background: var(--app-success-soft); }
+.plan-compare-mark svg { width: 0.95rem; height: 0.95rem; flex: none; }
+.plan-compare-limit { font-weight: 700; }
+/* Narrow screens: icons only; the words stay for screen readers. */
+.plan-compare-word { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (min-width: 480px) {
+  .plan-compare-plan { width: 6rem; }
+  .plan-compare th:first-child { padding-left: 1.5rem; }
+  .plan-compare-mark { min-height: 0; padding: 0.2rem 0.65rem; }
+  .plan-compare-mark:not([data-included]) svg { display: none; }
+  .plan-compare-word { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+}
+@media (min-width: 768px) { .plan-compare-plan { width: 8rem; } }
+@media (min-width: 1024px) { .plan-compare-plan { width: 9.5rem; } }
+
+/* Plan screen: the comparison opens on demand under the cards. */
+.plan-compare-details > summary { display: inline-flex; min-height: 44px; align-items: center; gap: 0.6rem; border: 1px solid var(--app-border); border-radius: 999px; background: var(--app-surface); padding: 0 1.1rem; font-weight: 600; cursor: pointer; list-style: none; box-shadow: var(--shadow-soft); }
+.plan-compare-details > summary::-webkit-details-marker { display: none; }
+.plan-compare-details > summary::after { width: 0.5rem; height: 0.5rem; border-right: 2px solid currentcolor; border-bottom: 2px solid currentcolor; content: ""; transform: translateY(-20%) rotate(45deg); transition: transform var(--duration-fast) var(--ease-product); }
+.plan-compare-details[open] > summary::after { transform: translateY(20%) rotate(225deg); }
+.plan-compare-details > .plan-compare { margin-top: 1rem; }
+
 body:has([data-plan-screen]) [data-billing-banner] { display: none; }
 
 .ui-dialog { margin: auto; width: min(560px, calc(100% - 2rem)); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid var(--app-border); border-radius: var(--radius-panel); color: var(--app-text); background: var(--app-surface); padding: 1.5rem; box-shadow: var(--shadow-raised); }
