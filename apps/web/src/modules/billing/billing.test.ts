@@ -8,7 +8,7 @@ import { WORKSPACE_ROLES } from "@/modules/identity/permissions";
 import { customerRegistrationMessage, serializeBillingSnapshot, signBillingMessage } from "./attestation";
 import { BILLING_INTERVALS, PAID_PLAN_IDS, PLAN_IDS, PRICE_CATALOG, RETIRED_PRICES, formatMoney, isPaidPlan, planForCharge, planPrice, planRank, yearlySavingCents } from "./catalog";
 import { downgradeImpact, hasImpact, type WorkspaceUsage } from "./downgrade-impact";
-import { paidPlansAreOnSale } from "./marketing";
+import { paidPlansAreOnSale, yearlyFreeMonths } from "./marketing";
 import { billingSecrets, resolveBillingMode } from "./mode";
 import { billingBannerSentence, billingStateSentence, formatBillingDate, impactSentence, planFeatureLines, priceLabel, upgradeHref } from "./presentation";
 import { billingErrorFromDatabase, pickCurrentSubscription, toInvoiceView, toSubscriptionRecord } from "./read";
@@ -328,11 +328,19 @@ describe("marketing (D6)", () => {
     expect(plans.lead).toContain("ainda não estão à venda");
     expect(plans.lead).not.toMatch(/R\$|preço/);
     expect(plans.leadSelling).not.toContain("em breve");
-    expect(plans.perMonth(formatMoney(1490))).toBe("R$ 14,90 por mês");
-    expect(plans.orPerYear(formatMoney(14900))).toBe("ou R$ 149,00 por ano");
+    expect(plans.saving(formatMoney(yearlySavingCents("pro")))).toBe("Economize R$ 29,80 por ano no plano anual");
     for (const entry of HOME_COPY.faq.items) {
       if ("answerSelling" in entry) expect(entry.answerSelling).not.toContain("ainda não");
+      if ("answerDomains" in entry) expect(entry.answerDomains).not.toContain("ainda não");
     }
+  });
+
+  it("labels the yearly choice with the whole months it leaves unpaid, the same for every paid plan", () => {
+    // R$ 149 = 10 x R$ 14,90 and R$ 579 = 10 x R$ 57,90.
+    expect(yearlyFreeMonths()).toBe(2);
+    for (const planId of PAID_PLAN_IDS) expect(yearlySavingCents(planId)).toBe(2 * PRODUCT.plans[planId].monthlyPriceInCents);
+    expect(HOME_COPY.plans.freeMonths(2)).toBe("2 meses grátis");
+    expect(HOME_COPY.plans.freeMonths(1)).toBe("1 mês grátis");
   });
 });
 

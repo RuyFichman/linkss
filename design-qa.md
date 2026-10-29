@@ -167,3 +167,44 @@ Product typeface note: `tabular-nums` widens the decimal comma of an amount in S
 Gates: `node scripts/billing-lifecycle.mjs` passes 156 checks. Two checks that read the old active-state sentence now read the facts list. `npm run check` passes: lint without warnings, typecheck without errors, 1,444 tests in 64 files (40 of them new for this screen), and a successful Next 16.4.1 production build.
 
 Screenshots were kept outside the repository. Not verified: a real phone, Safari/iOS or Firefox, a screen reader, a real Stripe sandbox or live account (the provider portal and checkout were not opened), deployment and production.
+
+## Home plans and comparison (UX-107) — 2026-10-28
+
+Scope: the `#planos` section of the marketing home, redrawn after a reference the founder supplied, and a new `#comparar` section right after it. `Pricing` and `PlanComparison` live in `app/(marketing)/pricing.tsx`, which has no `next/font` import, so Vitest can render them. What each plan includes comes from `modules/billing/comparison.ts`, which is pure and unit-tested and takes every limit and plan feature from the entitlements. The "2 meses grátis" label comes from `yearlyFreeMonths` in `modules/billing/marketing.ts`; it appears only when the yearly price leaves out the same whole number of months for every paid plan. No route, entitlement, price, dependency or billing rule changed.
+
+- The section has a pill link to the comparison, the title "Planos e preços", the lead, and three cards with a coloured glow.
+  - The free card carries a gradient badge.
+  - Each card has its price, the yearly saving, a description, a checklist and a full-width button.
+  - From 860px the cards share six rows through CSS subgrid, so descriptions, lists and buttons line up.
+- Kept from the reference only what is true of the product:
+  - The badge says "Disponível agora", or "Comece por aqui" while paid plans are on sale, never "Mais popular".
+  - There is no trial button.
+  - Paid amounts, the Monthly/Yearly choice and the subscribe buttons still appear only with `live` billing (ADR 0014). Before that, paid cards say "Em breve", and their button ("Começar no Gratuito") leads to sign-up, which starts on the free plan.
+- The comparison is a real `<table>`: column headers for the plans, a `rowgroup` header per group and a row header per feature.
+  - "Sim" and "Não" are words with a check or a dash. Below 480px only the icon shows, and the word stays for screen readers.
+  - Limits are amounts.
+  - The header row is sticky below the floating header bar.
+  - The custom-domain row and card line appear only when `DOMAINS_SIGNING_SECRET` is set, as on `/precos`.
+  - The FAQ answer about domains says "Sim" only while paid plans are on sale and domains are configured.
+
+Measurements on local production builds, Chrome, captures at 320/390/768/1280 px of `#planos` and `#comparar`, using a scratchpad script outside the repository:
+
+- Before, the existing home: status 200, no overflow, no text under 12px, no control under 44px, axe-core 4.13 WCAG 2.2 A/AA clean.
+- After, default configuration (billing off, no domain secret): the same at every width, with no table cell overflowing. At 320px the table takes 8px side margins instead of the 20px gutter.
+- After, a throwaway local build with `BILLING_MODE=live` and placeholder keys (never deployed; the home calls no provider): the same at every width.
+
+Interaction on the on-sale build, Chrome at 390px with touch emulation:
+
+- Monthly amounts show first.
+- Tapping "Anual" shows only the yearly amounts.
+- The radio is named "Anual 2 meses grátis" inside a group named "Mostrar preços".
+- The arrow keys move the choice, and keyboard focus draws a 3px outline.
+- The pill link scrolls to the comparison.
+- The plan names stay visible below the header bar while the table scrolls.
+- No console error, page error or CSP violation.
+
+9 checks pass.
+
+Gates: `npm run check` passes, with lint showing no warnings, typecheck showing no errors, 1,462 tests in 66 files, and a successful Next 16.4.1 production build. 18 of those tests are new, covering the comparison model, the render of both billing modes and the free-months label.
+
+Not verified: a real phone, Safari/iOS or Firefox, a screen reader, deployment and production.
