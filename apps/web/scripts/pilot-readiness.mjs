@@ -243,7 +243,7 @@ try {
   await audit(ownerPage, "/app/w/<conta> (primeiros passos, com rascunho)");
   sql(`do $$ begin perform set_config('request.jwt.claims', '{"sub":"${owner.id}","role":"authenticated"}', true); perform public.publish_profile('${profile}'); end $$;`);
   await ownerPage.goto(`${base}/app/w/${workspace}`);
-  await ownerPage.locator(".page-card").first().waitFor();
+  await ownerPage.locator(".page-row").first().waitFor();
   check(await ownerPage.getByRole("heading", { name: "Primeiros passos" }).count() === 0, "After the first publication the first steps are gone");
 
   // ---- Billing: the yearly change and the cancellation with its reason, with a provider that does not answer. ----

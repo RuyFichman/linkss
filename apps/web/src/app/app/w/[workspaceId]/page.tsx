@@ -2,7 +2,7 @@ import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { APP_COPY, ONBOARDING_COPY, TEAM_COPY, WORKSPACE_ANALYTICS_COPY } from "@/content/pt-BR";
-import { publicAddressLabel } from "@/lib/app-url";
+import { publicAddressLabel, publicPageUrl } from "@/lib/app-url";
 import { limitUsage } from "@/modules/entitlements";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { can } from "@/modules/identity/permissions";
@@ -19,6 +19,11 @@ export const metadata: Metadata = { title: "Páginas" };
 
 const STATUS_TONE = { draft: "neutral", published: "success", archived: "warning" } as const;
 const FILTERS = [null, "draft", "published", "archived"] as const;
+
+const ICON = { viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, focusable: false } as const;
+const SearchIcon = <svg {...ICON} className="page-search-icon"><circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3 3" /></svg>;
+const SortIcon = <svg {...ICON} width="16" height="16"><path d="M5 3v10M2.5 10.5 5 13l2.5-2.5M11 13V3M8.5 5.5 11 3l2.5 2.5" /></svg>;
+const ExternalIcon = <svg {...ICON} width="12" height="12"><path d="M9 3h4v4M13 3 7.5 8.5M12 9.5V13H3V4h3.5" /></svg>;
 
 function single(value: string | string[] | undefined): string | undefined {
   return typeof value === "string" ? value : undefined;
@@ -54,15 +59,16 @@ export default async function WorkspaceHomePage({ params, searchParams }: { para
   const firstPage = !filtered ? list.items[0] : undefined;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
       {notice ? <Notice tone="success">{notice}</Notice> : null}
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+        <div className="grid gap-2">
           <h1 className="text-3xl font-bold">{copy.listTitle}</h1>
-          <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-app-muted">
-            <Badge tone={usage.reached ? "warning" : "accent"}>{copy.usage(usage.used, usage.limit)}</Badge>
-            {list.counts.archived > 0 ? <span>{copy.usageNote}</span> : null}
-          </p>
+          <div className="page-usage" data-reached={usage.reached ? "" : undefined}>
+            <span className="page-usage-text">{copy.usage(usage.used, usage.limit)}</span>
+            <span className="page-usage-bar" aria-hidden="true"><span style={{ width: `${usage.limit > 0 ? Math.min(100, (usage.used / usage.limit) * 100) : 100}%` }} /></span>
+            {list.counts.archived > 0 ? <span className="text-sm text-app-muted">{copy.usageNote}</span> : null}
+          </div>
         </div>
         <div className="flex flex-wrap gap-3">
           {list.total > 0 ? <Link className="ui-button ui-button-secondary" href={`/app/w/${workspaceId}/resultados`}>{WORKSPACE_ANALYTICS_COPY.openFromList}</Link> : null}
@@ -101,30 +107,29 @@ export default async function WorkspaceHomePage({ params, searchParams }: { para
       ) : (
         <>
           {list.searchable ? (
-            <section className="grid gap-3" aria-label={copy.search.label}>
-              <form action={`/app/w/${workspaceId}`} method="get" role="search" className="flex flex-wrap items-end gap-3">
-                <div className="ui-field min-w-0 flex-1 basis-56">
-                  <label htmlFor="page-search">{copy.search.label}</label>
-                  <input id="page-search" name="q" type="search" className="ui-input" defaultValue={listParams.search} placeholder={copy.search.placeholder} maxLength={80} autoComplete="off" enterKeyHint="search" />
-                </div>
+            <section className="page-toolbar" aria-label={copy.search.label}>
+              <form action={`/app/w/${workspaceId}`} method="get" role="search" className="page-search">
+                <label htmlFor="page-search" className="sr-only">{copy.search.label}</label>
+                {SearchIcon}
+                <input id="page-search" name="q" type="search" className="page-search-input" defaultValue={listParams.search} placeholder={copy.search.placeholder} maxLength={80} autoComplete="off" enterKeyHint="search" />
                 {listParams.status ? <input type="hidden" name="situacao" value={single(query.situacao) ?? ""} /> : null}
                 {listParams.order === "name" ? <input type="hidden" name="ordem" value="nome" /> : null}
-                <button type="submit" className="ui-button ui-button-secondary">{copy.search.submit}</button>
+                <button type="submit" className="ui-button ui-button-primary page-search-submit">{copy.search.submit}</button>
               </form>
-              <nav aria-label={copy.filter.label} className="flex flex-wrap items-center gap-2">
+              <nav aria-label={copy.filter.label} className="page-filters">
                 {FILTERS.map((status) => {
                   const current = listParams.status === status;
                   const total = status === null ? list.total : list.counts[status];
                   return (
-                    <Link key={status ?? "all"} href={here({ status, page: 1 })} aria-current={current ? "true" : undefined} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-app-border px-4 text-sm font-bold aria-[current=true]:border-app-accent aria-[current=true]:bg-app-accent/10 aria-[current=true]:underline">
-                      {copy.filter[status ?? "all"]} <span className="font-normal text-app-muted">({total})</span>
+                    <Link key={status ?? "all"} href={here({ status, page: 1 })} aria-current={current ? "true" : undefined} className="page-filter">
+                      {copy.filter[status ?? "all"]} <span className="page-filter-count">{total}</span>
                     </Link>
                   );
                 })}
-                <Link href={here({ order: listParams.order === "name" ? "recent" : "name", page: 1 })} className="ml-auto inline-flex min-h-11 items-center text-sm font-bold text-app-accent underline">
-                  {copy.order.label}: {copy.order[listParams.order]}
-                </Link>
               </nav>
+              <Link href={here({ order: listParams.order === "name" ? "recent" : "name", page: 1 })} className="page-order">
+                {SortIcon}{copy.order.label}: {copy.order[listParams.order]}
+              </Link>
               {filtered ? (
                 <p className="m-0 flex flex-wrap items-center gap-x-3 text-sm text-app-muted" role="status">
                   <span>{copy.search.found(list.matched)}</span>
@@ -143,23 +148,28 @@ export default async function WorkspaceHomePage({ params, searchParams }: { para
                 : <Link className="ui-button ui-button-secondary" href={pageListHref(workspaceId, { order: listParams.order })}>{copy.search.clearAll}</Link>}
             />
           ) : (
-            <ul className="m-0 grid list-none gap-3 p-0">
+            <ul className="surface-card page-rows">
               {list.items.map((profile) => {
                 const pagePath = `/app/w/${workspaceId}/paginas/${profile.id}`;
                 return (
-                  <li key={profile.id} className="surface-card page-card">
-                    <div className="flex min-w-0 items-center gap-3 p-4 sm:gap-4 sm:p-5">
+                  <li key={profile.id} className="page-row">
+                    <div className="page-row-identity">
                       <ProfileAvatar title={profile.title} avatarPath={profile.avatarPath} />
                       <div className="min-w-0 flex-1">
-                        <h2 className="m-0 truncate text-lg font-bold leading-tight">{profile.title}</h2>
-                        <p className="m-0 mt-0.5 truncate text-sm text-app-muted">{publicAddressLabel(profile.slug)}</p>
-                        <p className="m-0 mt-2.5 flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                          <h2 className="m-0 min-w-0 truncate text-base font-bold leading-tight sm:text-lg">{profile.title}</h2>
                           <Badge dot tone={STATUS_TONE[profile.status]}>{copy.status[profile.status]}</Badge>
                           {profile.hasUnpublishedChanges ? <Badge tone="warning">{copy.unpublishedChanges}</Badge> : null}
+                        </div>
+                        <p className="page-row-meta">
+                          {/* Only a published page has something to open; the others show the address they keep. */}
+                          {profile.status === "published"
+                            ? <a className="page-row-address" href={publicPageUrl(profile.slug)} target="_blank" rel="noopener noreferrer"><span className="truncate">{publicAddressLabel(profile.slug)}</span><span className="sr-only"> {copy.opensInNewTab}</span>{ExternalIcon}</a>
+                            : <span className="truncate">{publicAddressLabel(profile.slug)}</span>}
                         </p>
                       </div>
                     </div>
-                    <div className="page-card-actions">
+                    <div className="page-row-actions">
                       <Link className="ui-button ui-button-primary" href={pagePath} aria-label={`${copy.settings}: ${profile.title}`}>{copy.settings}</Link>
                       <Link className="ui-button ui-button-secondary" href={`${pagePath}/resultados`} aria-label={`${copy.results}: ${profile.title}`}>{copy.results}</Link>
                       {mayDuplicate ? <Link className="ui-button ui-button-secondary" href={`${pagePath}/duplicar`} aria-label={APP_COPY.duplicate.openFor(profile.title)}>{APP_COPY.duplicate.open}</Link> : null}

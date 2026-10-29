@@ -161,15 +161,61 @@ button, a, input, select, textarea, summary { outline: none; }
 .ui-badge-danger { color: var(--app-danger); background: var(--app-danger-soft); }
 .ui-badge-accent { color: var(--app-accent-hover); background: var(--app-accent-soft); }
 
-/* One page in the workspace list: identity on top, its actions in a quieter footer. */
-.page-card { overflow: hidden; transition: border-color var(--duration-fast) var(--ease-product), box-shadow var(--duration-fast) var(--ease-product); }
-.page-card:hover, .page-card:focus-within { border-color: #cfd2de; box-shadow: 0 14px 36px rgb(40 30 90 / 0.1); }
-.page-card-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; border-top: 1px solid var(--app-border); background: rgb(240 240 246 / 0.45); padding: 0.75rem 1rem; }
-.page-card-actions .ui-button { padding: 0.5rem 1rem; font-size: 0.875rem; }
-.page-card-actions .ui-button-secondary { border-color: transparent; background: transparent; }
-.page-card-actions .ui-button-secondary:hover:not(:disabled) { border-color: var(--app-border); background: var(--app-surface); }
-@media (min-width: 640px) {
-  .page-card-actions { display: flex; flex-wrap: wrap; padding-inline: 1.25rem; }
+/* Workspace page list (UX-110): a usage meter under the title, one toolbar (search, status filter,
+   order) and the pages as rows of a single card, so ten or twenty of them can be scanned at once.
+   Phones stack each row (identity, then its actions two by two); from 768px a row is one line. */
+.page-usage { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.75rem; }
+.page-usage-text { font-size: 0.875rem; font-weight: 600; }
+.page-usage-bar { display: block; width: 7rem; height: 6px; overflow: hidden; border-radius: 999px; background: rgb(29 29 40 / 0.08); }
+.page-usage-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--app-ink); }
+.page-usage[data-reached] .page-usage-text { color: var(--app-warning); }
+.page-usage[data-reached] .page-usage-bar > span { background: var(--app-warning); }
+
+.page-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.page-search { display: flex; min-width: 0; flex: 1 1 18rem; align-items: center; border: 1px solid var(--app-border); border-radius: 999px; background: var(--app-surface); padding: 0.25rem; box-shadow: var(--shadow-soft); transition: border-color var(--duration-fast) var(--ease-product); }
+.page-search:hover { border-color: #9aa3b2; }
+/* The ring goes around the whole pill, not inside it around the bare input. */
+.page-search:has(.page-search-input:focus-visible) { border-color: var(--app-ink); outline: 3px solid var(--app-focus); outline-offset: 2px; }
+.page-search-icon { width: 1.1rem; height: 1.1rem; flex: none; margin-left: 0.75rem; color: var(--app-muted); }
+.page-search-input { min-width: 0; min-height: 40px; flex: 1; border: 0; color: var(--app-text); background: transparent; padding: 0 0.6rem; font: inherit; }
+.page-search-input:focus-visible { outline: none; }
+.page-search-input::placeholder { color: var(--app-muted); }
+.page-search-submit { min-height: 40px; padding-block: 0.5rem; }
+.page-filters { display: flex; min-width: 0; max-width: 100%; gap: 0.25rem; overflow-x: auto; border: 1px solid rgb(255 255 255 / 0.8); border-radius: 999px; background: rgb(255 255 255 / 0.7); padding: 0.25rem; box-shadow: var(--shadow-soft); }
+.page-filter { display: inline-flex; min-height: 40px; flex: none; align-items: center; gap: 0.45rem; border-radius: 999px; padding: 0 0.95rem; font-size: 0.875rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.page-filter:hover { background: rgb(29 29 40 / 0.06); }
+.page-filter:focus-visible { outline-offset: -3px; }
+.page-filter[aria-current="true"] { color: #ffffff; background: var(--app-ink); }
+.page-filter-count { min-width: 1.4rem; border-radius: 999px; color: var(--app-muted); background: rgb(29 29 40 / 0.07); padding: 0.05rem 0.4rem; font-size: 0.75rem; text-align: center; }
+.page-filter[aria-current="true"] .page-filter-count { color: #ffffff; background: rgb(255 255 255 / 0.2); }
+.page-order { display: inline-flex; min-height: 44px; align-items: center; gap: 0.45rem; margin-left: auto; border-radius: 999px; padding: 0 0.9rem; font-size: 0.875rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.page-order:hover { background: rgb(29 29 40 / 0.06); }
+/* Phones: the four filters do not fit in one pill, so they wrap as separate pills instead of hiding the last ones. */
+@media (max-width: 639px) {
+  .page-filters { flex-wrap: wrap; gap: 0.4rem; overflow: visible; border: 0; background: transparent; padding: 0; box-shadow: none; }
+  .page-filter { border: 1px solid var(--app-border); background: var(--app-surface); }
+  .page-filter[aria-current="true"] { border-color: var(--app-ink); }
+}
+
+.page-rows { overflow: hidden; margin: 0; padding: 0; list-style: none; }
+.page-row { display: grid; gap: 0.85rem; padding: 1rem; transition: background var(--duration-fast) var(--ease-product); }
+.page-row + .page-row { border-top: 1px solid var(--app-border); }
+.page-row:hover, .page-row:focus-within { background: rgb(246 246 251 / 0.8); }
+.page-row-identity { display: flex; min-width: 0; align-items: center; gap: 0.85rem; }
+.page-row-meta { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 0.15rem 0.5rem; margin: 0.35rem 0 0; color: var(--app-muted); font-size: 0.875rem; }
+.page-row-address { display: inline-flex; min-width: 0; max-width: 100%; align-items: center; gap: 0.3rem; color: inherit; text-decoration: underline; text-decoration-color: rgb(91 96 114 / 0.45); text-underline-offset: 3px; }
+.page-row-address:hover { color: var(--app-ink); text-decoration-color: currentColor; }
+.page-row-address svg { flex: none; }
+.page-row-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; }
+.page-row-actions .ui-button { min-height: 40px; padding: 0.45rem 0.9rem; font-size: 0.875rem; }
+.page-row-actions .ui-button-secondary { border-color: transparent; background: rgb(29 29 40 / 0.045); }
+.page-row-actions .ui-button-secondary:hover:not(:disabled) { border-color: var(--app-border); background: var(--app-surface); }
+@media (min-width: 768px) {
+  /* Rows share the list's columns, so every row's actions start at the same place ("Desarquivar" is wider). */
+  .page-rows { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1.5rem; }
+  .page-row { grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; padding: 0.9rem 1.25rem; }
+  .page-row-actions { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+  .page-row-actions .ui-button-secondary { background: transparent; }
 }
 
 /* Plans, shared by the home (UX-107) and the plan screen (UX-106, UX-108): the monthly/yearly choice,

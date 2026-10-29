@@ -248,3 +248,20 @@ Gates:
 - `npm run check` passes: lint without warnings, typecheck without errors, 1,474 tests in 66 files, and a successful Next 16.4.1 production build.
 
 Not verified: a real phone, Safari/iOS or Firefox, a screen reader, a real Stripe sandbox or live account, deployment and production.
+
+## Page list refinement (UX-110) — 2026-10-29
+
+Scope: the workspace page list, `/app/w/<workspace>` (`app/app/w/[workspaceId]/page.tsx`, `.page-usage*`, `.page-toolbar`, `.page-search*`, `.page-filter*`, `.page-order` and `.page-row*` in `globals.css`). Queries, URL parameters, permissions, actions and the onboarding checklist are unchanged.
+
+- Plan usage is a meter ("6 de 10 páginas" and a bar, in the warning color at the limit); the text carries the state, and the bar is hidden from screen readers.
+- One toolbar: a search pill (icon, a label for screen readers, "Buscar" inside), the status filters as one pill group with the current one in ink and the count as a number, and the order as an icon button. The focus ring goes around the whole search pill. Below 640px the filters wrap as separate pills, so none is hidden.
+- The pages are rows of one card. Name, status and "Alterações não publicadas" share a line. Under them comes the address, which is a link to the live page, in a new tab with a screen-reader note, only for published pages. From 768px the rows share the list's columns through subgrid, so the actions line up even when one says "Desarquivar"; phones show them two by two under the page.
+- The page's grid column is `minmax(0, 1fr)`: before, at 390px the column grew to 527px and the document scrolled sideways.
+
+Verified on the local dev server with a disposable agency workspace (`qa-pagelist-owner@example.test`, six pages: published, published with unpublished changes, draft, archived), Playwright with the installed Chrome:
+
+- 320, 390 and 1280px: no document overflow, and no axe-core WCAG 2.2 A/AA violation, also with `?situacao=publicada` (3 rows) and `?q=café` (1 row).
+- Keyboard: the tab order follows the screen (search, Buscar, the four filters, order, then each row's address and actions); Enter in the search submits it.
+- `npm run check` passes: lint, typecheck, 1,474 tests in 66 files, production build.
+
+Not verified: a real phone, Safari/iOS or Firefox, a screen reader, the read-only roles (editor) and a workspace with more than one screen of pages, deployment and production.
