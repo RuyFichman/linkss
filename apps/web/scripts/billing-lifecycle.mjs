@@ -572,7 +572,7 @@ async function lifecycle(fixtures, password) {
   const thirdPaid = emulator.completeCheckout(emulator.sessionIdFromUrl(third.location ?? ""));
   await deliverBadly(thirdPaid.deliveries);
   const monthlyPlan = await get(owner, plano);
-  check("the plan screen offers the yearly billing with what it saves", monthlyPlan.text.includes("Passar para o anual") && monthlyPlan.text.includes("R$ 29,80 a menos por ano"), monthlyPlan.text.slice(0, 600));
+  check("the plan screen offers the yearly billing with what it saves", monthlyPlan.text.includes("Passar para o anual") && monthlyPlan.text.includes("Economize R$ 29,80 por ano no plano anual"), monthlyPlan.text.slice(0, 600));
   check("an admin is told the interval and not offered the change", !(await get(admin, plano)).text.includes("Passar para o anual"));
   const yearlyPath = `${plano}/confirmar?acao=anual`;
   const yearlyPage = await get(owner, yearlyPath);
