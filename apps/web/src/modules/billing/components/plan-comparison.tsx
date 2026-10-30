@@ -1,7 +1,7 @@
 import { BILLING_COPY } from "@/content/pt-BR";
 import { PRODUCT } from "@/lib/product";
 import { PLAN_IDS } from "../catalog";
-import { planComparison, type ComparisonRowKey, type ComparisonValue } from "../comparison";
+import { planComparison, planDifferences, type ComparisonRow, type ComparisonRowKey, type ComparisonValue } from "../comparison";
 
 const copy = BILLING_COPY.comparison;
 
@@ -28,17 +28,28 @@ function Cell({ row, value }: { row: ComparisonRowKey; value: ComparisonValue })
     : <span className="plan-compare-mark">{Dash}<span className="plan-compare-word">{copy.excluded}</span></span>;
 }
 
+function Row({ row }: { row: ComparisonRow }) {
+  return (
+    <tr>
+      <th scope="row">{rowLabel(row.key)}</th>
+      {PLAN_IDS.map((planId) => <td key={planId}><Cell row={row.key} value={row.values[planId]} /></td>)}
+    </tr>
+  );
+}
+
 /**
- * Every plan side by side, generated from the entitlements (modules/billing/comparison.ts). The home
- * and the plan screen render the same table; the caller names it through `labelledBy`.
+ * Every plan side by side, generated from the entitlements (modules/billing/comparison.ts), the caller
+ * naming it through `labelledBy`. The home shows every row, by group (`rows: "all"`); the plan screen
+ * shows only what changes between plans and says how many rows every plan shares (`"differences"`).
  */
-export function PlanComparisonTable({ customDomains, labelledBy }: { customDomains: boolean; labelledBy: string }) {
+export function PlanComparisonTable({ customDomains, labelledBy, rows }: { customDomains: boolean; labelledBy: string; rows: "all" | "differences" }) {
+  const differences = rows === "differences" ? planDifferences({ customDomains }) : null;
   return (
     <div className="plan-compare">
       <table aria-labelledby={labelledBy}>
         <colgroup>
           <col />
-          <col className="plan-compare-plan" span={PLAN_IDS.length} />
+          {PLAN_IDS.map((planId) => <col key={planId} className="plan-compare-plan" />)}
         </colgroup>
         <thead>
           <tr>
@@ -46,20 +57,18 @@ export function PlanComparisonTable({ customDomains, labelledBy }: { customDomai
             {PLAN_IDS.map((planId) => <th key={planId} scope="col">{BILLING_COPY.planNames[planId]}</th>)}
           </tr>
         </thead>
-        {planComparison({ customDomains }).map((group) => (
+        {differences ? (
+          <tbody>{differences.rows.map((row) => <Row key={row.key} row={row} />)}</tbody>
+        ) : planComparison({ customDomains }).map((group) => (
           <tbody key={group.key} data-group={group.key}>
             <tr className="plan-compare-group">
               <th scope="rowgroup" colSpan={PLAN_IDS.length + 1}>{copy.groups[group.key]}</th>
             </tr>
-            {group.rows.map((row) => (
-              <tr key={row.key}>
-                <th scope="row">{rowLabel(row.key)}</th>
-                {PLAN_IDS.map((planId) => <td key={planId}><Cell row={row.key} value={row.values[planId]} /></td>)}
-              </tr>
-            ))}
+            {group.rows.map((row) => <Row key={row.key} row={row} />)}
           </tbody>
         ))}
       </table>
+      {differences && differences.shared > 0 ? <p className="plan-compare-note">{copy.shared(differences.shared)}</p> : null}
     </div>
   );
 }

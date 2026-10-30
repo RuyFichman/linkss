@@ -79,6 +79,18 @@ export function planComparison(options: { customDomains: boolean }): ComparisonG
   }));
 }
 
+const sameValue = (a: ComparisonValue, b: ComparisonValue) => a.kind === b.kind && (a.kind !== "limit" || (b.kind === "limit" && a.value === b.value));
+
+/**
+ * What changes from one plan to another, for someone who already uses the product: the rows whose
+ * value is not the same on every plan, and how many rows every plan shares.
+ */
+export function planDifferences(options: { customDomains: boolean }): { rows: ComparisonRow[]; shared: number } {
+  const rows = planComparison(options).flatMap((group) => group.rows);
+  const differing = rows.filter((row) => PLAN_IDS.some((planId) => !sameValue(row.values[planId], row.values[PLAN_IDS[0]])));
+  return { rows: differing, shared: rows.length - differing.length };
+}
+
 export type PlanHighlight =
   | { kind: "everythingIn"; planId: PlanId }
   | { kind: "product"; key: "allBlocks" | "leads" }

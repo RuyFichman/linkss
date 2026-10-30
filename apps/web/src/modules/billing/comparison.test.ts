@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { BILLING_COPY } from "@/content/pt-BR";
 import { FEATURE_KEYS, planEntitlementsFromProduct } from "@/modules/entitlements";
 import { PLAN_IDS } from "./catalog";
-import { COMPARISON_GROUPS, planComparison, planHighlights, type ComparisonRow } from "./comparison";
+import { COMPARISON_GROUPS, planComparison, planDifferences, planHighlights, type ComparisonRow } from "./comparison";
 
 const rows = (customDomains = true) => planComparison({ customDomains }).flatMap((group) => group.rows);
 const row = (key: ComparisonRow["key"]) => rows().find((candidate) => candidate.key === key) as ComparisonRow;
@@ -39,6 +39,22 @@ describe("plan comparison (home)", () => {
   it("leaves the custom-domain row out when custom domains are not configured", () => {
     expect(rows(false).some((candidate) => candidate.key === "domain")).toBe(false);
     expect(rows(true).some((candidate) => candidate.key === "domain")).toBe(true);
+  });
+});
+
+describe("plan differences (plan screen)", () => {
+  it("keeps exactly the rows whose value is not the same on every plan, in the home's order", () => {
+    const { rows: differing, shared } = planDifferences({ customDomains: true });
+    const varies = (candidate: ComparisonRow) => new Set(PLAN_IDS.map((planId) => JSON.stringify(candidate.values[planId]))).size > 1;
+    expect(differing.map((candidate) => candidate.key)).toEqual(rows().filter(varies).map((candidate) => candidate.key));
+    expect(differing.map((candidate) => candidate.key)).toEqual(["storage", "badge", "domain", "history", "pixels", "pages", "people", "duplicate", "reports"]);
+    expect(shared).toBe(rows().length - differing.length);
+  });
+
+  it("follows the custom-domain configuration like the full table", () => {
+    const { rows: differing, shared } = planDifferences({ customDomains: false });
+    expect(differing.some((candidate) => candidate.key === "domain")).toBe(false);
+    expect(shared).toBe(planDifferences({ customDomains: true }).shared);
   });
 });
 

@@ -47,6 +47,7 @@ describe("home plans", () => {
     expect(text(html)).toContain("Economize R$ 115,80 por ano no plano anual");
     expect(count(html, "Criar conta e assinar")).toBe(2);
     expect(html).not.toContain("Em breve");
+    expect(html).not.toContain("Começar no Gratuito");
   });
 
   it("builds each next plan on the previous one", () => {

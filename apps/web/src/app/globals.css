@@ -242,6 +242,7 @@ button, a, input, select, textarea, summary { outline: none; }
 .plan-offer[data-featured] { border-color: var(--plan-featured-line); box-shadow: -14px 22px 40px -12px rgb(118 110 255 / 0.5), 14px 22px 40px -12px rgb(255 108 192 / 0.42), 0 6px 16px rgb(31 31 40 / 0.05); }
 .plan-offer-badge { position: absolute; top: -12px; left: 50%; margin: 0; border-radius: 999px; color: #ffffff; background: var(--plan-badge); padding: 4px 16px; font-family: var(--home-display, var(--brand-display, inherit)); font-size: 12px; font-weight: 700; line-height: 1.2; white-space: nowrap; box-shadow: 0 4px 16px rgb(31 31 40 / 0.06); transform: translateX(-50%); }
 .plan-offer h3 { margin: 0; font-size: 1.75rem; line-height: 1.1; }
+.plan-offer-name { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
 .plan-offer-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.45rem; margin: 0.9rem 0 0; color: var(--app-muted); }
 .plan-offer-price b { color: var(--app-ink); font-size: 2.6rem; font-weight: 800; line-height: 1; letter-spacing: -0.04em; }
 .plan-offer-saving { margin: 0.75rem 0 0; color: var(--app-success); font-size: 0.8125rem; font-weight: 700; }
@@ -281,9 +282,16 @@ button, a, input, select, textarea, summary { outline: none; }
 .plan-compare-limit { font-weight: 700; }
 /* Narrow screens: icons only; the words stay for screen readers. */
 .plan-compare-word { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.plan-compare-note { margin: 0; border-top: 1px solid var(--app-border); padding: 0.8rem 0.85rem; color: var(--app-muted); font-size: 0.875rem; line-height: 1.45; }
+/* Narrow screens: the last plan column is wider by its right padding, so "Agência" and "500 MB" keep
+   off the table's edge. */
+@media (max-width: 479.98px) {
+  .plan-compare-plan:last-child { width: 4.5rem; }
+  .plan-compare th:last-child, .plan-compare td:last-child { padding-right: 0.75rem; }
+}
 @media (min-width: 480px) {
   .plan-compare-plan { width: 6rem; }
-  .plan-compare th:first-child { padding-left: 1.5rem; }
+  .plan-compare th:first-child, .plan-compare-note { padding-left: 1.5rem; }
   .plan-compare-mark { min-height: 0; padding: 0.2rem 0.65rem; }
   .plan-compare-mark:not([data-included]) svg { display: none; }
   .plan-compare-word { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
@@ -297,6 +305,15 @@ button, a, input, select, textarea, summary { outline: none; }
 .plan-compare-details > summary::after { width: 0.5rem; height: 0.5rem; border-right: 2px solid currentcolor; border-bottom: 2px solid currentcolor; content: ""; transform: translateY(-20%) rotate(45deg); transition: transform var(--duration-fast) var(--ease-product); }
 .plan-compare-details[open] > summary::after { transform: translateY(20%) rotate(225deg); }
 .plan-compare-details > .plan-compare { margin-top: 1rem; }
+
+/* Inside the account the plans are managed, not sold (UX-113): the cards and the table drop the
+   home's glow, gradient badge and round checks, and look like the app's other cards. The current
+   plan is said by its badge; the darker border only shows it at a glance. */
+.plan-catalogue .plan-offer { border-color: var(--app-border); padding-top: 1.6rem; box-shadow: none; }
+.plan-catalogue .plan-offer[data-featured] { border-color: var(--app-ink); box-shadow: inset 0 0 0 1px var(--app-ink); }
+.plan-catalogue .plan-offer-items li::before { width: auto; color: var(--app-ink); background: none; }
+.plan-catalogue .plan-interval { box-shadow: none; }
+.plan-catalogue .plan-compare { border-color: var(--app-border); box-shadow: none; }
 
 body:has([data-plan-screen]) [data-billing-banner] { display: none; }
 

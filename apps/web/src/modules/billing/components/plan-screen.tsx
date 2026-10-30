@@ -164,8 +164,11 @@ function PlanCard({ workspaceId, planId, screen, intervals, choice, customDomain
   const intervalOf = (interval: BillingInterval) => (choice ? interval : undefined);
   return (
     <li className="plan-offer" data-featured={isCurrent ? "" : undefined} aria-current={isCurrent ? "true" : undefined}>
-      <h3 className="brand-display font-extrabold">{name}</h3>
-      {isCurrent ? <p className="plan-offer-badge">{copy.current.badge}</p> : null}
+      {/* A plain badge next to the name: inside the account the cards are managed, not sold (UX-113). */}
+      <div className="plan-offer-name">
+        <h3 className="brand-display font-extrabold">{name}</h3>
+        {isCurrent ? <Badge>{copy.current.badge}</Badge> : null}
+      </div>
       {intervals.map((interval) => {
         const price = paid ? planPrice(planId, interval) : null;
         if (paid && !price) return null;
@@ -223,7 +226,7 @@ function CatalogueNote({ workspaceId, screen }: { workspaceId: string; screen: P
   );
 }
 
-function Catalogue({ workspaceId, screen, customDomains }: { workspaceId: string; screen: PlanScreen; customDomains: boolean }) {
+function Catalogue({ workspaceId, screen, mode, customDomains }: { workspaceId: string; screen: PlanScreen; mode: BillingMode; customDomains: boolean }) {
   const { prices } = screen;
   const choice = prices.kind === "choice";
   const intervals = prices.kind === "fixed" ? [prices.interval] : BILLING_INTERVALS;
@@ -239,6 +242,13 @@ function Catalogue({ workspaceId, screen, customDomains }: { workspaceId: string
         <div className="grid gap-1">
           <h2 id="plans-title" className="text-xl font-bold">{copy.plans.title}</h2>
           <p className="m-0 text-app-muted">{copy.plans.lead}</p>
+          {/* About selling, next to the prices it qualifies: a label and a line, not a box that reads as a field. */}
+          {mode === "sandbox" ? (
+            <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-app-muted">
+              <Badge tone="warning">{copy.sandboxLabel}</Badge>
+              <span>{copy.sandboxDetail}</span>
+            </p>
+          ) : null}
           {prices.kind === "fixed" ? <p className="m-0 text-sm text-app-muted">{prices.reason === "subscription" ? copy.plans.pricesFor(copy.intervalAdjective[prices.interval]) : copy.plans.referencePrices}</p> : null}
         </div>
         {/* Two native radios: the chosen interval's prices stay visible through CSS alone (globals.css). */}
@@ -261,7 +271,7 @@ function Catalogue({ workspaceId, screen, customDomains }: { workspaceId: string
           <summary id="compare-title">{copy.plans.show}</summary>
           <div className="mt-8 grid gap-8">
             {offers}
-            <PlanComparisonTable customDomains={customDomains} labelledBy="compare-title" />
+            <PlanComparisonTable customDomains={customDomains} labelledBy="compare-title" rows="differences" />
           </div>
         </details>
       ) : (
@@ -269,8 +279,8 @@ function Catalogue({ workspaceId, screen, customDomains }: { workspaceId: string
           {offers}
           {screen.selling ? <p className="m-0 text-sm text-app-muted">{copy.provider}</p> : null}
           <details className="plan-compare-details">
-            <summary id="compare-title">{copy.plans.compare}</summary>
-            <PlanComparisonTable customDomains={customDomains} labelledBy="compare-title" />
+            <summary id="compare-title">{copy.plans.differences}</summary>
+            <PlanComparisonTable customDomains={customDomains} labelledBy="compare-title" rows="differences" />
           </details>
         </>
       )}
@@ -352,9 +362,7 @@ export function PlanScreenView({ workspaceId, screen, invoices, mode, suspended,
           <Usage rows={screen.usage} />
         </div>
       ) : <CurrentPlan workspaceId={workspaceId} screen={screen} />}
-      {/* About selling, not about this workspace's plan: right before the catalogue and its buttons. */}
-      {mode === "sandbox" ? <p className="m-0 rounded-xl border border-app-warning/30 bg-app-warning-soft px-4 py-2.5 text-sm text-app-warning">{copy.sandbox}</p> : null}
-      <Catalogue workspaceId={workspaceId} screen={screen} customDomains={customDomains} />
+      <Catalogue workspaceId={workspaceId} screen={screen} mode={mode} customDomains={customDomains} />
       {screen.showHistory ? <PaymentHistory invoices={invoices} /> : null}
     </div>
   );

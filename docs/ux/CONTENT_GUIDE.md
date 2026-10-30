@@ -195,7 +195,7 @@ Textos em `content/pt-BR.ts` (`BILLING_COPY`). Decisões: UX-074 a UX-084 (provi
 | Retorno do pagamento | "Aguardando a confirmação do pagamento" → "Pagamento confirmado. O plano Pro já está valendo nesta conta." | Nunca "pago" antes de o plano mudar; nunca um prazo ("em 1 minuto") |
 | Saiu do checkout | "Você saiu da página de pagamento antes de concluir. Nada foi cobrado e o plano não mudou." | |
 | Falha do provedor | "O provedor de pagamento não respondeu. Nada foi cobrado nem alterado. Tente novamente em alguns minutos." | Toda falha diz se algo foi cobrado |
-| Ambiente de teste | "Ambiente de teste. Nenhuma cobrança real é feita aqui: o pagamento usa os dados de teste do provedor." | Em toda tela de cobrança enquanto o modo for de teste |
+| Ambiente de teste | "Ambiente de teste. Nenhuma cobrança real é feita aqui: o pagamento usa os dados de teste do provedor." | Em toda tela de cobrança enquanto o modo for de teste. Na tela Plano, "Ambiente de teste" é um selo ao lado do resto da frase, sob o título Planos (UX-113) |
 | Venda desligada | "Os planos pagos ainda não estão à venda. O plano Gratuito continua disponível." | Sem data, sem "em breve" dentro do produto |
 | Quem pode | "Só o proprietário desta conta pode contratar, alterar ou cancelar o plano." | Para o administrador; o editor não vê a tela |
 | Plano manual | Selo "Definido manualmente" e "A equipe do produto definiu este plano para a conta, sem assinatura nem cobrança." | A frase fica sob o nome do plano e o selo: não repete nenhum dos dois (UX-112) |

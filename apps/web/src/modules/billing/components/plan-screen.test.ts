@@ -48,9 +48,10 @@ describe("plan screen: one state at a time", () => {
     expect(card).not.toContain("Forma de pagamento e recibos");
     expect(card).toContain(`href="/app/w/${WORKSPACE}/plano/confirmar?acao=cancelar"`);
     expect(card).not.toMatch(/class="ui-button[^"]*"[^>]*>Cancelar assinatura/);
-    // The plan comes before the test-environment notice and the catalogue.
-    expect(html.indexOf("current-plan-title")).toBeLessThan(html.indexOf("Ambiente de teste"));
-    expect(html.indexOf("Ambiente de teste")).toBeLessThan(html.indexOf('id="plans-title"'));
+    // The test-environment note is about selling: under the plans' title, before the cards.
+    expect(html.indexOf("current-plan-title")).toBeLessThan(html.indexOf('id="plans-title"'));
+    expect(html.indexOf('id="plans-title"')).toBeLessThan(html.indexOf("Ambiente de teste"));
+    expect(html.indexOf("Ambiente de teste")).toBeLessThan(html.indexOf('class="plan-offer"'));
     expect(html).toContain("data-plan-screen");
   });
 
@@ -133,7 +134,9 @@ describe("plan screen: one state at a time", () => {
     expect(html).toContain(`href="/app/w/${WORKSPACE}/plano/confirmar?acao=mudar&amp;plano=agency"`);
     expect(html).not.toContain("plano=pro");
     expect(html).not.toContain("Assinar");
-    expect(html).toContain('<li class="plan-offer" data-featured="" aria-current="true"><h3 class="brand-display font-extrabold">Pro</h3><p class="plan-offer-badge">Plano atual</p>');
+    expect(html).toContain('<li class="plan-offer" data-featured="" aria-current="true"><div class="plan-offer-name"><h3 class="brand-display font-extrabold">Pro</h3><span class="ui-badge ui-badge-neutral">Plano atual</span></div>');
+    // Inside the account the current plan wears the app's badge, not the home's gradient one.
+    expect(html).not.toContain("plan-offer-badge");
   });
 
   it("active yearly: yearly prices, how to go back to monthly, no yearly offer", () => {
@@ -314,15 +317,21 @@ describe("plan screen: usage, cards and comparison", () => {
     expect(render(null, "free").text).not.toContain("Uso desta conta");
   });
 
-  it("keeps the comparison one tap away, named by its summary", () => {
-    const { html } = render(null, "free");
-    expect(html).toContain('<details class="plan-compare-details"><summary id="compare-title">Comparar todos os recursos</summary>');
+  it("keeps the comparison one tap away, with only what changes between plans", () => {
+    const { html, text } = render(null, "free");
+    expect(html).toContain('<details class="plan-compare-details"><summary id="compare-title">Ver o que muda entre os planos</summary>');
     expect(html).toContain('<table aria-labelledby="compare-title">');
-    expect(count(html, 'scope="rowgroup"')).toBe(4);
+    // No groups and no row every plan shares; the note says how many those are.
+    expect(count(html, 'scope="rowgroup"')).toBe(0);
+    expect(count(html, 'scope="row"')).toBe(9);
+    expect(text).toContain("Histórico de resultados");
+    expect(text).not.toContain("Modelos prontos");
+    expect(text).toContain("Os outros 17 recursos estão em todos os planos, inclusive no Gratuito.");
   });
 
-  it("says it is a test environment in a compact line", () => {
+  it("says it is a test environment with a badge and a line, not a full-width box", () => {
     const { html } = render(null, "free");
-    expect(html).toMatch(/<p class="m-0 rounded-xl[^"]*text-sm[^"]*">Ambiente de teste\./);
+    expect(html).toContain('<span class="ui-badge ui-badge-warning">Ambiente de teste</span><span>Nenhuma cobrança real é feita aqui');
+    expect(html).not.toContain("bg-app-warning-soft");
   });
 });
