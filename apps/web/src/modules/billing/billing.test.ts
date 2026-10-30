@@ -22,12 +22,12 @@ const days = (count: number, from: Date = T0) => new Date(from.getTime() + count
 
 describe("price catalogue (AC1)", () => {
   it("shows R$ 14,90 or R$ 149 for Pro and R$ 57,90 or R$ 579 for Agency", () => {
-    expect(formatMoney(planPrice("pro", "month")?.amountCents ?? 0)).toBe("R$ 14,90");
-    expect(formatMoney(planPrice("pro", "year")?.amountCents ?? 0)).toBe("R$ 149,00");
-    expect(formatMoney(planPrice("agency", "month")?.amountCents ?? 0)).toBe("R$ 57,90");
-    expect(formatMoney(planPrice("agency", "year")?.amountCents ?? 0)).toBe("R$ 579,00");
-    expect(priceLabel(1490, "month")).toBe("R$ 14,90 por mês");
-    expect(priceLabel(57900, "year")).toBe("R$ 579,00 por ano");
+    expect(formatMoney(planPrice("pro", "month")?.amountCents ?? 0)).toBe("R$\u00a014,90");
+    expect(formatMoney(planPrice("pro", "year")?.amountCents ?? 0)).toBe("R$\u00a0149,00");
+    expect(formatMoney(planPrice("agency", "month")?.amountCents ?? 0)).toBe("R$\u00a057,90");
+    expect(formatMoney(planPrice("agency", "year")?.amountCents ?? 0)).toBe("R$\u00a0579,00");
+    expect(priceLabel(1490, "month")).toBe("R$\u00a014,90 por mês");
+    expect(priceLabel(57900, "year")).toBe("R$\u00a0579,00 por ano");
   });
 
   it("is integer cents in BRL, one row per paid plan and interval, and nothing for the free plan", () => {
@@ -44,8 +44,8 @@ describe("price catalogue (AC1)", () => {
   });
 
   it("states the yearly saving in reais: about two months", () => {
-    expect(formatMoney(yearlySavingCents("pro"))).toBe("R$ 29,80");
-    expect(formatMoney(yearlySavingCents("agency"))).toBe("R$ 115,80");
+    expect(formatMoney(yearlySavingCents("pro"))).toBe("R$\u00a029,80");
+    expect(formatMoney(yearlySavingCents("agency"))).toBe("R$\u00a0115,80");
     expect(yearlySavingCents("free")).toBe(0);
   });
 
@@ -186,7 +186,7 @@ describe("user-facing billing state", () => {
   });
 
   it("says the state and the date in words", () => {
-    expect(billingStateSentence(billingViewState(base, "agency", T0), 5790)).toBe("Plano Agência, cobrança mensal. Próxima cobrança: R$ 57,90 em 08/11/2026.");
+    expect(billingStateSentence(billingViewState(base, "agency", T0), 5790)).toBe("Plano Agência, cobrança mensal. Próxima cobrança: R$\u00a057,90 em 08/11/2026.");
     expect(billingStateSentence(billingViewState({ ...base, status: "past_due", graceUntil: days(5) }, "agency", T0), 5790)).toContain("continua valendo até 14/10/2026");
     expect(billingStateSentence(billingViewState({ ...base, cancelAtPeriodEnd: true }, "agency", T0), 5790)).toContain("até 08/11/2026");
     expect(billingStateSentence(billingViewState(null, "agency", T0), null)).toContain("definido manualmente");
@@ -319,7 +319,7 @@ describe("billing mode", () => {
 describe("marketing (D6)", () => {
   it("presents paid plans on public pages as on sale, never as coming", () => {
     expect(HOME_COPY.plans.lead).not.toMatch(/em breve|ainda não/i);
-    expect(BILLING_COPY.yearlySaving(formatMoney(yearlySavingCents("pro")))).toBe("Economize R$ 29,80 por ano no plano anual");
+    expect(BILLING_COPY.yearlySaving(formatMoney(yearlySavingCents("pro")))).toBe("Economize R$\u00a029,80 por ano no plano anual");
     for (const entry of HOME_COPY.faq.items) {
       // Only custom domains depend on configuration; their "not yet" answer is the fallback.
       if (!("answerDomains" in entry)) expect(entry.answer).not.toMatch(/ainda não (está|estão) à venda/);

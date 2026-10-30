@@ -55,6 +55,12 @@ export interface PlanUsageRow {
 /** What a plan's card offers: a new subscription, a change of the running one, or nothing. */
 export type PlanOffer = "subscribe" | "change" | null;
 
+/**
+ * Why no card offers anything, said next to the plans instead of leaving a catalogue without a
+ * button. `other` has nothing worth saying (no state reaches it today).
+ */
+export type CatalogueBlock = "notDeployed" | "off" | "owner" | "suspended" | "payment" | "canceling" | "other";
+
 export interface PlanScreen {
   state: BillingViewState;
   selling: boolean;
@@ -71,10 +77,14 @@ export interface PlanScreen {
   yearlyOnly: boolean;
   /**
    * Which catalogue prices to show. A plan change keeps the subscription's interval, so a running
-   * subscription sees its own; otherwise the person picks monthly or yearly.
+   * subscription sees its own (`subscription`); when nothing can be bought, a choice of interval
+   * would only change the price of something out of reach, so monthly prices stand as `reference`;
+   * otherwise the person picks monthly or yearly.
    */
-  prices: { kind: "fixed"; interval: BillingInterval } | { kind: "choice"; initial: BillingInterval };
+  prices: { kind: "fixed"; interval: BillingInterval; reason: "subscription" | "reference" } | { kind: "choice"; initial: BillingInterval };
   offers: Record<PlanId, PlanOffer>;
+  /** Null while some card offers something. */
+  blocked: CatalogueBlock | null;
   /** The payment history is the owner's (RLS returns nobody else invoices). */
   showHistory: boolean;
   /** Usage against the plan in force; null when it could not be read (the screen then leaves it out). */
@@ -137,6 +147,14 @@ export function planScreen({ billing, mode, isOwner, suspended, now, usage }: Pl
     if (actions.changePlan && chargedPlan && planId !== chargedPlan && planRank(planId) !== planRank(chargedPlan)) return [planId, "change"];
     return [planId, null];
   })) as Record<PlanId, PlanOffer>;
+  const blocked: CatalogueBlock | null = PLAN_IDS.some((planId) => offers[planId] !== null) ? null
+    : !billing.deployed ? "notDeployed"
+      : mode === "off" ? "off"
+        : !isOwner ? "owner"
+          : suspended ? "suspended"
+            : actions.fixPayment ? "payment"
+              : actions.resume ? "canceling"
+                : "other";
 
   // Monthly to yearly is offered only to a subscription in good standing with nothing scheduled (the database checks it again).
   const yearly = state.kind === "active" && subscribedInterval === "month" && planPrice(state.planId, "year") ? { savingCents: yearlySavingCents(state.planId), offered: mayBuy } : null;
@@ -157,8 +175,11 @@ export function planScreen({ billing, mode, isOwner, suspended, now, usage }: Pl
     resumePlanId: billing.record?.planId ?? null,
     yearly,
     yearlyOnly: subscribedInterval === "year",
-    prices: subscribedInterval ? { kind: "fixed", interval: subscribedInterval } : { kind: "choice", initial: "month" },
+    prices: subscribedInterval ? { kind: "fixed", interval: subscribedInterval, reason: "subscription" }
+      : blocked ? { kind: "fixed", interval: "month", reason: "reference" }
+        : { kind: "choice", initial: "month" },
     offers,
+    blocked,
     showHistory: isOwner && billing.deployed,
     usage: usage ? usageRows(usage, billing.planId) : null,
   };

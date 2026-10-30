@@ -78,7 +78,10 @@ export function yearlySavingCents(planId: PlanId): number {
 
 const MONEY = new Intl.NumberFormat("pt-BR", { style: "currency", currency: PRODUCT.currency });
 
-/** "R$ 14,90". Ordinary spaces, so the text can be compared and copied. */
+/**
+ * "R$ 14,90" with a no-break space, so the symbol never ends a line apart from the amount. Every
+ * space ICU may emit (U+00A0, U+202F) becomes U+00A0, so the output is the same on every runtime.
+ */
 export function formatMoney(amountCents: number): string {
-  return MONEY.format(amountCents / 100).replace(/\s/g, " ");
+  return MONEY.format(amountCents / 100).replace(/\s/g, "\u00a0");
 }

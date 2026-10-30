@@ -6,7 +6,6 @@ import { SuspendedPagesNotice } from "@/modules/moderation/components/suspended-
 import { can } from "@/modules/identity/permissions";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { resolveAccount } from "@/modules/identity/session";
-import { workspaceLabel } from "@/modules/identity/workspace-label";
 import { Badge, Notice } from "@/ui";
 
 /** Every request re-checks membership; a workspace the person does not belong to is a 404. */
@@ -18,11 +17,12 @@ export default async function WorkspaceLayout({ children, params }: { children: 
 
   return (
     <>
-      {/* The personal workspace is already named by the switcher in the header. */}
+      {/* The switcher in the header already names the workspace; this line adds only its kind and the
+          person's role. Phones skip it: the switcher's list shows the role, and the space goes to content. */}
       {workspace?.kind === "agency" ? (
-        <div data-app-chrome="" className="mb-3 flex flex-wrap items-center gap-2 text-sm text-app-muted">
+        <div data-app-chrome="" className="mb-3 hidden flex-wrap items-center gap-2 text-sm text-app-muted sm:flex">
           <span>{APP_COPY.workspace.agencyLabel}</span>
-          <span aria-hidden="true">•</span><b className="text-app-text">{workspaceLabel(workspace)}</b><Badge tone="accent">{APP_COPY.roles[workspace.role]}</Badge>
+          <Badge tone="accent">{APP_COPY.roles[workspace.role]}</Badge>
         </div>
       ) : null}
       {workspace ? <WorkspaceNav workspaceId={workspaceId} showPlan={can(workspace.role, "billing.view")} /> : null}

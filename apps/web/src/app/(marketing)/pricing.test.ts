@@ -34,8 +34,8 @@ describe("home plans", () => {
   });
 
   it("shows both amounts of each paid plan, tagged by interval, and what yearly saves", () => {
-    for (const amount of ["R$ 14,90", "R$ 149,00", "R$ 57,90", "R$ 579,00"]) expect(html).toContain(amount);
-    expect(html).toMatch(/data-interval="year"><b[^>]*>R\$ 149,00/);
+    for (const amount of ["R$\u00a014,90", "R$\u00a0149,00", "R$\u00a057,90", "R$\u00a0579,00"]) expect(html).toContain(amount);
+    expect(html).toMatch(/data-interval="year"><b[^>]*>R\$\u00a0149,00/);
     expect(text(html)).toContain("R$ 14,90 por mês");
     expect(text(html)).toContain("Economize R$ 29,80 por ano no plano anual");
     expect(text(html)).toContain("Economize R$ 115,80 por ano no plano anual");

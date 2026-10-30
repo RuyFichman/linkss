@@ -108,7 +108,7 @@ describe("the e-mails", () => {
   it("says what the notice is about, in words", () => {
     expect(renderMail("page_suspended", WORKSPACE, payloads.page_suspended, context)?.text).toContain("Motivo: Suspeita de imitação de outra pessoa ou marca.");
     expect(renderMail("payment_failed", WORKSPACE, payloads.payment_failed, context)?.text).toMatch(/plano Pro não foi aprovado\. O plano continua valendo até 21\/10\/2026\./);
-    expect(renderMail("renewal_upcoming", WORKSPACE, payloads.renewal_upcoming, context)?.text).toContain("R$ 579,00");
+    expect(renderMail("renewal_upcoming", WORKSPACE, payloads.renewal_upcoming, context)?.text).toContain("R$\u00a0579,00");
     expect(renderMail("appeal_decided", WORKSPACE, { ...payloads.appeal_decided, accepted: true }, context)?.subject).toBe("Contestação aceita: a página Café Central voltou ao ar");
   });
 

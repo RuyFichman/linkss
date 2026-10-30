@@ -59,5 +59,5 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   const suspended = account.status === "ready" && account.workspaces.find((item) => item.workspaceId === workspaceId)?.status === "suspended";
   const screen = planScreen({ billing, mode, isOwner, suspended, now: new Date(), usage: await usage });
 
-  return <PlanScreenView workspaceId={workspaceId} screen={screen} invoices={billing.invoices} mode={mode} deployed={billing.deployed} suspended={suspended} customDomains={domainsSignerFromEnv() !== null} notice={notice} />;
+  return <PlanScreenView workspaceId={workspaceId} screen={screen} invoices={billing.invoices} mode={mode} suspended={suspended} customDomains={domainsSignerFromEnv() !== null} notice={notice} />;
 }
