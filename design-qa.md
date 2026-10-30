@@ -295,3 +295,16 @@ Scope: items 7 to 9 of `docs/ux/REVISAO_UX_PLANO.md`, copy only (`BILLING_COPY` 
 - `npm run check` passes: lint, typecheck, 1,479 tests in 66 files, production build.
 
 Not verified in a browser: the change is copy only, and the unit tests render the plan screen and the home cards.
+
+## Plan screen visuals (UX-113) — 2026-10-29
+
+Scope: items 10, 11 and 13 of `docs/ux/REVISAO_UX_PLANO.md`. Item 12 (the home's paid-card button and "Em breve") was already resolved by UX-109; `pricing.test.ts` now also asserts that "Começar no Gratuito" is gone.
+
+- Plan cards inside the account (`.plan-catalogue` in `globals.css`): no glow, no gradient badge, plain checks; the current plan wears the app's `Badge` next to its name and a dark border. The home's cards are unchanged.
+- Comparison on the plan screen: `PlanComparisonTable rows="differences"` lists only the rows that change between plans (`planDifferences` in `modules/billing/comparison.ts`), with no groups or colored bars, and says how many rows every plan shares. The home keeps every row by group (`rows="all"`).
+- Below 480px the last plan column is 4.5rem with 0.75rem right padding, so "Agência" and "500 MB" keep off the table's edge (home and plan screen).
+- Test mode on the plan screen: a "Ambiente de teste" badge and one line under the Plans title. The confirmation and return screens keep the full notice.
+
+Verified against a local production build with the billing emulator (`scripts/billing-lifecycle.mjs --serve`, accounts removed with `--cleanup` afterwards) and Playwright with the installed Chrome: the plan screen as owner (free workspace) and as admin, and the home, at 320, 390 and 1280px. No document overflow and no axe-core WCAG 2.2 A/AA violation in any of the nine. The closest text in the last table column sits 14px from the table's edge at 320 and 390px. At 390px the plan screen's comparison has 8 rows (custom domains are not configured locally) and the note "Os outros 17 recursos…". `scripts/billing-lifecycle.mjs` passes 156 checks. `npm run check` passes: lint, typecheck, 1,481 tests in 66 files, production build.
+
+Not verified: a real phone, Safari/iOS or Firefox, a screen reader, and a workspace on a paid plan (the current-plan border was seen on the free card only).

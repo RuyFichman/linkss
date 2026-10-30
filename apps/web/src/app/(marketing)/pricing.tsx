@@ -92,7 +92,7 @@ export function PlanComparison({ customDomains }: Pick<PricingProps, "customDoma
       <div className="home-heading">
         <h2 className="home-display" id="comparar-titulo">{BILLING_COPY.comparison.title}</h2>
       </div>
-      <PlanComparisonTable customDomains={customDomains} labelledBy="comparar-titulo" />
+      <PlanComparisonTable customDomains={customDomains} labelledBy="comparar-titulo" rows="all" />
     </section>
   );
 }

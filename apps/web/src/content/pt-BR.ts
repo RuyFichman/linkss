@@ -1277,6 +1277,8 @@ export const SHOWCASE_COPY = {
  */
 // One sentence for what yearly saves, on the plan cards and next to "Passar para o anual".
 const yearlySaving = (amount: string) => `Economize ${amount} por ano no plano anual`;
+const SANDBOX_LABEL = "Ambiente de teste";
+const SANDBOX_DETAIL = "Nenhuma cobrança real é feita aqui: o pagamento usa os dados de teste do provedor.";
 
 export const BILLING_COPY = {
   nav: "Plano",
@@ -1296,7 +1298,10 @@ export const BILLING_COPY = {
   // Next to the yearly choice; the number comes from the catalogue (yearlyFreeMonths).
   freeMonths: (count: number) => (count === 1 ? "1 mês grátis" : `${count} meses grátis`),
   yearlySaving,
-  sandbox: "Ambiente de teste. Nenhuma cobrança real é feita aqui: o pagamento usa os dados de teste do provedor.",
+  // The plan screen shows the label as a badge next to the detail; the other billing screens, the sentence.
+  sandbox: `${SANDBOX_LABEL}. ${SANDBOX_DETAIL}`,
+  sandboxLabel: SANDBOX_LABEL,
+  sandboxDetail: SANDBOX_DETAIL,
   off: "Os planos pagos ainda não estão à venda. O plano Gratuito continua disponível.",
   notDeployed: "A área de plano e cobrança ainda não está disponível neste ambiente. Tente novamente mais tarde.",
   loadError: "Não foi possível carregar as informações do plano agora. Tente novamente em instantes.",
@@ -1372,6 +1377,8 @@ export const BILLING_COPY = {
     pricesFor: (interval: string) => `Valores com cobrança ${interval}, como a sua assinatura.`,
     referencePrices: "Valores com cobrança mensal.",
     compare: "Comparar todos os recursos",
+    // The plan screen's comparison lists only the rows that change between plans (UX-113).
+    differences: "Ver o que muda entre os planos",
     // When no card can be bought: why, right above the plans, and the plans one tap away.
     show: "Ver planos e preços",
     blocked: {
@@ -1409,6 +1416,7 @@ export const BILLING_COPY = {
   comparison: {
     title: "Compare todos os recursos",
     feature: "Recurso",
+    shared: (count: number) => (count === 1 ? "O outro recurso está em todos os planos, inclusive no Gratuito." : `Os outros ${count} recursos estão em todos os planos, inclusive no Gratuito.`),
     included: "Sim",
     excluded: "Não",
     groups: { page: "Página", blocks: "Blocos", results: "Resultados", team: "Várias páginas e equipe" },
