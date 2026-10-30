@@ -308,3 +308,40 @@ Scope: items 10, 11 and 13 of `docs/ux/REVISAO_UX_PLANO.md`. Item 12 (the home's
 Verified against a local production build with the billing emulator (`scripts/billing-lifecycle.mjs --serve`, accounts removed with `--cleanup` afterwards) and Playwright with the installed Chrome: the plan screen as owner (free workspace) and as admin, and the home, at 320, 390 and 1280px. No document overflow and no axe-core WCAG 2.2 A/AA violation in any of the nine. The closest text in the last table column sits 14px from the table's edge at 320 and 390px. At 390px the plan screen's comparison has 8 rows (custom domains are not configured locally) and the note "Os outros 17 recursos…". `scripts/billing-lifecycle.mjs` passes 156 checks. `npm run check` passes: lint, typecheck, 1,481 tests in 66 files, production build.
 
 Not verified: a real phone, Safari/iOS or Firefox, a screen reader, and a workspace on a paid plan (the current-plan border was seen on the free card only).
+
+## Hero presentation pages — 2026-10-29
+
+Scope: replace only the three generic page contents in the home hero with existing gallery compositions. The founder explicitly requested preserving the hero and its page positions. `HeroPagePreviews` reuses Willow & Wild on the left, Maya Bennett in the center and Nova Reed on the right, with the same photographs, fonts, colors and social icons as `#modelos`. These remain original illustrative identities, not customer endorsements.
+
+Source visual truth:
+
+- Founder attachments: `C:/Users/Pichau/AppData/Local/Temp/codex-clipboard-9a4fdc94-ca09-418d-89e6-5f695487d1d7.png` (gallery content) and `C:/Users/Pichau/AppData/Local/Temp/codex-clipboard-85f00073-f630-4bea-a437-1fca2fb5cd58.png` (hero composition).
+- Same-viewport baseline captured before editing: `docs/ux/evidence/hero-before-desktop.webp`.
+- Production-build captures: `docs/ux/evidence/hero-desktop.webp` and `docs/ux/evidence/hero-mobile.webp`.
+- Measurements and browser checks: `docs/ux/evidence/hero-qa.json`.
+
+Comparison: in-app browser, default home state, requested desktop CSS viewport 1280 × 900, devicePixelRatio 1. Both desktop captures are 1265 × 889 pixels as returned by the browser, with no resampling between them. Opened and inspected the combined before/after board `.npm-cache/hero-qa/comparison.webp` (2530 × 889) and the focused fan board `.npm-cache/hero-qa/focused.webp` (1360 × 640, two equal crops). The mobile capture is 375 × 1058 pixels at requested CSS viewport 390 × 1100. Screenshot dimensions are the browser's exported surface, not a claim of full viewport pixel coverage.
+
+| Fidelity surface | Result |
+|---|---|
+| Typography | Hero heading, body, badge, address and CTA unchanged. Inner pages reuse the gallery's Poppins/Lora fonts and existing typography. |
+| Spacing and layout | Production DOM measurements exactly match the before state for the hero, heading, address/CTA, fan and all three frame bounds, widths, heights, transforms and stacking levels. Existing borders, radii, shadows and responsive breakpoints remain. The 360px gallery canvases scale into the frames without contributing to their size. |
+| Colors and tokens | Hero wash and product colors unchanged. Inner page palettes match their gallery counterparts. |
+| Images and icons | Six existing local WebP assets load successfully, with the same subject crops and existing social icons. No new images, icon dependency or external request origin. |
+| Copy and content | Hero copy and CTA unchanged. The three inner page identities and their English content are reused directly from the gallery. |
+
+Verification:
+
+- Development browser checks at 320, 390, 768, 960 and 1280px: no document overflow; images loaded; no new focusable element inside the decorative fan; every frame has `aria-hidden="true"`; CTA still points to `/cadastro`.
+- Local production build at 390 and 1280px: inspected the rendered hero. At 1280px, all recorded geometry is identical to the baseline. Native accessibility state excludes the decorative page content.
+- Clicked **Começar** on the production build: reached `/cadastro` with **Crie seu acesso** and the labeled sign-up fields. No account submitted. The gallery's Maya Bennett preview still opens and closes with Escape.
+- Fresh production browser logs: no console errors or warnings. A transient development import error appeared while the two related files were being saved; the completed code and production build have no such error.
+- `npm run check`: exit 0; lint without warnings, TypeScript without errors, **1,481 tests in 66 files passed**, Next.js 16.4.1 production build successful.
+
+Findings: no actionable P0/P1/P2 discrepancy within the requested scope. The inner content change is intentional; the original mobile clipping of the side frames and the fan overlap are preserved. No visual correction iteration was required. The first mobile screenshot export had a stale surface after resizing; it was discarded and recaptured after checking the viewport and returning to the top.
+
+Not measured: Web Vitals or performance impact. Not verified: real devices, Safari/Firefox, a screen reader, deployment or production hosting. No database, vendor, route, analytics, dependency or product-flow change.
+
+Implementation checklist: content swapped, existing geometry compared, responsive rendering and primary navigation checked, repository checks passed, current-state guide synchronized.
+
+final result: passed

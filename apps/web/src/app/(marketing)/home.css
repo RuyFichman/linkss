@@ -59,6 +59,11 @@
 .home-phone-button[data-outline] { color: var(--phone-text); background: transparent; }
 .home-phone-media { height: 5.5rem; border-radius: 0.75rem; background: var(--phone-cover); opacity: 0.9; }
 
+/* Keep the fan geometry; scale the gallery's 360px canvas into each existing frame. */
+.home-hero-page { --hero-page-scale: 0.572222; }
+.home-hero-page > .showcase-page { position: absolute; top: 0; left: 0; transform: scale(var(--hero-page-scale)); transform-origin: top left; }
+@media (min-width: 960px) { .home-hero-page { --hero-page-scale: 0.705556; } }
+
 /* Feature strip */
 .home-marquee { overflow: hidden; border-block: 1px solid var(--home-line); background: #ffffff; }
 .home-marquee-track { display: flex; width: max-content; animation: home-marquee 45s linear infinite; }

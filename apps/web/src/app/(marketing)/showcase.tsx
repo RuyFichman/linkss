@@ -116,6 +116,15 @@ function MusicPage() {
   </div>;
 }
 
+/** Reuse the gallery pages inside the hero's existing three presentation frames. */
+export function HeroPagePreviews() {
+  return <>
+    <div className="home-phone home-hero-page" aria-hidden="true"><FarmPage /></div>
+    <div className="home-phone home-hero-page" aria-hidden="true"><CoachPage /></div>
+    <div className="home-phone home-hero-page" aria-hidden="true"><MusicPage /></div>
+  </>;
+}
+
 function CeramicsPage() {
   return <div className="showcase-page showcase-ceramics" lang="en" style={bodyFont}>
     <div className="showcase-page-body">
