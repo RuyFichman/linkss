@@ -1290,7 +1290,7 @@ export const BILLING_COPY = {
   intervalAdjective: { month: "mensal", year: "anual" },
   perInterval: { month: "por mês", year: "por ano" },
   perShort: { month: "/mês", year: "/ano" },
-  freePrice: "R$ 0",
+  freePrice: "R$\u00a00",
   // Next to the yearly choice; the number comes from the catalogue (yearlyFreeMonths).
   freeMonths: (count: number) => (count === 1 ? "1 mês grátis" : `${count} meses grátis`),
   yearlySaving: (amount: string) => `Economize ${amount} por ano no plano anual`,
@@ -1320,6 +1320,12 @@ export const BILLING_COPY = {
     over: "Acima do limite",
     pending: (count: number) => (count === 1 ? "Inclui 1 convite pendente." : `Inclui ${count} convites pendentes.`),
     archived: "Páginas arquivadas também contam.",
+    // Above a limit after a cheaper plan nothing is deleted; only new creations wait (ADR 0014).
+    overNote: {
+      pages: "Nada é apagado e as páginas continuam no ar. Só não dá para criar outra enquanto o total estiver acima do plano.",
+      seats: "Ninguém perde o acesso. Só não dá para convidar outra pessoa enquanto o total estiver acima do plano.",
+      storage: "Nenhuma imagem é apagada. Só não dá para enviar outra enquanto o espaço usado estiver acima do plano.",
+    },
   },
   statusLabel: {
     free: "Gratuito",
@@ -1361,7 +1367,15 @@ export const BILLING_COPY = {
     yearlyOnly: "Sua assinatura é anual. Para voltar ao mensal, cancele a renovação e assine o mensal quando o período já pago terminar.",
     intervalLegend: "Mostrar preços",
     pricesFor: (interval: string) => `Valores com cobrança ${interval}, como a sua assinatura.`,
+    referencePrices: "Valores com cobrança mensal.",
     compare: "Comparar todos os recursos",
+    // When no card can be bought: why, right above the plans, and the plans one tap away.
+    show: "Ver planos e preços",
+    blocked: {
+      suspended: "Com a conta suspensa não é possível contratar nem mudar de plano.",
+      payment: "Para contratar ou mudar de plano, primeiro regularize o pagamento da assinatura atual.",
+      canceling: "A assinatura tem cancelamento agendado. Para mudar de plano, mantenha a assinatura primeiro.",
+    },
   },
   features: {
     max_profiles: (count: number) => (count === 1 ? "1 página" : `${count} páginas`),

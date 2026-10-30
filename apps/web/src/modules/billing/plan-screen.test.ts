@@ -24,7 +24,7 @@ describe("plan screen: what the current plan says", () => {
     expect(screen.summary).toEqual({
       kind: "facts",
       facts: [
-        { key: "amount", label: "Valor", value: "R$ 14,90 por mês" },
+        { key: "amount", label: "Valor", value: "R$\u00a014,90 por mês" },
         { key: "nextCharge", label: "Próxima cobrança", value: "08/11/2026", dateTime: "2026-11-08T15:00:00.000Z" },
       ],
     });
@@ -125,12 +125,38 @@ describe("plan screen: the catalogue", () => {
   });
 
   it("shows a running subscription's own interval, and a choice that starts monthly otherwise", () => {
-    expect(planScreen(input(base, "pro")).prices).toEqual({ kind: "fixed", interval: "month" });
-    expect(planScreen(input({ ...base, interval: "year" }, "pro")).prices).toEqual({ kind: "fixed", interval: "year" });
-    expect(planScreen(input({ ...base, heldPlanId: "agency", heldUntil: days(10) }, "agency")).prices).toEqual({ kind: "fixed", interval: "month" });
-    for (const record of [null, { ...base, cancelAtPeriodEnd: true }, { ...base, status: "past_due" as const, graceUntil: days(5) }]) {
+    expect(planScreen(input(base, "pro")).prices).toEqual({ kind: "fixed", interval: "month", reason: "subscription" });
+    expect(planScreen(input({ ...base, interval: "year" }, "pro")).prices).toEqual({ kind: "fixed", interval: "year", reason: "subscription" });
+    expect(planScreen(input({ ...base, heldPlanId: "agency", heldUntil: days(10) }, "agency")).prices).toEqual({ kind: "fixed", interval: "month", reason: "subscription" });
+    for (const record of [null, { ...base, status: "ended" as const }]) {
       expect(planScreen(input(record, "free")).prices).toEqual({ kind: "choice", initial: "month" });
     }
+  });
+
+  it("drops the interval choice when nothing can be bought: monthly prices stand as a reference", () => {
+    for (const screen of [
+      planScreen(input(null, "free", { isOwner: false })),
+      planScreen(input({ ...base, cancelAtPeriodEnd: true }, "free")),
+      planScreen(input({ ...base, status: "past_due" as const, graceUntil: days(5) }, "free")),
+      planScreen(input(null, "free", { mode: "off" })),
+    ]) {
+      expect(screen.prices).toEqual({ kind: "fixed", interval: "month", reason: "reference" });
+    }
+  });
+
+  it("says why no plan can be bought, the most basic reason first", () => {
+    const blocked = (record: SubscriptionRecord | null, planId: PlanId, overrides: Parameters<typeof input>[2] = {}) => planScreen(input(record, planId, overrides)).blocked;
+    expect(blocked(null, "free")).toBeNull();
+    expect(blocked(base, "pro")).toBeNull();
+    expect(blocked(base, "pro", { isOwner: false })).toBe("owner");
+    expect(blocked({ ...base, status: "past_due", graceUntil: days(5) }, "pro", { isOwner: false })).toBe("owner");
+    expect(blocked({ ...base, status: "past_due", graceUntil: days(5) }, "pro")).toBe("payment");
+    expect(blocked({ ...base, status: "past_due", graceUntil: days(-1) }, "free")).toBe("payment");
+    expect(blocked({ ...base, status: "incomplete" }, "free")).toBe("payment");
+    expect(blocked({ ...base, cancelAtPeriodEnd: true }, "pro")).toBe("canceling");
+    expect(blocked(base, "pro", { suspended: true })).toBe("suspended");
+    expect(blocked(base, "pro", { mode: "off", isOwner: false })).toBe("off");
+    expect(blocked(null, "free", { deployed: false, mode: "off" })).toBe("notDeployed");
   });
 
   it("offers yearly billing only to a monthly subscription in good standing", () => {

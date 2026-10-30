@@ -265,3 +265,22 @@ Verified on the local dev server with a disposable agency workspace (`qa-pagelis
 - `npm run check` passes: lint, typecheck, 1,474 tests in 66 files, production build.
 
 Not verified: a real phone, Safari/iOS or Firefox, a screen reader, the read-only roles (editor) and a workspace with more than one screen of pages, deployment and production.
+
+## Plan screen fixes (UX-111) — 2026-10-29
+
+Scope: the plan screen, `/app/w/<workspace>/plano` (`modules/billing/plan-screen.ts`, `components/plan-screen.tsx`), money formatting (`formatMoney` in `modules/billing/catalog.ts`) and the account header on phones (`account-menu.tsx`, the workspace layout, `.app-header` in `globals.css`). Billing rules, actions and permissions are unchanged.
+
+- Nothing to buy: `planScreen` returns `blocked` (`notDeployed`, `off`, `owner`, `suspended`, `payment`, `canceling`) when no card offers anything. The catalogue then says why right above the plans, with the fix-payment button for an owner whose payment needs fixing. It shows monthly prices as a reference with no interval choice, and folds the cards and the comparison under "Ver planos e preços". The "Só o proprietário…" line moved there from the plan card; the billing-off and not-deployed notices also moved there.
+- Usage: above a limit, each row says what that means (nothing deleted, only new pages, invitations or uploads wait) in the warning color, never danger. A bar with nothing in it is left out. The plan and usage cards no longer stretch to each other's height.
+- `formatMoney` returns a no-break space, so "R$" never ends a line apart from the amount.
+- Header on phones: smaller logo and an icon-only account menu, so the workspace switcher shows the name. The agency line no longer repeats the name and is hidden below 640px.
+- Payment history: the amount is right-aligned next to the date, and the status takes the rest. Tabular figures were tried and dropped: in the product typeface they widen the decimal comma ("R$ 14 , 90").
+
+Verified with disposable local accounts (`qa-planux-*@example.test`): an agency workspace whose Pro subscription lost its grace period, back on Free with three people on a one-seat plan, and three invoices. The checks used Playwright with the installed Chrome against a local production build. Billing was in `sandbox` with dummy keys and the provider address pointed at an unused loopback port, so nothing could reach Stripe:
+
+- Owner and admin at 320, 390 and 1280px: no document overflow and no axe-core WCAG 2.2 A/AA violation. At 390px the owner's screen went from 3,084px to 1,907px tall and the admin's from 3,093px to 1,302px (the before shots were with billing off).
+- The owner sees "Para contratar ou mudar de plano, primeiro regularize o pagamento…" with the button above the folded plans. The admin sees "Só o proprietário…" in the same place. "Ver planos e preços" opens the three cards and the comparison.
+- Free personal workspace (nothing blocked): the Monthly/Annual choice and both "Assinar" buttons are unchanged.
+- `npm run check` passes: lint, typecheck, 1,478 tests in 66 files, production build.
+
+Not verified: a real phone, Safari/iOS or Firefox, a screen reader, and the canceling and suspended states in a browser (unit tests only). The dev server reloaded the page in a loop during this session, so the browser checks used `next start`.

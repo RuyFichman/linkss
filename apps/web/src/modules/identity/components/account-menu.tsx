@@ -10,7 +10,9 @@ export function AccountMenu() {
   return (
     <details className="relative flex-none">
       <summary className="ui-button ui-button-secondary cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-        <span>{APP_COPY.nav.account}</span>
+        {/* An icon on phones, so the workspace name beside it has room to be read. */}
+        <svg className="size-5 sm:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+        <span className="max-sm:sr-only">{APP_COPY.nav.account}</span>
         <span aria-hidden="true">▾</span>
       </summary>
       <div className="absolute right-0 z-40 mt-2 grid w-60 max-w-[calc(100vw-2rem)] gap-1 rounded-2xl border border-app-border bg-app-surface p-2 shadow-raised">

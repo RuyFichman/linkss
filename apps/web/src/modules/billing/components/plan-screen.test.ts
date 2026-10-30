@@ -28,7 +28,7 @@ function render(record: SubscriptionRecord | null, planId: PlanId, options: { mo
   const { mode = "sandbox", isOwner = true, suspended = false, deployed = true, invoices = [], notice = null } = options;
   const billing: WorkspaceBilling = { deployed, planId, record, amountCents: record ? (record.planId === "agency" ? 5790 : 1490) : null, invoices };
   const screen = planScreen({ billing, mode, isOwner, suspended, now: T0, usage: options.usage ?? null });
-  const html = renderToStaticMarkup(createElement(PlanScreenView, { workspaceId: WORKSPACE, screen, invoices: isOwner ? invoices : [], mode, deployed, suspended, customDomains: true, notice }));
+  const html = renderToStaticMarkup(createElement(PlanScreenView, { workspaceId: WORKSPACE, screen, invoices: isOwner ? invoices : [], mode, suspended, customDomains: true, notice }));
   return { html, text: html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ") };
 }
 
@@ -64,6 +64,36 @@ describe("plan screen: one state at a time", () => {
     expect(html).not.toContain("payments-title");
   });
 
+  it("nothing to buy, owner with a failing payment: says so next to the plans, with the fix, and folds the plans", () => {
+    const { html } = render({ ...base, status: "past_due", graceUntil: days(5) }, "pro");
+    const catalogue = between(html, 'aria-labelledby="plans-title"', "</section>");
+    expect(catalogue).toContain("Para contratar ou mudar de plano, primeiro regularize o pagamento da assinatura atual.");
+    expect(catalogue).toMatch(/class="ui-button ui-button-secondary[^"]*"[^>]*>Atualizar forma de pagamento/);
+    expect(catalogue).not.toContain('type="radio"');
+    expect(catalogue).toContain("Valores com cobrança mensal.");
+    // The note comes before the folded plans, which stay one tap away.
+    expect(catalogue.indexOf("primeiro regularize")).toBeLessThan(catalogue.indexOf("<details"));
+    expect(catalogue).toContain('<details class="plan-compare-details"><summary id="compare-title">Ver planos e preços</summary>');
+    expect(count(catalogue, "<details")).toBe(1);
+  });
+
+  it("nothing to buy, admin: who can, right above the plans, not in the plan card", () => {
+    const { html } = render(base, "pro", { isOwner: false });
+    expect(currentCard(html)).not.toContain("Só o proprietário");
+    const catalogue = between(html, 'aria-labelledby="plans-title"', "</section>");
+    expect(catalogue.indexOf("Só o proprietário")).toBeGreaterThan(0);
+    expect(catalogue.indexOf("Só o proprietário")).toBeLessThan(catalogue.indexOf("<details"));
+    expect(catalogue).not.toContain("<form");
+  });
+
+  it("something to buy: the plans in full, with the interval choice and no note", () => {
+    const { html } = render(null, "free");
+    const catalogue = between(html, 'aria-labelledby="plans-title"', "</section>");
+    expect(catalogue).toContain('type="radio"');
+    expect(catalogue).not.toContain("Ver planos e preços");
+    expect(catalogue.indexOf('class="plan-offers"')).toBeLessThan(catalogue.indexOf("<details"));
+  });
+
   it("grace over: says the plan is suspended and the data is kept, with the fix", () => {
     const { html } = render({ ...base, status: "past_due", graceUntil: days(-1) }, "free");
     const card = currentCard(html);
@@ -83,7 +113,7 @@ describe("plan screen: one state at a time", () => {
   it("active monthly, owner: the amount and the next charge as facts, the yearly offer, a quiet cancel", () => {
     const { html, text } = render(base, "pro");
     const card = currentCard(html);
-    expect(card).toMatch(/<dt[^>]*>Valor<\/dt><dd[^>]*>R\$ 14,90 por mês<\/dd>/);
+    expect(card).toMatch(/<dt[^>]*>Valor<\/dt><dd[^>]*>R\$\u00a014,90 por mês<\/dd>/);
     expect(card).toMatch(/<dt[^>]*>Próxima cobrança<\/dt><dd[^>]*><time[^>]*dateTime="2026-11-08T15:00:00.000Z"[^>]*>08\/11\/2026<\/time>/);
     expect(card).not.toContain("Plano Pro, cobrança mensal.");
     expect(text).toContain("Sua assinatura é mensal. No anual você paga R$ 29,80 a menos por ano.");
@@ -112,12 +142,12 @@ describe("plan screen: one state at a time", () => {
     expect(text).toContain("Valores com cobrança anual, como a sua assinatura.");
     expect(text).toContain("R$ 579,00");
     expect(text).not.toContain("R$ 57,90");
-    expect(currentCard(html)).toContain("R$ 14,90 por ano");
+    expect(currentCard(html)).toContain("R$\u00a014,90 por ano");
   });
 
   it("active, admin: the facts, the yearly saving without the link, no command", () => {
     const { html, text } = render(base, "pro", { isOwner: false });
-    expect(currentCard(html)).toContain("R$ 14,90 por mês");
+    expect(currentCard(html)).toContain("R$\u00a014,90 por mês");
     expect(text).toContain("No anual você paga R$ 29,80 a menos por ano.");
     expect(html).not.toContain("acao=anual");
     expect(html).not.toContain("acao=cancelar");
@@ -152,7 +182,7 @@ describe("plan screen: one state at a time", () => {
     expect(html).toMatch(/<input type="radio" name="plan-interval" checked="" value="month"\/>/);
     expect(html).toMatch(/<input type="radio" name="plan-interval" value="year"\/>/);
     for (const label of ["Assinar Pro mensal", "Assinar Pro anual", "Assinar Agência mensal", "Assinar Agência anual"]) expect(text).toContain(label);
-    expect(html).toContain('aria-label="Assinar Pro mensal: R$ 14,90 por mês"');
+    expect(html).toContain('aria-label="Assinar Pro mensal: R$\u00a014,90 por mês"');
     // A price per interval on each card, a button per interval on each paid card.
     expect(count(html, 'data-interval="month"')).toBe(5);
     expect(count(html, 'data-interval="year"')).toBe(5);
@@ -219,6 +249,9 @@ describe("plan screen: payment history", () => {
     expect(history).toContain('<span class="inline-flex min-h-11 items-center text-sm text-app-muted">Sem recibo</span>');
     // Column names for sight only; the values carry their own.
     expect(history).toMatch(/<div aria-hidden="true"[^>]*><span>Data<\/span>/);
+    // Amounts line up on the right, so they compare down the column.
+    expect(history).toContain('<div class="text-right"><dt class="sr-only">Valor</dt><dd class="m-0 font-semibold">');
+    expect(history).toContain('<span class="text-right">Valor</span>');
   });
 });
 
@@ -242,6 +275,13 @@ describe("plan screen: usage, cards and comparison", () => {
     expect(html).toContain('<section class="surface-card grid content-start gap-4 p-5 sm:p-6" aria-labelledby="usage-title"><h2 id="usage-title"');
   });
 
+  it("leaves out a bar with nothing in it", () => {
+    const { html } = render(null, "free", { usage: usage({ pages: 0, storageBytes: 0 }) });
+    const card = between(html, 'aria-labelledby="usage-title"', "</section>");
+    // Seats: one person on a one-seat plan; pages and image space are empty.
+    expect(count(card, 'aria-hidden="true"')).toBe(1);
+  });
+
   it("counts open invitations as seats and says so", () => {
     const { text } = render(null, "agency", { usage: usage({ pages: 3, members: 2, pendingInvitations: 1 }) });
     expect(text).toContain("Páginas 3 de 10");
@@ -250,9 +290,14 @@ describe("plan screen: usage, cards and comparison", () => {
     expect(text).not.toContain("No limite");
   });
 
-  it("says when the workspace is above a limit, after a cheaper plan", () => {
-    const { text } = render(null, "free", { usage: usage({ pages: 3 }) });
+  it("says when the workspace is above a limit, what that means, and never in danger red", () => {
+    const { html, text } = render(null, "free", { usage: usage({ pages: 3, members: 3, storageBytes: 25 * 1048576 }) });
     expect(text).toContain("Páginas 3 de 1 Acima do limite");
+    expect(text).toContain("Nada é apagado e as páginas continuam no ar. Só não dá para criar outra enquanto o total estiver acima do plano.");
+    expect(text).toContain("Ninguém perde o acesso. Só não dá para convidar outra pessoa");
+    expect(text).toContain("Nenhuma imagem é apagada. Só não dá para enviar outra");
+    const card = between(html, 'aria-labelledby="usage-title"', "</section>");
+    expect(card).not.toContain("danger");
   });
 
   it("comes after the plan and its actions, so on a phone it never pushes the fix down", () => {
