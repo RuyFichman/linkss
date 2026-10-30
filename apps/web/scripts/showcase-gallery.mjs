@@ -53,6 +53,11 @@ async function swipe(page, dx, dy) {
 
 try {
   const { context: mobile, page } = await open({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: "reduce" });
+  assert.equal(await page.locator(".showcase-motion-toggle").textContent(), "Pausar movimento", "A fresh visit must start the carousel automatically even when the device requests reduced motion.");
+  const automaticStart = await railOffset(page);
+  await page.waitForFunction((before) => document.querySelector(".showcase-rail").scrollLeft > before + 10, automaticStart);
+  results.reducedMotionAutoplay = true;
+  await page.getByRole("button", { name: "Pausar movimento", exact: true }).click();
   // Verify native taps before CDP gestures: Chromium's injected swipe stream suppresses
   // later compatibility clicks even on a plain button with no application listeners.
   await page.locator('[data-showcase-original="photography"]').tap();
@@ -84,11 +89,11 @@ try {
   assert(Math.abs(await railOffset(page) - horizontalBefore) < 5, "Vertical page scrolling must not drag the gallery sideways.");
   results.touch.verticalScroll = true;
   await page.locator(".showcase-controls").scrollIntoViewIfNeeded();
-  await page.getByRole("button", { name: "Iniciar movimento", exact: true }).click();
+  await page.getByRole("button", { name: "Retomar movimento", exact: true }).click();
   const started = await railOffset(page);
   await page.waitForFunction((before) => document.querySelector(".showcase-rail").scrollLeft > before + 10, started);
   await page.getByRole("button", { name: "Pausar movimento", exact: true }).click();
-  results.reducedMotionOptIn = true;
+  results.reducedMotionPauseResume = true;
   await page.screenshot({ path: resolve(output, "mobile.png") });
   await mobile.close();
 
@@ -143,7 +148,7 @@ try {
   results.errors = errors;
   writeFileSync(resolve(output, "results.json"), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
-  console.log("PASS touch, vertical scrolling, reduced-motion opt-in, desktop autoplay/pause/drag and previews");
+  console.log("PASS touch, vertical scrolling, autoplay with either motion preference, pause/drag and previews");
 } finally {
   await browser.close();
 }

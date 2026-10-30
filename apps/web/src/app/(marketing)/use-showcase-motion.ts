@@ -1,20 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef } from "react";
 import { advanceShowcase, dragIntent, loopOffset } from "./showcase-motion";
-
-const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-function subscribeMotion(notify: () => void) {
-  const query = window.matchMedia(REDUCED_MOTION);
-  query.addEventListener("change", notify);
-  return () => query.removeEventListener("change", notify);
-}
-const motionPreference = () => window.matchMedia(REDUCED_MOTION).matches;
-const serverMotionPreference = () => true;
-
-export function useReducedMotion() {
-  return useSyncExternalStore(subscribeMotion, motionPreference, serverMotionPreference);
-}
 
 type PointerDrag = { id: number; x: number; y: number; offset: number; intent: ReturnType<typeof dragIntent> };
 

@@ -1,0 +1,127 @@
+{
+  "reducedMotionAutoplay": true,
+  "touch": {
+    "before": 3973,
+    "offsets": [
+      3993,
+      3993,
+      4013,
+      4033,
+      4053,
+      4073,
+      4093,
+      4113,
+      4133,
+      4153,
+      4173,
+      4193,
+      4213
+    ],
+    "tapPreview": true,
+    "events": [
+      {
+        "type": "pointerdown",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "gotpointercapture",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "lostpointercapture",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "gotpointercapture",
+        "target": "showcase-rail",
+        "trusted": true
+      },
+      {
+        "type": "pointerup",
+        "target": "showcase-rail",
+        "trusted": true
+      },
+      {
+        "type": "lostpointercapture",
+        "target": "showcase-rail",
+        "trusted": true
+      },
+      {
+        "type": "pointerdown",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "gotpointercapture",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "lostpointercapture",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "gotpointercapture",
+        "target": "showcase-rail",
+        "trusted": true
+      },
+      {
+        "type": "pointerup",
+        "target": "showcase-rail",
+        "trusted": true
+      },
+      {
+        "type": "lostpointercapture",
+        "target": "showcase-rail",
+        "trusted": true
+      }
+    ],
+    "reverse": [
+      4196,
+      4196,
+      4180,
+      4163,
+      4146,
+      4130,
+      4113,
+      4096,
+      4080,
+      4063,
+      4046,
+      4030,
+      4013
+    ],
+    "verticalScroll": true
+  },
+  "reducedMotionPauseResume": true,
+  "desktopAutoplay": true,
+  "desktopPauseResumeAndDrag": true,
+  "newPreviews": 5,
+  "accessibility": {
+    "originals": 15,
+    "tabbableClones": 0
+  },
+  "responsive": [
+    {
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "width": 1280,
+      "overflow": false
+    }
+  ],
+  "errors": []
+}
