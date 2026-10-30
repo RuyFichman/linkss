@@ -1,0 +1,306 @@
+{
+  "source": "Original local hero before the requested content swap",
+  "desktopCssViewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "before": {
+    "claim": {
+      "height": 64,
+      "width": 496,
+      "x": 56.5,
+      "y": 612.984375
+    },
+    "fan": {
+      "height": 576,
+      "width": 552,
+      "x": 656.5,
+      "y": 184.390625
+    },
+    "heading": {
+      "height": 159.59375,
+      "width": 552,
+      "x": 56.5,
+      "y": 339.796875
+    },
+    "hero": {
+      "height": 758.390625,
+      "width": 1152,
+      "x": 56.5,
+      "y": 82
+    },
+    "phones": [
+      {
+        "box": {
+          "height": 577.27392578125,
+          "width": 345.639892578125,
+          "x": 606.56005859375,
+          "y": 205.45989990234375
+        },
+        "height": "542.656px",
+        "transform": "matrix(0.987688, -0.156434, 0.156434, 0.987688, -285.12, -249.622)",
+        "width": "264px",
+        "z": "1"
+      },
+      {
+        "box": {
+          "height": 542.65625,
+          "width": 264,
+          "x": 800.5,
+          "y": 190.2093811035156
+        },
+        "height": "542.656px",
+        "transform": "matrix(1, 0, 0, 1, -132, -282.181)",
+        "width": "264px",
+        "z": "2"
+      },
+      {
+        "box": {
+          "height": 570.784912109375,
+          "width": 328.1654052734375,
+          "x": 910.977294921875,
+          "y": 186.99818420410156
+        },
+        "height": "542.656px",
+        "transform": "matrix(0.992546, 0.121869, -0.121869, 0.992546, 10.56, -271.328)",
+        "width": "264px",
+        "z": "0"
+      }
+    ]
+  },
+  "production": {
+    "claim": {
+      "height": 64,
+      "width": 496,
+      "x": 56.5,
+      "y": 612.984375
+    },
+    "fan": {
+      "height": 576,
+      "width": 552,
+      "x": 656.5,
+      "y": 184.390625
+    },
+    "heading": {
+      "height": 159.59375,
+      "width": 552,
+      "x": 56.5,
+      "y": 339.796875
+    },
+    "hero": {
+      "height": 758.390625,
+      "width": 1152,
+      "x": 56.5,
+      "y": 82
+    },
+    "phones": [
+      {
+        "box": {
+          "height": 577.27392578125,
+          "width": 345.639892578125,
+          "x": 606.56005859375,
+          "y": 205.45989990234375
+        },
+        "height": "542.656px",
+        "transform": "matrix(0.987688, -0.156434, 0.156434, 0.987688, -285.12, -249.622)",
+        "width": "264px",
+        "z": "1"
+      },
+      {
+        "box": {
+          "height": 542.65625,
+          "width": 264,
+          "x": 800.5,
+          "y": 190.2093811035156
+        },
+        "height": "542.656px",
+        "transform": "matrix(1, 0, 0, 1, -132, -282.181)",
+        "width": "264px",
+        "z": "2"
+      },
+      {
+        "box": {
+          "height": 570.784912109375,
+          "width": 328.1654052734375,
+          "x": 910.977294921875,
+          "y": 186.99818420410156
+        },
+        "height": "542.656px",
+        "transform": "matrix(0.992546, 0.121869, -0.121869, 0.992546, 10.56, -271.328)",
+        "width": "264px",
+        "z": "0"
+      }
+    ]
+  },
+  "sameGeometry": true,
+  "responsiveDevelopmentChecks": [
+    {
+      "cta": "/cadastro",
+      "focusable": 0,
+      "frames": [
+        {
+          "contentWidth": 284.68060302734375,
+          "height": "444px",
+          "hidden": "true",
+          "transform": "matrix(0.987688, -0.156434, 0.156434, 0.987688, -233.28, -204.24)",
+          "width": "216px"
+        },
+        {
+          "contentWidth": 205.99993896484375,
+          "height": "444px",
+          "hidden": "true",
+          "transform": "matrix(1, 0, 0, 1, -108, -230.88)",
+          "width": "216px"
+        },
+        {
+          "contentWidth": 272.1827392578125,
+          "height": "444px",
+          "hidden": "true",
+          "transform": "matrix(0.992546, 0.121869, -0.121869, 0.992546, 8.64, -222)",
+          "width": "216px"
+        }
+      ],
+      "images": true,
+      "overflow": false,
+      "viewport": 320
+    },
+    {
+      "cta": "/cadastro",
+      "focusable": 0,
+      "frames": [
+        {
+          "contentWidth": 284.68060302734375,
+          "height": "444px",
+          "hidden": "true",
+          "transform": "matrix(0.987688, -0.156434, 0.156434, 0.987688, -233.28, -204.24)",
+          "width": "216px"
+        },
+        {
+          "contentWidth": 205.99993896484375,
+          "height": "444px",
+          "hidden": "true",
+          "transform": "matrix(1, 0, 0, 1, -108, -230.88)",
+          "width": "216px"
+        },
+        {
+          "contentWidth": 272.1827392578125,
+          "height": "444px",
+          "hidden": "true",
+          "transform": "matrix(0.992546, 0.121869, -0.121869, 0.992546, 8.64, -222)",
+          "width": "216px"
+        }
+      ],
+      "images": true,
+      "overflow": false,
+      "viewport": 390
+    },
+    {
+      "cta": "/cadastro",
+      "focusable": 0,
+      "frames": [
+        {
+          "contentWidth": 284.68060302734375,
+          "height": "444px",
+          "hidden": "true",
+          "transform": "matrix(0.987688, -0.156434, 0.156434, 0.987688, -233.28, -204.24)",
+          "width": "216px"
+        },
+        {
+          "contentWidth": 205.99993896484375,
+          "height": "444px",
+          "hidden": "true",
+          "transform": "matrix(1, 0, 0, 1, -108, -230.88)",
+          "width": "216px"
+        },
+        {
+          "contentWidth": 272.1827392578125,
+          "height": "444px",
+          "hidden": "true",
+          "transform": "matrix(0.992546, 0.121869, -0.121869, 0.992546, 8.64, -222)",
+          "width": "216px"
+        }
+      ],
+      "images": true,
+      "overflow": false,
+      "viewport": 768
+    },
+    {
+      "cta": "/cadastro",
+      "focusable": 0,
+      "frames": [
+        {
+          "contentWidth": 284.68060302734375,
+          "height": "444px",
+          "hidden": "true",
+          "transform": "matrix(0.987688, -0.156434, 0.156434, 0.987688, -233.28, -204.24)",
+          "width": "216px"
+        },
+        {
+          "contentWidth": 205.99993896484375,
+          "height": "444px",
+          "hidden": "true",
+          "transform": "matrix(1, 0, 0, 1, -108, -230.88)",
+          "width": "216px"
+        },
+        {
+          "contentWidth": 272.1827392578125,
+          "height": "444px",
+          "hidden": "true",
+          "transform": "matrix(0.992546, 0.121869, -0.121869, 0.992546, 8.64, -222)",
+          "width": "216px"
+        }
+      ],
+      "images": true,
+      "overflow": false,
+      "viewport": 960
+    },
+    {
+      "cta": "/cadastro",
+      "focusable": 0,
+      "frames": [
+        {
+          "contentWidth": 351.01434326171875,
+          "height": "542.656px",
+          "hidden": "true",
+          "transform": "matrix(0.987688, -0.156434, 0.156434, 0.987688, -285.12, -249.622)",
+          "width": "264px"
+        },
+        {
+          "contentWidth": 254.0001220703125,
+          "height": "542.656px",
+          "hidden": "true",
+          "transform": "matrix(1, 0, 0, 1, -132, -282.181)",
+          "width": "264px"
+        },
+        {
+          "contentWidth": 335.6043701171875,
+          "height": "542.656px",
+          "hidden": "true",
+          "transform": "matrix(0.992546, 0.121869, -0.121869, 0.992546, 10.56, -271.328)",
+          "width": "264px"
+        }
+      ],
+      "images": true,
+      "overflow": false,
+      "viewport": 1280
+    }
+  ],
+  "productionChecks": {
+    "viewports": [
+      {
+        "width": 1280,
+        "height": 900
+      },
+      {
+        "width": 390,
+        "height": 1100
+      }
+    ],
+    "ctaDestination": "/cadastro",
+    "signupHeading": "Crie seu acesso",
+    "galleryPreviewOpens": true,
+    "galleryEscapeCloses": true,
+    "consoleErrors": [],
+    "consoleWarnings": []
+  }
+}

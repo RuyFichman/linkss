@@ -7,7 +7,7 @@ import { publicAddressLabel } from "@/lib/app-url";
 import { BrandLogo } from "@/ui/brand-logo";
 import "./home.css";
 import { PlanComparison, Pricing } from "./pricing";
-import { FeaturePagePreview, Showcase } from "./showcase";
+import { FeaturePagePreview, HeroPagePreviews, Showcase } from "./showcase";
 
 const displayFont = Schibsted_Grotesk({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-home-display", display: "swap" });
 
@@ -92,9 +92,7 @@ export function Home() {
               <ClaimBar />
             </div>
             <div className="home-fan">
-              <PhoneMock phone="local" />
-              <PhoneMock phone="creator" />
-              <PhoneMock phone="shop" />
+              <HeroPagePreviews />
             </div>
           </section>
         </div>

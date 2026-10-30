@@ -118,6 +118,9 @@ export function useShowcaseMotion(count: number, running: boolean) {
     }
 
     function onPointerEnd(event: PointerEvent) {
+      // Touch starts with implicit capture on the preview button. Its bubbling loss
+      // during transfer to the rail is not the end of the gesture.
+      if (event.type === "lostpointercapture" && event.target !== rail) return;
       if (!pointer || pointer.id !== event.pointerId) return;
       pointer = null;
       rail!.removeAttribute("data-dragging");

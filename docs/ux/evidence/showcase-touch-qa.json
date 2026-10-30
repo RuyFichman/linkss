@@ -1,0 +1,126 @@
+{
+  "touch": {
+    "before": 3960,
+    "offsets": [
+      3980,
+      3980,
+      4000,
+      4040,
+      4040,
+      4060,
+      4080,
+      4100,
+      4120,
+      4140,
+      4160,
+      4180,
+      4200
+    ],
+    "tapPreview": true,
+    "events": [
+      {
+        "type": "pointerdown",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "gotpointercapture",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "lostpointercapture",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "gotpointercapture",
+        "target": "showcase-rail",
+        "trusted": true
+      },
+      {
+        "type": "pointerup",
+        "target": "showcase-rail",
+        "trusted": true
+      },
+      {
+        "type": "lostpointercapture",
+        "target": "showcase-rail",
+        "trusted": true
+      },
+      {
+        "type": "pointerdown",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "gotpointercapture",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "lostpointercapture",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "gotpointercapture",
+        "target": "showcase-rail",
+        "trusted": true
+      },
+      {
+        "type": "pointerup",
+        "target": "showcase-rail",
+        "trusted": true
+      },
+      {
+        "type": "lostpointercapture",
+        "target": "showcase-rail",
+        "trusted": true
+      }
+    ],
+    "reverse": [
+      4183,
+      4183,
+      4167,
+      4150,
+      4133,
+      4117,
+      4100,
+      4083,
+      4067,
+      4050,
+      4033,
+      4017,
+      4000
+    ],
+    "verticalScroll": true
+  },
+  "reducedMotionOptIn": true,
+  "desktopAutoplay": true,
+  "desktopPauseResumeAndDrag": true,
+  "newPreviews": 5,
+  "accessibility": {
+    "originals": 15,
+    "tabbableClones": 0
+  },
+  "responsive": [
+    {
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "width": 1280,
+      "overflow": false
+    }
+  ],
+  "errors": []
+}
