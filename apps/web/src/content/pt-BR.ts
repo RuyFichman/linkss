@@ -1261,7 +1261,6 @@ export const HOME_COPY = {
 export const SHOWCASE_COPY = {
   dragHint: "Arraste para explorar os modelos",
   pause: "Pausar movimento",
-  start: "Iniciar movimento",
   resume: "Retomar movimento",
   explore: "Explorar página",
   openLabel: (name: string, category: string) => `Explorar página de ${name} — ${category}`,

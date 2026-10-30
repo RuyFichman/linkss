@@ -4,7 +4,7 @@ import { useId, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Dialog } from "@/ui/dialog";
 import { SHOWCASE_COPY } from "@/content/pt-BR";
-import { useReducedMotion, useShowcaseMotion } from "./use-showcase-motion";
+import { useShowcaseMotion } from "./use-showcase-motion";
 
 export interface ShowcaseEntry {
   id: string;
@@ -17,19 +17,17 @@ export interface ShowcaseEntry {
 /** Page compositions remain server-rendered slots, including the visual copies at the loop seams. */
 export function ShowcaseGallery({ entries }: { entries: ShowcaseEntry[] }) {
   const [selected, setSelected] = useState<string | null>(null);
-  const [motionOverride, setMotionOverride] = useState<boolean | null>(null);
+  const [paused, setPaused] = useState(false);
   const instructionId = useId();
   const railId = useId();
-  const reducedMotion = useReducedMotion();
-  const motionEnabled = motionOverride ?? !reducedMotion;
-  const railRef = useShowcaseMotion(entries.length, motionEnabled && !selected);
+  const railRef = useShowcaseMotion(entries.length, !paused && !selected);
   const active = entries.find((entry) => entry.id === selected);
   return <>
     <div className="showcase-controls home-shell">
       <p id={instructionId}>{SHOWCASE_COPY.dragHint}</p>
-      <button type="button" className="showcase-motion-toggle" aria-controls={railId} onClick={() => setMotionOverride(!motionEnabled)}>
-        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="currentColor">{motionEnabled ? <path d="M5 3h3v14H5zm7 0h3v14h-3z" /> : <path d="M6 3l11 7-11 7z" />}</svg>
-        {motionEnabled ? SHOWCASE_COPY.pause : motionOverride === null ? SHOWCASE_COPY.start : SHOWCASE_COPY.resume}
+      <button type="button" className="showcase-motion-toggle" aria-controls={railId} onClick={() => setPaused(!paused)}>
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="currentColor">{paused ? <path d="M6 3l11 7-11 7z" /> : <path d="M5 3h3v14H5zm7 0h3v14h-3z" />}</svg>
+        {paused ? SHOWCASE_COPY.resume : SHOWCASE_COPY.pause}
       </button>
     </div>
     <ul ref={railRef} id={railId} className="showcase-rail" aria-labelledby="modelos-titulo" aria-describedby={instructionId} aria-live="off" tabIndex={0}>

@@ -1,0 +1,106 @@
+[
+  {
+    "base": "https://linkfav.com",
+    "reducedMotion": "no-preference",
+    "before": {
+      "offset": 4104,
+      "control": "Pausar movimento",
+      "reduced": false
+    },
+    "after": {
+      "offset": 4123,
+      "control": "Pausar movimento",
+      "reduced": false
+    },
+    "dragBefore": 4124,
+    "dragAfter": {
+      "offset": 4424,
+      "control": "Retomar movimento",
+      "reduced": false
+    },
+    "final": {
+      "offset": 4424,
+      "control": "Retomar movimento",
+      "reduced": false
+    },
+    "errors": []
+  },
+  {
+    "base": "https://linkfav.com",
+    "reducedMotion": "reduce",
+    "before": {
+      "offset": 4104,
+      "control": "Iniciar movimento",
+      "reduced": true
+    },
+    "after": {
+      "offset": 4104,
+      "control": "Iniciar movimento",
+      "reduced": true
+    },
+    "dragBefore": 4104,
+    "dragAfter": {
+      "offset": 4404,
+      "control": "Pausar movimento",
+      "reduced": true
+    },
+    "final": {
+      "offset": 4421,
+      "control": "Pausar movimento",
+      "reduced": true
+    },
+    "errors": []
+  },
+  {
+    "base": "http://localhost:3100",
+    "reducedMotion": "no-preference",
+    "before": {
+      "offset": 4106,
+      "control": "Pausar movimento",
+      "reduced": false
+    },
+    "after": {
+      "offset": 4123,
+      "control": "Pausar movimento",
+      "reduced": false
+    },
+    "dragBefore": 4124,
+    "dragAfter": {
+      "offset": 4424,
+      "control": "Retomar movimento",
+      "reduced": false
+    },
+    "final": {
+      "offset": 4424,
+      "control": "Retomar movimento",
+      "reduced": false
+    },
+    "errors": []
+  },
+  {
+    "base": "http://localhost:3100",
+    "reducedMotion": "reduce",
+    "before": {
+      "offset": 4104,
+      "control": "Iniciar movimento",
+      "reduced": true
+    },
+    "after": {
+      "offset": 4104,
+      "control": "Iniciar movimento",
+      "reduced": true
+    },
+    "dragBefore": 4104,
+    "dragAfter": {
+      "offset": 4404,
+      "control": "Pausar movimento",
+      "reduced": true
+    },
+    "final": {
+      "offset": 4421,
+      "control": "Pausar movimento",
+      "reduced": true
+    },
+    "errors": []
+  }
+]

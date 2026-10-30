@@ -391,3 +391,23 @@ Not verified: physical phones, iOS/Safari, Firefox or a screen reader; deploymen
 Implementation checklist: five compositions and images installed; touch regression reproduced and fixed; motion controls verified; production browser captures inspected; asset guide and current-state guide synchronized.
 
 final result: passed
+
+## Carousel default autoplay follow-up — 2026-10-30
+
+The founder reported that automatic movement worked on localhost but not live, then confirmed that the failing behavior was autoplay. The previous PR #56 was already merged, and the public home at `https://linkfav.com/#modelos` showed all fifteen models. A fresh session initially displayed **Iniciar movimento** because the browser requests reduced motion; starting it manually advanced the public carousel. The earlier localhost tab had already been started manually.
+
+Read-only public/local comparison evidence: `docs/ux/evidence/showcase-autoplay-live-before.json`. Fresh installed-Chrome sessions on both origins behaved alike: with `no-preference`, the rail advanced during forty browser frames; with `reduce`, it stayed still until explicitly started. Mouse dragging moved 300px on both origins, and no browser page error was observed. This was a startup-policy difference between a fresh visit and an already-started tab, not a reproduced hosting failure.
+
+Implementation (UX-114): fresh visits now start the carousel automatically for either system preference. The gallery has a single explicit paused state; **Pausar movimento** and **Retomar movimento** remain available. Existing guards still stop animation during dragging, keyboard focus, an open preview, a hidden tab or when the rail is outside the viewport. No preference is stored. This component intentionally no longer starts stopped for `prefers-reduced-motion`; that accessibility tradeoff is explicit in UX-114 and the PR. Other reduced-motion CSS rules are unchanged. The persistent pause control follows the [W3C pause/stop guidance](https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html); this is not a claim of a new full accessibility audit.
+
+Regression and verification:
+
+- Updated `scripts/showcase-gallery.mjs` first failed against the old production build: expected the initial **Pausar movimento** state, received **Iniciar movimento**.
+- The same script passed after the fix on the dev server and then the local production build. It observes real advancement in a new reduced-motion session before pressing any control, then checks explicit pause/resume, native touch preview opening, trusted touch swipes in both directions, vertical scrolling, desktop autoplay and mouse dragging, all five recent previews, focus restoration and clone tab order.
+- Fifteen original triggers, zero tabbable clones, no document overflow at 320/390/768/1280px, no page error. Results: `docs/ux/evidence/showcase-autoplay-default-qa.json`.
+- In-app browser on a fresh local production page with reduced motion: **Pausar movimento** shown immediately; rail initialized and advanced without a start click; no console error or warning. Screenshot: `docs/ux/evidence/showcase-autoplay-default.webp`. The existing gallery layout and images remain unchanged.
+- `npm run check`: exit 0; lint without warnings, TypeScript without errors, **1,481 tests in 66 files passed**, Next.js 16.4.1 production build successful. No dependency or database change.
+
+Publication: the corrected startup is verified locally and prepared in a new PR; the public deployment inspected for diagnosis still has the preceding rule until this PR is merged and deployed. Physical devices, iOS/Safari, Firefox, screen readers and Web Vitals were not tested for this change.
+
+final result: passed
