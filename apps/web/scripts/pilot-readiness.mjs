@@ -256,7 +256,7 @@ try {
   const plano = `/app/w/${workspace}/plano`;
   await ownerPage.goto(`${base}${plano}`);
   await ownerPage.getByRole("link", { name: "Passar para o anual" }).waitFor({ timeout: 60000 });
-  check((await text(ownerPage)).includes("Sua assinatura é mensal. No anual você paga R$ 29,80 a menos por ano."), "The plan screen offers the yearly billing to a monthly subscriber");
+  check((await text(ownerPage)).includes("Sua assinatura é mensal. Economize R$ 29,80 por ano no plano anual."), "The plan screen offers the yearly billing to a monthly subscriber");
   await audit(ownerPage, "/app/w/<conta>/plano (assinatura mensal)");
   await ownerPage.getByRole("link", { name: "Passar para o anual" }).click();
   await ownerPage.getByRole("heading", { name: "Passar para a cobrança anual" }).waitFor();

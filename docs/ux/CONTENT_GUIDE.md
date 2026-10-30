@@ -198,7 +198,8 @@ Textos em `content/pt-BR.ts` (`BILLING_COPY`). Decisões: UX-074 a UX-084 (provi
 | Ambiente de teste | "Ambiente de teste. Nenhuma cobrança real é feita aqui: o pagamento usa os dados de teste do provedor." | Em toda tela de cobrança enquanto o modo for de teste |
 | Venda desligada | "Os planos pagos ainda não estão à venda. O plano Gratuito continua disponível." | Sem data, sem "em breve" dentro do produto |
 | Quem pode | "Só o proprietário desta conta pode contratar, alterar ou cancelar o plano." | Para o administrador; o editor não vê a tela |
-| Plano manual | "Esta conta está no plano Agência, definido manualmente pela equipe do produto. Não há assinatura nem cobrança associada." | |
+| Plano manual | Selo "Definido manualmente" e "A equipe do produto definiu este plano para a conta, sem assinatura nem cobrança." | A frase fica sob o nome do plano e o selo: não repete nenhum dos dois (UX-112) |
+| Economia do anual | "Economize R$ 29,80 por ano no plano anual" | Uma frase só, nos cartões e ao lado de "Passar para o anual" |
 
 Vocabulário: **plano**, **assinatura**, **cobrança**, **pagamento**, **recibo**, **forma de pagamento**, **regularizar**, **provedor de pagamento** (nunca o nome do provedor na interface). "Assinar", "mudar para o", "cancelar a assinatura", "manter a assinatura". Nunca: "upgrade", "downgrade", "trial", "fatura", "inadimplente", "premium". Nunca dizer que os dados do cartão estão "seguros conosco": eles não passam por nós, e é isso que a tela diz.
 

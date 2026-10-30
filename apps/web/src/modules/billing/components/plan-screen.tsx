@@ -22,11 +22,10 @@ const SUMMARY_BOX = {
 } as const;
 
 /** The title of every state of the screen, including the ones that show nothing else. */
-export function PlanHeading({ lead = false }: { lead?: boolean }) {
+export function PlanHeading() {
   return (
     <header className="grid gap-2">
       <h1 className="text-3xl font-bold">{copy.title}</h1>
-      {lead ? <p className="m-0 text-app-muted">{copy.lead}</p> : null}
     </header>
   );
 }
@@ -343,7 +342,7 @@ export function PlanScreenView({ workspaceId, screen, invoices, mode, suspended,
 }) {
   return (
     <div className="grid gap-6" data-plan-screen="">
-      <PlanHeading lead />
+      <PlanHeading />
       {notice ? <Notice tone="success">{notice}</Notice> : null}
       {suspended ? <Notice tone="warning">{copy.suspended}</Notice> : null}
       {screen.usage ? (

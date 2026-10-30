@@ -116,7 +116,8 @@ describe("plan screen: one state at a time", () => {
     expect(card).toMatch(/<dt[^>]*>Valor<\/dt><dd[^>]*>R\$\u00a014,90 por mês<\/dd>/);
     expect(card).toMatch(/<dt[^>]*>Próxima cobrança<\/dt><dd[^>]*><time[^>]*dateTime="2026-11-08T15:00:00.000Z"[^>]*>08\/11\/2026<\/time>/);
     expect(card).not.toContain("Plano Pro, cobrança mensal.");
-    expect(text).toContain("Sua assinatura é mensal. No anual você paga R$ 29,80 a menos por ano.");
+    expect(text).toContain("Sua assinatura é mensal. Economize R$ 29,80 por ano no plano anual.");
+    expect(text).not.toContain("a menos por ano");
     expect(card).toContain(`href="/app/w/${WORKSPACE}/plano/confirmar?acao=anual"`);
     expect(primaryButtons(card)).toEqual([]);
     expect(card).toContain("Forma de pagamento e recibos");
@@ -148,7 +149,7 @@ describe("plan screen: one state at a time", () => {
   it("active, admin: the facts, the yearly saving without the link, no command", () => {
     const { html, text } = render(base, "pro", { isOwner: false });
     expect(currentCard(html)).toContain("R$\u00a014,90 por mês");
-    expect(text).toContain("No anual você paga R$ 29,80 a menos por ano.");
+    expect(text).toContain("Sua assinatura é mensal. Economize R$ 29,80 por ano no plano anual.");
     expect(html).not.toContain("acao=anual");
     expect(html).not.toContain("acao=cancelar");
     expect(html).not.toContain("<button");
@@ -177,7 +178,9 @@ describe("plan screen: one state at a time", () => {
   it("free, owner: no command on the plan, a monthly or yearly choice and a subscription per paid plan", () => {
     const { html, text } = render(null, "free");
     const card = currentCard(html);
-    expect(card).toContain("Esta conta está no plano Gratuito. Não há cobrança.");
+    expect(card).toContain("Não há cobrança.");
+    // The plan name is the title of the card; the sentence under it does not say it again.
+    expect(card).not.toContain("Esta conta está no plano");
     expect(card).not.toContain("<button");
     expect(html).toMatch(/<input type="radio" name="plan-interval" checked="" value="month"\/>/);
     expect(html).toMatch(/<input type="radio" name="plan-interval" value="year"\/>/);
@@ -198,7 +201,9 @@ describe("plan screen: one state at a time", () => {
 
   it("a plan set by hand: says so once, and subscribing is offered", () => {
     const { text } = render(null, "agency");
-    expect(count(text, "definido manualmente")).toBe(1);
+    // The badge says it; the sentence under it explains what it means.
+    expect(count(text.toLowerCase(), "definido manualmente")).toBe(1);
+    expect(text).toContain("A equipe do produto definiu este plano para a conta");
     expect(text).toContain("Assinar Pro mensal");
   });
 
@@ -256,9 +261,8 @@ describe("plan screen: payment history", () => {
 });
 
 describe("plan screen: heading", () => {
-  it("is the same title in every state, with the lead only on the full screen", () => {
+  it("is the same title in every state, with no lead under it", () => {
     expect(renderToStaticMarkup(createElement(PlanHeading))).toBe('<header class="grid gap-2"><h1 class="text-3xl font-bold">Plano e cobrança</h1></header>');
-    expect(renderToStaticMarkup(createElement(PlanHeading, { lead: true }))).toContain("O plano define quantas páginas");
   });
 });
 
