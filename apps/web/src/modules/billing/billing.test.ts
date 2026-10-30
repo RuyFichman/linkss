@@ -180,8 +180,11 @@ describe("user-facing billing state", () => {
   it.each(states)("%s", (_name, record, planId, kind) => {
     const state = billingViewState(record, planId, T0);
     expect(state.kind).toBe(kind);
-    // Every state has words of its own, with the plan named.
-    expect(billingStateSentence(state, 5790).length).toBeGreaterThan(20);
+    // Every state has words of its own. They sit under the plan name, so a state that is only
+    // "this plan" does not say the name again.
+    const sentence = billingStateSentence(state, 5790);
+    expect(sentence.length).toBeGreaterThan(10);
+    if (kind === "free" || kind === "manual") expect(sentence).not.toContain(BILLING_COPY.planNames[planId]);
     expect(BILLING_COPY.statusLabel[state.kind]).toBeTruthy();
   });
 
@@ -189,7 +192,7 @@ describe("user-facing billing state", () => {
     expect(billingStateSentence(billingViewState(base, "agency", T0), 5790)).toBe("Plano Agência, cobrança mensal. Próxima cobrança: R$\u00a057,90 em 08/11/2026.");
     expect(billingStateSentence(billingViewState({ ...base, status: "past_due", graceUntil: days(5) }, "agency", T0), 5790)).toContain("continua valendo até 14/10/2026");
     expect(billingStateSentence(billingViewState({ ...base, cancelAtPeriodEnd: true }, "agency", T0), 5790)).toContain("até 08/11/2026");
-    expect(billingStateSentence(billingViewState(null, "agency", T0), null)).toContain("definido manualmente");
+    expect(billingStateSentence(billingViewState(null, "agency", T0), null)).toContain("A equipe do produto definiu este plano");
     expect(formatBillingDate(null)).toBe("");
     expect(formatBillingDate("not a date")).toBe("");
   });

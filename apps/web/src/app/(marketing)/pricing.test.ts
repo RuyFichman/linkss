@@ -26,6 +26,12 @@ describe("home plans", () => {
     expect(count(html, "Criar minha página")).toBe(1);
   });
 
+  it("describes each plan with the words of the plan screen", () => {
+    expect(html).toContain("Tudo o que você precisa para publicar a sua página.");
+    expect(html).toContain("Para quem quer acompanhar os resultados por mais tempo e tirar o selo.");
+    expect(html).toContain("Para quem cuida das páginas de vários clientes, em equipe.");
+  });
+
   it("offers a monthly/yearly choice, monthly first, with the months the yearly price leaves out", () => {
     expect(count(html, 'type="radio"')).toBe(2);
     expect(html).toMatch(/checked="" value="month"|value="month" checked=""/);

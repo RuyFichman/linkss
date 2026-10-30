@@ -1213,9 +1213,8 @@ export const HOME_COPY = {
     lead: "Comece no gratuito e mude de plano quando precisar, de dentro da sua conta. Preços em reais; cancele quando quiser.",
     paidCta: "Criar conta e assinar",
     startHere: "Comece por aqui",
-    free: { name: "Gratuito", description: "Tudo o que você precisa para publicar a sua página.", cta: "Criar minha página" },
-    pro: { name: "Pro", description: "Para quem quer a página sem o selo e os resultados por mais tempo." },
-    agency: { name: "Agência", description: "Para quem cuida das páginas de vários clientes, em equipe." },
+    // Plan names and descriptions come from BILLING_COPY, the same words as inside the account.
+    freeCta: "Criar minha página",
   },
   faq: {
     title: "Perguntas frequentes",
@@ -1276,13 +1275,16 @@ export const SHOWCASE_COPY = {
  * "pagamento", "recibo", "regularizar". Never "upgrade", "downgrade", "trial" or "fatura" on
  * screen. Every state is a sentence with its date; no state is carried by colour alone.
  */
+// One sentence for what yearly saves, on the plan cards and next to "Passar para o anual".
+const yearlySaving = (amount: string) => `Economize ${amount} por ano no plano anual`;
+
 export const BILLING_COPY = {
   nav: "Plano",
   title: "Plano e cobrança",
-  lead: "O plano define quantas páginas, pessoas e dias de resultados esta conta tem.",
   planNames: { free: "Gratuito", pro: "Pro", agency: "Agência" },
+  // The only description of each plan: the home, /precos and the plan screen all read it.
   planDescriptions: {
-    free: "Para publicar a sua página.",
+    free: "Tudo o que você precisa para publicar a sua página.",
     pro: "Para quem quer acompanhar os resultados por mais tempo e tirar o selo.",
     agency: "Para quem cuida das páginas de vários clientes, em equipe.",
   },
@@ -1293,7 +1295,7 @@ export const BILLING_COPY = {
   freePrice: "R$\u00a00",
   // Next to the yearly choice; the number comes from the catalogue (yearlyFreeMonths).
   freeMonths: (count: number) => (count === 1 ? "1 mês grátis" : `${count} meses grátis`),
-  yearlySaving: (amount: string) => `Economize ${amount} por ano no plano anual`,
+  yearlySaving,
   sandbox: "Ambiente de teste. Nenhuma cobrança real é feita aqui: o pagamento usa os dados de teste do provedor.",
   off: "Os planos pagos ainda não estão à venda. O plano Gratuito continua disponível.",
   notDeployed: "A área de plano e cobrança ainda não está disponível neste ambiente. Tente novamente mais tarde.",
@@ -1339,8 +1341,9 @@ export const BILLING_COPY = {
     ended: "Assinatura encerrada",
   },
   state: {
-    free: "Esta conta está no plano Gratuito. Não há cobrança.",
-    manual: (plan: string) => `Esta conta está no plano ${plan}, definido manualmente pela equipe do produto. Não há assinatura nem cobrança associada. Se você assinar um plano, a assinatura passa a valer no lugar desta definição.`,
+    // Shown under the plan name and its badge, so they never repeat either.
+    free: "Não há cobrança.",
+    manual: "A equipe do produto definiu este plano para a conta, sem assinatura nem cobrança. Se você assinar um plano, a assinatura passa a valer no lugar desta definição.",
     incomplete: (plan: string) => `O primeiro pagamento do plano ${plan} ainda não foi confirmado. O plano começa a valer quando o pagamento for aprovado; até lá nada muda nesta conta.`,
     active: (plan: string, interval: string, amount: string, date: string) => `Plano ${plan}, cobrança ${interval}. Próxima cobrança: ${amount} em ${date}.`,
     activeNoDate: (plan: string, interval: string) => `Plano ${plan}, cobrança ${interval}.`,
@@ -1348,7 +1351,7 @@ export const BILLING_COPY = {
     downgrading: (plan: string, next: string, date: string) => `O plano ${plan} já está pago e continua valendo até ${date}. A partir dessa data a conta passa para o plano ${next}.`,
     past_due: (plan: string, date: string) => `Não conseguimos cobrar o último pagamento. O plano ${plan} continua valendo até ${date}. Atualize a forma de pagamento até essa data para não perder o plano.`,
     grace_expired: (plan: string, date: string) => `O pagamento do plano ${plan} não foi regularizado até ${date}, e a conta voltou aos limites do plano Gratuito. Suas páginas, contatos e resultados continuam guardados. Regularize o pagamento para o plano voltar.`,
-    ended: (plan: string) => `A assinatura do plano ${plan} terminou. Esta conta está no plano Gratuito.`,
+    ended: (plan: string) => `A assinatura do plano ${plan} terminou. Não há cobrança.`,
   },
   banner: {
     label: "Aviso",
@@ -1363,7 +1366,7 @@ export const BILLING_COPY = {
     subscribe: (plan: string, interval: string) => `Assinar ${plan} ${interval}`,
     changeTo: (plan: string) => `Mudar para o ${plan}`,
     toYearly: "Passar para o anual",
-    toYearlyHint: (saving: string) => `Sua assinatura é mensal. No anual você paga ${saving} a menos por ano.`,
+    toYearlyHint: (saving: string) => `Sua assinatura é mensal. ${yearlySaving(saving)}.`,
     yearlyOnly: "Sua assinatura é anual. Para voltar ao mensal, cancele a renovação e assine o mensal quando o período já pago terminar.",
     intervalLegend: "Mostrar preços",
     pricesFor: (interval: string) => `Valores com cobrança ${interval}, como a sua assinatura.`,

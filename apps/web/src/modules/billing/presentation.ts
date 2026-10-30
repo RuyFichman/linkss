@@ -68,7 +68,7 @@ export function billingStateSentence(state: BillingViewState, amountCents: numbe
     case "free":
       return copy.free;
     case "manual":
-      return copy.manual(name(state.planId));
+      return copy.manual;
     case "incomplete":
       return copy.incomplete(name(state.planId));
     case "active": {

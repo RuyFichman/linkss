@@ -36,17 +36,17 @@ function PlanCard({ planId, customDomains }: { planId: PlanId } & PricingProps) 
   const featured = planId === PLAN_IDS[0];
   return (
     <li className="plan-offer" data-featured={featured ? "" : undefined}>
-      <h3 className="home-display">{copy[planId].name}</h3>
+      <h3 className="home-display">{BILLING_COPY.planNames[planId]}</h3>
       {featured ? <p className="plan-offer-badge">{copy.startHere}</p> : null}
       <PlanPrices planId={planId} />
       {/* Always present, empty when there is nothing to say: the cards share their rows (globals.css). */}
       <p className="plan-offer-saving">{paid ? BILLING_COPY.yearlySaving(formatMoney(yearlySavingCents(planId))) : null}</p>
-      <p className="plan-offer-description">{copy[planId].description}</p>
+      <p className="plan-offer-description">{BILLING_COPY.planDescriptions[planId]}</p>
       <ul className="plan-offer-items">
         {planHighlights(planId, { customDomains }).map((item) => <li key={item.kind === "everythingIn" ? item.kind : item.key}>{planHighlightText(item)}</li>)}
       </ul>
       <div className="plan-offer-action">
-        <Link className="home-cta home-cta-block" href={SIGN_UP_PATH}>{paid ? copy.paidCta : copy.free.cta}</Link>
+        <Link className="home-cta home-cta-block" href={SIGN_UP_PATH}>{paid ? copy.paidCta : copy.freeCta}</Link>
       </div>
     </li>
   );

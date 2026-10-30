@@ -284,3 +284,14 @@ Verified with disposable local accounts (`qa-planux-*@example.test`): an agency 
 - `npm run check` passes: lint, typecheck, 1,478 tests in 66 files, production build.
 
 Not verified: a real phone, Safari/iOS or Firefox, a screen reader, and the canceling and suspended states in a browser (unit tests only). The dev server reloaded the page in a loop during this session, so the browser checks used `next start`.
+
+## Plan copy (UX-112) — 2026-10-29
+
+Scope: items 7 to 9 of `docs/ux/REVISAO_UX_PLANO.md`, copy only (`BILLING_COPY` and `HOME_COPY.plans` in `content/pt-BR.ts`, `PlanHeading`, the home `PlanCard`).
+
+- The yearly saving is one sentence (`yearlySaving`), used by the plan cards and by `toYearlyHint`.
+- Plan names and descriptions have one source, `BILLING_COPY.planNames` / `planDescriptions`; `HOME_COPY.plans` keeps only the home's own words.
+- The sentence under the plan name no longer says the name again (free, manual, ended), and the plan screen has no subtitle.
+- `npm run check` passes: lint, typecheck, 1,479 tests in 66 files, production build.
+
+Not verified in a browser: the change is copy only, and the unit tests render the plan screen and the home cards.
