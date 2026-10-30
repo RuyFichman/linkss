@@ -1185,7 +1185,7 @@ export const HOME_COPY = {
   marquee: ["Botão de WhatsApp", "Pix copia e cola", "Formulários e contatos", "Resultados da página", "Vídeo e música", "Várias páginas", "Relatório para o cliente", "Modelos prontos", "Sem código"],
   templates: {
     title: "Uma página. O seu mundo inteiro.",
-    lead: "Do primeiro contato ao próximo lançamento. Explore dez maneiras de dar vida à sua presença online.",
+    lead: "Do primeiro contato ao próximo lançamento. Explore quinze maneiras de dar vida à sua presença online.",
     cta: "Criar minha página",
   },
   editor: {
@@ -1261,8 +1261,8 @@ export const HOME_COPY = {
 export const SHOWCASE_COPY = {
   dragHint: "Arraste para explorar os modelos",
   pause: "Pausar movimento",
+  start: "Iniciar movimento",
   resume: "Retomar movimento",
-  manual: "Navegação manual",
   explore: "Explorar página",
   openLabel: (name: string, category: string) => `Explorar página de ${name} — ${category}`,
   dialogTitle: (name: string) => `Página de ${name}`,

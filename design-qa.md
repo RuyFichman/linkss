@@ -75,6 +75,7 @@ Follow-up polish: real-device and screen-reader testing; if acquisition traffic 
 
 final result: passed
 
+
 ## Features illustration follow-up — 2026-10-28
 
 The founder requested the same realism for the Lia Moraes illustration beside the home features. `#recursos` now uses `FeaturePagePreview`, a compact rendering of the gallery's Olivia Hart identity: the same original editorial photographs, Lora font, social glyphs, biography and portfolio actions. Reusing the existing identity avoids depicting the same generated person under two names. The hero and editor illustrations retain their existing compositions.
@@ -343,5 +344,50 @@ Findings: no actionable P0/P1/P2 discrepancy within the requested scope. The inn
 Not measured: Web Vitals or performance impact. Not verified: real devices, Safari/Firefox, a screen reader, deployment or production hosting. No database, vendor, route, analytics, dependency or product-flow change.
 
 Implementation checklist: content swapped, existing geometry compared, responsive rendering and primary navigation checked, repository checks passed, current-state guide synchronized.
+
+final result: passed
+
+## Fifteen showcase pages and touch dragging — 2026-10-30
+
+Scope: add five original page compositions to `#modelos`, enable visitors to start movement on a computer that requests reduced motion, and fix mobile dragging. The fifteen-page gallery keeps the existing single rail, frame dimensions, looping copies, preview dialog and fonts. The hero continues using its existing three identities.
+
+New identities: **Lune & Line** (jewelry), **Butter & Crumb** (bakery), **Still Form** (yoga), **Chapter House** (bookshop) and **Northbound** (outdoor experiences). Five original photographs were generated with the built-in image tool and saved under `apps/web/public/images/showcase/`, optimized to 720 × 1080 WebP (563,756 bytes combined). Final prompts and individual paths are in `docs/ux/SHOWCASE_EXPANSION_ASSETS.md`. These are fictional examples, not customers or new editor templates.
+
+### Visual evidence
+
+- Founder source: `C:/Users/Pichau/AppData/Local/Temp/codex-clipboard-8f86bad1-4ad9-44c3-b0b5-344b85bc789a.png`, 1213 × 603 pixels. It establishes the existing gallery's visual language, not the identities or colors of the five new examples.
+- `docs/ux/evidence/showcase-fifteen-new-pages.webp`: all five browser-rendered compositions together. Each source was captured from the production preview dialog at 360 × 791 pixels, then scaled to the gallery's 248px width and cropped to its 540px frame. White 24px gutters were added for comparison; the board is 1336 × 540 pixels.
+- `docs/ux/evidence/showcase-fifteen-desktop.webp`: actual production rail, 1280 × 1000 CSS pixels, device scale factor 1, paused after keyboard preview checks. The visible focus ring is intentional.
+- `docs/ux/evidence/showcase-touch-mobile.webp`: actual 390 × 844 mobile viewport, touch-capable emulation.
+- `docs/ux/evidence/showcase-touch-before.json` and `showcase-touch-qa.json`: the failing gesture before the fix and the passing production checks.
+
+Opened and inspected the founder source, the five-image asset board, the combined browser-rendered page board and the actual rail screenshot. The source and the new page board were also inspected together in `.npm-cache/showcase-fifteen-comparison.webp`: the source was normalized to 1336px wide above the new 1336px board. Composition, imagery, typography and card density were assessed together. New content and palettes are intentional variations; existing frame geometry and the surrounding section remain the reference.
+
+| Fidelity surface | Assessment |
+|---|---|
+| Typography | Existing Lora and Poppins families; five distinct name treatments, with compact supporting copy and the existing social glyphs. No new font or icon package. |
+| Spacing/layout | Existing 248 × 540 gallery frames and 360px page canvases. Cover-led yoga/outdoors, image-led jewelry/bookshop and a pastry card create different compositions without changing the rail. |
+| Colors/tokens | Ivory/gold, apricot/chocolate, sage, burgundy/cream and slate/forest palettes; flat surfaces with deliberate foreground contrast. The home and hero tokens remain unchanged. |
+| Image fidelity | Original, subject-specific photography; intentional crops, no placeholder initials, external customer photos or embedded interface screenshots. |
+| Copy/content | English identities and content follow the existing gallery. Surrounding Brazilian Portuguese copy now says fifteen examples. No fabricated customer, usage or endorsement claim. |
+
+### Diagnosed behavior and verification
+
+1. **[P1, fixed] Touch dragging stopped after the first movement.** Trusted emulated touch reproduced a 240px swipe advancing only 20px. The button receives implicit capture, then emits a bubbling `lostpointercapture` when the rail takes capture. The handler treated that child event as the end of the whole gesture. `onPointerEnd` now ignores a capture-loss event whose target is not the rail. This follows the [Pointer Events capture lifecycle](https://www.w3.org/TR/pointerevents/#process-pending-pointer-capture). With the fix, the same swipe advances the full 240px, and the opposite gesture returns 200px. Vertical page scrolling remains available; dragging does not open a dialog.
+2. **[P2, fixed] Reduced-motion visitors had no way to start the carousel.** The desktop browser used for visual QA requests reduced motion, so the prior version displayed only “Navegação manual”. It now offers **Iniciar movimento**. Without that system preference, autoplay starts automatically on desktop and mobile. Reduced motion still starts stopped, with explicit opt-in; pause/resume remain available. No preference is stored.
+3. **Test-tool correction, no product change:** CDP-injected swipes suppressed later compatibility clicks in the automated Chromium session. The same sequence reproduced on a plain button without application listeners (`.npm-cache/showcase-tap-debug.mjs`). Native touch opening/closing is therefore checked before the injected swipe stream. Frame flushing also makes final gesture coordinates observable before assertions. No application code was added to compensate for the simulator.
+
+`apps/web/scripts/showcase-gallery.mjs` passed on the local production build using installed Chrome and bundled Playwright. The script restricts the app and all browser requests to loopback, creates no account, accesses no database and blocks external network requests:
+
+- Native touch opens and closes a preview; trusted touch dragging works in both directions and leaves vertical scrolling available.
+- Desktop autoplay, pause, resume and mouse dragging pass; reduced-motion opt-in passes.
+- All five new previews open with Enter, close with Escape and return focus to their triggers.
+- Fifteen accessible original triggers; zero tabbable loop copies.
+- No document overflow at 320, 390, 768 and 1280px. No browser page error was observed. No automated WCAG audit was run for this change.
+- `npm run check`: lint without warnings, TypeScript without errors, 1,481 Vitest tests in 66 files passing, successful Next.js 16.4.1 production build. The browser regression is a separate gate.
+
+Not verified: physical phones, iOS/Safari, Firefox or a screen reader; deployment and production hosting. LCP, CLS, memory and bundle impact were not measured. Existing lazy loading is reused. No new dependency, route, customer data, vendor integration or database change.
+
+Implementation checklist: five compositions and images installed; touch regression reproduced and fixed; motion controls verified; production browser captures inspected; asset guide and current-state guide synchronized.
 
 final result: passed

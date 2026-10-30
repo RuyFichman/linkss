@@ -3,7 +3,6 @@
 .showcase-controls p { margin: 0; color: var(--home-muted); font-size: 0.8125rem; }
 .showcase-motion-toggle { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid var(--home-line); border-radius: 999px; padding: 0.5rem 1rem; color: var(--home-ink); background: #ffffff; font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
 .showcase-motion-toggle:hover { background: #f6f6fb; }
-.showcase-motion-status { display: inline-flex; min-height: 44px; align-items: center; padding: 0.5rem 1rem; color: var(--home-muted); font-size: 0.8125rem; }
 .showcase-rail { position: relative; display: flex; gap: clamp(1rem, 2vw, 2rem); max-width: 1600px; margin: 1.25rem auto 0; overflow-x: auto; padding: 8px 1.5rem 2.5rem; list-style: none; scrollbar-width: none; touch-action: pan-y pinch-zoom; cursor: grab; user-select: none; -webkit-user-select: none; overflow-anchor: none; }
 .showcase-rail::-webkit-scrollbar { display: none; }
 .showcase-rail:not([data-looping]) .showcase-item[aria-hidden="true"] { display: none; }
@@ -85,6 +84,52 @@
 .showcase-music .showcase-image-card > img { height: 295px; object-position: center 35%; }
 .showcase-music .showcase-image-card h5 { font-size: 30px; letter-spacing: -1px; }
 .showcase-music .showcase-image-card .showcase-eyebrow { font-size: 8px; letter-spacing: 2px; }
+
+.showcase-jewelry { background: #f5f0e7; color: #67533c; }
+.showcase-jewelry .showcase-page-body { gap: 16px; padding: 34px 22px; }
+.showcase-page .showcase-jewelry-name { font-size: 37px; font-weight: 400; line-height: 1.15; letter-spacing: -1.8px; }
+.showcase-jewelry-name em { color: #a28357; }
+.showcase-page .showcase-jewelry-photo { height: 278px; border-radius: 120px 120px 8px 8px; object-position: center 50%; }
+.showcase-jewelry .showcase-link { min-height: 52px; border-color: #ac9471; border-radius: 2px; font-size: 12px; font-weight: 400; }
+.showcase-jewelry .showcase-jewelry-photo + .showcase-link { color: #fffaf2; background: #67533c; border-color: #67533c; }
+.showcase-jewelry .showcase-link small { font-family: Arial, sans-serif; font-size: 8px; letter-spacing: 0.8px; }
+
+.showcase-bakery { background: #f8d3ad; color: #67351f; }
+.showcase-bakery .showcase-page-body { gap: 17px; padding: 32px 20px; }
+.showcase-page .showcase-bakery-name { font-size: 46px; font-weight: 500; line-height: 0.98; letter-spacing: -2px; }
+.showcase-bakery-name em { font-weight: 400; }
+.showcase-bakery .showcase-image-card { border-radius: 70px 70px 12px 12px; color: #67351f; background: #fff3df; }
+.showcase-bakery .showcase-image-card > img { height: 240px; object-position: center 62%; }
+.showcase-bakery .showcase-image-card h5 { font-size: 15px; font-weight: 600; }
+.showcase-bakery .showcase-link { min-height: 52px; border: 0; border-radius: 99px; color: #fff7e7; background: #67351f; font-size: 12px; }
+.showcase-bakery .showcase-link small { font-size: 8px; letter-spacing: 1px; }
+
+.showcase-yoga { background: #e9eee4; color: #3e5148; }
+.showcase-page .showcase-yoga-cover { height: 282px; object-position: center 57%; }
+.showcase-yoga .showcase-page-body { gap: 19px; padding: 28px 24px 34px; }
+.showcase-page .showcase-yoga-name { font-size: 48px; font-weight: 400; line-height: 1; letter-spacing: -2px; }
+.showcase-yoga .showcase-link { min-height: 52px; border-radius: 30px; font-size: 12px; font-weight: 400; }
+.showcase-yoga .showcase-link:has(small) { color: #f9faf4; background: #3e5148; }
+.showcase-yoga .showcase-link small { font-family: Arial, sans-serif; font-size: 8px; letter-spacing: 0.7px; }
+
+.showcase-bookshop { background: #532b39; color: #f4e6b9; }
+.showcase-bookshop .showcase-page-body { gap: 17px; padding: 32px 22px; }
+.showcase-page .showcase-bookshop-name { font-size: 48px; font-weight: 400; line-height: 0.96; letter-spacing: -2px; }
+.showcase-bookshop .showcase-eyebrow { font-size: 8px; letter-spacing: 1.8px; }
+.showcase-page .showcase-bookshop-photo { height: 268px; border-radius: 5px; object-position: center 58%; }
+.showcase-bookshop .showcase-link { min-height: 52px; border-color: #b4a079; border-radius: 3px; font-size: 12px; font-weight: 400; }
+.showcase-bookshop .showcase-link:has(small) { color: #532b39; background: #f4e6b9; }
+.showcase-bookshop .showcase-link small { font-family: Arial, sans-serif; font-size: 8px; letter-spacing: 0.5px; }
+
+.showcase-outdoors { background: #e9e8e0; color: #263d3e; }
+.showcase-page .showcase-outdoors-cover { height: 290px; object-position: center 44%; }
+.showcase-outdoors .showcase-page-body { gap: 18px; padding: 27px 24px 34px; text-align: left; }
+.showcase-page .showcase-outdoors-name { font-size: 45px; font-weight: 700; line-height: 0.94; letter-spacing: -2.5px; }
+.showcase-outdoors-name span { color: #a34d2c; }
+.showcase-outdoors .showcase-eyebrow { font-size: 8px; letter-spacing: 1.3px; }
+.showcase-outdoors .showcase-socials { justify-content: flex-start; }
+.showcase-outdoors .showcase-link { min-height: 54px; border: 0; border-radius: 5px; color: #f5f3e8; background: #263d3e; font-size: 11px; text-align: center; }
+.showcase-outdoors .showcase-link small { font-size: 8px; letter-spacing: 0.5px; }
 
 .showcase-ceramics { background: #efe4d5; color: #653b2d; }
 .showcase-ceramics .showcase-page-body { gap: 14px; padding: 30px 22px; }

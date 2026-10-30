@@ -1,0 +1,51 @@
+{
+  "touch": {
+    "before": 2640,
+    "offsets": [
+      2660,
+      2660,
+      2660,
+      2660,
+      2660,
+      2660,
+      2660,
+      2660,
+      2660,
+      2660,
+      2660,
+      2660
+    ],
+    "events": [
+      {
+        "type": "pointerdown",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "gotpointercapture",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "lostpointercapture",
+        "target": "showcase-open",
+        "trusted": true
+      },
+      {
+        "type": "gotpointercapture",
+        "target": "showcase-rail",
+        "trusted": true
+      },
+      {
+        "type": "lostpointercapture",
+        "target": "showcase-rail",
+        "trusted": true
+      },
+      {
+        "type": "pointerup",
+        "target": "showcase-open",
+        "trusted": true
+      }
+    ]
+  }
+}
