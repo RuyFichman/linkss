@@ -1,3 +1,4 @@
+import type { Locale } from "@/lib/locale";
 import { MailError, type MailAdapter } from "./adapter";
 import type { RenderedMail } from "./templates";
 
@@ -21,6 +22,8 @@ export interface ClaimedMail {
   attempts: number;
   email: string | null;
   displayName: string | null;
+  /** The recipient's language, read at claim time with the address (ADR 0022). */
+  locale: Locale;
 }
 
 export type CompletionOutcome = "sent" | "retry" | "failed" | "skipped";

@@ -1,13 +1,15 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { PUBLISHING_COPY } from "@/content/pt-BR";
+import { PUBLISHING_COPY as PUBLISHING_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { IDLE_FORM_STATE, type FormState } from "@/lib/form-state";
 import { Button, Dialog, DialogActions, FormStatus } from "@/ui";
 
 type UnpublishAction = (previous: FormState) => Promise<FormState>;
 
 export function UnpublishDialog({ action }: { action: UnpublishAction }) {
+  const PUBLISHING_COPY = useCopy(PUBLISHING_COPY_BY_LOCALE);
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(action, IDLE_FORM_STATE);
   const copy = PUBLISHING_COPY.unpublish;

@@ -1,9 +1,17 @@
 <!-- Local/hosted confirmation template. Uses the token_hash flow handled by /auth/confirm.
      redirect_to carries the address the sign-up asked for: from an invitation it leads back to the
      invitation on any device (ADR 0012, addendum). /auth/confirm reads only its own address from
-     it; next=/app is the destination when it says nothing usable. Paste into the hosted project
-     after custom SMTP is configured (docs/ENVIRONMENTS.md). -->
+     it; next=/app is the destination when it says nothing usable. Written in the language chosen
+     at sign-up (user metadata `locale`, ADR 0022), Portuguese otherwise. Paste into the hosted
+     project after custom SMTP is configured (docs/ENVIRONMENTS.md). -->
+{{ if eq .Data.locale "es-ES" }}
+<h2>Confirma tu correo electrónico</h2>
+<p>Hemos recibido una solicitud para crear una cuenta en Linkfav con este correo.</p>
+<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email&amp;next=/app&amp;redirect_to={{ .RedirectTo }}">Confirmar mi correo</a></p>
+<p>El enlace caduca en 1 hora y solo se puede usar una vez. Si no has pedido este registro, ignora este mensaje.</p>
+{{ else }}
 <h2>Confirme seu e-mail</h2>
 <p>Recebemos um pedido para criar uma conta com este e-mail no Linkfav.</p>
 <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email&amp;next=/app&amp;redirect_to={{ .RedirectTo }}">Confirmar meu e-mail</a></p>
 <p>O link expira em 1 hora e só pode ser usado uma vez. Se você não pediu este cadastro, ignore esta mensagem.</p>
+{{ end }}

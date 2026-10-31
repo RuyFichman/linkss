@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AUTH_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { EmailRequestForm } from "@/modules/identity/components/email-request-form";
 import { Notice } from "@/ui";
 
-export const metadata: Metadata = { title: "Recuperar acesso" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.recoverAccess };
+}
 
 export default async function RecoveryPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { AUTH_COPY } = await getCopy();
   const expired = (await searchParams).erro === "link-expirado";
   return (
     <>

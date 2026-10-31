@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { APP_COPY } from "@/content/pt-BR";
+import { APP_COPY as APP_COPY_BY_LOCALE, SLUG_COPY as SLUG_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { publicAddressLabel } from "@/lib/app-url";
 import { checkSlugAction } from "../actions";
 import { normalizeSlug, validateSlug, type SlugValidation } from "../slug";
@@ -24,9 +25,11 @@ interface SlugFieldProps {
  * re-validates on submit; this only gives early, accessible feedback (polite live region).
  */
 export function SlugField({ id, workspaceId, currentSlug, suggestFrom, defaultValue, error }: SlugFieldProps) {
+  const APP_COPY = useCopy(APP_COPY_BY_LOCALE);
   const [typed, setTyped] = useState<string | null>(defaultValue ?? null);
   const value = typed ?? normalizeSlug(suggestFrom ?? "");
-  const local = validateSlug(value);
+  const SLUG_COPY = useCopy(SLUG_COPY_BY_LOCALE);
+  const local = validateSlug(value, [], SLUG_COPY);
   const isCurrent = Boolean(currentSlug) && local.normalized === currentSlug;
   const [remote, setRemote] = useState<{ slug: string; result: SlugValidation } | null>(null);
 
@@ -39,12 +42,12 @@ export function SlugField({ id, workspaceId, currentSlug, suggestFrom, defaultVa
         .catch(() => setRemote({ slug: normalized, result: { normalized, status: "invalid", valid: false, message: APP_COPY.errors.unavailable } }));
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [localValid, normalized, isCurrent, workspaceId]);
+  }, [localValid, normalized, isCurrent, workspaceId, APP_COPY.errors.unavailable]);
 
   const status: { tone: "muted" | "success" | "danger"; text: string } = !value
     ? { tone: "muted", text: "" }
     : !local.valid ? { tone: "danger", text: local.message }
-    : isCurrent ? { tone: "muted", text: "Este é o endereço atual." }
+    : isCurrent ? { tone: "muted", text: SLUG_COPY.current }
     : remote?.slug === local.normalized ? { tone: remote.result.valid ? "success" : "danger", text: remote.result.message }
     : { tone: "muted", text: APP_COPY.profileForm.checking };
 
@@ -72,7 +75,7 @@ export function SlugField({ id, workspaceId, currentSlug, suggestFrom, defaultVa
         />
       </div>
       <p className="ui-hint" id={`${id}-hint`}>
-        {local.normalized && local.normalized !== value ? <>Seu endereço será <b>{local.normalized}</b>. </> : null}
+        {local.normalized && local.normalized !== value ? <>{SLUG_COPY.willBe} <b>{local.normalized}</b>. </> : null}
         {APP_COPY.profileForm.slugHint}
       </p>
       <p id={`${id}-status`} role="status" aria-live="polite" className={`m-0 text-sm ${toneClass}`}>{status.text}</p>

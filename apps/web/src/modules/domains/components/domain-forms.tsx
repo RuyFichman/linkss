@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { DOMAINS_COPY } from "@/content/pt-BR";
+import { DOMAINS_COPY as DOMAINS_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { IDLE_FORM_STATE, type FormState } from "@/lib/form-state";
 import { Button, FormStatus, TextField } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
@@ -13,6 +14,7 @@ const IDLE: DomainFormState = { status: "idle" };
 
 /** Claims a hostname for the page. The answer is the next step on the same screen, never a domain in force. */
 export function DomainClaimForm({ action }: { action: (previous: DomainFormState, formData: FormData) => Promise<DomainFormState> }) {
+  const DOMAINS_COPY = useCopy(DOMAINS_COPY_BY_LOCALE);
   const [state, formAction, pending] = useActionState(action, IDLE);
   const formRef = useRef<HTMLFormElement>(null);
   useFocusFirstError(formRef, state);
@@ -42,6 +44,7 @@ export function DomainVerifyForm({ action, label }: { action: (previous: FormSta
 
 /** One DNS record to create, as selectable text with copy buttons for the two values people paste. */
 export function DnsRecordCard({ record }: { record: DnsRecord }) {
+  const DOMAINS_COPY = useCopy(DOMAINS_COPY_BY_LOCALE);
   const copy = DOMAINS_COPY.records;
   const [status, setStatus] = useState("");
 

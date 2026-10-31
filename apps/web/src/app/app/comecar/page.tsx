@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { APP_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { resolveAccount } from "@/modules/identity/session";
 import { createProfileAction } from "@/modules/profiles/actions";
 import { CreateProfileForm } from "@/modules/profiles/components/create-profile-form";
 import { getProfileRepository } from "@/modules/profiles/server";
 
-export const metadata: Metadata = { title: "Primeiros passos" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.start };
+}
 
 /** Onboarding step after the personal workspace exists: create the first page (draft). */
 export default async function OnboardingPage() {
+  const { APP_COPY } = await getCopy();
   const account = await resolveAccount();
   if (account.status === "anonymous") redirect("/entrar?next=/app/comecar");
   if (account.status !== "ready") return null;

@@ -2,18 +2,19 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { APP_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { getCurrentUserId, getSupabase } from "./session";
 import { validateAgencyName } from "./workspace-validation";
 
 export async function createAgencyWorkspaceAction(_previous: FormState, formData: FormData): Promise<FormState<"name">> {
+  const { APP_COPY } = await getCopy();
   const raw = formData.get("name");
   const values = { name: typeof raw === "string" ? raw : "" };
   if (!(await getCurrentUserId())) return { status: "error", message: APP_COPY.errors.sessionExpired, values };
 
-  const validation = validateAgencyName(values.name);
+  const validation = validateAgencyName(values.name, APP_COPY);
   if (!validation.ok) return { status: "error", message: validation.error, fieldErrors: { name: validation.error }, values };
 
   const supabase = await getSupabase();

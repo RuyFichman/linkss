@@ -2,6 +2,8 @@ import { blockToInput, emptyBlockInput, MAX_BLOCKS, normalizedInput, validateBlo
 import { validateProfileContent, type ProfileContentField } from "@/modules/profiles/content";
 import { applyTemplate } from "@/modules/themes/apply-template";
 import { findTemplate, type TemplateId } from "@/modules/themes/templates";
+import { APP_COPY as APP_BY_LOCALE, BLOCKS_COPY as BLOCKS_BY_LOCALE, TEMPLATES_COPY as TEMPLATES_BY_LOCALE } from "@/content/localized";
+import { DEFAULT_LOCALE, pickCopy, type Locale } from "@/lib/locale";
 import { cloneTheme, isValidTheme, themesEqual, type ThemeTokens } from "@/modules/themes/tokens";
 
 /**
@@ -30,6 +32,8 @@ export interface AppliedTemplate {
 }
 
 export interface EditorState {
+  /** Language of the editor's messages and of the text new blocks and templates start with (ADR 0022). */
+  locale: Locale;
   title: string;
   bio: string;
   /** Media id of the avatar, or null for the initials. */
@@ -99,8 +103,9 @@ export function isViewOnlyAction(action: EditorAction): boolean {
   return action.type === "dismiss_undo" || action.type === "dismiss_template_undo";
 }
 
-export function editorStateFromDraft(draft: DraftContentLike): EditorState {
+export function editorStateFromDraft(draft: DraftContentLike, locale: Locale = DEFAULT_LOCALE): EditorState {
   return {
+    locale,
     title: draft.title,
     bio: draft.bio,
     avatarPath: draft.avatarPath,
@@ -157,7 +162,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     }
 
     case "apply_template": {
-      const template = findTemplate(action.templateId);
+      const template = findTemplate(action.templateId, pickCopy(TEMPLATES_BY_LOCALE, state.locale));
       if (!template) return state;
       const ids = [...action.ids];
       const applied = applyTemplate(state, template, { withExamples: action.withExamples, newId: () => ids.shift() ?? "" });
@@ -182,7 +187,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       const after = action.afterId === null ? -1 : indexOf(action.afterId);
       const position = after >= 0 ? after + 1 : blocks.length;
       const next = [...blocks];
-      next.splice(position, 0, { id: action.id, visible: true, input: emptyBlockInput(action.blockType) });
+      next.splice(position, 0, { id: action.id, visible: true, input: emptyBlockInput(action.blockType, pickCopy(BLOCKS_BY_LOCALE, state.locale)) });
       return withBlocks(state, next);
     }
 
@@ -269,7 +274,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return state.lastDeleted ? { ...state, lastDeleted: null } : state;
 
     case "replace":
-      return editorStateFromDraft(action.draft);
+      return editorStateFromDraft(action.draft, state.locale);
   }
 }
 
@@ -296,11 +301,11 @@ export type DraftCheck =
  * reported per block; the caps are checked with the same function the server uses.
  */
 export function checkDraft(state: EditorState): DraftCheck {
-  const header = validateProfileContent({ title: state.title, bio: state.bio });
+  const header = validateProfileContent({ title: state.title, bio: state.bio }, pickCopy(APP_BY_LOCALE, state.locale));
   const checks: Record<string, BlockCheck> = {};
   const valid: DraftBlock[] = [];
   for (const block of state.blocks) {
-    const result = validateBlockInput(block.id, block.visible, block.input);
+    const result = validateBlockInput(block.id, block.visible, block.input, pickCopy(BLOCKS_BY_LOCALE, state.locale));
     checks[block.id] = result.ok ? { errors: {}, notices: result.notices, valid: true } : { errors: result.errors, notices: {}, valid: false };
     if (result.ok) valid.push(result.block);
   }
@@ -318,7 +323,7 @@ export function checkDraft(state: EditorState): DraftCheck {
 export function previewDraft(state: EditorState): DraftContentLike {
   const blocks: DraftBlock[] = [];
   for (const block of state.blocks) {
-    const result = validateBlockInput(block.id, block.visible, block.input);
+    const result = validateBlockInput(block.id, block.visible, block.input, pickCopy(BLOCKS_BY_LOCALE, state.locale));
     if (result.ok) blocks.push(result.block);
   }
   return { title: state.title.trim(), bio: state.bio.trim(), avatarPath: state.avatarPath, theme: state.theme, blocks };

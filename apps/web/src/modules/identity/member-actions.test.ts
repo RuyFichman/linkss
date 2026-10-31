@@ -25,6 +25,11 @@ class RedirectSignal extends Error {
 
 vi.mock("next/cache", () => ({ refresh: mocks.refresh }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+// The language of the request (ADR 0022) would read the session; these actions answer in Portuguese.
+vi.mock("@/modules/identity/locale", async () => {
+  const { copyFor } = await import("@/content/copy");
+  return { getCopy: async () => copyFor("pt-BR"), getRequestLocale: async () => "pt-BR" };
+});
 vi.mock("next/navigation", () => ({ redirect: (location: string) => { throw new RedirectSignal(location); } }));
 vi.mock("./members-server", () => ({ getMembersService: async () => mocks.service as unknown as MembersService }));
 

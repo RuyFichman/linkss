@@ -1,7 +1,10 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { BLOCKS_COPY } from "@/content/pt-BR";
-import { SHARED_REPORT_COPY } from "@/content/shared-report";
+import { copyFor, type Copy } from "@/content/copy";
+import { SHARED_REPORT_COPY as PORTUGUESE_REPORT } from "@/content/shared-report";
+import { SHARED_REPORT_COPY as SPANISH_REPORT } from "@/content/shared-report-es-ES";
+import type { Widen } from "@/content/types";
+import { langAttribute, type Locale } from "@/lib/locale";
 import { publicAddressLabel, publicPageUrl } from "@/lib/app-url";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { PRODUCT } from "@/lib/product";
@@ -23,16 +26,20 @@ export const dynamic = "force-dynamic";
 
 const NUMBER = new Intl.NumberFormat("pt-BR");
 const ONE_DECIMAL = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
-const EXPIRY = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long", timeZone: "America/Sao_Paulo" });
+type ReportWords = Widen<typeof PORTUGUESE_REPORT>;
+const REPORT_COPY: Record<Locale, ReportWords> = { "pt-BR": PORTUGUESE_REPORT, "es-ES": SPANISH_REPORT };
+
+function expiry(locale: Locale): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "America/Sao_Paulo" });
+}
 const CARD = "surface-card grid grid-cols-[minmax(0,1fr)] content-start gap-4 p-5 break-inside-avoid sm:p-6 print:shadow-none";
 
 function perHundred(rate: number): string {
   return ONE_DECIMAL.format(rate * 100);
 }
 
-function blockName(row: SharedBlockRow): string {
-  const copy = SHARED_REPORT_COPY.blocks;
-  const typeLabel = row.blockType && row.blockType in BLOCKS_COPY.types ? BLOCKS_COPY.types[row.blockType as keyof typeof BLOCKS_COPY.types].label : blockTypeLabelForEvent(row.mainType) || copy.unnamed;
+function blockName(row: SharedBlockRow, copy: ReportWords["blocks"], BLOCKS_COPY: Copy["BLOCKS_COPY"]): string {
+  const typeLabel = row.blockType && row.blockType in BLOCKS_COPY.types ? BLOCKS_COPY.types[row.blockType as keyof typeof BLOCKS_COPY.types].label : blockTypeLabelForEvent(row.mainType, BLOCKS_COPY) || copy.unnamed;
   // A block that is in no published snapshot has no title to show: name it by its kind.
   return row.title ?? (row.blockType ? typeLabel : copy.removed(typeLabel));
 }
@@ -60,7 +67,9 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
   if (read.kind !== "report") notFound();
 
   const { report } = read;
-  const copy = SHARED_REPORT_COPY;
+  // The report speaks the page's language, whoever opens it.
+  const copy = REPORT_COPY[report.locale];
+  const { BLOCKS_COPY } = copyFor(report.locale);
   const view = sharedReportView(report);
   const { analytics } = report;
   const { rows, totals } = view;
@@ -69,7 +78,7 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
   const topClicks = view.blocks[0]?.clicks ?? 0;
 
   return (
-    <main className="min-h-screen bg-app-bg py-8 text-app-text sm:py-12 print:bg-white print:py-0">
+    <main lang={langAttribute(report.locale)} className="min-h-screen bg-app-bg py-8 text-app-text sm:py-12 print:bg-white print:py-0">
       <article className="mx-auto grid w-[min(880px,calc(100%-2rem))] grid-cols-[minmax(0,1fr)] gap-6">
         <header className="grid gap-2 border-b border-app-border pb-6">
           {/* Workspace- and owner-supplied text: rendered as text. */}
@@ -152,7 +161,7 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
                     <li key={row.ref} className="grid gap-1">
                       <span className="flex flex-wrap items-baseline justify-between gap-x-4">
                         {/* Text the page shows to its visitors: rendered as text. */}
-                        <b className="min-w-0 break-words">{blockName(row)}</b>
+                        <b className="min-w-0 break-words">{blockName(row, copy.blocks, BLOCKS_COPY)}</b>
                         <span>
                           {copy.blocks.clicks(row.clicks)}
                           {row.clickRate !== null ? <span className="text-app-muted"> · {copy.blocks.perHundred(perHundred(row.clickRate))}</span> : null}
@@ -220,7 +229,7 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
         </section>
 
         <footer className="grid gap-1 border-t border-app-border pt-5 text-sm text-app-muted">
-          <p className="m-0">{copy.readOnly} {copy.expires(EXPIRY.format(new Date(report.expiresAt)))}</p>
+          <p className="m-0">{copy.readOnly} {copy.expires(expiry(report.locale).format(new Date(report.expiresAt)))}</p>
           {report.showBadge ? <p className="m-0">{copy.badge(PRODUCT.name)}</p> : null}
         </footer>
       </article>

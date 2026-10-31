@@ -638,13 +638,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "avatar_path": string | null,"bio": string,"blocks": NonNullable<Json>,"created_at": string,"created_by": string | null,"deleted_at": string | null,"draft_revision": number,"duplicated_from": string | null,"id": string,"live_publication_id": string | null,"moderation_status": string,"published_at": string | null,"purge_after": string | null,"slug": string,"social_links": NonNullable<Json>,"status": Database["public"]['Enums']["profile_status"],"theme": Json | null,"title": string,"updated_at": string,"workspace_id": string
+                    "avatar_path": string | null,"bio": string,"blocks": NonNullable<Json>,"created_at": string,"created_by": string | null,"deleted_at": string | null,"draft_revision": number,"duplicated_from": string | null,"id": string,"live_publication_id": string | null,"locale": string,"moderation_status": string,"published_at": string | null,"purge_after": string | null,"slug": string,"social_links": NonNullable<Json>,"status": Database["public"]['Enums']["profile_status"],"theme": Json | null,"title": string,"updated_at": string,"workspace_id": string
                   }
                   Insert: {
-                    "avatar_path"?: string | null,"bio"?: string,"blocks"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"draft_revision"?: number,"duplicated_from"?: string | null,"id"?: string,"live_publication_id"?: string | null,"moderation_status"?: string,"published_at"?: string | null,"purge_after"?: string | null,"slug": string,"social_links"?: NonNullable<Json>,"status"?: Database["public"]['Enums']["profile_status"],"theme"?: Json | null,"title": string,"updated_at"?: string,"workspace_id": string
+                    "avatar_path"?: string | null,"bio"?: string,"blocks"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"draft_revision"?: number,"duplicated_from"?: string | null,"id"?: string,"live_publication_id"?: string | null,"locale"?: string,"moderation_status"?: string,"published_at"?: string | null,"purge_after"?: string | null,"slug": string,"social_links"?: NonNullable<Json>,"status"?: Database["public"]['Enums']["profile_status"],"theme"?: Json | null,"title": string,"updated_at"?: string,"workspace_id": string
                   }
                   Update: {
-                    "avatar_path"?: string | null,"bio"?: string,"blocks"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"draft_revision"?: number,"duplicated_from"?: string | null,"id"?: string,"live_publication_id"?: string | null,"moderation_status"?: string,"published_at"?: string | null,"purge_after"?: string | null,"slug"?: string,"social_links"?: NonNullable<Json>,"status"?: Database["public"]['Enums']["profile_status"],"theme"?: Json | null,"title"?: string,"updated_at"?: string,"workspace_id"?: string
+                    "avatar_path"?: string | null,"bio"?: string,"blocks"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"draft_revision"?: number,"duplicated_from"?: string | null,"id"?: string,"live_publication_id"?: string | null,"locale"?: string,"moderation_status"?: string,"published_at"?: string | null,"purge_after"?: string | null,"slug"?: string,"social_links"?: NonNullable<Json>,"status"?: Database["public"]['Enums']["profile_status"],"theme"?: Json | null,"title"?: string,"updated_at"?: string,"workspace_id"?: string
                   }
                   Relationships: [
                     {
@@ -868,7 +868,7 @@ isOneToOne: false
                            },
 "claim_mail_outbox":
 { Args: { "p_limit"?: number }; Returns: {
-              "attempts": number,"display_name": string,"email": string,"id": string,"kind": string,"payload": Json,"workspace_id": string
+              "attempts": number,"display_name": string,"email": string,"id": string,"kind": string,"locale": string,"payload": Json,"workspace_id": string
             }[]
                            },
 "claim_media_cleanup":
@@ -950,12 +950,12 @@ isOneToOne: false
                            },
 "get_public_page":
 { Args: { "p_slug": string }; Returns: {
-              "canonical_slug": string,"custom_domain": string,"document": Json,"pixels": Json,"published_at": string,"show_badge": boolean,"state": string,"version": number
+              "canonical_slug": string,"custom_domain": string,"document": Json,"locale": string,"pixels": Json,"published_at": string,"show_badge": boolean,"state": string,"version": number
             }[]
                            },
 "get_public_page_by_domain":
 { Args: { "p_hostname": string }; Returns: {
-              "canonical_slug": string,"custom_domain": string,"document": Json,"pixels": Json,"published_at": string,"show_badge": boolean,"state": string,"version": number
+              "canonical_slug": string,"custom_domain": string,"document": Json,"locale": string,"pixels": Json,"published_at": string,"show_badge": boolean,"state": string,"version": number
             }[]
                            },
 "get_shared_report":

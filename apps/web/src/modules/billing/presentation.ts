@@ -1,4 +1,6 @@
-import { BILLING_COPY } from "@/content/pt-BR";
+import type { Copy } from "@/content/copy";
+import { BILLING_COPY as PORTUGUESE_BILLING_COPY } from "@/content/pt-BR";
+import type { MarketingBillingCopy } from "@/content/types";
 import { PRODUCT, type PlanId } from "@/lib/product";
 import { planEntitlementsFromProduct } from "@/modules/entitlements";
 import { can, type WorkspaceRole } from "@/modules/identity/permissions";
@@ -27,7 +29,7 @@ export function formatBillingDate(value: Date | string | null | undefined): stri
  * `customDomains: false` leaves the custom-domain line out: the screen lists what works in this
  * environment, and custom domains need their own configuration (ADR 0016).
  */
-export function planFeatureLines(planId: PlanId, options: { customDomains?: boolean } = {}): string[] {
+export function planFeatureLines(planId: PlanId, options: { customDomains?: boolean } = {}, BILLING_COPY: Copy["BILLING_COPY"] = PORTUGUESE_BILLING_COPY): string[] {
   const { limits, features } = planEntitlementsFromProduct(planId);
   const copy = BILLING_COPY.features;
   return [
@@ -42,12 +44,12 @@ export function planFeatureLines(planId: PlanId, options: { customDomains?: bool
   ];
 }
 
-/** One line of a plan card: the home and the plan screen word them the same way. */
-export function planHighlightText(item: PlanHighlight): string {
-  const copy = BILLING_COPY.highlights;
+/** One line of a plan card: the home and the plan screen word them the same way. `words` is the language (ADR 0022). */
+export function planHighlightText(item: PlanHighlight, words: Pick<MarketingBillingCopy, "highlights" | "planNames"> = PORTUGUESE_BILLING_COPY): string {
+  const copy = words.highlights;
   switch (item.kind) {
     case "everythingIn":
-      return copy.everythingIn(BILLING_COPY.planNames[item.planId]);
+      return copy.everythingIn(words.planNames[item.planId]);
     case "product":
       return copy[item.key];
     case "limit":
@@ -57,11 +59,11 @@ export function planHighlightText(item: PlanHighlight): string {
   }
 }
 
-export function priceLabel(amountCents: number, interval: BillingInterval): string {
+export function priceLabel(amountCents: number, interval: BillingInterval, BILLING_COPY: Copy["BILLING_COPY"] = PORTUGUESE_BILLING_COPY): string {
   return `${formatMoney(amountCents)} ${BILLING_COPY.perInterval[interval]}`;
 }
 
-export function billingStateSentence(state: BillingViewState, amountCents: number | null): string {
+export function billingStateSentence(state: BillingViewState, amountCents: number | null, BILLING_COPY: Copy["BILLING_COPY"] = PORTUGUESE_BILLING_COPY): string {
   const copy = BILLING_COPY.state;
   const name = (planId: PlanId) => BILLING_COPY.planNames[planId];
   switch (state.kind) {
@@ -90,13 +92,13 @@ export function billingStateSentence(state: BillingViewState, amountCents: numbe
 }
 
 /** The banner shown across a workspace while a payment is failing; null in every other state. */
-export function billingBannerSentence(state: BillingViewState): string | null {
+export function billingBannerSentence(state: BillingViewState, BILLING_COPY: Copy["BILLING_COPY"] = PORTUGUESE_BILLING_COPY): string | null {
   if (state.kind === "past_due") return BILLING_COPY.banner.past_due(BILLING_COPY.planNames[state.planId], formatBillingDate(state.graceUntil));
   if (state.kind === "grace_expired") return BILLING_COPY.banner.grace_expired(BILLING_COPY.planNames[state.planId]);
   return null;
 }
 
-export function impactSentence(item: ImpactItem): string {
+export function impactSentence(item: ImpactItem, BILLING_COPY: Copy["BILLING_COPY"] = PORTUGUESE_BILLING_COPY): string {
   const copy = BILLING_COPY.impact;
   switch (item.key) {
     case "max_profiles":

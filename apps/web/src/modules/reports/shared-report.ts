@@ -4,6 +4,7 @@ import {
   type AnalyticsReport, type DashboardState, type DayRow, type ShareRow, type Totals,
 } from "@/modules/analytics/dashboard";
 import { daysBetween } from "@/modules/analytics/dates";
+import { DEFAULT_LOCALE, isLocale, type Locale } from "@/lib/locale";
 
 /**
  * The report a client reads at /r/<token> (ADR 0013). Pure functions over what
@@ -39,6 +40,8 @@ export interface SharedReport {
   expiresAt: string;
   everPublished: boolean;
   showBadge: boolean;
+  /** The page's language (profiles.locale, ADR 0022); pt-BR from a database without it. */
+  locale: Locale;
   analytics: AnalyticsReport;
   blocks: SharedReportBlock[];
 }
@@ -89,6 +92,7 @@ export function parseSharedReport(value: unknown): SharedReport | null {
     expiresAt: raw.expires_at,
     everPublished: raw.ever_published === true,
     showBadge: raw.show_badge === true,
+    locale: isLocale(raw.locale) ? raw.locale : DEFAULT_LOCALE,
     analytics: { ...analytics, historyDays: daysBetween(analytics.from, analytics.to) + 1 },
     blocks,
   };

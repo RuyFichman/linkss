@@ -2,8 +2,10 @@ import { domainsSignerFromEnv } from "@/modules/domains/config";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Schibsted_Grotesk } from "next/font/google";
-import { HOME_COPY } from "@/content/pt-BR";
+import { marketingCopy } from "@/content/marketing";
+import type { HomeCopy } from "@/content/types";
 import { publicAddressLabel } from "@/lib/app-url";
+import { DEFAULT_LOCALE, HELP_PATH, HOME_PATH, LOCALE_CODE, SIGN_IN_PATH, SIGN_UP_PATH, type Locale } from "@/lib/locale";
 import { BrandLogo } from "@/ui/brand-logo";
 import "./home.css";
 import { PlanComparison, Pricing } from "./pricing";
@@ -11,10 +13,8 @@ import { FeaturePagePreview, HeroPagePreviews, Showcase } from "./showcase";
 
 const displayFont = Schibsted_Grotesk({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-home-display", display: "swap" });
 
-const SIGN_UP_PATH = "/cadastro";
-const SIGN_IN_PATH = "/entrar";
 
-type PhoneKey = keyof typeof HOME_COPY.phones;
+type PhoneKey = keyof HomeCopy["phones"];
 type PhoneLook = { bg: string; text: string; muted: string; button: string; buttonText: string; radius: string; cover: string; outline?: boolean };
 
 // Illustrative pages drawn in CSS: invented names, no customer content and no image requests.
@@ -30,9 +30,8 @@ function initials(name: string): string {
   return name.split(" ").map((word) => word[0]).join("").slice(0, 2).toUpperCase();
 }
 
-function PhoneMock({ phone }: { phone: PhoneKey }) {
+function PhoneMock({ phone, copy }: { phone: PhoneKey; copy: HomeCopy["phones"][PhoneKey] }) {
   const look = PHONE_LOOKS[phone];
-  const copy = HOME_COPY.phones[phone];
   const style = { "--phone-bg": look.bg, "--phone-text": look.text, "--phone-muted": look.muted, "--phone-button": look.button, "--phone-button-text": look.buttonText, "--phone-radius": look.radius, "--phone-cover": look.cover } as CSSProperties;
   return (
     <div className="home-phone" style={style} aria-hidden="true">
@@ -51,25 +50,35 @@ function PhoneMock({ phone }: { phone: PhoneKey }) {
 }
 
 /** The address a new page gets, next to the sign-up button. Text only: the address is chosen after sign-up. */
-function ClaimBar() {
+function ClaimBar({ copy, signUpHref }: { copy: HomeCopy["hero"]; signUpHref: string }) {
   const [host] = publicAddressLabel("").split("/");
   return (
     <div className="home-claim">
-      <p className="home-claim-address m-0">{host}/<span>{HOME_COPY.hero.addressPlaceholder}</span></p>
-      <Link className="home-cta" href={SIGN_UP_PATH}>{HOME_COPY.hero.cta}</Link>
+      <p className="home-claim-address m-0">{host}/<span>{copy.addressPlaceholder}</span></p>
+      <Link className="home-cta" href={signUpHref}>{copy.cta}</Link>
     </div>
   );
 }
 
-export function Home() {
-  const copy = HOME_COPY;
+/**
+ * The marketing home, in Portuguese at `/` and in Spanish at `/es` (ADR 0022). The Spanish home
+ * marks its subtree with `lang="es"` (the document element stays pt-BR: there is one root layout),
+ * shows the prices of its market and leaves out the pages that exist only in Portuguese.
+ */
+export function Home({ locale = DEFAULT_LOCALE }: { locale?: Locale }) {
+  const copy = marketingCopy(locale).home;
+  const portuguese = locale === "pt-BR";
+  const signUpHref = SIGN_UP_PATH[locale];
+  const otherLocale: Locale = portuguese ? "es-ES" : "pt-BR";
+  // Pages that exist only in Portuguese say so to a Spanish reader.
+  const portugueseOnly = portuguese ? undefined : LOCALE_CODE["pt-BR"];
   // Read at build time: configuring custom domains needs a redeploy, like every other value this static page shows.
   const customDomains = domainsSignerFromEnv() !== null;
-  const faqAnswer = (entry: (typeof copy.faq.items)[number]) => customDomains && "answerDomains" in entry ? entry.answerDomains : entry.answer;
+  const faqAnswer = (entry: (typeof copy.faq.items)[number]) => customDomains && "answerDomains" in entry && entry.answerDomains ? entry.answerDomains : entry.answer;
   return (
-    <div className={`home ${displayFont.variable}`}>
+    <div className={`home ${displayFont.variable}`} lang={portuguese ? undefined : LOCALE_CODE[locale]}>
       <header className="home-shell home-header">
-          <Link className="home-brand" href="/"><BrandLogo /></Link>
+          <Link className="home-brand" href={HOME_PATH[locale]}><BrandLogo /></Link>
           <nav className="home-nav" aria-label={copy.nav.label}>
             <a href="#recursos">{copy.nav.features}</a>
             <a href="#modelos">{copy.nav.templates}</a>
@@ -77,8 +86,8 @@ export function Home() {
             <a href="#duvidas">{copy.nav.faq}</a>
           </nav>
           <div className="home-header-actions">
-            <Link className="home-signin" href={SIGN_IN_PATH}>{copy.nav.signIn}</Link>
-            <Link className="home-cta" href={SIGN_UP_PATH}>{copy.nav.signUp}</Link>
+            <Link className="home-signin" href={SIGN_IN_PATH[locale]}>{copy.nav.signIn}</Link>
+            <Link className="home-cta" href={signUpHref}>{copy.nav.signUp}</Link>
           </div>
       </header>
 
@@ -89,7 +98,7 @@ export function Home() {
               <p className="home-badge m-0"><span className="home-badge-dot" aria-hidden="true" />{copy.hero.badge}</p>
               <h1 className="home-display">{copy.hero.title}</h1>
               <p className="home-hero-lead">{copy.hero.lead}</p>
-              <ClaimBar />
+              <ClaimBar copy={copy.hero} signUpHref={signUpHref} />
             </div>
             <div className="home-fan">
               <HeroPagePreviews />
@@ -109,8 +118,8 @@ export function Home() {
           <h2 className="home-display" id="modelos-titulo">{copy.templates.title}</h2>
           <p>{copy.templates.lead}</p>
         </div>
-        <Showcase />
-        <p className="home-center m-0"><Link className="home-cta" href={SIGN_UP_PATH}>{copy.templates.cta}</Link></p>
+        <Showcase locale={locale} />
+        <p className="home-center m-0"><Link className="home-cta" href={signUpHref}>{copy.templates.cta}</Link></p>
       </section>
 
       <section className="home-section home-shell" aria-labelledby="editor-titulo">
@@ -126,7 +135,7 @@ export function Home() {
             </div>
             <ul className="home-editor-blocks">{copy.editor.blocks.map((block) => <li key={block}>{block}</li>)}</ul>
           </div>
-          <div className="home-editor-preview">{copy.editor.previewLabel}<PhoneMock phone="service" /></div>
+          <div className="home-editor-preview">{copy.editor.previewLabel}<PhoneMock phone="service" copy={copy.phones.service} /></div>
         </div>
       </section>
 
@@ -145,8 +154,8 @@ export function Home() {
         </div>
       </section>
 
-      <Pricing customDomains={customDomains} />
-      <PlanComparison customDomains={customDomains} />
+      <Pricing customDomains={customDomains} locale={locale} />
+      <PlanComparison customDomains={customDomains} locale={locale} />
 
       <section className="home-section home-shell" id="duvidas" aria-labelledby="duvidas-titulo">
         <div className="home-heading">
@@ -168,12 +177,17 @@ export function Home() {
             <h2 className="home-display" id="fechamento-titulo">{copy.closing.title}</h2>
             <p>{copy.closing.lead}</p>
           </div>
-          <ClaimBar />
+          <ClaimBar copy={copy.hero} signUpHref={signUpHref} />
         </section>
         <footer className="home-shell home-footer">
           <div className="home-footer-about">
             <span className="home-brand"><BrandLogo /></span>
             <p>{copy.footer.tagline}</p>
+            <nav aria-label={copy.footer.languageTitle}>
+              <ul>
+                <li><Link href={HOME_PATH[otherLocale]} hrefLang={LOCALE_CODE[otherLocale]} lang={LOCALE_CODE[otherLocale]}>{copy.footer.otherLanguage}</Link></li>
+              </ul>
+            </nav>
           </div>
           <nav aria-labelledby="rodape-produto">
             <h2 id="rodape-produto">{copy.footer.productTitle}</h2>
@@ -184,27 +198,31 @@ export function Home() {
               <li><a href="#duvidas">{copy.nav.faq}</a></li>
             </ul>
           </nav>
-          <nav aria-labelledby="rodape-publico">
-            <h2 id="rodape-publico">{copy.footer.audienceTitle}</h2>
-            <ul>
-              <li><Link href="/agencias">{copy.footer.agencies}</Link></li>
-              <li><Link href="/profissionais">{copy.footer.professionals}</Link></li>
-            </ul>
-          </nav>
+          {/* The waitlist pages and account recovery exist only in Portuguese. */}
+          {portuguese ? (
+            <nav aria-labelledby="rodape-publico">
+              <h2 id="rodape-publico">{copy.footer.audienceTitle}</h2>
+              <ul>
+                <li><Link href="/agencias">{copy.footer.agencies}</Link></li>
+                <li><Link href="/profissionais">{copy.footer.professionals}</Link></li>
+              </ul>
+            </nav>
+          ) : null}
           <nav aria-labelledby="rodape-conta">
             <h2 id="rodape-conta">{copy.footer.accountTitle}</h2>
             <ul>
-              <li><Link href={SIGN_UP_PATH}>{copy.nav.signUp}</Link></li>
-              <li><Link href={SIGN_IN_PATH}>{copy.nav.signIn}</Link></li>
-              <li><Link href="/recuperar-acesso">{copy.footer.recover}</Link></li>
-              <li><Link href="/privacidade">{copy.footer.privacy}</Link></li>
+              <li><Link href={signUpHref}>{copy.nav.signUp}</Link></li>
+              <li><Link href={SIGN_IN_PATH[locale]}>{copy.nav.signIn}</Link></li>
+              {portuguese ? <li><Link href="/recuperar-acesso">{copy.footer.recover}</Link></li> : null}
+              <li><Link href="/privacidade" hrefLang={portugueseOnly}>{copy.footer.privacy}</Link></li>
             </ul>
           </nav>
           <nav aria-labelledby="rodape-ajuda">
             <h2 id="rodape-ajuda">{copy.footer.helpTitle}</h2>
             <ul>
-              <li><Link href="/ajuda">{copy.footer.help}</Link></li>
-              <li><Link href="/precos">{copy.footer.pricing}</Link></li>
+              <li><Link href={HELP_PATH[locale]}>{copy.footer.help}</Link></li>
+              {/* /precos shows the catalogue in reais; the Spanish home points to its own plans. */}
+              <li>{portuguese ? <Link href="/precos">{copy.footer.pricing}</Link> : <a href="#planos">{copy.footer.pricing}</a>}</li>
               <li><Link href="/status">{copy.footer.status}</Link></li>
             </ul>
           </nav>

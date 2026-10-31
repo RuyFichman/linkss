@@ -2,13 +2,15 @@
 
 import { useActionState, useRef } from "react";
 import Link from "next/link";
-import { AUTH_COPY } from "@/content/pt-BR";
+import { AUTH_COPY as AUTH_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { IDLE_FORM_STATE } from "@/lib/form-state";
 import { Button, FormStatus, TextField } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
 import { updatePasswordAction } from "../actions";
 
 export function NewPasswordForm() {
+  const AUTH_COPY = useCopy(AUTH_COPY_BY_LOCALE);
   const [state, action, pending] = useActionState(updatePasswordAction, IDLE_FORM_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   useFocusFirstError(formRef, state);

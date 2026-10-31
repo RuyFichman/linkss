@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useRef } from "react";
-import { MODERATION_COPY } from "@/content/pt-BR";
+import { MODERATION_COPY as MODERATION_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { IDLE_FORM_STATE, type FormState } from "@/lib/form-state";
 import { Button, FormStatus, TextAreaField } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
@@ -11,6 +12,7 @@ type AppealAction = (previous: FormState, formData: FormData) => Promise<FormSta
 
 /** The appeal an owner or admin sends against a suspension. The server and the database decide. */
 export function AppealForm({ action }: { action: AppealAction }) {
+  const MODERATION_COPY = useCopy(MODERATION_COPY_BY_LOCALE);
   const [state, formAction, pending] = useActionState(action, IDLE_FORM_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   useFocusFirstError(formRef, state);

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { APP_COPY, TEAM_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { formatDateTime } from "@/lib/format-date";
 import { AcceptInvitationForm } from "@/modules/identity/components/accept-invitation-form";
 import { SignOutButton } from "@/modules/identity/components/sign-out-button";
@@ -11,7 +11,9 @@ import { getMembersService } from "@/modules/identity/members-server";
 import { EmptyState, Notice } from "@/ui";
 
 // The token is in the path: never send this URL to another site as a referrer.
-export const metadata: Metadata = { title: "Convite", referrer: "no-referrer" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.invitation, referrer: "no-referrer" };
+}
 export const dynamic = "force-dynamic";
 
 /**
@@ -20,6 +22,7 @@ export const dynamic = "force-dynamic";
  * unknown, expired, revoked or used link shows one generic state.
  */
 export default async function InvitationPage({ params }: { params: Promise<{ token: string }> }) {
+  const { APP_COPY, TEAM_COPY } = await getCopy();
   const { token } = await params;
   const preview = await (await getMembersService()).previewInvitation(token);
   if (!preview.ok) {

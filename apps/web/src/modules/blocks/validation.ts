@@ -1,4 +1,5 @@
-import { BLOCKS_COPY } from "@/content/pt-BR";
+import type { Copy } from "@/content/copy";
+import { BLOCKS_COPY as PORTUGUESE_BLOCKS } from "@/content/pt-BR";
 import { EMBED_PROVIDERS, embedPageUrl, parseEmbedInput, type EmbedRejection } from "./embed";
 import { orderFormFields, type FormField } from "./form";
 import { codePointLength, EMBED_TITLE_MAX_LENGTH, FORM_BUTTON_MAX_LENGTH, FORM_CONSENT_MAX_LENGTH, FORM_TITLE_MAX_LENGTH, IMAGE_ALT_MAX_LENGTH, LINK_TITLE_MAX_LENGTH, PIX_LABEL_MAX_LENGTH, TEXT_MAX_LENGTH, WHATSAPP_LABEL_MAX_LENGTH, WHATSAPP_MESSAGE_MAX_LENGTH } from "./limits";
@@ -33,7 +34,10 @@ export type BlockValidation =
   | { ok: true; block: DraftBlock; notices: BlockNotices }
   | { ok: false; errors: BlockFieldErrors };
 
-const URL_MESSAGES: Record<UrlRejection, string> = {
+/** The blocks copy in the editor's language (ADR 0022); every function defaults to Portuguese. */
+export type BlocksWords = Copy["BLOCKS_COPY"];
+
+const urlMessages = (BLOCKS_COPY: BlocksWords): Record<UrlRejection, string> => ({
   required: BLOCKS_COPY.errors.url.required,
   scheme: BLOCKS_COPY.errors.url.scheme,
   relative: BLOCKS_COPY.errors.url.relative,
@@ -43,21 +47,21 @@ const URL_MESSAGES: Record<UrlRejection, string> = {
   email: BLOCKS_COPY.errors.url.email,
   phone: BLOCKS_COPY.errors.url.phone,
   too_long: BLOCKS_COPY.errors.url.tooLong,
-};
+});
 
-const EMBED_MESSAGES: Record<EmbedRejection, string> = {
+const embedMessages = (BLOCKS_COPY: BlocksWords): Record<EmbedRejection, string> => ({
   required: BLOCKS_COPY.errors.embed.required,
   markup: BLOCKS_COPY.errors.embed.markup,
   address: BLOCKS_COPY.errors.embed.address,
   unknown_provider: BLOCKS_COPY.errors.embed.unknownProvider,
   unrecognized: BLOCKS_COPY.errors.embed.unrecognized,
-};
+});
 
-export function urlRejectionMessage(reason: UrlRejection): string {
-  return URL_MESSAGES[reason];
+export function urlRejectionMessage(reason: UrlRejection, BLOCKS_COPY: BlocksWords = PORTUGUESE_BLOCKS): string {
+  return urlMessages(BLOCKS_COPY)[reason];
 }
 
-export function emptyBlockInput(type: BlockType): BlockInput {
+export function emptyBlockInput(type: BlockType, BLOCKS_COPY: BlocksWords = PORTUGUESE_BLOCKS): BlockInput {
   switch (type) {
     case "link": return { type, title: "", url: "" };
     case "text": return { type, text: "" };
@@ -86,13 +90,13 @@ export function blockToInput(block: DraftBlock): BlockInput {
   }
 }
 
-function labelError(raw: string, max: number, lengthMessage: string = BLOCKS_COPY.errors.titleLength): string | undefined {
+function labelError(BLOCKS_COPY: BlocksWords, raw: string, max: number, lengthMessage: string = BLOCKS_COPY.errors.titleLength): string | undefined {
   if (hasForbiddenLabelCharacters(raw)) return BLOCKS_COPY.errors.controlCharacters;
   const value = normalizeLabel(raw);
   return codePointLength(value) < 1 || codePointLength(value) > max ? lengthMessage : undefined;
 }
 
-function multilineError(raw: string, min: number, max: number, lengthMessage: string): string | undefined {
+function multilineError(BLOCKS_COPY: BlocksWords, raw: string, min: number, max: number, lengthMessage: string): string | undefined {
   const value = normalizeMultiline(raw);
   if (hasForbiddenMultilineCharacters(value)) return BLOCKS_COPY.errors.controlCharacters;
   return codePointLength(value) < min || codePointLength(value) > max ? lengthMessage : undefined;
@@ -104,22 +108,22 @@ export function effectivePixKeyType(input: { keyType: PixKeyType | "auto"; key: 
 }
 
 /** Validates and normalizes one block form. The result is exactly what gets stored. */
-export function validateBlockInput(id: string, visible: boolean, input: BlockInput): BlockValidation {
+export function validateBlockInput(id: string, visible: boolean, input: BlockInput, BLOCKS_COPY: BlocksWords = PORTUGUESE_BLOCKS): BlockValidation {
   const errors: BlockFieldErrors = {};
   const notices: BlockNotices = {};
   switch (input.type) {
     case "link": {
-      const titleError = labelError(input.title, LINK_TITLE_MAX_LENGTH);
+      const titleError = labelError(BLOCKS_COPY, input.title, LINK_TITLE_MAX_LENGTH);
       if (titleError) errors.title = titleError;
       const url = normalizeBlockUrl(input.url);
-      if (!url.ok) errors.url = urlRejectionMessage(url.reason);
+      if (!url.ok) errors.url = urlRejectionMessage(url.reason, BLOCKS_COPY);
       if (!url.ok || titleError) return { ok: false, errors };
       if (url.insecure) notices.url = BLOCKS_COPY.insecureLink;
       else if (url.punycode) notices.url = BLOCKS_COPY.punycodeNotice;
       return { ok: true, notices, block: { id, type: "link", visible, title: normalizeLabel(input.title), url: url.url } };
     }
     case "text": {
-      const textError = multilineError(input.text, 1, TEXT_MAX_LENGTH, BLOCKS_COPY.errors.textLength);
+      const textError = multilineError(BLOCKS_COPY, input.text, 1, TEXT_MAX_LENGTH, BLOCKS_COPY.errors.textLength);
       if (textError) return { ok: false, errors: { text: textError } };
       return { ok: true, notices, block: { id, type: "text", visible, text: normalizeMultiline(input.text) } };
     }
@@ -136,11 +140,11 @@ export function validateBlockInput(id: string, visible: boolean, input: BlockInp
       return { ok: true, notices, block: { id, type: "social", visible, items } };
     }
     case "whatsapp": {
-      const labelProblem = labelError(input.label, WHATSAPP_LABEL_MAX_LENGTH);
+      const labelProblem = labelError(BLOCKS_COPY, input.label, WHATSAPP_LABEL_MAX_LENGTH);
       if (labelProblem) errors.label = labelProblem;
       const phone = normalizeWhatsAppPhone(input.phone);
       if (!phone.ok) errors.phone = BLOCKS_COPY.errors.whatsappPhone;
-      const messageError = multilineError(input.message, 0, WHATSAPP_MESSAGE_MAX_LENGTH, BLOCKS_COPY.errors.messageLength);
+      const messageError = multilineError(BLOCKS_COPY, input.message, 0, WHATSAPP_MESSAGE_MAX_LENGTH, BLOCKS_COPY.errors.messageLength);
       if (messageError) errors.message = messageError;
       if (!phone.ok || Object.keys(errors).length > 0) return { ok: false, errors };
       return { ok: true, notices, block: { id, type: "whatsapp", visible, label: normalizeLabel(input.label), phone: phone.phone, message: normalizeMultiline(input.message) } };
@@ -149,22 +153,22 @@ export function validateBlockInput(id: string, visible: boolean, input: BlockInp
       return { ok: true, notices, block: { id, type: "divider", visible } };
     case "image": {
       if (!isBlockId(input.mediaId) || input.width < 1 || input.height < 1) errors.image = BLOCKS_COPY.errors.imageRequired;
-      const altError = input.decorative ? undefined : labelError(input.alt, IMAGE_ALT_MAX_LENGTH, BLOCKS_COPY.errors.altLength);
+      const altError = input.decorative ? undefined : labelError(BLOCKS_COPY, input.alt, IMAGE_ALT_MAX_LENGTH, BLOCKS_COPY.errors.altLength);
       if (altError) errors.alt = altError;
       if (Object.keys(errors).length > 0) return { ok: false, errors };
       return { ok: true, notices, block: { id, type: "image", visible, mediaId: input.mediaId, width: input.width, height: input.height, alt: input.decorative ? "" : normalizeLabel(input.alt), decorative: input.decorative } };
     }
     case "embed": {
       const parsed = parseEmbedInput(input.url);
-      if (!parsed.ok) errors.url = EMBED_MESSAGES[parsed.reason];
-      const titleError = labelError(input.title, EMBED_TITLE_MAX_LENGTH);
+      if (!parsed.ok) errors.url = embedMessages(BLOCKS_COPY)[parsed.reason];
+      const titleError = labelError(BLOCKS_COPY, input.title, EMBED_TITLE_MAX_LENGTH);
       if (titleError) errors.title = titleError;
       if (!parsed.ok || titleError) return { ok: false, errors };
       notices.url = BLOCKS_COPY.embedRecognized(EMBED_PROVIDERS[parsed.provider].label);
       return { ok: true, notices, block: { id, type: "embed", visible, provider: parsed.provider, ref: parsed.ref, title: normalizeLabel(input.title) } };
     }
     case "pix": {
-      const labelProblem = labelError(input.label, PIX_LABEL_MAX_LENGTH);
+      const labelProblem = labelError(BLOCKS_COPY, input.label, PIX_LABEL_MAX_LENGTH);
       if (labelProblem) errors.label = labelProblem;
       const keyType = effectivePixKeyType(input);
       const key = keyType ? normalizePixKey(keyType, input.key) : null;
@@ -180,13 +184,13 @@ export function validateBlockInput(id: string, visible: boolean, input: BlockInp
       return { ok: true, notices, block: { id, type: "pix", visible, label: normalizeLabel(input.label), keyType, key, paymentUrl } };
     }
     case "form": {
-      const titleError = labelError(input.title, FORM_TITLE_MAX_LENGTH);
+      const titleError = labelError(BLOCKS_COPY, input.title, FORM_TITLE_MAX_LENGTH);
       if (titleError) errors.title = titleError;
       const fields = orderFormFields(input.fields);
       if (!fields.includes("email") && !fields.includes("phone")) errors.fields = BLOCKS_COPY.errors.formFields;
-      const buttonError = labelError(input.buttonLabel, FORM_BUTTON_MAX_LENGTH, BLOCKS_COPY.errors.buttonLength);
+      const buttonError = labelError(BLOCKS_COPY, input.buttonLabel, FORM_BUTTON_MAX_LENGTH, BLOCKS_COPY.errors.buttonLength);
       if (buttonError) errors.buttonLabel = buttonError;
-      const consentError = labelError(input.consentText, FORM_CONSENT_MAX_LENGTH, BLOCKS_COPY.errors.consentLength);
+      const consentError = labelError(BLOCKS_COPY, input.consentText, FORM_CONSENT_MAX_LENGTH, BLOCKS_COPY.errors.consentLength);
       if (consentError) errors.consentText = consentError;
       if (Object.keys(errors).length > 0) return { ok: false, errors };
       return { ok: true, notices, block: { id, type: "form", visible, title: normalizeLabel(input.title), fields, buttonLabel: normalizeLabel(input.buttonLabel), consentText: normalizeLabel(input.consentText), consentRequired: input.consentRequired } };

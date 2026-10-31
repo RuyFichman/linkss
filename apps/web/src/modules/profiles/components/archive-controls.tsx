@@ -1,4 +1,4 @@
-import { APP_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { publicAddressLabel } from "@/lib/app-url";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { archiveProfileAction, unarchiveProfileAction } from "../actions";
@@ -14,7 +14,8 @@ interface ArchiveTarget {
  * "Arquivar" or "Desarquivar" for one page, with a confirmation that says what happens to the
  * public address. Rendered only for roles that may archive; the action re-checks on the server.
  */
-export function ArchiveControl({ page }: { page: ArchiveTarget }) {
+export async function ArchiveControl({ page }: { page: ArchiveTarget }) {
+  const { APP_COPY } = await getCopy();
   if (page.status === "archived") {
     const copy = APP_COPY.archive.unarchive;
     return (

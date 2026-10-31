@@ -1,12 +1,13 @@
-import { AUTH_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { signOutAction } from "../actions";
 
 /** A form, so sign-out is always a POST (Server Action) and works without JavaScript. */
-export function SignOutButton({ label = AUTH_COPY.signOut, next }: { label?: string; next?: string }) {
+export async function SignOutButton({ label, next }: { label?: string; next?: string }) {
+  const { AUTH_COPY } = await getCopy();
   return (
     <form action={signOutAction}>
       {next ? <input type="hidden" name="next" value={next} /> : null}
-      <button type="submit" className="ui-button ui-button-secondary">{label}</button>
+      <button type="submit" className="ui-button ui-button-secondary">{label ?? AUTH_COPY.signOut}</button>
     </form>
   );
 }

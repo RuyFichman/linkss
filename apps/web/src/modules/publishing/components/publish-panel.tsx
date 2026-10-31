@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PUBLISHING_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { publicAddressLabel, publicPageUrl } from "@/lib/app-url";
 import { formatDateTime } from "@/lib/format-date";
 import { publishProfileAction, restorePublicationAction, unpublishProfileAction } from "../actions";
@@ -24,7 +24,8 @@ interface PublishPanelProps {
 }
 
 /** Publication status, publish/unpublish controls and version history for one page. */
-export function PublishPanel({ target, publications, previewHref, canPublish, editorManaged = false }: PublishPanelProps) {
+export async function PublishPanel({ target, publications, previewHref, canPublish, editorManaged = false }: PublishPanelProps) {
+  const { PUBLISHING_COPY } = await getCopy();
   const state = publicationState(target, publications);
   const live = target.livePublicationId !== null;
 

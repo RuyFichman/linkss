@@ -1,7 +1,8 @@
-import { COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { Skeleton } from "@/ui";
 
-export default function MembersLoading() {
+export default async function MembersLoading() {
+  const { COPY } = await getCopy();
   return (
     <div className="mx-auto grid w-full max-w-3xl gap-4" role="status" aria-live="polite">
       <span className="sr-only">{COPY.loading}</span>

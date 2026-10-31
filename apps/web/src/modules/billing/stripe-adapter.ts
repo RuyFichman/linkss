@@ -248,7 +248,8 @@ export function createStripeAdapter(config: StripeAdapterConfig): PaymentsAdapte
         mode: "subscription",
         customer: request.customerId,
         client_reference_id: request.workspaceId,
-        locale: "pt-BR",
+        // The browser's language: Portuguese in Brazil, Spanish in Spain (ADR 0022).
+        locale: "auto",
         success_url: request.successUrl,
         cancel_url: request.cancelUrl,
         line_items: [{ quantity: 1, price_data: priceData(product, request.amountCents, request.currency, request.interval) }],

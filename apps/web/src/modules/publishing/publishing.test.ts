@@ -140,7 +140,7 @@ describe("public page states", () => {
   it("maps every database state", () => {
     expect(mapPublicPageRow(published)).toMatchObject({ state: "published", slug: "ana", version: 3, showBadge: true });
     expect(mapPublicPageRow({ ...published, state: "moved", document: null })).toEqual({ state: "moved", slug: "ana" });
-    expect(mapPublicPageRow({ ...published, state: "suspended", document: null })).toEqual({ state: "suspended", slug: "ana" });
+    expect(mapPublicPageRow({ ...published, state: "suspended", document: null })).toEqual({ state: "suspended", slug: "ana", locale: "pt-BR" });
     expect(mapPublicPageRow({ ...published, state: "unpublished", document: null })).toEqual({ state: "unpublished", slug: "ana" });
     expect(mapPublicPageRow({ ...published, state: "not_found", canonical_slug: null })).toEqual({ state: "not_found" });
     expect(mapPublicPageRow({ ...published, state: "surprise" })).toEqual({ state: "not_found" });
@@ -157,14 +157,14 @@ describe("public page metadata", () => {
 
   it("uses the configured public origin for canonical and Open Graph URLs", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://exemplo.com.br/");
-    const metadata = buildPublicPageMetadata({ state: "published", slug: "ana", version: 1, publishedAt: null, showBadge: true, customDomain: null, pixels: null, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana Lima", bio: "  Nutricionista\n em SP ", avatarPath: null, theme: null, blocks: [] } });
+    const metadata = buildPublicPageMetadata({ state: "published", slug: "ana", version: 1, publishedAt: null, showBadge: true, customDomain: null, pixels: null, locale: "pt-BR", document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana Lima", bio: "  Nutricionista\n em SP ", avatarPath: null, theme: null, blocks: [] } });
     expect(metadata.alternates?.canonical).toBe("https://exemplo.com.br/ana");
     expect(metadata.openGraph).toMatchObject({ url: "https://exemplo.com.br/ana", title: "Ana Lima", description: "Nutricionista em SP", locale: "pt_BR" });
     expect(metadata.robots).toEqual({ index: true, follow: true });
   });
 
   it("falls back to a default description and truncates long bios", () => {
-    const base = { state: "published" as const, slug: "ana", version: 1, publishedAt: null, showBadge: true, customDomain: null, pixels: null };
+    const base = { state: "published" as const, slug: "ana", version: 1, publishedAt: null, showBadge: true, customDomain: null, pixels: null, locale: "pt-BR" as const };
     expect(buildPublicPageMetadata({ ...base, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana", bio: "", avatarPath: null, theme: null, blocks: [] } }).description).toBe("Links e contatos de Ana.");
     const long = buildPublicPageMetadata({ ...base, document: { schemaVersion: 2, sourceSchemaVersion: 2, title: "Ana", bio: "x".repeat(280), avatarPath: null, theme: null, blocks: [] } }).description ?? "";
     expect(long.length).toBe(160);
@@ -172,7 +172,7 @@ describe("public page metadata", () => {
   });
 
   it("never lets unpublished, missing or suspended pages be indexed", () => {
-    for (const result of [{ state: "not_found" as const }, { state: "unpublished" as const, slug: "a" }, { state: "suspended" as const, slug: "a" }]) {
+    for (const result of [{ state: "not_found" as const }, { state: "unpublished" as const, slug: "a" }, { state: "suspended" as const, slug: "a", locale: "pt-BR" as const }]) {
       expect(buildPublicPageMetadata(result).robots).toEqual({ index: false, follow: false });
     }
   });

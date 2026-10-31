@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { headers } from "next/headers";
-import { PIXELS_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { revalidatePublicPage } from "@/modules/publishing/cache";
@@ -18,6 +18,7 @@ export type PixelsFormState = FormState<PixelField>;
 
 /** `profileId` arrives bound from the page but is client-controlled: the service and the database re-authorize it. */
 export async function setPixelsAction(profileId: string, _previous: PixelsFormState, formData: FormData): Promise<PixelsFormState> {
+  const { PIXELS_COPY } = await getCopy();
   const values = { meta: stringField(formData, "meta"), ga: stringField(formData, "ga") };
   const result = await (await getPixelsService()).set(profileId, values);
   const correlationId = correlationIdFrom((await headers()).get(CORRELATION_HEADER));

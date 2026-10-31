@@ -54,7 +54,7 @@ export default async function PublicPage({ params }: Props) {
       // Temporary on purpose: the owner may take the old address back during its hold.
       redirect(`/${result.slug}`);
     case "suspended":
-      return <SuspendedPage />;
+      return <SuspendedPage locale={result.locale} />;
     case "unpublished":
     case "not_found":
       // Same answer for "never existed" and "not published": a real 404 that does not reveal drafts.

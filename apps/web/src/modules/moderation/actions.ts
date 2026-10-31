@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { MODERATION_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { isMissingSchemaError } from "@/lib/supabase/missing-schema";
@@ -50,6 +50,7 @@ export async function submitPublicReportAction(formData: FormData): Promise<void
  * outcome, never the text.
  */
 export async function submitAppealAction(workspaceId: string, profileId: string, _previous: FormState, formData: FormData): Promise<FormState<"message">> {
+  const { MODERATION_COPY } = await getCopy();
   const copy = MODERATION_COPY.appeal;
   const raw = formData.get("message");
   const values = { message: typeof raw === "string" ? raw.slice(0, 1200) : "" };

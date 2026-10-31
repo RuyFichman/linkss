@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { APP_COPY, TEAM_COPY } from "@/content/pt-BR";
+import { APP_COPY as APP_COPY_BY_LOCALE, TEAM_COPY as TEAM_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { formatDateTime } from "@/lib/format-date";
 import { Button, FormStatus, Notice, SelectField, TextField } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
@@ -19,6 +20,8 @@ const IDLE: InviteFormState = { status: "idle" };
  * the link stays on screen.
  */
 export function InviteMemberForm({ action, roles, fullMessage = null }: { action: InviteAction; roles: readonly InvitableRole[]; fullMessage?: string | null }) {
+  const APP_COPY = useCopy(APP_COPY_BY_LOCALE);
+  const TEAM_COPY = useCopy(TEAM_COPY_BY_LOCALE);
   const [state, formAction, pending] = useActionState(action, IDLE);
   const formRef = useRef<HTMLFormElement>(null);
   const linkRef = useRef<HTMLInputElement>(null);

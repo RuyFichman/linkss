@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { headers } from "next/headers";
-import { PUBLISHING_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent, type LogFields } from "@/lib/observability/logger";
 import { revalidatePublicPage } from "./cache";
@@ -35,6 +35,7 @@ function invalidatePublicPage(slug: string): void {
 
 /** `profileId` is bound by the page but is client-controlled: the service re-authorizes it. */
 export async function publishProfileAction(profileId: string, _previous: FormState, formData: FormData): Promise<FormState> {
+  const { PUBLISHING_COPY } = await getCopy();
   const startedAt = performance.now();
   const result = await (await getPublishingService()).publish(profileId, formData.get("expectedRevision"));
   await logCommand("publishing.publish", result, startedAt, result.ok ? { version: result.value.version, created: result.value.created } : {});
@@ -44,6 +45,7 @@ export async function publishProfileAction(profileId: string, _previous: FormSta
 }
 
 export async function restorePublicationAction(profileId: string, publicationId: string): Promise<FormState> {
+  const { PUBLISHING_COPY } = await getCopy();
   const startedAt = performance.now();
   const result = await (await getPublishingService()).restore(profileId, publicationId);
   await logCommand("publishing.restore", result, startedAt, result.ok ? { version: result.value.version } : {});
@@ -53,6 +55,7 @@ export async function restorePublicationAction(profileId: string, publicationId:
 }
 
 export async function unpublishProfileAction(profileId: string): Promise<FormState> {
+  const { PUBLISHING_COPY } = await getCopy();
   const startedAt = performance.now();
   const result = await (await getPublishingService()).unpublish(profileId);
   await logCommand("publishing.unpublish", result, startedAt);

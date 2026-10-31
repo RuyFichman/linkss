@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { APP_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { BillingBanner } from "@/modules/billing/components/billing-banner";
 import { WorkspaceNav } from "@/modules/identity/components/workspace-nav";
 import { SuspendedPagesNotice } from "@/modules/moderation/components/suspended-pages-notice";
@@ -10,6 +10,7 @@ import { Badge, Notice } from "@/ui";
 
 /** Every request re-checks membership; a workspace the person does not belong to is a 404. */
 export default async function WorkspaceLayout({ children, params }: { children: ReactNode; params: Promise<{ workspaceId: string }> }) {
+  const { APP_COPY } = await getCopy();
   const { workspaceId } = await params;
   await authorizeWorkspacePage(workspaceId, "workspace.view");
   const account = await resolveAccount();
@@ -28,7 +29,7 @@ export default async function WorkspaceLayout({ children, params }: { children: 
       {workspace ? <WorkspaceNav workspaceId={workspaceId} showPlan={can(workspace.role, "billing.view")} /> : null}
       {workspace ? <BillingBanner workspaceId={workspaceId} role={workspace.role} /> : null}
       {workspace ? <SuspendedPagesNotice workspaceId={workspaceId} /> : null}
-      {workspace?.status === "suspended" ? <div className="mb-6"><Notice tone="warning">Esta conta está suspensa. Você pode consultar as páginas, mas não alterá-las. Fale com o suporte.</Notice></div> : null}
+      {workspace?.status === "suspended" ? <div className="mb-6"><Notice tone="warning">{APP_COPY.workspace.suspendedNotice}</Notice></div> : null}
       {children}
     </>
   );

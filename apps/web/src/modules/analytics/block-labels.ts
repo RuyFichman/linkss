@@ -1,4 +1,5 @@
-import { BLOCKS_COPY } from "@/content/pt-BR";
+import type { Copy } from "@/content/copy";
+import { BLOCKS_COPY as PORTUGUESE_BLOCKS_COPY } from "@/content/pt-BR";
 import type { DraftBlock } from "@/modules/blocks/model";
 import type { AnalyticsEventType } from "./contract";
 
@@ -10,7 +11,7 @@ function shorten(value: string): string {
 }
 
 /** Name of a block in the ranking: the text the owner wrote on it, or the block type. */
-export function blockTitle(block: DraftBlock): string {
+export function blockTitle(block: DraftBlock, BLOCKS_COPY: Copy["BLOCKS_COPY"] = PORTUGUESE_BLOCKS_COPY): string {
   const typeLabel = BLOCKS_COPY.types[block.type].label;
   switch (block.type) {
     case "link": return shorten(block.title) || typeLabel;
@@ -23,7 +24,7 @@ export function blockTitle(block: DraftBlock): string {
 }
 
 /** Type name for a block that is no longer in the draft, from the kind of event it received. */
-export function blockTypeLabelForEvent(type: AnalyticsEventType): string {
+export function blockTypeLabelForEvent(type: AnalyticsEventType, BLOCKS_COPY: Copy["BLOCKS_COPY"] = PORTUGUESE_BLOCKS_COPY): string {
   switch (type) {
     case "link_click": return BLOCKS_COPY.types.link.label;
     case "social_click": return BLOCKS_COPY.types.social.label;

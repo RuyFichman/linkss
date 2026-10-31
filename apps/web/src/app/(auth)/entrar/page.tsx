@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { AUTH_COPY, TEAM_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { SignInForm } from "@/modules/identity/components/sign-in-form";
 import { isInvitationPath } from "@/modules/identity/invitations";
 import { safeNextPath } from "@/modules/identity/redirects";
 import { Notice } from "@/ui";
 
-export const metadata: Metadata = { title: "Entrar" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.signIn };
+}
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -14,6 +16,7 @@ function single(value: string | string[] | undefined): string | undefined {
 }
 
 export default async function SignInPage({ searchParams }: { searchParams: SearchParams }) {
+  const { AUTH_COPY, TEAM_COPY } = await getCopy();
   const params = await searchParams;
   const next = safeNextPath(single(params.next));
   const notice = single(params.saiu) ? { tone: "success" as const, text: AUTH_COPY.signIn.signedOut }

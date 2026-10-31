@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { LEADS_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { formatDateTime } from "@/lib/format-date";
 import { FORM_FIELDS } from "@/modules/blocks/form";
 import { isUuid } from "@/modules/identity/guard";
@@ -14,10 +14,12 @@ import type { Lead } from "@/modules/leads/service";
 import { getProfileRepository } from "@/modules/profiles/server";
 import { EmptyState, Notice } from "@/ui";
 
-export const metadata: Metadata = { title: "Contatos recebidos" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.leads };
+}
 
-function leadName(lead: Lead): string {
-  return lead.values.name ?? lead.values.email ?? lead.values.phone ?? LEADS_COPY.notProvided;
+function leadName(lead: Lead, notProvided: string): string {
+  return lead.values.name ?? lead.values.email ?? lead.values.phone ?? notProvided;
 }
 
 /**
@@ -26,6 +28,7 @@ function leadName(lead: Lead): string {
  * re-authorized on the server and in the database.
  */
 export default async function LeadsPage({ params }: { params: Promise<{ workspaceId: string; profileId: string }> }) {
+  const { LEADS_COPY } = await getCopy();
   const { workspaceId, profileId } = await params;
   const access = await authorizeWorkspacePage(workspaceId, "leads.view");
   if (!access || !isUuid(profileId)) notFound();
@@ -73,7 +76,7 @@ export default async function LeadsPage({ params }: { params: Promise<{ workspac
               <li key={lead.id} className="surface-card grid grid-cols-[minmax(0,1fr)] gap-3 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <p className="m-0 text-sm text-app-muted">{LEADS_COPY.received} {formatDateTime(lead.createdAt)}</p>
-                  {canManage ? <DeleteLeadDialog action={deleteLeadAction.bind(null, profile.id, lead.id)} name={leadName(lead)} /> : null}
+                  {canManage ? <DeleteLeadDialog action={deleteLeadAction.bind(null, profile.id, lead.id)} name={leadName(lead, LEADS_COPY.notProvided)} /> : null}
                 </div>
                 <dl className="m-0 grid gap-2">
                   {FORM_FIELDS.filter((field) => lead.values[field]).map((field) => (

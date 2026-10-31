@@ -1,5 +1,5 @@
 import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
-import { REPORTS_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { formatDateTime } from "@/lib/format-date";
 import type { WorkspaceRole } from "@/modules/identity/permissions";
 import { can } from "@/modules/identity/permissions";
@@ -19,6 +19,7 @@ const STATUS_TONE = { active: "success", expired: "neutral", revoked: "warning" 
  * re-authorizes on the server and in the database. Two queries (the plan and the links).
  */
 export async function ReportLinksSection({ workspaceId, profileId, role }: { workspaceId: string; profileId: string; role: WorkspaceRole }) {
+  const { REPORTS_COPY } = await getCopy();
   const copy = REPORTS_COPY;
   const frame = (children: React.ReactNode) => (
     <section className="surface-card grid grid-cols-[minmax(0,1fr)] content-start gap-4 p-5 sm:p-6" aria-labelledby="report-links-title">

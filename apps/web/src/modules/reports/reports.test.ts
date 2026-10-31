@@ -195,7 +195,7 @@ describe("shared report", () => {
     expect(parsed.analytics.utms).toEqual([]);
     expect(parsed.analytics.devices).toEqual([]);
     expect(parsed.analytics.countries).toEqual([]);
-    expect(Object.keys(parsed).sort()).toEqual(["analytics", "blocks", "everPublished", "expiresAt", "pageSlug", "pageTitle", "showBadge", "workspaceName"]);
+    expect(Object.keys(parsed).sort()).toEqual(["analytics", "blocks", "everPublished", "expiresAt", "locale", "pageSlug", "pageTitle", "showBadge", "workspaceName"]);
   });
 
   it("shows the address only when it is a well-formed public address", () => {

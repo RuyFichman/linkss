@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { getCopy } from "@/modules/identity/locale";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSupabase, resolveAccount } from "@/modules/identity/session";
 import { exportMediaFiles } from "@/modules/privacy/media-export";
 
-export const metadata: Metadata = { title: "Exportar imagens" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.exportImages };
+}
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 30;
 

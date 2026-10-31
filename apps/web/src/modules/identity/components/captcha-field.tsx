@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { AUTH_COPY } from "@/content/pt-BR";
+import { AUTH_COPY as AUTH_COPY_BY_LOCALE } from "@/content/localized";
+import { LOCALE_CODE } from "@/lib/locale";
+import { useCopy, useLocale } from "@/ui/locale-context";
 import { CAPTCHA_SCRIPT_URL, captchaSiteKey } from "../captcha";
 
 interface Turnstile {
@@ -37,7 +39,10 @@ function loadScript(): Promise<void> {
  * widget starts again whenever `resetSignal` changes (pass the form state: a new one arrives after
  * every submission). Renders nothing when the environment has no site key.
  */
-export function CaptchaField({ resetSignal }: { resetSignal: unknown }) {
+export function CaptchaField({ resetSignal, label: givenLabel }: { resetSignal: unknown; label?: string }) {
+  const AUTH_COPY = useCopy(AUTH_COPY_BY_LOCALE);
+  const label = givenLabel ?? AUTH_COPY.captcha.label;
+  const language = LOCALE_CODE[useLocale()];
   const siteKey = captchaSiteKey(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<string | null>(null);
@@ -48,7 +53,7 @@ export function CaptchaField({ resetSignal }: { resetSignal: unknown }) {
     loadScript().then(() => {
       const api = turnstile();
       if (cancelled || !api || !containerRef.current || widgetRef.current) return;
-      widgetRef.current = api.render(containerRef.current, { sitekey: siteKey, language: "pt-BR", size: "flexible" });
+      widgetRef.current = api.render(containerRef.current, { sitekey: siteKey, language, size: "flexible" });
     }).catch(() => {
       // Blocked or offline: the form still submits and the server answers with the captcha message.
     });
@@ -57,12 +62,12 @@ export function CaptchaField({ resetSignal }: { resetSignal: unknown }) {
       if (widgetRef.current) turnstile()?.remove(widgetRef.current);
       widgetRef.current = null;
     };
-  }, [siteKey]);
+  }, [siteKey, language]);
 
   useEffect(() => {
     if (widgetRef.current) turnstile()?.reset(widgetRef.current);
   }, [resetSignal]);
 
   if (!siteKey) return null;
-  return <div ref={containerRef} className="min-h-[65px]" role="group" aria-label={AUTH_COPY.captcha.label} />;
+  return <div ref={containerRef} className="min-h-[65px]" role="group" aria-label={label} />;
 }

@@ -1,6 +1,6 @@
 import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { Metadata } from "next";
-import { APP_COPY, TEAM_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { formatDateTime } from "@/lib/format-date";
 import { limitUsage } from "@/modules/entitlements";
 import { InviteMemberForm } from "@/modules/identity/components/invite-member-form";
@@ -15,7 +15,9 @@ import { getProfileRepository } from "@/modules/profiles/server";
 import { Badge, Notice } from "@/ui";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 
-export const metadata: Metadata = { title: "Membros" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.members };
+}
 
 /**
  * Who can reach the workspace: members with their roles, open invitations, and the commands the
@@ -23,6 +25,7 @@ export const metadata: Metadata = { title: "Membros" };
  * only decides what to show. A fixed number of queries whatever the size of the team.
  */
 export default async function MembersPage({ params }: { params: Promise<{ workspaceId: string }> }) {
+  const { APP_COPY, TEAM_COPY } = await getCopy();
   const { workspaceId } = await params;
   const access = await authorizeWorkspacePage(workspaceId, "members.view");
   if (!access) return <Notice tone="warning">{APP_COPY.errors.forbidden}</Notice>;

@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AUTH_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { NewPasswordForm } from "@/modules/identity/components/new-password-form";
 import { getCurrentUserId } from "@/modules/identity/session";
 import { Notice } from "@/ui";
 
-export const metadata: Metadata = { title: "Nova senha" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.newPassword };
+}
 
 /** Reached from the recovery link, which signs the person in with a short recovery session. */
 export default async function ResetPasswordPage() {
+  const { AUTH_COPY } = await getCopy();
   const userId = await getCurrentUserId();
   if (!userId) {
     return (

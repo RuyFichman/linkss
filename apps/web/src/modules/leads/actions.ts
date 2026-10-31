@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { headers } from "next/headers";
-import { LEADS_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { allowRequest, RATE_LIMITS } from "@/lib/security/rate-limit";
@@ -65,6 +65,7 @@ export async function submitLeadAction(slug: string, blockId: string, _previous:
 
 /** Owner deletes one lead. `profileId` and `leadId` are client-controlled: the service re-authorizes. */
 export async function deleteLeadAction(profileId: string, leadId: string): Promise<FormState> {
+  const { LEADS_COPY } = await getCopy();
   const result = await (await getLeadsService()).remove(profileId, leadId);
   const correlationId = correlationIdFrom((await headers()).get(CORRELATION_HEADER));
   logEvent(result.ok ? "info" : result.error === "unavailable" ? "error" : "warn", "lead.delete", { correlationId, outcome: result.ok ? "ok" : result.error });

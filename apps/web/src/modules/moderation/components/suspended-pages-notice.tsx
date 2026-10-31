@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MODERATION_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { suspendedPages } from "../appeals-server";
 
 /**
@@ -9,6 +9,7 @@ import { suspendedPages } from "../appeals-server";
  * viewport (`data-app-chrome`); the page settings there link to the same screen.
  */
 export async function SuspendedPagesNotice({ workspaceId }: { workspaceId: string }) {
+  const { MODERATION_COPY } = await getCopy();
   const pages = await suspendedPages(workspaceId);
   if (pages.length === 0) return null;
   const copy = MODERATION_COPY.notice;

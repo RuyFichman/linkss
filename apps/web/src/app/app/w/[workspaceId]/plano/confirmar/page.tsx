@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BILLING_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import type { PlanId } from "@/lib/product";
 import { cancelSubscriptionAction, changeIntervalAction, changePlanAction } from "@/modules/billing/actions";
 import { formatMoney, isPaidPlan, isPlanId, planPrice, planRank, yearlySavingCents } from "@/modules/billing/catalog";
@@ -17,7 +17,10 @@ import { planEntitlementsFromProduct } from "@/modules/entitlements";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { Badge, Notice } from "@/ui";
 
-export const metadata: Metadata = { title: BILLING_COPY.confirm.impactTitle };
+export async function generateMetadata(): Promise<Metadata> {
+  const { BILLING_COPY } = await getCopy();
+  return { title: BILLING_COPY.confirm.impactTitle };
+}
 
 const KIND_TONE = { kept: "success", blocked: "warning", stops: "danger" } as const;
 
@@ -28,6 +31,7 @@ const KIND_TONE = { kept: "success", blocked: "warning", stops: "danger" } as co
  * any of these changes. Owner only: other roles get the sentence that says who can.
  */
 export default async function ConfirmPlanChangePage({ params, searchParams }: { params: Promise<{ workspaceId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { BILLING_COPY } = await getCopy();
   const { workspaceId } = await params;
   const query = await searchParams;
   const copy = BILLING_COPY;
@@ -110,7 +114,7 @@ export default async function ConfirmPlanChangePage({ params, searchParams }: { 
       {isUpgrade ? (
         <section className="surface-card grid gap-3 p-5 sm:p-6" aria-labelledby="gains-title">
           <h2 id="gains-title" className="text-xl font-bold">{copy.confirm.gainsTitle}</h2>
-          <ul className="m-0 grid list-disc gap-1 pl-5">{planFeatureLines(target, { customDomains: domainsSignerFromEnv() !== null }).map((line) => <li key={line}>{line}</li>)}</ul>
+          <ul className="m-0 grid list-disc gap-1 pl-5">{planFeatureLines(target, { customDomains: domainsSignerFromEnv() !== null }, BILLING_COPY).map((line) => <li key={line}>{line}</li>)}</ul>
         </section>
       ) : (
         <section className="surface-card grid gap-4 p-5 sm:p-6" aria-labelledby="impact-title">
@@ -121,7 +125,7 @@ export default async function ConfirmPlanChangePage({ params, searchParams }: { 
             {[...items].sort((a, b) => Number(a.kind === "kept") - Number(b.kind === "kept")).map((item) => (
               <li key={item.key} className="grid gap-1 rounded-2xl border border-app-border p-4">
                 <span><Badge tone={KIND_TONE[item.kind]}>{copy.impact.kind[item.kind]}</Badge></span>
-                <span>{impactSentence(item)}</span>
+                <span>{impactSentence(item, BILLING_COPY)}</span>
               </li>
             ))}
           </ul>

@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PUBLIC_PAGE_COPY } from "@/content/pt-BR";
 
+// Static on purpose: it is the not-found boundary of every route, so reading the request here
+// would make every static page dynamic. An address with no page has no language (ADR 0022).
+
 export const metadata: Metadata = { title: { absolute: PUBLIC_PAGE_COPY.notFoundTitle }, robots: { index: false, follow: false } };
 
 /** Site-wide 404, also used for unpublished public pages (no hint that a draft exists). */

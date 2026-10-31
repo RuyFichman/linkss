@@ -32,6 +32,9 @@ export const AUTH_COPY = {
     // Same text whether the email is new or already registered (anti-enumeration).
     checkEmailTitle: "Confira seu e-mail",
     checkEmail: "Se este e-mail puder ser usado, enviamos um link de confirmação. Ele expira em 1 hora. Confira também a caixa de spam.",
+    resendPrompt: "Não recebeu?",
+    resendLink: "Peça um novo link",
+    submitting: "Aguarde…",
   },
   signIn: {
     title: "Entrar",
@@ -83,9 +86,61 @@ export const AUTH_COPY = {
   fields: { name: "Seu nome", email: "E-mail", password: "Senha", newPassword: "Nova senha", confirmation: "Repita a nova senha" },
 } as const;
 
+/** Words of the shared interface components (ui/). */
+export const UI_COPY = {
+  close: "Fechar",
+  closeWindow: "Fechar janela",
+} as const;
+
+/** Browser-tab titles of the account screens. */
+export const PAGE_TITLES = {
+  signIn: "Entrar",
+  confirmEmail: "Confirmar e-mail",
+  recoverAccess: "Recuperar acesso",
+  newPassword: "Nova senha",
+  start: "Primeiros passos",
+  newAgency: "Nova conta da agência",
+  invitation: "Convite",
+  members: "Membros",
+  pages: "Páginas",
+  newPage: "Nova página",
+  editPage: "Editar página",
+  draftPreview: "Prévia do rascunho",
+  duplicatePage: "Duplicar página",
+  moderation: "Suspensão da página",
+  leads: "Contatos recebidos",
+  results: "Resultados",
+  workspaceResults: "Resultados da conta",
+  exportImages: "Exportar imagens",
+} as const;
+
+/** Messages about a page address (modules/profiles/slug.ts). */
+export const SLUG_COPY = {
+  empty: "Escolha o endereço da sua página.",
+  invalid: "Use apenas letras, números e hífens.",
+  tooShort: (min: number) => `Use pelo menos ${min} caracteres.`,
+  tooLong: (max: number) => `Use no máximo ${max} caracteres.`,
+  reserved: "Este endereço é reservado. Tente acrescentar seu nome ou cidade.",
+  taken: "Este endereço já está em uso. Tente acrescentar sua cidade ou especialidade.",
+  held: "Este endereço foi usado recentemente e ainda está protegido. Tente outra variação.",
+  available: (slug: string) => `Ótimo — ${slug} está disponível.`,
+  current: "Este é o endereço atual.",
+  willBe: "Seu endereço será",
+} as const;
+
 export const APP_COPY = {
+  pageLocale: {
+    title: "Idioma da página",
+    lead: "O idioma dos textos que o produto coloca na página publicada: o botão de copiar a chave Pix, os avisos do formulário, o aviso de privacidade e o selo. O que você escreve não é traduzido.",
+    label: "Idioma",
+    options: { "pt-BR": "Português (Brasil)", "es-ES": "Español (España)" },
+    submit: "Salvar idioma",
+    saved: "Idioma salvo. A página publicada muda em menos de um minuto.",
+    viewOnly: (language: string) => `Idioma da página: ${language}. Quem edita a página pode mudar.`,
+  },
   workspace: {
     personalLabel: "Pessoal",
+    suspendedNotice: "Esta conta está suspensa. Você pode consultar as páginas, mas não alterá-las. Fale com o suporte.",
     agencyLabel: "Conta da agência",
     switcherLabel: "Você está em",
     createAgency: "Criar conta da agência",
@@ -235,7 +290,7 @@ export const APP_COPY = {
     sessionExpired: "Sua sessão expirou. Entre novamente para continuar.",
     notDeployed: "Este recurso ainda não está disponível nesta conta. Tente novamente mais tarde.",
   },
-  nav: { home: "Início", skipToContent: "Pular para o conteúdo", workspace: "Seções da conta", account: "Conta", myData: "Meus dados", help: "Ajuda", pages: "Páginas", results: "Resultados", members: "Membros", plan: "Plano" },
+  nav: { dashboardTitle: "Painel", home: "Início", skipToContent: "Pular para o conteúdo", workspace: "Seções da conta", account: "Conta", myData: "Meus dados", help: "Ajuda", pages: "Páginas", results: "Resultados", members: "Membros", plan: "Plano" },
 } as const;
 
 /** Suspension notice and appeal (ADR 0019). */
@@ -1248,6 +1303,9 @@ export const HOME_COPY = {
     help: "Central de ajuda",
     pricing: "Planos e preços",
     status: "Situação do serviço",
+    // The link to the home in the other language (ADR 0022), written in that language.
+    languageTitle: "Idioma",
+    otherLanguage: "Español",
   },
   phones: {
     creator: { name: "Lia Moraes", bio: "Fotografia de viagem e histórias visuais", primary: "Fale comigo", secondary: "Meu último ensaio" },
@@ -1266,7 +1324,26 @@ export const SHOWCASE_COPY = {
   openLabel: (name: string, category: string) => `Explorar página de ${name} — ${category}`,
   dialogTitle: (name: string) => `Página de ${name}`,
   dialogFallback: "Visualização da página",
+  close: "Fechar janela",
   create: "Criar minha página",
+  // The pages themselves are original English-language identities (showcase.tsx); only these words change.
+  entries: {
+    photography: { category: "Fotografia", description: "Uma presença editorial com fotografia, portfólio e um convite para conversar." },
+    cooking: { category: "Culinária & conteúdo", description: "Receitas em destaque, conteúdo visual e todos os caminhos para acompanhar uma marca." },
+    coaching: { category: "Coaching & bem-estar", description: "Uma identidade marcante para apresentar serviços, compartilhar conteúdo e receber novos contatos." },
+    farm: { category: "Marca & loja", description: "Produtos, história e visitas em uma página com a personalidade do negócio." },
+    music: { category: "Música & lançamentos", description: "Uma página para reunir lançamentos, canais de música e datas de apresentações." },
+    ceramics: { category: "Cerâmica & design", description: "Uma vitrine de peças autorais com fotografia de produto, coleção e um convite para conhecer o ateliê." },
+    architecture: { category: "Arquitetura & interiores", description: "Um portfólio de interiores com presença editorial, projetos em destaque e contato para novas conversas." },
+    florist: { category: "Flores & celebrações", description: "Arranjos sazonais e celebrações apresentados com uma identidade floral expressiva e caminhos claros para encomendar." },
+    guesthouse: { category: "Hospedagem & experiências", description: "Uma pequena hospedagem reúne sua atmosfera, os quartos e o acesso à disponibilidade em uma página acolhedora." },
+    coffeehouse: { category: "Café & encontros", description: "Uma presença calorosa para um café de bairro, com cardápio, horários, localização e coleção de cafés." },
+    jewelry: { category: "Joalheria & acessórios", description: "Uma coleção autoral com fotografia de detalhes, peças em destaque e um caminho para encomendas especiais." },
+    bakery: { category: "Padaria & confeitaria", description: "Uma padaria artesanal apresenta seus produtos, o cardápio do dia e como chegar em uma página acolhedora." },
+    yoga: { category: "Yoga & movimento", description: "Um espaço de prática reúne sua atmosfera, os horários das aulas e um convite para quem está começando." },
+    bookshop: { category: "Livros & comunidade", description: "Uma livraria independente compartilha descobertas, novidades e encontros do seu clube de leitura." },
+    outdoors: { category: "Trilhas & experiências", description: "Uma página para explorar roteiros, conhecer aventuras em pequenos grupos e acompanhar histórias das trilhas." },
+  },
 } as const;
 
 /**
@@ -1741,6 +1818,7 @@ export const HELP_COPY = {
         { question: "Publiquei algo errado. Dá para voltar?", answer: "Sim. Nas configurações da página há o histórico de publicações: escolha uma versão anterior e restaure. Você também pode tirar a página do ar." },
         { question: "Posso mudar o endereço da página?", answer: "Pode. O endereço muda na hora e, por 90 dias, quem abrir o link antigo é levado ao novo enquanto a página estiver publicada. Depois disso o link antigo deixa de funcionar: atualize-o onde você divulgou." },
         { question: "Qual a diferença entre arquivar e excluir?", answer: "Arquivar tira a página do ar e guarda tudo: endereço, versões, resultados e contatos. Excluir tira a página da sua lista e o endereço deixa de funcionar; os dados ficam guardados por 30 dias e depois são apagados." },
+        { question: "Em que idioma meus visitantes veem a página?", answer: "No que você escolher na aba Página do editor, em Idioma da página. Ele muda os textos que o produto coloca (como o botão de copiar ou o aviso de cookies); o que você escreve não é traduzido." },
       ],
     },
     {
@@ -1883,6 +1961,57 @@ export const MAIL_COPY = {
     nothing: "Para continuar, não é preciso fazer nada.",
     cancel: "Se não quiser renovar, cancele antes dessa data. O plano continua valendo até o fim do período já pago.",
     action: "Ver o plano",
+  },
+} as const;
+
+/** "Meus dados" (/app/conta/dados): the account language, exports and privacy requests. */
+export const MY_DATA_COPY = {
+  title: "Meus dados e privacidade",
+  lead: "Baixe os dados disponíveis agora ou registre um pedido para análise dos demais stores. Os arquivos incluem dados pessoais: guarde-os em local seguro.",
+  requestFailed: "Não foi possível registrar o pedido. Tente novamente.",
+  locale: {
+    title: "Idioma da conta",
+    lead: "O idioma das telas da conta e dos e-mails que mandamos para você. Não muda o idioma das suas páginas: cada página tem o seu, na aba Página do editor.",
+    label: "Idioma",
+    submit: "Salvar idioma",
+    saved: "Idioma salvo.",
+    error: "Não foi possível salvar agora. Tente novamente.",
+  },
+  personal: {
+    title: "Exportação da pessoa",
+    lead: "Inclui cadastro, autenticação sem credenciais, participação em contas, convites relacionados, aceites e auditoria da sua pessoa.",
+    download: "Baixar meus dados em JSON",
+  },
+  workspaces: {
+    title: "Dados de contas que você administra",
+    lead: "Apenas proprietários podem exportar rascunhos, publicações, contatos, resultados agregados, convites, relatórios e cobrança da conta. O JSON traz o inventário da mídia; as imagens armazenadas podem ser baixadas individualmente.",
+    none: "Você não é proprietário de nenhuma conta.",
+    images: "Baixar imagens desta conta",
+    download: "Baixar JSON desta conta",
+    requestFull: "Solicitar pacote completo e conferência",
+  },
+  deletion: {
+    title: "Solicitar exclusão da conta pessoal",
+    lead: "O pedido não apaga dados imediatamente. Antes da conclusão, a equipe verifica assinaturas em curso, dados de outras pessoas em contas compartilhadas, publicações e retenções aplicáveis. Você verá o estado do pedido aqui.",
+    submit: "Registrar solicitação de exclusão",
+  },
+  requests: {
+    title: "Histórico de pedidos",
+    empty: "Nenhum pedido registrado.",
+    kinds: { account_deletion: "Exclusão da conta", data_access: "Acesso aos dados" },
+    status: { received: "Recebida", needs_action: "Aguardando providência", processing: "Em análise", completed: "Concluída", rejected: "Não atendida" },
+    reasons: {
+      active_subscription: "Há uma assinatura em curso. O cancelamento no provedor e a situação da cobrança precisam ser conferidos antes da exclusão.",
+      shared_workspace: "Há outras pessoas numa conta que você administra. A transferência ou o encerramento da conta compartilhada precisa ser definido.",
+      manual_review: "A equipe precisa conferir os stores e eventuais retenções aplicáveis.",
+      fulfilled: "Atendimento documentado.",
+      cannot_verify: "A identidade ou o escopo não pôde ser confirmado.",
+    },
+    reasonFallback: "Em análise.",
+  },
+  acceptances: {
+    title: "Histórico de aceites",
+    empty: "Nenhum aceite versionado registrado.",
   },
 } as const;
 

@@ -1,12 +1,15 @@
 import Link from "next/link";
-import { APP_COPY, AUTH_COPY } from "@/content/pt-BR";
+import { HELP_PATH } from "@/lib/locale";
+import { getCopy, getRequestLocale } from "@/modules/identity/locale";
 import { signOutAction } from "../actions";
 
 /**
  * Account links behind one button, so the header stays on a single row on phones. A `details`
  * element: it opens without JavaScript, and sign-out stays a POST (Server Action).
  */
-export function AccountMenu() {
+export async function AccountMenu() {
+  const { APP_COPY, AUTH_COPY } = await getCopy();
+  const locale = await getRequestLocale();
   return (
     <details className="relative flex-none">
       <summary className="ui-button ui-button-secondary cursor-pointer list-none [&::-webkit-details-marker]:hidden">
@@ -17,7 +20,7 @@ export function AccountMenu() {
       </summary>
       <div className="absolute right-0 z-40 mt-2 grid w-60 max-w-[calc(100vw-2rem)] gap-1 rounded-2xl border border-app-border bg-app-surface p-2 shadow-raised">
         <Link href="/app/conta/dados" className="flex min-h-11 items-center rounded-xl px-3 py-2 no-underline hover:bg-app-surface-soft">{APP_COPY.nav.myData}</Link>
-        <Link href="/ajuda" className="flex min-h-11 items-center rounded-xl px-3 py-2 no-underline hover:bg-app-surface-soft">{APP_COPY.nav.help}</Link>
+        <Link href={HELP_PATH[locale]} className="flex min-h-11 items-center rounded-xl px-3 py-2 no-underline hover:bg-app-surface-soft">{APP_COPY.nav.help}</Link>
         <form action={signOutAction} className="border-t border-app-border pt-1">
           <button type="submit" className="flex min-h-11 w-full cursor-pointer items-center rounded-xl border-0 bg-transparent px-3 py-2 text-left hover:bg-app-surface-soft">{AUTH_COPY.signOut}</button>
         </form>

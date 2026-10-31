@@ -1,4 +1,4 @@
-import { PIXELS_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { WorkspaceRole } from "@/modules/identity/permissions";
 import { can } from "@/modules/identity/permissions";
@@ -13,6 +13,7 @@ import { PixelsForm } from "./pixels-form";
  * command re-authorizes on the server and the database checks role, plan and format again.
  */
 export async function PixelsSection({ workspaceId, profileId, role, inPlan }: { workspaceId: string; profileId: string; role: WorkspaceRole; inPlan: boolean }) {
+  const { PIXELS_COPY } = await getCopy();
   const copy = PIXELS_COPY;
   const frame = (children: React.ReactNode) => (
     <section className="surface-card grid grid-cols-[minmax(0,1fr)] content-start gap-4 p-5 sm:p-8" aria-labelledby="pixels-title">

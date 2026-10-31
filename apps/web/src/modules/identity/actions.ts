@@ -2,8 +2,10 @@
 
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { AUTH_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
+import { SIGN_UP_COPY } from "@/content/sign-up";
 import { appUrl } from "@/lib/app-url";
+import { DEFAULT_LOCALE, isLocale } from "@/lib/locale";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { recordAuthEvent } from "@/modules/audit/record";
@@ -29,16 +31,21 @@ const CONFIRM_URL = appUrl("/auth/confirm?next=/app");
 const RECOVERY_URL = appUrl("/auth/confirm?next=/redefinir-senha");
 
 export async function signUpAction(_previous: FormState, formData: FormData): Promise<FormState<"name" | "email" | "password">> {
-  const validation = validateSignUp(formData);
+  // The form's language answers the person and becomes the account's (ADR 0022). Anything not in
+  // LOCALES is the default; ensure_personal_workspace checks the metadata again before storing it.
+  const formLocale = stringField(formData, "locale");
+  const locale = isLocale(formLocale) ? formLocale : DEFAULT_LOCALE;
+  const copy = SIGN_UP_COPY[locale];
+  const validation = validateSignUp(formData, copy.validation);
   const values = { name: stringField(formData, "name"), email: stringField(formData, "email") };
-  if (!validation.ok) return { status: "error", message: AUTH_COPY.validation.summary, fieldErrors: validation.errors, values };
+  if (!validation.ok) return { status: "error", message: copy.validation.summary, fieldErrors: validation.errors, values };
 
   const { name, email, password } = validation.value;
   const supabase = await getSupabase();
   const { error } = await withMinimumDuration(
     // From an invitation, the confirmation e-mail takes the person back to it on any device (the
     // template reads this address; ADR 0012, addendum). The cookie below covers the same device.
-    () => supabase.auth.signUp({ email, password, options: { emailRedirectTo: isInvitationPath(stringField(formData, "next")) ? appUrl(`/auth/confirm?next=${stringField(formData, "next")}`) : CONFIRM_URL, data: { display_name: name }, captchaToken: captchaToken(formData) } }),
+    () => supabase.auth.signUp({ email, password, options: { emailRedirectTo: isInvitationPath(stringField(formData, "next")) ? appUrl(`/auth/confirm?next=${stringField(formData, "next")}`) : CONFIRM_URL, data: { display_name: name, locale }, captchaToken: captchaToken(formData) } }),
     NEUTRAL_RESPONSE_MIN_MS,
   );
   const outcome = signUpOutcome(error);
@@ -52,17 +59,18 @@ export async function signUpAction(_previous: FormState, formData: FormData): Pr
   }
 
   switch (outcome) {
-    case "check-email": return { status: "success", message: AUTH_COPY.signUp.checkEmail };
-    case "weak-password": return { status: "error", message: AUTH_COPY.validation.summary, fieldErrors: { password: AUTH_COPY.validation.passwordLettersDigits }, values };
-    case "invalid-email": return { status: "error", message: AUTH_COPY.validation.summary, fieldErrors: { email: AUTH_COPY.validation.email }, values };
-    case "rate-limited": return { status: "error", message: AUTH_COPY.rateLimited, values };
-    case "captcha": return { status: "error", message: AUTH_COPY.captcha.failed, values };
-    case "unavailable": return { status: "error", message: AUTH_COPY.unavailable, values };
+    case "check-email": return { status: "success", message: copy.signUp.checkEmail };
+    case "weak-password": return { status: "error", message: copy.validation.summary, fieldErrors: { password: copy.validation.passwordLettersDigits }, values };
+    case "invalid-email": return { status: "error", message: copy.validation.summary, fieldErrors: { email: copy.validation.email }, values };
+    case "rate-limited": return { status: "error", message: copy.rateLimited, values };
+    case "captcha": return { status: "error", message: copy.captcha.failed, values };
+    case "unavailable": return { status: "error", message: copy.unavailable, values };
   }
 }
 
 export async function signInAction(_previous: FormState, formData: FormData): Promise<FormState<"email" | "password">> {
-  const validation = validateSignIn(formData);
+  const { AUTH_COPY } = await getCopy();
+  const validation = validateSignIn(formData, AUTH_COPY.validation);
   const values = { email: stringField(formData, "email") };
   if (!validation.ok) return { status: "error", message: AUTH_COPY.validation.summary, fieldErrors: validation.errors, values };
 
@@ -88,7 +96,8 @@ export async function signInAction(_previous: FormState, formData: FormData): Pr
 }
 
 export async function resendConfirmationAction(_previous: FormState, formData: FormData): Promise<FormState<"email">> {
-  const validation = validateEmailOnly(formData);
+  const { AUTH_COPY } = await getCopy();
+  const validation = validateEmailOnly(formData, AUTH_COPY.validation);
   const values = { email: stringField(formData, "email") };
   if (!validation.ok) return { status: "error", message: AUTH_COPY.validation.summary, fieldErrors: validation.errors, values };
 
@@ -106,7 +115,8 @@ export async function resendConfirmationAction(_previous: FormState, formData: F
 }
 
 export async function requestRecoveryAction(_previous: FormState, formData: FormData): Promise<FormState<"email">> {
-  const validation = validateEmailOnly(formData);
+  const { AUTH_COPY } = await getCopy();
+  const validation = validateEmailOnly(formData, AUTH_COPY.validation);
   const values = { email: stringField(formData, "email") };
   if (!validation.ok) return { status: "error", message: AUTH_COPY.validation.summary, fieldErrors: validation.errors, values };
 
@@ -121,10 +131,11 @@ export async function requestRecoveryAction(_previous: FormState, formData: Form
 }
 
 export async function updatePasswordAction(_previous: FormState, formData: FormData): Promise<FormState<"password" | "confirmation">> {
+  const { AUTH_COPY } = await getCopy();
   const userId = await getCurrentUserId();
   if (!userId) return { status: "error", message: AUTH_COPY.resetPassword.sessionExpired, code: "session-expired" };
 
-  const validation = validateNewPassword(formData);
+  const validation = validateNewPassword(formData, AUTH_COPY.validation);
   if (!validation.ok) return { status: "error", message: AUTH_COPY.validation.summary, fieldErrors: validation.errors };
 
   const supabase = await getSupabase();

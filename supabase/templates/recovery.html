@@ -1,5 +1,13 @@
-<!-- Password recovery template. Uses the token_hash flow handled by /auth/confirm. -->
+<!-- Password recovery template. Uses the token_hash flow handled by /auth/confirm. In the
+     account's language (user metadata `locale`, ADR 0022), Portuguese otherwise. -->
+{{ if eq .Data.locale "es-ES" }}
+<h2>Restablece tu contraseña</h2>
+<p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta de Linkfav.</p>
+<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=recovery&amp;next=/redefinir-senha">Crear una contraseña nueva</a></p>
+<p>El enlace caduca en 1 hora y solo se puede usar una vez. Si no has hecho esta solicitud, ignora este mensaje; tu contraseña sigue siendo la misma.</p>
+{{ else }}
 <h2>Redefina sua senha</h2>
 <p>Recebemos um pedido para redefinir a senha da sua conta no Linkfav.</p>
 <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=recovery&amp;next=/redefinir-senha">Criar uma nova senha</a></p>
 <p>O link expira em 1 hora e só pode ser usado uma vez. Se você não fez este pedido, ignore esta mensagem; sua senha continua a mesma.</p>
+{{ end }}

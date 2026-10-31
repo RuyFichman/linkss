@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BILLING_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { PlanHeading, PlanScreenView } from "@/modules/billing/components/plan-screen";
 import { resolveBillingMode } from "@/modules/billing/mode";
 import { planScreen } from "@/modules/billing/plan-screen";
@@ -12,7 +12,10 @@ import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { resolveAccount } from "@/modules/identity/session";
 import { Notice } from "@/ui";
 
-export const metadata: Metadata = { title: BILLING_COPY.title };
+export async function generateMetadata(): Promise<Metadata> {
+  const { BILLING_COPY } = await getCopy();
+  return { title: BILLING_COPY.title };
+}
 
 /**
  * Plan and billing of one workspace (ADR 0014). Owners and admins see the plan and its state; only
@@ -22,9 +25,9 @@ export const metadata: Metadata = { title: BILLING_COPY.title };
  * migration, the screen shows the plan and the catalogue and offers nothing to buy. Usage (pages,
  * people, image space) is read with the viewer's session; owners and admins may read every count.
  */
-const NOTICES = { cancelada: BILLING_COPY.confirm.canceled, mantida: BILLING_COPY.actions.resumed, alterada: BILLING_COPY.confirm.changedNow, agendada: BILLING_COPY.confirm.changedLater, anual: BILLING_COPY.confirm.changedInterval } as const;
-
 export default async function PlanPage({ params, searchParams }: { params: Promise<{ workspaceId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { BILLING_COPY } = await getCopy();
+  const NOTICES = { cancelada: BILLING_COPY.confirm.canceled, mantida: BILLING_COPY.actions.resumed, alterada: BILLING_COPY.confirm.changedNow, agendada: BILLING_COPY.confirm.changedLater, anual: BILLING_COPY.confirm.changedInterval } as const;
   const { workspaceId } = await params;
   const asked = (await searchParams).aviso;
   // Only a known word becomes a sentence; the address decides nothing else.
@@ -34,7 +37,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   if (!access) {
     return (
       <div className="grid gap-6">
-        <PlanHeading />
+        <PlanHeading copy={BILLING_COPY} />
         <p className="m-0 text-app-muted">{copy.forbidden}</p>
       </div>
     );
@@ -50,14 +53,14 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   } catch {
     return (
       <div className="grid gap-6">
-        <PlanHeading />
+        <PlanHeading copy={BILLING_COPY} />
         <Notice tone="danger">{copy.loadError}</Notice>
       </div>
     );
   }
   const account = await resolveAccount();
   const suspended = account.status === "ready" && account.workspaces.find((item) => item.workspaceId === workspaceId)?.status === "suspended";
-  const screen = planScreen({ billing, mode, isOwner, suspended, now: new Date(), usage: await usage });
+  const screen = planScreen({ billing, mode, isOwner, suspended, now: new Date(), usage: await usage }, BILLING_COPY);
 
-  return <PlanScreenView workspaceId={workspaceId} screen={screen} invoices={billing.invoices} mode={mode} suspended={suspended} customDomains={domainsSignerFromEnv() !== null} notice={notice} />;
+  return <PlanScreenView copy={BILLING_COPY} workspaceId={workspaceId} screen={screen} invoices={billing.invoices} mode={mode} suspended={suspended} customDomains={domainsSignerFromEnv() !== null} notice={notice} />;
 }

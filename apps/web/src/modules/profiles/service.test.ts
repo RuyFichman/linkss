@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import * as SPANISH from "@/content/es-ES";
 import { planEntitlementsFromProduct } from "@/modules/entitlements";
 import type { IdentityPort } from "@/modules/identity/guard";
 import type { WorkspaceRole } from "@/modules/identity/permissions";
@@ -34,6 +35,8 @@ function fakeRepository(visibleWorkspaces: string[], live = 0, plan: "free" | "a
     unarchive: vi.fn(async () => ({ ok: true as const, value: null })),
     duplicate: vi.fn(async () => ({ ok: true as const, value: "dddddddd-dddd-4ddd-8ddd-dddddddddddd" })),
     checkSlug: vi.fn(async (slug: string) => ({ ok: true as const, value: { normalized: slug, status: "available" } })),
+    locale: vi.fn(async () => "pt-BR" as const),
+    setLocale: vi.fn(async () => ({ ok: true as const, value: null })),
   };
   return repository;
 }
@@ -122,6 +125,33 @@ describe("profile commands: server-side authorization", () => {
     expect(repository.checkSlug).not.toHaveBeenCalled();
     repository.checkSlug = vi.fn(async (slug: string) => ({ ok: true as const, value: { normalized: slug, status: "held" } }));
     expect(await service.checkSlug("Café Antigo", WS_A)).toMatchObject({ status: "held", valid: false, normalized: "cafe-antigo" });
+  });
+
+  it("sets the page language for whoever edits the page, and only to a supported language (ADR 0022)", async () => {
+    const repository = fakeRepository([WS_A]);
+    const editor = createProfileService(identity("u1", { [WS_A]: "editor" }), repository);
+    expect(await editor.setLocale(PAGE_A, "es-ES")).toEqual({ ok: true, value: "pagina-a" });
+    expect(repository.setLocale).toHaveBeenCalledWith(PAGE_A, "es-ES");
+    for (const invalid of ["es", "en-US", "", null, ["es-ES"]]) {
+      expect(await editor.setLocale(PAGE_A, invalid)).toMatchObject({ ok: false, error: "validation" });
+    }
+    expect(repository.setLocale).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses the page language of another tenant, of an archived page and of an anonymous caller", async () => {
+    const repository = fakeRepository([WS_A]);
+    const owner = createProfileService(identity("u1", { [WS_A]: "owner" }), repository);
+    expect(await owner.setLocale(PAGE_B, "es-ES")).toMatchObject({ ok: false, error: "not_found" });
+    expect(await createProfileService(identity(null, {}), repository).setLocale(PAGE_A, "es-ES")).toMatchObject({ ok: false, error: "unauthenticated" });
+    repository.findById = vi.fn(async () => ({ ...page(PAGE_A, WS_A, "pagina-a"), status: "archived" as const }));
+    expect(await owner.setLocale(PAGE_A, "es-ES")).toMatchObject({ ok: false, error: "archived" });
+    expect(repository.setLocale).not.toHaveBeenCalled();
+  });
+
+  it("answers in the language of the person acting", async () => {
+    const service = createProfileService(identity("u1", { [WS_A]: "owner" }), fakeRepository([WS_A]), SPANISH.APP_COPY, SPANISH.AUTH_COPY, SPANISH.SLUG_COPY);
+    const result = await service.create(WS_A, { title: " ", bio: "", slug: "admin" });
+    expect(result).toMatchObject({ ok: false, error: "validation", fieldErrors: { title: SPANISH.APP_COPY.profileForm.titleError, slug: SPANISH.SLUG_COPY.reserved } });
   });
 });
 

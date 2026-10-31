@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { APP_COPY } from "@/content/pt-BR";
+import { APP_COPY as APP_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 
 /** Sections of one workspace. Navigation only: every page re-checks membership on the server. */
 export function WorkspaceNav({ workspaceId, showPlan = false }: { workspaceId: string; showPlan?: boolean }) {
+  const APP_COPY = useCopy(APP_COPY_BY_LOCALE);
   const pathname = usePathname();
   const base = `/app/w/${workspaceId}`;
   const items = [

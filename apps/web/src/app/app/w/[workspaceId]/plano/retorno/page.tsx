@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BILLING_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { BillingRefresher } from "@/modules/billing/components/billing-refresher";
 import { resolveBillingMode } from "@/modules/billing/mode";
 import { fetchWorkspaceBilling } from "@/modules/billing/server";
@@ -8,7 +8,10 @@ import { billingViewState } from "@/modules/billing/subscription";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { Notice } from "@/ui";
 
-export const metadata: Metadata = { title: BILLING_COPY.return.title, referrer: "no-referrer" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { BILLING_COPY } = await getCopy();
+  return { title: BILLING_COPY.return.title, referrer: "no-referrer" };
+}
 export const dynamic = "force-dynamic";
 
 /**
@@ -19,6 +22,7 @@ export const dynamic = "force-dynamic";
  * again by itself; it never says a payment went through unless the plan is already in force.
  */
 export default async function CheckoutReturnPage({ params, searchParams }: { params: Promise<{ workspaceId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { BILLING_COPY } = await getCopy();
   const { workspaceId } = await params;
   const query = await searchParams;
   const copy = BILLING_COPY;

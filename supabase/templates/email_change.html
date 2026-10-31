@@ -1,5 +1,13 @@
-<!-- Email change template. Uses the token_hash flow handled by /auth/confirm. -->
+<!-- Email change template. Uses the token_hash flow handled by /auth/confirm. In the account's
+     language (user metadata `locale`, ADR 0022), Portuguese otherwise. -->
+{{ if eq .Data.locale "es-ES" }}
+<h2>Confirma el cambio de correo</h2>
+<p>Hemos recibido una solicitud para cambiar el correo de tu cuenta de Linkfav a {{ .NewEmail }}.</p>
+<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email_change&amp;next=/app">Confirmar el cambio de correo</a></p>
+<p>El enlace caduca en 1 hora. Si no has hecho esta solicitud, ignora este mensaje y cambia tu contraseña.</p>
+{{ else }}
 <h2>Confirme a troca de e-mail</h2>
 <p>Recebemos um pedido para trocar o e-mail da sua conta no Linkfav para {{ .NewEmail }}.</p>
 <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email_change&amp;next=/app">Confirmar troca de e-mail</a></p>
 <p>O link expira em 1 hora. Se você não fez este pedido, ignore esta mensagem e altere sua senha.</p>
+{{ end }}

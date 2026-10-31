@@ -1,6 +1,7 @@
 "use client";
 
-import { BLOCKS_COPY, MEDIA_COPY } from "@/content/pt-BR";
+import { BLOCKS_COPY as BLOCKS_COPY_BY_LOCALE, MEDIA_COPY as MEDIA_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import {
   codePointLength, effectivePixKeyType, EMBED_PROVIDERS, FORM_FIELDS, parseEmbedInput, orderFormFields, PIX_KEY_TYPES, SOCIAL_NETWORK_IDS, SOCIAL_NETWORKS, TEXT_MAX_LENGTH, WHATSAPP_MESSAGE_MAX_LENGTH,
   type BlockField, type BlockFieldErrors, type BlockInput, type BlockNotices, type FormField, type PixKeyType, type SocialNetwork,
@@ -39,6 +40,8 @@ function CheckboxRow({ id, label, checked, describedBy, onChange }: { id: string
 
 /** Form fields of one block. The first field gets `${blockId}-first` so focus can move to it. */
 export function BlockFields({ blockId, profileId, input, errors, notices, showError, onEdit, onEditSocial, onSetInput, onBlur, onUploadBusy, onImageUploaded }: BlockFieldsProps) {
+  const BLOCKS_COPY = useCopy(BLOCKS_COPY_BY_LOCALE);
+  const MEDIA_COPY = useCopy(MEDIA_COPY_BY_LOCALE);
   const fieldId = (field: string) => `${blockId}-${field}`;
   const error = (field: BlockField) => (showError(field) ? errors[field] : undefined);
   const hint = (field: BlockField, fallback?: string) => notices[field] ?? fallback;

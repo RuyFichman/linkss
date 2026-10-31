@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { REPORTS_COPY } from "@/content/pt-BR";
+import { REPORTS_COPY as REPORTS_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { formatDateTime } from "@/lib/format-date";
 import { Button, FormStatus, SelectField, TextField } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
@@ -19,6 +20,7 @@ const IDLE: ReportLinkFormState = { status: "idle" };
  * address and its "created" message leave the screen with it.
  */
 export function ReportLinkForm({ action, periods, activeLinkIds }: { action: CreateAction; periods: readonly ReportPeriod[]; activeLinkIds: readonly string[] }) {
+  const REPORTS_COPY = useCopy(REPORTS_COPY_BY_LOCALE);
   const [state, formAction, pending] = useActionState(action, IDLE);
   const formRef = useRef<HTMLFormElement>(null);
   const linkRef = useRef<HTMLInputElement>(null);

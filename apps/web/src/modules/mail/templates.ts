@@ -1,4 +1,6 @@
-import { MAIL_COPY, MODERATION_COPY, BILLING_COPY } from "@/content/pt-BR";
+import { copyFor } from "@/content/copy";
+import { MODERATION_COPY } from "@/content/pt-BR";
+import { LOCALE_CODE, type Locale } from "@/lib/locale";
 import { PRODUCT } from "@/lib/product";
 import { formatMoney, isPlanId } from "@/modules/billing/catalog";
 import { formatBillingDate } from "@/modules/billing/presentation";
@@ -8,7 +10,7 @@ import { formatBillingDate } from "@/modules/billing/presentation";
  * `null` when the message does not have the shape its kind needs (it is then marked failed, never
  * sent half-filled). Every value that came from a person (a page title, an answer of moderation)
  * is escaped in the HTML. The new-contact notice never carries what the visitor typed: the outbox
- * does not have it.
+ * does not have it. Written in the recipient's language (user_accounts.locale, ADR 0022).
  */
 export const MAIL_KINDS = ["new_lead", "page_suspended", "appeal_decided", "payment_failed", "renewal_upcoming"] as const;
 export type MailKind = (typeof MAIL_KINDS)[number];
@@ -23,6 +25,8 @@ export interface MailContext {
   replyReachesSomeone: boolean;
   /** Billing in sandbox: payment notices are about test charges and say so. */
   billingIsTest: boolean;
+  /** The recipient's language. */
+  locale: Locale;
 }
 
 export interface RenderedMail {
@@ -34,6 +38,7 @@ export interface RenderedMail {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const SLUG = /^[a-z0-9][a-z0-9-]{1,39}$/;
+// The category keys are the same in every language.
 const CATEGORIES = Object.keys(MODERATION_COPY.categories) as (keyof typeof MODERATION_COPY.categories)[];
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -64,7 +69,7 @@ interface Body {
 }
 
 function compose(body: Body, kind: MailKind, context: MailContext): RenderedMail {
-  const copy = MAIL_COPY;
+  const copy = copyFor(context.locale).MAIL_COPY;
   const actionUrl = context.appUrl(body.action.path);
   const footer = [context.replyReachesSomeone ? copy.footerReply : copy.footerNoReply, copy.footerWhy(PRODUCT.name)];
   const greeting = copy.greeting(context.recipientName);
@@ -78,7 +83,7 @@ function compose(body: Body, kind: MailKind, context: MailContext): RenderedMail
   ].join("\n");
   const p = (content: string) => `<p style="margin:0 0 16px;line-height:1.5">${content}</p>`;
   const html = [
-    `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(body.subject)}</title></head>`,
+    `<!doctype html><html lang="${LOCALE_CODE[context.locale]}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(body.subject)}</title></head>`,
     `<body style="margin:0;padding:24px 16px;background:#f5f5f8;color:#1d1d28;font-family:Arial,Helvetica,sans-serif;font-size:16px">`,
     `<div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;padding:24px">`,
     `<p style="margin:0 0 16px;font-weight:bold">${escapeHtml(PRODUCT.name)}</p>`,
@@ -97,7 +102,7 @@ function compose(body: Body, kind: MailKind, context: MailContext): RenderedMail
 export function renderMail(kind: string, workspaceId: string | null, payload: unknown, context: MailContext): RenderedMail | null {
   const data = record(payload);
   if (!data || !workspaceId || !UUID.test(workspaceId)) return null;
-  const copy = MAIL_COPY;
+  const { MAIL_COPY: copy, MODERATION_COPY: moderation, BILLING_COPY: billing } = copyFor(context.locale);
   const base = `/app/w/${workspaceId}`;
 
   switch (kind) {
@@ -117,7 +122,7 @@ export function renderMail(kind: string, workspaceId: string | null, payload: un
       if (!name || !category || typeof data.profileId !== "string" || !UUID.test(data.profileId)) return null;
       return compose({
         subject: copy.pageSuspended.subject(name),
-        paragraphs: [copy.pageSuspended.body(name, MODERATION_COPY.categories[category]), copy.pageSuspended.kept, copy.pageSuspended.appeal],
+        paragraphs: [copy.pageSuspended.body(name, moderation.categories[category]), copy.pageSuspended.kept, copy.pageSuspended.appeal],
         action: { label: copy.pageSuspended.action, path: `${base}/paginas/${data.profileId}/moderacao` },
       }, kind, context);
     }
@@ -135,7 +140,7 @@ export function renderMail(kind: string, workspaceId: string | null, payload: un
     case "payment_failed": {
       const until = date(data.graceUntil);
       if (!isPlanId(data.planId) || !until) return null;
-      const plan = BILLING_COPY.planNames[data.planId];
+      const plan = billing.planNames[data.planId];
       return compose({
         subject: `${context.billingIsTest ? copy.testPrefix : ""}${copy.paymentFailed.subject(plan)}`,
         paragraphs: [copy.paymentFailed.body(plan, formatBillingDate(until)), copy.paymentFailed.fix, ...(context.billingIsTest ? [copy.testNote] : [])],
@@ -146,7 +151,7 @@ export function renderMail(kind: string, workspaceId: string | null, payload: un
       const renewsAt = date(data.renewsAt);
       const amount = data.amountCents;
       if (!isPlanId(data.planId) || !renewsAt || typeof amount !== "number" || !Number.isInteger(amount) || amount <= 0) return null;
-      const plan = BILLING_COPY.planNames[data.planId];
+      const plan = billing.planNames[data.planId];
       const when = formatBillingDate(renewsAt);
       return compose({
         subject: `${context.billingIsTest ? copy.testPrefix : ""}${copy.renewalUpcoming.subject(plan, when)}`,

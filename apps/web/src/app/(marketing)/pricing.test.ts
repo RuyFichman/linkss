@@ -86,3 +86,34 @@ describe("home comparison table", () => {
     expect(count(comparison(false), 'scope="row"')).toBe(25);
   });
 });
+
+describe("Spanish home plans (ADR 0022)", () => {
+  const html = renderToStaticMarkup(createElement(Pricing, { customDomains: true, locale: "es-ES" }));
+  const table = renderToStaticMarkup(createElement(PlanComparison, { customDomains: true, locale: "es-ES" }));
+
+  it("shows the euro prices and what yearly saves, with no free-months label", () => {
+    for (const amount of ["4 €", "39 €", "10 €", "99 €"]) expect(html).toContain(amount);
+    expect(text(html)).toContain("0 € al mes");
+    expect(text(html)).toContain("4 € al mes");
+    expect(text(html)).toContain("Ahorra 9 € al año con el plan anual");
+    expect(text(html)).toContain("Ahorra 21 € al año con el plan anual");
+    expect(html).not.toContain("meses gratis");
+    expect(html).not.toContain("R$");
+  });
+
+  it("sends every plan to the Spanish sign-up form", () => {
+    expect(count(html, 'href="/cadastro?idioma=es"')).toBe(3);
+    expect(html).not.toContain('href="/cadastro"');
+    expect(count(html, "Crear cuenta y suscribirme")).toBe(2);
+  });
+
+  it("words the cards and the table in Spanish", () => {
+    expect(text(html)).toContain("Todo lo del plan Gratuito");
+    expect(text(html)).toContain("Sin el sello de Linkfav");
+    expect(table).toMatch(/<th scope="col">Función<\/th><th scope="col">Gratuito<\/th><th scope="col">Pro<\/th><th scope="col">Agencia<\/th>/);
+    expect(count(table, 'scope="row"')).toBe(26);
+    expect(count(table, ">No<")).toBe(7);
+    expect(table).not.toContain(">Sim<");
+    expect(table).not.toContain(">Não<");
+  });
+});

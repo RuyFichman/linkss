@@ -211,6 +211,21 @@ Código de 14/10/2026 (ADR 0021), verificado localmente contra um substituto da 
 - [ ] P1 Primeiro envio real: conferir entrega, caixa de spam e aparência no Gmail e no Outlook, no celular.
 - [ ] P2 Mandar o próprio convite por e-mail (a UX-055, confirmada, diz que não; rever se o piloto pedir).
 
+## Espanha: home em espanhol (30/10/2026)
+
+As primeiras campanhas serão na Espanha (decisão do founder em 30/10/2026; ADR 0022). Preços definidos pelo founder: Pro 4 €/mês ou 39 €/ano; Agência 10 €/mês ou 99 €/ano.
+
+- [x] P0 Home em espanhol em `/es`, com os preços em euro, `hreflang` e link entre as duas versões no rodapé. Verificado só localmente.
+- [x] P0 Cadastro em espanhol (`/cadastro?idioma=es`) e idioma gravado na conta (`user_accounts.locale`, migração `202610300001`).
+- [ ] P0 **Founder:** aplicar a migração `202610300001` depois de um backup conferido (`docs/ENVIRONMENTS.md`, "Passos de deploy da home em espanhol").
+- [ ] P0 **Bloqueia campanhas:** cobrança em euro. Hoje a home mostra euros e o checkout cobra reais. Decidir como uma conta ganha o mercado, como `plan_prices` guarda duas moedas, se a conta Stripe brasileira vende em euro e o IVA de serviço digital na UE.
+- [ ] P0 **Bloqueia campanhas:** aviso de privacidade e termos para a UE (RGPD), em espanhol, com revisão jurídica.
+- [x] P1 E-mails de confirmação, recuperação e troca de e-mail em espanhol (modelos do Supabase com `.Data.locale`) e avisos da Resend no idioma de quem recebe (migração `202610300003`). Verificado só localmente; os e-mails não foram abertos no Mailpit.
+- [x] P1 Área da conta, entrar, recuperar acesso e ajuda (`/es/ajuda`) em espanhol, lendo `user_accounts.locale`, `?idioma=` ou o cookie `lnk_locale` (adendo da ADR 0022). Verificado só localmente.
+- [x] P2 Trocar o idioma da conta em *Meus dados*; idioma por página pública (`profiles.locale`, migração `202610300002`, aba Página do editor). Verificado só localmente.
+- [ ] P0 **Founder:** aplicar as migrações `202610300002` e `202610300003` e colar os modelos de e-mail bilíngues no Supabase (`docs/ENVIRONMENTS.md`, "Passos de deploy do app e dos e-mails em espanhol").
+- [ ] P2 Traduzir o que ficou em português: administração, textos legais, `/denunciar`, `/aceite`, `/cookies`, landings da lista de espera, erros de `/[slug]` e `/r`, CSVs, alguns modelos do editor e a tela de exportar imagens.
+
 ## Sprint 10 — piloto privado (preparação)
 
 A preparação em código começou em 13/10/2026 (`docs/SPRINT_9_REPORT.md`, ADR 0020); as migrações foram aplicadas em produção em 14/10. **A sprint não começou:** ninguém foi convidado. Primeiro backup conferido e SMTP já foram feitos; faltam os demais bloqueios listados no fechamento do piloto acima, incluindo revisão jurídica e decisão sobre o modo da cobrança.

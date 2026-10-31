@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { PUBLIC_PAGE_COPY } from "@/content/public-page";
+import { PUBLIC_PAGE_COPY as PUBLIC_PAGE_COPY_BY_LOCALE } from "@/content/public-page-localized";
+import { useCopy } from "@/ui/locale-context";
 
 /**
  * Copies the Pix key. An enhancement only: the key next to it is plain, selectable text, so the
  * block is still usable when scripts are blocked or the clipboard is not available.
  */
 export function PixCopyButton({ value, className, disabled = false }: { value: string; className: string; disabled?: boolean }) {
+  const PUBLIC_PAGE_COPY = useCopy(PUBLIC_PAGE_COPY_BY_LOCALE);
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
 
   async function copy() {

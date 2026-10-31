@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
-import { APP_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { CreateAgencyForm } from "@/modules/identity/components/create-agency-form";
 
-export const metadata: Metadata = { title: "Nova conta da agência" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.newAgency };
+}
 
-export default function NewAgencyWorkspacePage() {
+export default async function NewAgencyWorkspacePage() {
+  const { APP_COPY } = await getCopy();
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-3xl font-bold">{APP_COPY.workspace.createAgencyTitle}</h1>

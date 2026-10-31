@@ -1,7 +1,8 @@
-import { COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { Skeleton } from "@/ui";
 
-export default function AppLoading() {
+export default async function AppLoading() {
+  const { COPY } = await getCopy();
   return (
     <div className="grid gap-4" role="status" aria-live="polite">
       <span className="sr-only">{COPY.loading}</span>
