@@ -1,4 +1,5 @@
-import { BILLING_COPY } from "@/content/pt-BR";
+import type { Copy } from "@/content/copy";
+import { BILLING_COPY as PORTUGUESE_BILLING_COPY } from "@/content/pt-BR";
 import type { PlanId } from "@/lib/product";
 import { planEntitlementsFromProduct } from "@/modules/entitlements";
 import { seatUsage } from "@/modules/identity/invitations";
@@ -102,15 +103,15 @@ export interface PlanScreenInput {
 
 const SENTENCE_TONE: Partial<Record<BillingViewState["kind"], "warning" | "danger">> = { incomplete: "warning", past_due: "danger", grace_expired: "danger" };
 
-function summaryFor(state: BillingViewState, amountCents: number | null): PlanSummary {
+function summaryFor(state: BillingViewState, amountCents: number | null, BILLING_COPY: Copy["BILLING_COPY"] = PORTUGUESE_BILLING_COPY): PlanSummary {
   if (state.kind === "active") {
     const facts: PlanFact[] = [];
-    if (amountCents !== null) facts.push({ key: "amount", label: BILLING_COPY.current.amount, value: priceLabel(amountCents, state.interval) });
+    if (amountCents !== null) facts.push({ key: "amount", label: BILLING_COPY.current.amount, value: priceLabel(amountCents, state.interval, BILLING_COPY) });
     const date = formatBillingDate(state.renewsAt);
     if (date && state.renewsAt) facts.push({ key: "nextCharge", label: BILLING_COPY.current.nextCharge, value: date, dateTime: state.renewsAt.toISOString() });
     if (facts.length > 0) return { kind: "facts", facts };
   }
-  return { kind: "sentence", text: billingStateSentence(state, amountCents), tone: SENTENCE_TONE[state.kind] ?? "neutral" };
+  return { kind: "sentence", text: billingStateSentence(state, amountCents, BILLING_COPY), tone: SENTENCE_TONE[state.kind] ?? "neutral" };
 }
 
 const BYTES_PER_MB = 1048576;
@@ -131,7 +132,7 @@ function usageRows(usage: WorkspaceUsage, planId: PlanId): PlanUsageRow[] {
   ];
 }
 
-export function planScreen({ billing, mode, isOwner, suspended, now, usage }: PlanScreenInput): PlanScreen {
+export function planScreen({ billing, mode, isOwner, suspended, now, usage }: PlanScreenInput, BILLING_COPY: Copy["BILLING_COPY"] = PORTUGUESE_BILLING_COPY): PlanScreen {
   const selling = mode !== "off" && billing.deployed;
   const state = billingViewState(billing.record, billing.planId, now);
   const actions = availableBillingActions(state);
@@ -163,7 +164,7 @@ export function planScreen({ billing, mode, isOwner, suspended, now, usage }: Pl
     state,
     selling,
     currentPlan,
-    summary: summaryFor(state, billing.amountCents),
+    summary: summaryFor(state, billing.amountCents, BILLING_COPY),
     commands: isOwner
       ? {
         fixPayment: selling && actions.fixPayment,

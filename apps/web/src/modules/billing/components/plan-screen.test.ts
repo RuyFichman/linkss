@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { BILLING_COPY } from "@/content/pt-BR";
 import type { PlanId } from "@/lib/product";
 import type { WorkspaceUsage } from "../downgrade-impact";
 import type { BillingMode } from "../mode";
@@ -28,7 +29,7 @@ function render(record: SubscriptionRecord | null, planId: PlanId, options: { mo
   const { mode = "sandbox", isOwner = true, suspended = false, deployed = true, invoices = [], notice = null } = options;
   const billing: WorkspaceBilling = { deployed, planId, record, amountCents: record ? (record.planId === "agency" ? 5790 : 1490) : null, invoices };
   const screen = planScreen({ billing, mode, isOwner, suspended, now: T0, usage: options.usage ?? null });
-  const html = renderToStaticMarkup(createElement(PlanScreenView, { workspaceId: WORKSPACE, screen, invoices: isOwner ? invoices : [], mode, suspended, customDomains: true, notice }));
+  const html = renderToStaticMarkup(createElement(PlanScreenView, { copy: BILLING_COPY, workspaceId: WORKSPACE, screen, invoices: isOwner ? invoices : [], mode, suspended, customDomains: true, notice }));
   return { html, text: html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ") };
 }
 
@@ -265,7 +266,7 @@ describe("plan screen: payment history", () => {
 
 describe("plan screen: heading", () => {
   it("is the same title in every state, with no lead under it", () => {
-    expect(renderToStaticMarkup(createElement(PlanHeading))).toBe('<header class="grid gap-2"><h1 class="text-3xl font-bold">Plano e cobrança</h1></header>');
+    expect(renderToStaticMarkup(createElement(PlanHeading, { copy: BILLING_COPY }))).toBe('<header class="grid gap-2"><h1 class="text-3xl font-bold">Plano e cobrança</h1></header>');
   });
 });
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { MEDIA_COPY } from "@/content/pt-BR";
+import { MEDIA_COPY as MEDIA_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { readPickedImage, renderCrop, type PickedImage } from "@/modules/media/client-prepare";
 import { sendUpload } from "@/modules/media/client-upload";
 import type { CropState } from "@/modules/media/crop";
@@ -37,6 +38,7 @@ interface CropSource {
  * machine is modules/media/upload-machine.ts; this component only renders it.
  */
 export function ImageUploader({ id, pickId, profileId, kind, hasImage, labels, onUploaded, onBusyChange }: ImageUploaderProps) {
+  const MEDIA_COPY = useCopy(MEDIA_COPY_BY_LOCALE);
   const input = useRef<HTMLInputElement>(null);
   const [controller] = useState(() => createUploadController<CropSource, Blob>({
     prepare: async (source) => {
@@ -144,7 +146,7 @@ export function ImageUploader({ id, pickId, profileId, kind, hasImage, labels, o
 
       {error ? (
         <div role="alert" className="grid gap-2 rounded-xl border border-app-danger/30 bg-app-danger/10 p-3">
-          <p className="m-0 font-bold text-app-danger">{uploadErrorMessage(error, kind)}</p>
+          <p className="m-0 font-bold text-app-danger">{uploadErrorMessage(error, kind, MEDIA_COPY)}</p>
           {snapshot.phase === "failed" ? <div><Button type="button" variant="secondary" onClick={() => void controller.retry()}>{MEDIA_COPY.retry}</Button></div> : null}
         </div>
       ) : null}

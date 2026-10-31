@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { BILLING_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { formatDateTime } from "@/lib/format-date";
 import { isMissingSchemaError } from "@/lib/supabase/missing-schema";
 import { getCurrentUserId, getSupabase } from "@/modules/identity/session";
@@ -38,6 +38,7 @@ function weekLabel(weekStart: string): string {
  * rate with nothing to divide by is shown as "sem dados", never as 0%.
  */
 export default async function ProductMetricsPage() {
+  const { BILLING_COPY } = await getCopy();
   if (!(await getCurrentUserId())) redirect("/entrar");
   const supabase = await getSupabase();
   const { data, error } = await supabase.rpc("get_product_metrics");

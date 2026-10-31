@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { preconnect } from "react-dom";
-import { PIX_KEY_TYPE_LABELS, PUBLIC_PAGE_COPY } from "@/content/public-page";
+import { PIX_KEY_TYPE_LABELS as PIX_LABELS_BY_LOCALE, PUBLIC_PAGE_COPY as PUBLIC_PAGE_COPY_BY_LOCALE } from "@/content/public-page-localized";
+import { DEFAULT_LOCALE, LOCALE_CODE, pickCopy, type Locale } from "@/lib/locale";
 import { PRODUCT } from "@/lib/product";
 import { formatPixKey, SOCIAL_NETWORKS, whatsAppHref } from "@/modules/blocks";
 import { submitLeadAction } from "@/modules/leads/actions";
@@ -15,6 +16,7 @@ import { LeadForm, LeadFormPreview } from "./lead-form";
 import { PixCopyButton } from "./pix-copy-button";
 import { priorityImageId } from "./priority-image";
 import { SocialIcon, WhatsAppIcon } from "./social-icon";
+import { LocaleProvider } from "@/ui/locale-context";
 
 // Links are user content: no ranking credit, no window.opener, no referrer (ADR 0007/0008).
 const USER_LINK_REL = "ugc nofollow noopener noreferrer";
@@ -58,6 +60,9 @@ interface BlockContext {
   slug: string | null;
   /** The image most likely to be the largest element above the fold, if any. */
   priorityImageId: string | null;
+  /** The product's words on the page, in the page's language (ADR 0022). */
+  words: ReturnType<typeof pickCopy<typeof PUBLIC_PAGE_COPY_BY_LOCALE["pt-BR"]>>;
+  pixLabels: ReturnType<typeof pickCopy<typeof PIX_LABELS_BY_LOCALE["pt-BR"]>>;
 }
 
 /**
@@ -66,7 +71,7 @@ interface BlockContext {
  * stable hooks that the customer-analytics collector of the public route reads (ADR 0011).
  */
 function BlockView({ block, context }: { block: PublishedBlock; context: BlockContext }) {
-  const { interactive } = context;
+  const { interactive, words: PUBLIC_PAGE_COPY, pixLabels: PIX_KEY_TYPE_LABELS } = context;
   const data = { "data-block-id": block.id, "data-block-type": block.type };
   switch (block.type) {
     case "link":
@@ -160,16 +165,18 @@ export { PRIORITY_IMAGE_WINDOW, priorityImageId } from "./priority-image";
  * analytics/telemetry script cannot break navigation. `slug` is the published address (forms
  * post to it); the preview passes none.
  */
-export function PublicPageView({ document, showBadge, as: Root = "main", interactive = true, slug = null, homeHref = "/" }: { document: PublishedDocument; showBadge: boolean; as?: "main" | "div"; interactive?: boolean; slug?: string | null; /** Where the badge leads: absolute when the page answers on a custom hostname. */ homeHref?: string }) {
+export function PublicPageView({ document, showBadge, as: Root = "main", interactive = true, slug = null, homeHref = "/", locale = DEFAULT_LOCALE }: { document: PublishedDocument; showBadge: boolean; as?: "main" | "div"; interactive?: boolean; slug?: string | null; /** Where the badge leads: absolute when the page answers on a custom hostname. */ homeHref?: string; /** The page's language (profiles.locale), not the viewer's. */ locale?: Locale }) {
   const theme = resolveTheme(document.theme);
-  const context: BlockContext = { interactive, slug, priorityImageId: priorityImageId(document.blocks) };
+  const PUBLIC_PAGE_COPY = pickCopy(PUBLIC_PAGE_COPY_BY_LOCALE, locale);
+  const context: BlockContext = { interactive, slug, priorityImageId: priorityImageId(document.blocks), words: PUBLIC_PAGE_COPY, pixLabels: pickCopy(PIX_LABELS_BY_LOCALE, locale) };
 
   // One early connection to the media host when the page shows images. Nothing else is hinted.
   const origin = document.avatarPath || document.blocks.some((block) => block.type === "image") ? mediaOrigin() : null;
   if (origin) preconnect(origin);
 
   return (
-    <Root className="min-h-screen bg-[var(--page-bg)] px-4 py-10 text-[var(--page-text)] sm:py-14" style={themeStyle(theme)}>
+    <Root lang={LOCALE_CODE[locale]} className="min-h-screen bg-[var(--page-bg)] px-4 py-10 text-[var(--page-text)] sm:py-14" style={themeStyle(theme)}>
+      <LocaleProvider locale={locale}>
       <article className="mx-auto grid w-full max-w-md gap-6 text-center">
         <header className="grid justify-items-center gap-3">
           {document.avatarPath ? (
@@ -195,6 +202,7 @@ export function PublicPageView({ document, showBadge, as: Root = "main", interac
           </footer>
         ) : null}
       </article>
+      </LocaleProvider>
     </Root>
   );
 }

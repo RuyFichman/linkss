@@ -1,4 +1,5 @@
-import { APP_COPY, PUBLISHING_COPY } from "@/content/pt-BR";
+import type { Copy } from "@/content/copy";
+import { APP_COPY as PORTUGUESE_APP_COPY, PUBLISHING_COPY as PORTUGUESE_PUBLISHING_COPY } from "@/content/pt-BR";
 import { AuthorizationError, isUuid, requireUser, requireWorkspaceAccess, type IdentityPort } from "@/modules/identity/guard";
 
 export interface PublishTarget {
@@ -56,7 +57,7 @@ export function publishingErrorFromDatabase(error: { code?: string | null }): Pu
   }
 }
 
-function failure<T>(error: PublishingErrorKind): PublishingResult<T> {
+function failure<T>(error: PublishingErrorKind, APP_COPY: Copy["APP_COPY"] = PORTUGUESE_APP_COPY, PUBLISHING_COPY: Copy["PUBLISHING_COPY"] = PORTUGUESE_PUBLISHING_COPY): PublishingResult<T> {
   const message = error === "stale" ? PUBLISHING_COPY.errors.stale
     : error === "forbidden" ? PUBLISHING_COPY.errors.forbidden
     : error === "suspended" ? PUBLISHING_COPY.errors.suspended
@@ -65,10 +66,10 @@ function failure<T>(error: PublishingErrorKind): PublishingResult<T> {
   return { ok: false, error, message };
 }
 
-function authorizationFailure<T>(error: unknown): PublishingResult<T> {
+function authorizationFailure<T>(error: unknown, APP_COPY: Copy["APP_COPY"] = PORTUGUESE_APP_COPY): PublishingResult<T> {
   if (!(error instanceof AuthorizationError)) throw error;
   if (error.reason === "unauthenticated") return { ok: false, error: "unauthenticated", message: APP_COPY.errors.sessionExpired };
-  return failure(error.reason === "forbidden" ? "forbidden" : "not_found");
+  return failure(error.reason === "forbidden" ? "forbidden" : "not_found", APP_COPY);
 }
 
 /**
@@ -76,7 +77,7 @@ function authorizationFailure<T>(error: unknown): PublishingResult<T> {
  * `profile.publish`), then again inside the security definer RPCs. Results carry the slug so the
  * caller can invalidate the cached public page.
  */
-export function createPublishingService(identity: IdentityPort, repository: PublishingRepository) {
+export function createPublishingService(identity: IdentityPort, repository: PublishingRepository, APP_COPY: Copy["APP_COPY"] = PORTUGUESE_APP_COPY, PUBLISHING_COPY: Copy["PUBLISHING_COPY"] = PORTUGUESE_PUBLISHING_COPY) {
   async function authorize(profileId: unknown): Promise<PublishTarget> {
     await requireUser(identity);
     if (!isUuid(profileId)) throw new AuthorizationError("not_found");
@@ -92,13 +93,13 @@ export function createPublishingService(identity: IdentityPort, repository: Publ
       try {
         target = await authorize(profileId);
       } catch (error) {
-        return authorizationFailure(error);
+        return authorizationFailure(error, APP_COPY);
       }
       const revision = typeof expectedRevision === "string" && /^\d{1,15}$/.test(expectedRevision) ? Number(expectedRevision)
         : typeof expectedRevision === "number" && Number.isSafeInteger(expectedRevision) ? expectedRevision
         : null;
       const published = await repository.publish(target.id, revision);
-      if (!published.ok) return failure(published.error);
+      if (!published.ok) return failure(published.error, APP_COPY, PUBLISHING_COPY);
       return { ok: true, value: { slug: target.slug, version: published.value.version, created: published.value.created } };
     },
 
@@ -107,11 +108,11 @@ export function createPublishingService(identity: IdentityPort, repository: Publ
       try {
         target = await authorize(profileId);
       } catch (error) {
-        return authorizationFailure(error);
+        return authorizationFailure(error, APP_COPY);
       }
-      if (!isUuid(publicationId)) return failure("not_found");
+      if (!isUuid(publicationId)) return failure("not_found", APP_COPY, PUBLISHING_COPY);
       const restored = await repository.restore(target.id, publicationId);
-      return restored.ok ? { ok: true, value: { slug: target.slug, version: restored.value } } : failure(restored.error);
+      return restored.ok ? { ok: true, value: { slug: target.slug, version: restored.value } } : failure(restored.error, APP_COPY, PUBLISHING_COPY);
     },
 
     async unpublish(profileId: unknown): Promise<PublishingResult<{ slug: string }>> {
@@ -119,10 +120,10 @@ export function createPublishingService(identity: IdentityPort, repository: Publ
       try {
         target = await authorize(profileId);
       } catch (error) {
-        return authorizationFailure(error);
+        return authorizationFailure(error, APP_COPY);
       }
       const result = await repository.unpublish(target.id);
-      return result.ok ? { ok: true, value: { slug: target.slug } } : failure(result.error);
+      return result.ok ? { ok: true, value: { slug: target.slug } } : failure(result.error, APP_COPY, PUBLISHING_COPY);
     },
   };
 }

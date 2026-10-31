@@ -1,10 +1,10 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> { children: ReactNode; loading?: boolean; variant?: ButtonVariant; }
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> { children: ReactNode; loading?: boolean; loadingLabel?: string; variant?: ButtonVariant; }
 
-export function Button({ children, className = "", disabled, loading = false, variant = "primary", ...props }: ButtonProps) {
-  return <button className={`ui-button ui-button-${variant} ${className}`} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>{loading ? <span aria-hidden="true">●</span> : null}{loading ? "Aguarde…" : children}</button>;
+export function Button({ children, className = "", disabled, loading = false, loadingLabel, variant = "primary", ...props }: ButtonProps) {
+  return <button className={`ui-button ui-button-${variant} ${className}`} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>{loading ? <span aria-hidden="true">●</span> : null}{loading ? (loadingLabel ?? children) : children}</button>;
 }
 
 export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> { label: string; children: ReactNode; }

@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { headers } from "next/headers";
-import { REPORTS_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { appUrl } from "@/lib/app-url";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
@@ -21,7 +21,8 @@ async function logCommand(event: string, outcome: string): Promise<void> {
   logEvent(outcome === "ok" ? "info" : outcome === "unavailable" ? "error" : "warn", event, { correlationId, outcome });
 }
 
-function errorMessage(error: ReportLinkCommandError): string {
+async function errorMessage(error: ReportLinkCommandError): Promise<string> {
+  const { REPORTS_COPY } = await getCopy();
   return error === "too_many_active" ? REPORTS_COPY.form.limitReached(REPORT_LINKS_PER_PAGE) : REPORTS_COPY.errors[error];
 }
 
@@ -36,12 +37,13 @@ export interface ReportLinkFormState extends FormState<ReportLinkField> {
  * plan and the period again.
  */
 export async function createReportLinkAction(profileId: string, historyDays: number, _previous: ReportLinkFormState, formData: FormData): Promise<ReportLinkFormState> {
+  const { REPORTS_COPY } = await getCopy();
   const values = { period: stringField(formData, "period"), expires: stringField(formData, "expires"), label: stringField(formData, "label") };
   const result = await (await getReportLinksService()).create(profileId, values, Number.isInteger(historyDays) ? historyDays : 0);
   await logCommand("reports.create_link", result.ok ? "ok" : result.error);
   if (!result.ok) {
     return {
-      status: "error", message: errorMessage(result.error), values, code: result.error,
+      status: "error", message: await errorMessage(result.error), values, code: result.error,
       ...(result.field ? { fieldErrors: { [result.field]: REPORTS_COPY.fieldErrors[result.field] } } : {}),
     };
   }
@@ -50,9 +52,10 @@ export async function createReportLinkAction(profileId: string, historyDays: num
 }
 
 export async function revokeReportLinkAction(linkId: string): Promise<FormState> {
+  const { REPORTS_COPY } = await getCopy();
   const result = await (await getReportLinksService()).revoke(linkId);
   await logCommand("reports.revoke_link", result.ok ? "ok" : result.error);
-  if (!result.ok) return { status: "error", message: errorMessage(result.error), code: result.error };
+  if (!result.ok) return { status: "error", message: await errorMessage(result.error), code: result.error };
   refresh();
   return { status: "success", message: REPORTS_COPY.revoke.done };
 }

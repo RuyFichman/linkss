@@ -1,5 +1,7 @@
 import { preload } from "react-dom";
-import { PUBLIC_PAGE_COPY } from "@/content/public-page";
+import { PUBLIC_PAGE_COPY as PUBLIC_PAGE_COPY_BY_LOCALE } from "@/content/public-page-localized";
+import { DEFAULT_LOCALE, LOCALE_CODE, pickCopy, type Locale } from "@/lib/locale";
+import { LocaleProvider } from "@/ui/locale-context";
 import { appUrl } from "@/lib/app-url";
 import { PixelConsent } from "@/modules/pixels/components/pixel-consent";
 import type { PublicPageResult } from "../public-page";
@@ -25,20 +27,22 @@ export function PublishedPage({ result, viaCustomDomain = false }: { result: Pub
   const image = priorityImagePreload(result.document);
   if (image) preload(image.src, { as: "image", imageSrcSet: image.srcSet, imageSizes: image.sizes, fetchPriority: "high" });
   const chromeColor = pageChromeColor(result.document);
+  const PUBLIC_PAGE_COPY = pickCopy(PUBLIC_PAGE_COPY_BY_LOCALE, result.locale);
   return (
     <>
       {/* The browser paints its bars and the overscroll area with the document background: make it the page's. A validated hex color only. */}
       {chromeColor ? <style dangerouslySetInnerHTML={{ __html: `html,body{background:${chromeColor}}` }} /> : null}
-      <PublicPageView document={result.document} showBadge={result.showBadge} slug={result.slug} homeHref={productPath("/")} />
-      <footer className="bg-app-bg px-4 py-5 text-center text-sm"><a className="underline underline-offset-4" href={productPath("/denunciar?pagina=" + encodeURIComponent(result.slug))}>{PUBLIC_PAGE_COPY.report}</a></footer>
-      {result.pixels ? <PixelConsent slug={result.slug} pixels={result.pixels} /> : null}
+      <PublicPageView document={result.document} showBadge={result.showBadge} slug={result.slug} homeHref={productPath("/")} locale={result.locale} />
+      <footer lang={LOCALE_CODE[result.locale]} className="bg-app-bg px-4 py-5 text-center text-sm"><a className="underline underline-offset-4" href={productPath("/denunciar?pagina=" + encodeURIComponent(result.slug))}>{PUBLIC_PAGE_COPY.report}</a></footer>
+      {result.pixels ? <LocaleProvider locale={result.locale}><PixelConsent slug={result.slug} pixels={result.pixels} /></LocaleProvider> : null}
     </>
   );
 }
 
-export function SuspendedPage() {
+export function SuspendedPage({ locale = DEFAULT_LOCALE }: { locale?: Locale }) {
+  const PUBLIC_PAGE_COPY = pickCopy(PUBLIC_PAGE_COPY_BY_LOCALE, locale);
   return (
-    <main className="grid min-h-screen place-items-center bg-app-bg px-4 text-center text-app-text">
+    <main lang={LOCALE_CODE[locale]} className="grid min-h-screen place-items-center bg-app-bg px-4 text-center text-app-text">
       <div className="grid max-w-md gap-3">
         <h1 className="m-0 text-2xl font-bold">{PUBLIC_PAGE_COPY.suspendedTitle}</h1>
         <p className="m-0 text-app-muted">{PUBLIC_PAGE_COPY.suspended}</p>

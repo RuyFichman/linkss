@@ -1,11 +1,12 @@
-import { MEDIA_COPY } from "@/content/pt-BR";
+import type { Copy } from "@/content/copy";
+import { MEDIA_COPY as PORTUGUESE_MEDIA_COPY } from "@/content/pt-BR";
 import { MAX_SOURCE_BYTES, type MediaKind } from "./policy";
 import type { UploadFailure } from "./upload-machine";
 
 const SOURCE_LIMIT_MB = MAX_SOURCE_BYTES / (1024 * 1024);
 
 /** What the person reads for each way an upload can fail: what happened and what to do next. */
-export function uploadErrorMessage(error: UploadFailure, kind: MediaKind): string {
+export function uploadErrorMessage(error: UploadFailure, kind: MediaKind, MEDIA_COPY: Copy["MEDIA_COPY"] = PORTUGUESE_MEDIA_COPY): string {
   switch (error) {
     case "too_large": return MEDIA_COPY.errors.too_large(SOURCE_LIMIT_MB);
     case "too_small": return kind === "avatar" ? MEDIA_COPY.errors.too_small_avatar : MEDIA_COPY.errors.too_small_image;

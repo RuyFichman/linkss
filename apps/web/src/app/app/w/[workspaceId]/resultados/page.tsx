@@ -1,7 +1,7 @@
 import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ANALYTICS_COPY, APP_COPY, WORKSPACE_ANALYTICS_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { Bar, DailyChart } from "@/modules/analytics/components/charts";
 import { aggregationIsDelayed, dailySeries, daysBeforeCollection, periodTotals, shareRanking } from "@/modules/analytics/dashboard";
 import { formatDay, formatDayShort, formatInstant, parsePeriod, PERIOD_PRESETS, periodIsAvailable, type PeriodPreset } from "@/modules/analytics/dates";
@@ -12,7 +12,9 @@ import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { can } from "@/modules/identity/permissions";
 import { Badge, EmptyState, Notice } from "@/ui";
 
-export const metadata: Metadata = { title: "Resultados da conta" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.workspaceResults };
+}
 
 const NUMBER = new Intl.NumberFormat("pt-BR");
 const ONE_DECIMAL = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
@@ -23,7 +25,8 @@ function perHundred(rate: number): string {
   return ONE_DECIMAL.format(rate * 100);
 }
 
-function PeriodNav({ basePath, current, historyDays }: { basePath: string; current: PeriodPreset; historyDays: number }) {
+async function PeriodNav({ basePath, current, historyDays }: { basePath: string; current: PeriodPreset; historyDays: number }) {
+  const { ANALYTICS_COPY } = await getCopy();
   return (
     <nav aria-label={ANALYTICS_COPY.periodNav}>
       <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
@@ -45,13 +48,15 @@ function PeriodNav({ basePath, current, historyDays }: { basePath: string; curre
   );
 }
 
-function StateMessage({ state, report }: { state: Exclude<WorkspaceState, "data">; report: WorkspaceReport | null }) {
+async function StateMessage({ state, report }: { state: Exclude<WorkspaceState, "data">; report: WorkspaceReport | null }) {
+  const { WORKSPACE_ANALYTICS_COPY } = await getCopy();
   const copy = WORKSPACE_ANALYTICS_COPY.states[state];
   const description = state === "before_collection" ? WORKSPACE_ANALYTICS_COPY.states.before_collection.description(formatDay(report?.collectingSince ?? "")) : (copy.description as string);
   return <EmptyState title={copy.title} description={description} />;
 }
 
-function HowWeCount() {
+async function HowWeCount() {
+  const { ANALYTICS_COPY } = await getCopy();
   return (
     <section id="como-contamos" className={CARD} aria-labelledby="how-title">
       <h2 id="how-title" className="text-xl font-bold">{ANALYTICS_COPY.how.title}</h2>
@@ -71,6 +76,7 @@ function HowWeCount() {
  * the same functions as the per-page dashboard.
  */
 export default async function WorkspaceAnalyticsPage({ params, searchParams }: { params: Promise<{ workspaceId: string }>; searchParams: Promise<{ periodo?: string | string[] }> }) {
+  const { ANALYTICS_COPY, APP_COPY, WORKSPACE_ANALYTICS_COPY } = await getCopy();
   const { workspaceId } = await params;
   const access = await authorizeWorkspacePage(workspaceId, "analytics.view");
   const copy = WORKSPACE_ANALYTICS_COPY;

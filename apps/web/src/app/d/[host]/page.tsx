@@ -61,7 +61,7 @@ export default async function CustomDomainPage({ params }: Props) {
         </>
       );
     case "suspended":
-      return <SuspendedPage />;
+      return <SuspendedPage locale={result.locale} />;
     default:
       // One answer for a hostname that is unknown, unproven, out of plan or whose page is off the air.
       notFound();

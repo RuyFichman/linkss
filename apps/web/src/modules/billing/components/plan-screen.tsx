@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BILLING_COPY } from "@/content/pt-BR";
+import type { Copy } from "@/content/copy";
 import type { PlanId } from "@/lib/product";
 import { Badge, Notice } from "@/ui";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
@@ -14,7 +14,7 @@ import type { InvoiceView } from "../read";
 import { BillingActionForm } from "./billing-action-form";
 import { PlanComparisonTable } from "./plan-comparison";
 
-const copy = BILLING_COPY;
+type BillingWords = Copy["BILLING_COPY"];
 
 const SUMMARY_BOX = {
   warning: "rounded-xl border border-app-warning/30 bg-app-warning/10 px-4 py-3",
@@ -22,7 +22,7 @@ const SUMMARY_BOX = {
 } as const;
 
 /** The title of every state of the screen, including the ones that show nothing else. */
-export function PlanHeading() {
+export function PlanHeading({ copy }: { copy: BillingWords }) {
   return (
     <header className="grid gap-2">
       <h1 className="text-3xl font-bold">{copy.title}</h1>
@@ -56,7 +56,7 @@ function formatMegabytes(megabytes: number): string {
 // Above a limit is a warning, never danger: nothing is deleted, only new creations wait.
 const USAGE_BAR: Record<UsageLevel, string> = { ok: "bg-app-ink", full: "bg-app-warning", over: "bg-app-warning" };
 
-function UsageRow({ row }: { row: PlanUsageRow }) {
+function UsageRow({ row, copy }: { copy: BillingWords; row: PlanUsageRow }) {
   const value = row.key === "storage" ? copy.usage.megabytes(formatMegabytes(row.used), row.limit) : copy.usage.count(row.used, row.limit);
   const filled = row.limit > 0 ? Math.min(1, row.used / row.limit) : 1;
   const notes = [
@@ -88,12 +88,12 @@ function UsageRow({ row }: { row: PlanUsageRow }) {
  * What the workspace uses against the plan in force: what decides whether a bigger plan is needed.
  * A card of its own, after the plan on phones, so it never pushes the plan's actions down.
  */
-function Usage({ rows }: { rows: PlanUsageRow[] }) {
+function Usage({ rows, copy }: { copy: BillingWords; rows: PlanUsageRow[] }) {
   return (
     <section className="surface-card grid content-start gap-4 p-5 sm:p-6" aria-labelledby="usage-title">
       <h2 id="usage-title" className="text-sm font-semibold text-app-muted">{copy.usage.title}</h2>
       <ul className="m-0 grid list-none gap-4 p-0">
-        {rows.map((row) => <UsageRow key={row.key} row={row} />)}
+        {rows.map((row) => <UsageRow copy={copy} key={row.key} row={row} />)}
       </ul>
     </section>
   );
@@ -103,7 +103,7 @@ function Usage({ rows }: { rows: PlanUsageRow[] }) {
  * The plan of the workspace first: what it is, what it costs or what is wrong, and the one thing to
  * do about it. The catalogue and the payment history follow.
  */
-function CurrentPlan({ workspaceId, screen }: { workspaceId: string; screen: PlanScreen }) {
+function CurrentPlan({ workspaceId, screen, copy }: { copy: BillingWords; workspaceId: string; screen: PlanScreen }) {
   const { state, commands, yearly } = screen;
   const hasCommands = commands !== null && (commands.fixPayment || commands.resume || commands.managePayment || commands.cancel);
   return (
@@ -147,7 +147,8 @@ function CurrentPlan({ workspaceId, screen }: { workspaceId: string; screen: Pla
   );
 }
 
-function PlanCard({ workspaceId, planId, screen, intervals, choice, customDomains }: {
+function PlanCard({ workspaceId, planId, screen, intervals, choice, customDomains, copy }: {
+  copy: BillingWords;
   workspaceId: string;
   planId: PlanId;
   screen: PlanScreen;
@@ -185,7 +186,7 @@ function PlanCard({ workspaceId, planId, screen, intervals, choice, customDomain
       <p className="plan-offer-saving">{paid && choice && saving > 0 ? copy.yearlySaving(formatMoney(saving)) : null}</p>
       <p className="plan-offer-description">{copy.planDescriptions[planId]}</p>
       <ul className="plan-offer-items">
-        {planHighlights(planId, { customDomains }).map((item) => <li key={item.kind === "everythingIn" ? item.kind : item.key}>{planHighlightText(item)}</li>)}
+        {planHighlights(planId, { customDomains }).map((item) => <li key={item.kind === "everythingIn" ? item.kind : item.key}>{planHighlightText(item, copy)}</li>)}
       </ul>
       <div className="plan-offer-action">
         {offer === "subscribe" ? intervals.map((interval) => {
@@ -193,7 +194,7 @@ function PlanCard({ workspaceId, planId, screen, intervals, choice, customDomain
           const label = copy.plans.subscribe(name, copy.intervalAdjective[interval]);
           return price ? (
             <div key={interval} data-interval={intervalOf(interval)}>
-              <BillingActionForm action={startCheckoutAction.bind(null, workspaceId, planId, interval)} label={label} ariaLabel={`${label}: ${priceLabel(price.amountCents, interval)}`} fullWidth />
+              <BillingActionForm action={startCheckoutAction.bind(null, workspaceId, planId, interval)} label={label} ariaLabel={`${label}: ${priceLabel(price.amountCents, interval, copy)}`} fullWidth />
             </div>
           ) : null;
         }) : null}
@@ -203,37 +204,40 @@ function PlanCard({ workspaceId, planId, screen, intervals, choice, customDomain
   );
 }
 
-const BLOCK_TEXT: Record<Exclude<CatalogueBlock, "other">, string> = {
-  notDeployed: copy.notDeployed,
-  off: copy.off,
-  owner: copy.ownerOnly,
-  suspended: copy.plans.blocked.suspended,
-  payment: copy.plans.blocked.payment,
-  canceling: copy.plans.blocked.canceling,
-};
+function blockText(copy: Copy["BILLING_COPY"], blocked: Exclude<CatalogueBlock, "other">): string {
+  const text: Record<Exclude<CatalogueBlock, "other">, string> = {
+    notDeployed: copy.notDeployed,
+    off: copy.off,
+    owner: copy.ownerOnly,
+    suspended: copy.plans.blocked.suspended,
+    payment: copy.plans.blocked.payment,
+    canceling: copy.plans.blocked.canceling,
+  };
+  return text[blocked];
+}
 
 /** Why nothing below can be bought, right above the plans, with the way out when there is one. */
-function CatalogueNote({ workspaceId, screen }: { workspaceId: string; screen: PlanScreen }) {
+function CatalogueNote({ workspaceId, screen, copy }: { copy: BillingWords; workspaceId: string; screen: PlanScreen }) {
   const { blocked, commands } = screen;
   if (!blocked || blocked === "other") return null;
   const fix = blocked === "payment" && commands?.fixPayment;
   return (
     <div className={`grid gap-3 sm:flex sm:items-center sm:justify-between ${blocked === "payment" ? SUMMARY_BOX.warning : "rounded-xl border border-app-border bg-app-surface-soft/60 px-4 py-3"}`}>
-      <p className="m-0">{BLOCK_TEXT[blocked]}</p>
+      <p className="m-0">{blockText(copy, blocked)}</p>
       {/* The same command as the plan card's: the second place a person looks for it. */}
       {fix ? <BillingActionForm action={openSelfServiceAction.bind(null, workspaceId)} label={copy.actions.fixPayment} variant="secondary" /> : null}
     </div>
   );
 }
 
-function Catalogue({ workspaceId, screen, mode, customDomains }: { workspaceId: string; screen: PlanScreen; mode: BillingMode; customDomains: boolean }) {
+function Catalogue({ workspaceId, screen, mode, customDomains, copy }: { copy: BillingWords; workspaceId: string; screen: PlanScreen; mode: BillingMode; customDomains: boolean }) {
   const { prices } = screen;
   const choice = prices.kind === "choice";
   const intervals = prices.kind === "fixed" ? [prices.interval] : BILLING_INTERVALS;
   const freeMonths = yearlyFreeMonths();
   const offers = (
     <ul className="plan-offers">
-      {PLAN_IDS.map((planId) => <PlanCard key={planId} workspaceId={workspaceId} planId={planId} screen={screen} intervals={intervals} choice={choice} customDomains={customDomains} />)}
+      {PLAN_IDS.map((planId) => <PlanCard copy={copy} key={planId} workspaceId={workspaceId} planId={planId} screen={screen} intervals={intervals} choice={choice} customDomains={customDomains} />)}
     </ul>
   );
   return (
@@ -264,14 +268,14 @@ function Catalogue({ workspaceId, screen, mode, customDomains }: { workspaceId: 
           </fieldset>
         ) : null}
       </div>
-      <CatalogueNote workspaceId={workspaceId} screen={screen} />
+      <CatalogueNote copy={copy} workspaceId={workspaceId} screen={screen} />
       {screen.blocked ? (
         // Nothing to buy: the plans stay one tap away instead of a long showcase without a button.
         <details className="plan-compare-details">
           <summary id="compare-title">{copy.plans.show}</summary>
           <div className="mt-8 grid gap-8">
             {offers}
-            <PlanComparisonTable customDomains={customDomains} labelledBy="compare-title" rows="differences" />
+            <PlanComparisonTable words={copy} customDomains={customDomains} labelledBy="compare-title" rows="differences" />
           </div>
         </details>
       ) : (
@@ -280,7 +284,7 @@ function Catalogue({ workspaceId, screen, mode, customDomains }: { workspaceId: 
           {screen.selling ? <p className="m-0 text-sm text-app-muted">{copy.provider}</p> : null}
           <details className="plan-compare-details">
             <summary id="compare-title">{copy.plans.differences}</summary>
-            <PlanComparisonTable customDomains={customDomains} labelledBy="compare-title" rows="differences" />
+            <PlanComparisonTable words={copy} customDomains={customDomains} labelledBy="compare-title" rows="differences" />
           </details>
         </>
       )}
@@ -293,7 +297,7 @@ function Catalogue({ workspaceId, screen, mode, customDomains }: { workspaceId: 
 const HISTORY_COLUMNS = "sm:grid-cols-[7rem_7rem_minmax(0,1fr)_auto] sm:gap-x-8";
 
 /** One row per payment that reads on a phone without sideways scrolling: date and amount, then status and receipt. */
-function PaymentHistory({ invoices }: { invoices: InvoiceView[] }) {
+function PaymentHistory({ invoices, copy }: { copy: BillingWords; invoices: InvoiceView[] }) {
   const columns = copy.history.columns;
   return (
     <section className="surface-card grid gap-4 p-5 sm:p-6" aria-labelledby="payments-title">
@@ -341,7 +345,8 @@ function PaymentHistory({ invoices }: { invoices: InvoiceView[] }) {
  * `data-plan-screen` hides the workspace's failing-payment banner here, where the card says the same
  * thing next to the way to fix it (globals.css).
  */
-export function PlanScreenView({ workspaceId, screen, invoices, mode, suspended, customDomains, notice }: {
+export function PlanScreenView({ workspaceId, screen, invoices, mode, suspended, customDomains, notice, copy }: {
+  copy: BillingWords;
   workspaceId: string;
   screen: PlanScreen;
   invoices: InvoiceView[];
@@ -352,18 +357,18 @@ export function PlanScreenView({ workspaceId, screen, invoices, mode, suspended,
 }) {
   return (
     <div className="grid gap-6" data-plan-screen="">
-      <PlanHeading />
+      <PlanHeading copy={copy} />
       {notice ? <Notice tone="success">{notice}</Notice> : null}
       {suspended ? <Notice tone="warning">{copy.suspended}</Notice> : null}
       {screen.usage ? (
         // Each card keeps its own height: stretched to the taller one, either would end in empty space.
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)]">
-          <CurrentPlan workspaceId={workspaceId} screen={screen} />
-          <Usage rows={screen.usage} />
+          <CurrentPlan copy={copy} workspaceId={workspaceId} screen={screen} />
+          <Usage copy={copy} rows={screen.usage} />
         </div>
-      ) : <CurrentPlan workspaceId={workspaceId} screen={screen} />}
-      <Catalogue workspaceId={workspaceId} screen={screen} mode={mode} customDomains={customDomains} />
-      {screen.showHistory ? <PaymentHistory invoices={invoices} /> : null}
+      ) : <CurrentPlan copy={copy} workspaceId={workspaceId} screen={screen} />}
+      <Catalogue copy={copy} workspaceId={workspaceId} screen={screen} mode={mode} customDomains={customDomains} />
+      {screen.showHistory ? <PaymentHistory copy={copy} invoices={invoices} /> : null}
     </div>
   );
 }

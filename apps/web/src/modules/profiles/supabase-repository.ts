@@ -1,4 +1,5 @@
 import "server-only";
+import { DEFAULT_LOCALE, isLocale } from "@/lib/locale";
 import type { SupabaseServerClient } from "@/lib/supabase/server";
 import { resolveEntitlements } from "@/modules/entitlements";
 import type { Json } from "@/lib/database.types";
@@ -89,6 +90,18 @@ export function createSupabaseProfileRepository(supabase: SupabaseServerClient):
       const { data: current, error: currentError } = await supabase.from("profiles").select("draft_revision").eq("id", profileId).maybeSingle();
       if (currentError) return { ok: false, error: "unavailable" };
       return { ok: false, error: current && current.draft_revision !== expectedRevision ? "conflict" : "not_found" };
+    },
+
+    async locale(profileId) {
+      const { data, error } = await supabase.from("profiles").select("locale").eq("id", profileId).maybeSingle();
+      return !error && isLocale(data?.locale) ? data.locale : DEFAULT_LOCALE;
+    },
+
+    async setLocale(profileId, locale) {
+      // RLS limits the row to owners, admins and editors of the workspace, and not while archived.
+      const { data, error } = await supabase.from("profiles").update({ locale }).eq("id", profileId).select("id").maybeSingle();
+      if (error) return { ok: false, error: profileErrorFromDatabase(error) };
+      return data ? { ok: true, value: null } : { ok: false, error: "not_found" };
     },
 
     async changeSlug(profileId, slug) {

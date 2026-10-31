@@ -3,6 +3,7 @@ import { cache } from "react";
 import { logEvent } from "@/lib/observability/logger";
 import { isMissingSchemaError } from "@/lib/supabase/missing-schema";
 import { createPublicSupabaseClient } from "@/lib/supabase/public";
+import { getCopy } from "@/modules/identity/locale";
 import { getSupabase, supabaseIdentity } from "@/modules/identity/session";
 import { mapPublicPageRow, PublicPageUnavailableError, type PublicPageResult } from "./public-page";
 import { createPublishingService } from "./service";
@@ -55,7 +56,8 @@ export const getPublicPageByDomain = cache(async (hostname: string): Promise<Pub
 /** Request-scoped publishing service acting as the signed-in user (RLS and RPC checks apply). */
 export async function getPublishingService() {
   const supabase = await getSupabase();
-  return createPublishingService(supabaseIdentity(supabase), createSupabasePublishingRepository(supabase));
+  const { APP_COPY, PUBLISHING_COPY } = await getCopy();
+  return createPublishingService(supabaseIdentity(supabase), createSupabasePublishingRepository(supabase), APP_COPY, PUBLISHING_COPY);
 }
 
 export async function getPublishingRepository() {

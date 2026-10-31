@@ -4,6 +4,8 @@ import { useActionState, useRef, useState, type ReactNode } from "react";
 import { IDLE_FORM_STATE, type FormState } from "@/lib/form-state";
 import { Button } from "./button";
 import { Dialog, DialogActions } from "./dialog";
+import { UI_COPY } from "@/content/localized";
+import { useCopy } from "./locale-context";
 import { FormStatus } from "./form-status";
 
 type ConfirmAction = (previous: FormState) => Promise<FormState>;
@@ -56,12 +58,13 @@ export function ConfirmDialog({ action, openLabel, openAriaLabel, openVariant = 
 function ConfirmForm({ action, children, confirmLabel, confirmVariant = "primary", cancelLabel, onClose }: Opened & { onClose: () => void }) {
   const [state, formAction, pending] = useActionState(action, IDLE_FORM_STATE);
   const done = state.status === "success";
+  const { close } = useCopy(UI_COPY);
   return (
     <form action={formAction} className="grid gap-4">
       {done ? null : children}
       <FormStatus state={state} />
       <DialogActions>
-        <Button type="button" variant="secondary" onClick={onClose}>{done ? "Fechar" : cancelLabel}</Button>
+        <Button type="button" variant="secondary" onClick={onClose}>{done ? close : cancelLabel}</Button>
         {done ? null : <Button type="submit" variant={confirmVariant} loading={pending}>{confirmLabel}</Button>}
       </DialogActions>
     </form>

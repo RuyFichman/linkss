@@ -14,3 +14,18 @@ export const PRODUCT = {
 } as const;
 
 export type PlanId = keyof typeof PRODUCT.plans;
+
+/**
+ * Prices shown on the marketing home of another market (founder decision, 2026-10-30; ADR 0022).
+ * Display only: checkout, `plan_prices` and the plan granted for a charge still use PRODUCT's BRL
+ * prices, so these amounts are not charged by anything yet. Charging them is a separate change.
+ */
+export const MARKET_PRICES = {
+  "es-ES": {
+    currency: "EUR",
+    plans: {
+      pro: { monthlyPriceInCents: 400, yearlyPriceInCents: 3900 },
+      agency: { monthlyPriceInCents: 1000, yearlyPriceInCents: 9900 },
+    },
+  },
+} as const;

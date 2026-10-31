@@ -1,4 +1,6 @@
-import { APP_COPY, AUTH_COPY } from "@/content/pt-BR";
+import type { Copy } from "@/content/copy";
+import { isLocale, type Locale } from "@/lib/locale";
+import { APP_COPY as PORTUGUESE_APP_COPY, AUTH_COPY as PORTUGUESE_AUTH_COPY, SLUG_COPY as PORTUGUESE_SLUG_COPY } from "@/content/pt-BR";
 import type { Database } from "@/lib/database.types";
 import { assertEntitlement, EntitlementError, type Entitlements } from "@/modules/entitlements";
 import { AuthorizationError, isUuid, requireUser, requireWorkspaceAccess, type IdentityPort } from "@/modules/identity/guard";
@@ -51,6 +53,9 @@ export interface ProfileRepository {
   /** One transaction in the database: a new draft page in the same workspace with new block ids. */
   duplicate(profileId: string, title: string, slug: string): Promise<RepositoryResult<string>>;
   checkSlug(slug: string, workspaceId: string | null): Promise<RepositoryResult<{ normalized: string; status: string }>>;
+  /** The page's public language (ADR 0022); pt-BR when it cannot be read. */
+  locale(profileId: string): Promise<Locale>;
+  setLocale(profileId: string, locale: Locale): Promise<RepositoryResult<null>>;
 }
 
 export type ProfileField = ProfileContentField | "slug";
@@ -68,21 +73,19 @@ export interface DraftSnapshot extends DraftContent {
   revision: number;
 }
 
-const VALIDATION_SUMMARY = AUTH_COPY.validation.summary;
-
 export type CommandResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: ProfileErrorKind | "validation" | "unauthenticated"; message: string; fieldErrors?: Partial<Record<ProfileField, string>> };
 
-function failure<T>(error: ProfileErrorKind, context: { slug?: string; limit?: number } = {}): CommandResult<T> {
-  const message = profileErrorMessage(error, context);
+function failure<T>(error: ProfileErrorKind, context: { slug?: string; limit?: number } = {}, APP_COPY: Copy["APP_COPY"] = PORTUGUESE_APP_COPY, SLUG_COPY: Copy["SLUG_COPY"] = PORTUGUESE_SLUG_COPY): CommandResult<T> {
+  const message = profileErrorMessage(error, context, APP_COPY, SLUG_COPY);
   return isSlugError(error) ? { ok: false, error, message, fieldErrors: { slug: message } } : { ok: false, error, message };
 }
 
-function authorizationFailure<T>(error: unknown): CommandResult<T> {
+function authorizationFailure<T>(error: unknown, APP_COPY: Copy["APP_COPY"] = PORTUGUESE_APP_COPY): CommandResult<T> {
   if (!(error instanceof AuthorizationError)) throw error;
   if (error.reason === "unauthenticated") return { ok: false, error: "unauthenticated", message: APP_COPY.errors.sessionExpired };
-  return failure(error.reason === "forbidden" ? "forbidden" : "not_found");
+  return failure(error.reason === "forbidden" ? "forbidden" : "not_found", {}, APP_COPY);
 }
 
 function slugFailure<T>(validation: SlugValidation): CommandResult<T> {
@@ -93,7 +96,9 @@ function slugFailure<T>(validation: SlugValidation): CommandResult<T> {
  * Page commands. Every command authorizes on the server through requireWorkspaceAccess (membership
  * re-read per request) before touching the repository; RLS and the database RPCs check again.
  */
-export function createProfileService(identity: IdentityPort, repository: ProfileRepository) {
+export function createProfileService(identity: IdentityPort, repository: ProfileRepository, APP_COPY: Copy["APP_COPY"] = PORTUGUESE_APP_COPY, AUTH_COPY: Copy["AUTH_COPY"] = PORTUGUESE_AUTH_COPY, SLUG_COPY: Copy["SLUG_COPY"] = PORTUGUESE_SLUG_COPY) {
+  // Messages in the language of the person acting (ADR 0022).
+  const VALIDATION_SUMMARY = AUTH_COPY.validation.summary;
   /** Loads a page visible to the caller and authorizes the action against its workspace. */
   async function authorizeProfile(profileId: unknown, action: Parameters<typeof requireWorkspaceAccess>[2]) {
     await requireUser(identity);
@@ -110,10 +115,10 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       try {
         access = await requireWorkspaceAccess(identity, workspaceId, "profile.create");
       } catch (error) {
-        return authorizationFailure(error);
+        return authorizationFailure(error, APP_COPY);
       }
-      const content = validateProfileContent(input);
-      const slug = validateSlug(typeof input.slug === "string" ? input.slug : "");
+      const content = validateProfileContent(input, APP_COPY);
+      const slug = validateSlug(typeof input.slug === "string" ? input.slug : "", [], SLUG_COPY);
       if (!content.ok || !slug.valid) {
         const fieldErrors = { ...(content.ok ? {} : content.errors), ...(slug.valid ? {} : { slug: slug.message }) };
         return { ok: false, error: "validation", message: VALIDATION_SUMMARY, fieldErrors };
@@ -123,12 +128,12 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       try {
         assertEntitlement(entitlements, "max_profiles", await repository.countLive(access.workspaceId));
       } catch (error) {
-        if (error instanceof EntitlementError) return failure("limit_reached", { limit: entitlements.limits.max_profiles });
+        if (error instanceof EntitlementError) return failure("limit_reached", { limit: entitlements.limits.max_profiles }, APP_COPY, SLUG_COPY);
         throw error;
       }
 
       const inserted = await repository.insert({ workspaceId: access.workspaceId, title: content.value.title, bio: content.value.bio, slug: slug.normalized });
-      if (!inserted.ok) return failure(inserted.error, { slug: slug.normalized, limit: entitlements.limits.max_profiles });
+      if (!inserted.ok) return failure(inserted.error, { slug: slug.normalized, limit: entitlements.limits.max_profiles }, APP_COPY, SLUG_COPY);
       return inserted;
     },
 
@@ -141,26 +146,26 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       try {
         await authorizeProfile(profileId, "profile.edit_content");
       } catch (error) {
-        return authorizationFailure(error);
+        return authorizationFailure(error, APP_COPY);
       }
       const input = payload && typeof payload === "object" && !Array.isArray(payload) ? payload as Record<string, unknown> : {};
       const expectedRevision = input.expectedRevision;
       if (typeof expectedRevision !== "number" || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
         return { ok: false, error: "validation", message: VALIDATION_SUMMARY };
       }
-      const content = validateProfileContent({ title: input.title, bio: input.bio });
+      const content = validateProfileContent({ title: input.title, bio: input.bio }, APP_COPY);
       if (!content.ok) return { ok: false, error: "validation", message: VALIDATION_SUMMARY, fieldErrors: content.errors };
       const blocks = validateStoredBlocks(input.blocks);
-      if (!blocks.ok) return { ok: false, error: "validation", message: profileErrorMessage("content_invalid") };
+      if (!blocks.ok) return { ok: false, error: "validation", message: profileErrorMessage("content_invalid", {}, APP_COPY, SLUG_COPY) };
       // Theme and avatar are required keys: null means "classic look" / "initials", never "keep what is stored".
       const { theme, avatarPath } = input;
-      if (theme !== null && !isValidTheme(theme)) return { ok: false, error: "validation", message: profileErrorMessage("content_invalid") };
-      if (avatarPath !== null && !isMediaId(avatarPath)) return { ok: false, error: "validation", message: profileErrorMessage("content_invalid") };
+      if (theme !== null && !isValidTheme(theme)) return { ok: false, error: "validation", message: profileErrorMessage("content_invalid", {}, APP_COPY, SLUG_COPY) };
+      if (avatarPath !== null && !isMediaId(avatarPath)) return { ok: false, error: "validation", message: profileErrorMessage("content_invalid", {}, APP_COPY, SLUG_COPY) };
 
       const updated = await repository.updateDraft(profileId as string, expectedRevision, {
         title: content.value.title, bio: content.value.bio, avatarPath, theme: theme === null ? null : cloneTheme(theme), blocks: blocks.blocks,
       });
-      return updated.ok ? { ok: true, value: { revision: updated.value.draftRevision } } : failure(updated.error);
+      return updated.ok ? { ok: true, value: { revision: updated.value.draftRevision } } : failure(updated.error, {}, APP_COPY, SLUG_COPY);
     },
 
     /** Current saved draft, used by the editor to recover from a conflict. */
@@ -169,9 +174,23 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       try {
         profile = await authorizeProfile(profileId, "profile.edit_content");
       } catch (error) {
-        return authorizationFailure(error);
+        return authorizationFailure(error, APP_COPY);
       }
       return { ok: true, value: { title: profile.title, bio: profile.bio, avatarPath: profile.avatarPath, theme: profile.theme, blocks: profile.blocks, revision: profile.draftRevision } };
+    },
+
+    /** Sets the language of the words the product shows on the page; answers its address. */
+    async setLocale(profileId: unknown, rawLocale: unknown): Promise<CommandResult<string>> {
+      let profile;
+      try {
+        profile = await authorizeProfile(profileId, "profile.edit_content");
+      } catch (error) {
+        return authorizationFailure(error, APP_COPY);
+      }
+      if (!isLocale(rawLocale)) return { ok: false, error: "validation", message: VALIDATION_SUMMARY };
+      if (profile.status === "archived") return failure("archived", {}, APP_COPY, SLUG_COPY);
+      const set = await repository.setLocale(profile.id, rawLocale);
+      return set.ok ? { ok: true, value: profile.slug } : failure(set.error, {}, APP_COPY, SLUG_COPY);
     },
 
     async changeSlug(profileId: unknown, rawSlug: unknown): Promise<CommandResult<string>> {
@@ -179,13 +198,13 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       try {
         profile = await authorizeProfile(profileId, "profile.change_slug");
       } catch (error) {
-        return authorizationFailure(error);
+        return authorizationFailure(error, APP_COPY);
       }
-      const slug = validateSlug(typeof rawSlug === "string" ? rawSlug : "");
+      const slug = validateSlug(typeof rawSlug === "string" ? rawSlug : "", [], SLUG_COPY);
       if (!slug.valid) return slugFailure(slug);
       if (slug.normalized === profile.slug) return { ok: true, value: profile.slug };
       const changed = await repository.changeSlug(profile.id, slug.normalized);
-      return changed.ok ? changed : failure(changed.error, { slug: slug.normalized });
+      return changed.ok ? changed : failure(changed.error, { slug: slug.normalized }, APP_COPY, SLUG_COPY);
     },
 
     /** Current address of a page the caller can see (for cache invalidation), or null. */
@@ -199,10 +218,10 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       try {
         profile = await authorizeProfile(profileId, "profile.delete");
       } catch (error) {
-        return authorizationFailure(error);
+        return authorizationFailure(error, APP_COPY);
       }
       const deleted = await repository.softDelete(profile.id);
-      return deleted.ok ? { ok: true, value: { workspaceId: profile.workspaceId, slug: profile.slug } } : failure(deleted.error);
+      return deleted.ok ? { ok: true, value: { workspaceId: profile.workspaceId, slug: profile.slug } } : failure(deleted.error, {}, APP_COPY, SLUG_COPY);
     },
 
     /** Owners and admins. Returns the address so the caller can invalidate the cached public page. */
@@ -211,10 +230,10 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       try {
         profile = await authorizeProfile(profileId, "profile.archive");
       } catch (error) {
-        return authorizationFailure(error);
+        return authorizationFailure(error, APP_COPY);
       }
       const archived = await repository.archive(profile.id);
-      return archived.ok ? { ok: true, value: { workspaceId: profile.workspaceId, slug: archived.value.slug, wasPublished: archived.value.wasPublished } } : failure(archived.error);
+      return archived.ok ? { ok: true, value: { workspaceId: profile.workspaceId, slug: archived.value.slug, wasPublished: archived.value.wasPublished } } : failure(archived.error, {}, APP_COPY, SLUG_COPY);
     },
 
     /** Back to a draft; never republishes. */
@@ -223,10 +242,10 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       try {
         profile = await authorizeProfile(profileId, "profile.archive");
       } catch (error) {
-        return authorizationFailure(error);
+        return authorizationFailure(error, APP_COPY);
       }
       const restored = await repository.unarchive(profile.id);
-      return restored.ok ? { ok: true, value: { workspaceId: profile.workspaceId } } : failure(restored.error);
+      return restored.ok ? { ok: true, value: { workspaceId: profile.workspaceId } } : failure(restored.error, {}, APP_COPY, SLUG_COPY);
     },
 
     /**
@@ -238,10 +257,10 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       try {
         source = await authorizeProfile(profileId, "profile.duplicate");
       } catch (error) {
-        return authorizationFailure(error);
+        return authorizationFailure(error, APP_COPY);
       }
-      const content = validateProfileContent({ title: input.title, bio: "" });
-      const slug = validateSlug(typeof input.slug === "string" ? input.slug : "");
+      const content = validateProfileContent({ title: input.title, bio: "" }, APP_COPY);
+      const slug = validateSlug(typeof input.slug === "string" ? input.slug : "", [], SLUG_COPY);
       if (!content.ok || !slug.valid) {
         const fieldErrors = { ...(content.ok ? {} : content.errors), ...(slug.valid ? {} : { slug: slug.message }) };
         return { ok: false, error: "validation", message: VALIDATION_SUMMARY, fieldErrors };
@@ -251,18 +270,18 @@ export function createProfileService(identity: IdentityPort, repository: Profile
       try {
         assertEntitlement(entitlements, "max_profiles", await repository.countLive(source.workspaceId));
       } catch (error) {
-        if (error instanceof EntitlementError) return failure("limit_reached", { limit: entitlements.limits.max_profiles });
+        if (error instanceof EntitlementError) return failure("limit_reached", { limit: entitlements.limits.max_profiles }, APP_COPY, SLUG_COPY);
         throw error;
       }
 
       const created = await repository.duplicate(source.id, content.value.title, slug.normalized);
-      if (!created.ok) return failure(created.error, { slug: slug.normalized, limit: entitlements.limits.max_profiles });
+      if (!created.ok) return failure(created.error, { slug: slug.normalized, limit: entitlements.limits.max_profiles }, APP_COPY, SLUG_COPY);
       return { ok: true, value: { workspaceId: source.workspaceId, profileId: created.value } };
     },
 
     /** Debounced availability check. Local rules first; the database decides taken/held. */
     async checkSlug(rawSlug: unknown, workspaceId: unknown): Promise<SlugValidation> {
-      const local = validateSlug(typeof rawSlug === "string" ? rawSlug : "");
+      const local = validateSlug(typeof rawSlug === "string" ? rawSlug : "", [], SLUG_COPY);
       if (!local.valid) return local;
       try {
         await requireUser(identity);
@@ -270,8 +289,8 @@ export function createProfileService(identity: IdentityPort, repository: Profile
         return { ...local, valid: false, status: "invalid", message: APP_COPY.errors.sessionExpired };
       }
       const checked = await repository.checkSlug(local.normalized, isUuid(workspaceId) ? workspaceId : null);
-      if (!checked.ok) return { ...local, valid: false, status: "invalid", message: profileErrorMessage("unavailable") };
-      return fromAvailabilityStatus(checked.value.normalized, checked.value.status);
+      if (!checked.ok) return { ...local, valid: false, status: "invalid", message: profileErrorMessage("unavailable", {}, APP_COPY, SLUG_COPY) };
+      return fromAvailabilityStatus(checked.value.normalized, checked.value.status, SLUG_COPY);
     },
   };
 }

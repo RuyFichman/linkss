@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MEDIA_COPY } from "@/content/pt-BR";
+import { MEDIA_COPY as MEDIA_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { drawCrop, type PickedImage } from "@/modules/media/client-prepare";
 import { AVATAR_CROP, CROP_ZOOM_MAX, CROP_ZOOM_MIN, cropRect, IMAGE_CROP_ASPECTS, INITIAL_CROP, outputSize, type CropState } from "@/modules/media/crop";
 import type { MediaKind } from "@/modules/media/policy";
@@ -22,6 +23,7 @@ interface CropDialogProps {
  * geometry lives in modules/media/crop.ts; this component only moves the numbers.
  */
 export function CropDialog({ image, kind, onConfirm, onCancel }: CropDialogProps) {
+  const MEDIA_COPY = useCopy(MEDIA_COPY_BY_LOCALE);
   const [crop, setCrop] = useState<CropState>(kind === "avatar" ? AVATAR_CROP : INITIAL_CROP);
   const canvas = useRef<HTMLCanvasElement>(null);
   const drag = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);

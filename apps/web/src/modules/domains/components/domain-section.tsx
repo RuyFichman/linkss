@@ -1,4 +1,4 @@
-import { DOMAINS_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { formatDateTime } from "@/lib/format-date";
 import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { WorkspaceRole } from "@/modules/identity/permissions";
@@ -20,6 +20,7 @@ const STATUS_TONE = { pending: "neutral", active: "success", lapsed: "warning" }
  * the server and in the database, and control of the hostname is decided by the DNS read alone.
  */
 export async function DomainSection({ workspaceId, profileId, role, inPlan }: { workspaceId: string; profileId: string; role: WorkspaceRole; inPlan: boolean }) {
+  const { DOMAINS_COPY } = await getCopy();
   const copy = DOMAINS_COPY;
   const frame = (children: React.ReactNode) => (
     <section className="surface-card grid grid-cols-[minmax(0,1fr)] content-start gap-4 p-5 sm:p-8" aria-labelledby="domain-title">
@@ -76,7 +77,8 @@ export async function DomainSection({ workspaceId, profileId, role, inPlan }: { 
 }
 
 /** What the domain is doing now and what its owner does next. The check itself is the form rendered after this. */
-function DomainState({ domain, routing, hasProvider }: { domain: DomainSummary; routing: DomainRouting | null; hasProvider: boolean }) {
+async function DomainState({ domain, routing, hasProvider }: { domain: DomainSummary; routing: DomainRouting | null; hasProvider: boolean }) {
+  const { DOMAINS_COPY } = await getCopy();
   const copy = DOMAINS_COPY;
 
   if (domain.status === "lapsed") {

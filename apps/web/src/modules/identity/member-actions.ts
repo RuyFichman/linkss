@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { TEAM_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { appUrl } from "@/lib/app-url";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
@@ -23,13 +23,14 @@ async function logCommand(event: string, outcome: string): Promise<void> {
   logEvent(level, event, { correlationId, outcome });
 }
 
-function errorMessage(error: MemberCommandError, limit?: number): string {
+async function errorMessage(error: MemberCommandError, limit?: number): Promise<string> {
+  const { TEAM_COPY } = await getCopy();
   if (error === "limit_reached") return TEAM_COPY.limitReached(limit ?? 0);
   return TEAM_COPY.errors[error];
 }
 
-function failureState<Field extends string = string>(result: Extract<MemberCommandResult<unknown>, { ok: false }>): FormState<Field> {
-  return { status: "error", message: errorMessage(result.error), code: result.error };
+async function failureState<Field extends string = string>(result: Extract<MemberCommandResult<unknown>, { ok: false }>): Promise<FormState<Field>> {
+  return { status: "error", message: await errorMessage(result.error), code: result.error };
 }
 
 export interface InviteFormState extends FormState<"email" | "role"> {
@@ -42,11 +43,12 @@ export interface InviteFormState extends FormState<"email" | "role"> {
  * against the caller's memberships, and the database function checks the role again.
  */
 export async function inviteMemberAction(workspaceId: string, seatLimit: number, _previous: InviteFormState, formData: FormData): Promise<InviteFormState> {
+  const { TEAM_COPY } = await getCopy();
   const values = { email: stringField(formData, "email"), role: stringField(formData, "role") };
   const result = await (await getMembersService()).invite(workspaceId, values);
   await logCommand("members.invite", result.ok ? "ok" : result.error);
   if (!result.ok) {
-    const message = errorMessage(result.error, seatLimit);
+    const message = await errorMessage(result.error, seatLimit);
     return { status: "error", message, values, code: result.error, ...(result.error === "invalid_email" ? { fieldErrors: { email: TEAM_COPY.invite.emailError } } : {}) };
   }
   refresh();
@@ -58,32 +60,36 @@ export async function inviteMemberAction(workspaceId: string, seatLimit: number,
 }
 
 export async function revokeInvitationAction(workspaceId: string, invitationId: string): Promise<FormState> {
+  const { TEAM_COPY } = await getCopy();
   const result = await (await getMembersService()).revokeInvitation(workspaceId, invitationId);
   await logCommand("members.revoke_invitation", result.ok ? "ok" : result.error);
-  if (!result.ok) return failureState(result);
+  if (!result.ok) return await failureState(result);
   refresh();
   return { status: "success", message: TEAM_COPY.invitations.revoke.done };
 }
 
 export async function changeMemberRoleAction(workspaceId: string, membershipId: string, _previous: FormState, formData: FormData): Promise<FormState> {
+  const { TEAM_COPY } = await getCopy();
   const result = await (await getMembersService()).changeRole(workspaceId, membershipId, stringField(formData, "role"));
   await logCommand("members.change_role", result.ok ? "ok" : result.error);
-  if (!result.ok) return failureState(result);
+  if (!result.ok) return await failureState(result);
   refresh();
   return { status: "success", message: TEAM_COPY.changeRole.done };
 }
 
 /** Removing oneself is leaving: the workspace is gone for this person, so they go back to the start. */
 export async function removeMemberAction(workspaceId: string, membershipId: string): Promise<FormState> {
+  const { TEAM_COPY } = await getCopy();
   const result = await (await getMembersService()).remove(workspaceId, membershipId);
   await logCommand("members.remove", result.ok ? (result.value.self ? "left" : "ok") : result.error);
-  if (!result.ok) return failureState(result);
+  if (!result.ok) return await failureState(result);
   if (result.value.self) redirect("/app?saiu=conta");
   refresh();
   return { status: "success", message: TEAM_COPY.remove.done };
 }
 
 export async function acceptInvitationAction(token: string): Promise<FormState> {
+  const { TEAM_COPY } = await getCopy();
   const result = await (await getMembersService()).acceptInvitation(token);
   await logCommand("members.accept_invitation", result.ok ? result.value.outcome : result.error);
   if (!result.ok) return { status: "error", message: result.error === "unauthenticated" ? TEAM_COPY.errors.unauthenticated : TEAM_COPY.accept.unavailable, code: result.error };

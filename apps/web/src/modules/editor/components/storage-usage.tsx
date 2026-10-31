@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BILLING_COPY, MEDIA_COPY } from "@/content/pt-BR";
+import { BILLING_COPY as BILLING_COPY_BY_LOCALE, MEDIA_COPY as MEDIA_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { storageUsageAction, type StorageUsageResult } from "@/modules/media/actions";
 import { formatBytes } from "@/modules/media/messages";
 
@@ -11,6 +12,8 @@ import { formatBytes } from "@/modules/media/messages";
  * finished upload (`refreshKey`). The number is informative: the database enforces the quota.
  */
 export function StorageUsage({ profileId, refreshKey, plansHref = null }: { profileId: string; refreshKey: number; plansHref?: string | null }) {
+  const BILLING_COPY = useCopy(BILLING_COPY_BY_LOCALE);
+  const MEDIA_COPY = useCopy(MEDIA_COPY_BY_LOCALE);
   const [result, setResult] = useState<StorageUsageResult | null>(null);
 
   useEffect(() => {

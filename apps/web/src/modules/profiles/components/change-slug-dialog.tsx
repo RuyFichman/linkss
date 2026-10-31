@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { APP_COPY } from "@/content/pt-BR";
+import { APP_COPY as APP_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { IDLE_FORM_STATE, type FormState } from "@/lib/form-state";
 import { Button, Dialog, DialogActions, FormStatus, Notice } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
@@ -17,6 +18,7 @@ interface ChangeSlugDialogProps {
 }
 
 export function ChangeSlugDialog(props: ChangeSlugDialogProps) {
+  const APP_COPY = useCopy(APP_COPY_BY_LOCALE);
   const [open, setOpen] = useState(false);
   // A new key per opening gives each attempt a fresh action state.
   const [attempt, setAttempt] = useState(0);
@@ -31,6 +33,7 @@ export function ChangeSlugDialog(props: ChangeSlugDialogProps) {
 }
 
 function ChangeSlugForm({ action, currentSlug, workspaceId, onDone }: ChangeSlugDialogProps & { onDone: () => void }) {
+  const APP_COPY = useCopy(APP_COPY_BY_LOCALE);
   const [state, formAction, pending] = useActionState(action, IDLE_FORM_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   useFocusFirstError(formRef, state);

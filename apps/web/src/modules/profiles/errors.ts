@@ -1,4 +1,5 @@
-import { APP_COPY } from "@/content/pt-BR";
+import type { Copy } from "@/content/copy";
+import { APP_COPY as PORTUGUESE_APP_COPY, SLUG_COPY as PORTUGUESE_SLUG_COPY } from "@/content/pt-BR";
 import { isMissingSchemaError } from "@/lib/supabase/missing-schema";
 import { slugMessage } from "./slug";
 
@@ -30,13 +31,13 @@ export function isSlugError(kind: ProfileErrorKind): kind is "slug_invalid" | "s
   return kind.startsWith("slug_");
 }
 
-export function profileErrorMessage(kind: ProfileErrorKind, context: { slug?: string; limit?: number } = {}): string {
+export function profileErrorMessage(kind: ProfileErrorKind, context: { slug?: string; limit?: number } = {}, APP_COPY: Copy["APP_COPY"] = PORTUGUESE_APP_COPY, SLUG_COPY: Copy["SLUG_COPY"] = PORTUGUESE_SLUG_COPY): string {
   const slug = context.slug ?? "";
   switch (kind) {
-    case "slug_invalid": return slugMessage("invalid", slug);
-    case "slug_reserved": return slugMessage("reserved", slug);
-    case "slug_held": return slugMessage("held", slug);
-    case "slug_taken": return slugMessage("taken", slug);
+    case "slug_invalid": return slugMessage("invalid", slug, SLUG_COPY);
+    case "slug_reserved": return slugMessage("reserved", slug, SLUG_COPY);
+    case "slug_held": return slugMessage("held", slug, SLUG_COPY);
+    case "slug_taken": return slugMessage("taken", slug, SLUG_COPY);
     case "limit_reached": return APP_COPY.pages.limitReached(context.limit ?? 1);
     case "conflict": return APP_COPY.draft.conflict;
     case "content_invalid": return APP_COPY.draft.invalid;

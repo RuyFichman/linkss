@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { THEME_COPY } from "@/content/pt-BR";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { TEMPLATES_COPY as TEMPLATES_COPY_BY_LOCALE, THEME_COPY as THEME_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { normalizeHexColor } from "@/modules/themes/contrast";
 import { resolveTheme, themeReport } from "@/modules/themes/resolve";
-import { TEMPLATES, type TemplateDefinition } from "@/modules/themes/templates";
+import { templatesFor, type TemplateDefinition } from "@/modules/themes/templates";
 import { BUTTON_STYLES, CLASSIC_AS_TOKENS, CORNER_STYLES, SPACING_STYLES, THEME_FONTS, themesEqual, type ThemeTokens } from "@/modules/themes/tokens";
 import { Badge, Button, Dialog, DialogActions, SelectField } from "@/ui";
 import type { AppliedTemplate } from "../draft/state";
@@ -23,6 +24,7 @@ const ratio = (value: number) => new Intl.NumberFormat("pt-BR", { minimumFractio
 
 /** A color as a palette picker plus its code. Only a complete, valid code changes the theme. */
 function ColorField({ id, label, value, onChange }: { id: string; label: string; value: string; onChange: (value: string) => void }) {
+  const THEME_COPY = useCopy(THEME_COPY_BY_LOCALE);
   const [typed, setTyped] = useState<{ value: string; for: string } | null>(null);
   // What the person is typing wins until the stored color changes from somewhere else (palette, template).
   const text = typed && typed.for === value ? typed.value : value;
@@ -86,6 +88,9 @@ const TOKEN_SECTIONS: readonly { id: Exclude<StyleSection, "templates">; count: 
  * of asking the person to judge contrast.
  */
 export function AppearancePanel({ theme, hasBlocks, lastTemplate, onSetTheme, onApplyTemplate, onUndoTemplate }: AppearancePanelProps) {
+  const THEME_COPY = useCopy(THEME_COPY_BY_LOCALE);
+  const templatesWords = useCopy(TEMPLATES_COPY_BY_LOCALE);
+  const TEMPLATES = useMemo(() => templatesFor(templatesWords), [templatesWords]);
   const [opened, setOpened] = useState<StyleSection | null>(null);
   const [pending, setPending] = useState<TemplateDefinition | null>(null);
   const [withExamples, setWithExamples] = useState(false);

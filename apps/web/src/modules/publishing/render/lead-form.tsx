@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useId, useRef } from "react";
-import { PUBLIC_PAGE_COPY } from "@/content/public-page";
+import { PUBLIC_PAGE_COPY as PUBLIC_PAGE_COPY_BY_LOCALE } from "@/content/public-page-localized";
+import { useCopy } from "@/ui/locale-context";
 import { FORM_FIELD_RULES, type FormField } from "@/modules/blocks/form";
 import type { LeadFormState } from "@/modules/leads/actions";
 
@@ -28,6 +29,7 @@ const INPUT_PROPS: Record<Exclude<FormField, "message">, { type: string; autoCom
 };
 
 function Fields({ id, props, state, disabled }: { id: string; props: LeadFormProps; state: LeadFormState; disabled: boolean }) {
+  const PUBLIC_PAGE_COPY = useCopy(PUBLIC_PAGE_COPY_BY_LOCALE);
   return (
     <>
       {props.fields.map((field) => {
@@ -56,6 +58,7 @@ function Fields({ id, props, state, disabled }: { id: string; props: LeadFormPro
 
 /** Same look as the live form, without an action: the editor preview must never submit. */
 export function LeadFormPreview(props: LeadFormProps) {
+  const PUBLIC_PAGE_COPY = useCopy(PUBLIC_PAGE_COPY_BY_LOCALE);
   const id = useId();
   return (
     <div data-block-id={props.blockId} data-block-type="form" className={BOX_CLASS}>
@@ -67,13 +70,6 @@ export function LeadFormPreview(props: LeadFormProps) {
   );
 }
 
-const FAILURE_COPY = {
-  invalid: PUBLIC_PAGE_COPY.form.invalid,
-  consent_required: PUBLIC_PAGE_COPY.form.consentRequired,
-  rate_limited: PUBLIC_PAGE_COPY.form.rateLimited,
-  unavailable: PUBLIC_PAGE_COPY.form.unavailable,
-} as const;
-
 /**
  * Form block on a public page (ADR 0010). A plain HTML form posting to a Server Action: it works
  * with scripts blocked (the page comes back with the result) and, with scripts, updates in place.
@@ -81,6 +77,13 @@ const FAILURE_COPY = {
  * here never affects the rest of the page.
  */
 export function LeadForm({ action, ...props }: LeadFormProps & { action: LeadFormAction }) {
+  const PUBLIC_PAGE_COPY = useCopy(PUBLIC_PAGE_COPY_BY_LOCALE);
+  const FAILURE_COPY = {
+    invalid: PUBLIC_PAGE_COPY.form.invalid,
+    consent_required: PUBLIC_PAGE_COPY.form.consentRequired,
+    rate_limited: PUBLIC_PAGE_COPY.form.rateLimited,
+    unavailable: PUBLIC_PAGE_COPY.form.unavailable,
+  } as const;
   const id = useId();
   const [state, formAction, pending] = useActionState(action, INITIAL);
   const data = { "data-block-id": props.blockId, "data-block-type": "form" };

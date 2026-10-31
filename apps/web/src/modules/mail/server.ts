@@ -1,4 +1,5 @@
 import "server-only";
+import { DEFAULT_LOCALE, isLocale } from "@/lib/locale";
 import { createClient } from "@supabase/supabase-js";
 import { after } from "next/server";
 import { appUrl, publicAddressLabel } from "@/lib/app-url";
@@ -31,7 +32,7 @@ function outboxPort(client: NonNullable<ReturnType<typeof serviceClient>>): Outb
     async claim(limit) {
       const { data, error } = await client.rpc("claim_mail_outbox", { p_limit: limit });
       if (error) throw Object.assign(new Error(`Mail claim failed: ${error.code}`), { code: error.code });
-      return (data ?? []).map((row) => ({ id: row.id, kind: row.kind, workspaceId: row.workspace_id, payload: row.payload, attempts: row.attempts, email: row.email, displayName: row.display_name }));
+      return (data ?? []).map((row) => ({ id: row.id, kind: row.kind, workspaceId: row.workspace_id, payload: row.payload, attempts: row.attempts, email: row.email, displayName: row.display_name, locale: isLocale(row.locale) ? row.locale : DEFAULT_LOCALE }));
     },
     async complete(id, outcome, error, providerMessageId) {
       const { error: failure } = await client.rpc("complete_mail_outbox", { p_id: id, p_outcome: outcome, ...(error ? { p_error: error } : {}), ...(providerMessageId ? { p_provider_message_id: providerMessageId } : {}) });
@@ -55,7 +56,7 @@ export async function drainMailNow(options: { batchSize?: number; maxBatches?: n
       outbox: outboxPort(client),
       adapter,
       render: (mail) => renderMail(mail.kind, mail.workspaceId, mail.payload, {
-        appUrl, publicAddress: publicAddressLabel, recipientName: mail.displayName, replyReachesSomeone: config.replyTo !== null, billingIsTest,
+        appUrl, publicAddress: publicAddressLabel, recipientName: mail.displayName, replyReachesSomeone: config.replyTo !== null, billingIsTest, locale: mail.locale,
       }),
       batchSize: options.batchSize ?? 20,
       maxBatches: options.maxBatches ?? 1,

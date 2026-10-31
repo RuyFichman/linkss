@@ -1,11 +1,12 @@
-import { COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { Skeleton } from "@/ui";
 
 /**
  * The shape of the plan screen: title, the current plan with its usage, then the catalogue. It carries
  * `data-plan-screen` too, so the failing-payment banner does not show and then vanish (globals.css).
  */
-export default function PlanLoading() {
+export default async function PlanLoading() {
+  const { COPY } = await getCopy();
   return (
     <div className="grid gap-6" role="status" aria-live="polite" data-plan-screen="">
       <span className="sr-only">{COPY.loading}</span>

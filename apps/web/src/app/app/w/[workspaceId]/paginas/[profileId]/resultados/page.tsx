@@ -2,7 +2,8 @@ import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ANALYTICS_COPY } from "@/content/pt-BR";
+import type { Locale } from "@/lib/locale";
+import { getCopy, getRequestLocale } from "@/modules/identity/locale";
 import { blockTitle, blockTypeLabelForEvent } from "@/modules/analytics/block-labels";
 import { Bar, DailyChart } from "@/modules/analytics/components/charts";
 import { VALUE_ACTION_TYPES } from "@/modules/analytics/contract";
@@ -19,21 +20,22 @@ import { getPublishingRepository } from "@/modules/publishing/server";
 import { ReportLinksSection } from "@/modules/reports/components/report-links-section";
 import { EmptyState, Notice } from "@/ui";
 
-export const metadata: Metadata = { title: "Resultados" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.results };
+}
 
 const NUMBER = new Intl.NumberFormat("pt-BR");
 const ONE_DECIMAL = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
-const COUNTRY_NAMES = new Intl.DisplayNames("pt-BR", { type: "region" });
 
 /** "12,5": how many times something happened for every 100 visits. */
 function perHundred(rate: number): string {
   return ONE_DECIMAL.format(rate * 100);
 }
 
-function countryName(code: string): string {
-  if (code === "ZZ") return ANALYTICS_COPY.countries.unknown;
+function countryName(code: string, unknown: string, locale: Locale): string {
+  if (code === "ZZ") return unknown;
   try {
-    return COUNTRY_NAMES.of(code) ?? code;
+    return new Intl.DisplayNames(locale, { type: "region" }).of(code) ?? code;
   } catch {
     return code;
   }
@@ -41,7 +43,8 @@ function countryName(code: string): string {
 
 const CARD = "surface-card grid grid-cols-[minmax(0,1fr)] content-start gap-4 p-5 sm:p-6";
 
-function PeriodNav({ basePath, current, historyDays }: { basePath: string; current: PeriodPreset; historyDays: number | null }) {
+async function PeriodNav({ basePath, current, historyDays }: { basePath: string; current: PeriodPreset; historyDays: number | null }) {
+  const { ANALYTICS_COPY } = await getCopy();
   return (
     <nav aria-label={ANALYTICS_COPY.periodNav}>
       <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
@@ -64,13 +67,15 @@ function PeriodNav({ basePath, current, historyDays }: { basePath: string; curre
   );
 }
 
-function StateMessage({ state, report }: { state: Exclude<DashboardState, "data">; report: AnalyticsReport | null }) {
+async function StateMessage({ state, report }: { state: Exclude<DashboardState, "data">; report: AnalyticsReport | null }) {
+  const { ANALYTICS_COPY } = await getCopy();
   const copy = ANALYTICS_COPY.states[state];
   const description = state === "before_collection" ? ANALYTICS_COPY.states.before_collection.description(formatDay(report?.collectingSince ?? "")) : (copy.description as string);
   return <EmptyState title={copy.title} description={description} />;
 }
 
-function HowWeCount() {
+async function HowWeCount() {
+  const { ANALYTICS_COPY } = await getCopy();
   return (
     <section id="como-contamos" className={CARD} aria-labelledby="how-title">
       <h2 id="how-title" className="text-xl font-bold">{ANALYTICS_COPY.how.title}</h2>
@@ -90,6 +95,8 @@ function HowWeCount() {
  * counting", "no data yet", "zero") each have their own text: no data is never shown as zero.
  */
 export default async function AnalyticsPage({ params, searchParams }: { params: Promise<{ workspaceId: string; profileId: string }>; searchParams: Promise<{ periodo?: string | string[] }> }) {
+  const locale = await getRequestLocale();
+  const { ANALYTICS_COPY, BLOCKS_COPY } = await getCopy();
   const { workspaceId, profileId } = await params;
   const access = await authorizeWorkspacePage(workspaceId, "analytics.view");
   if (!isUuid(profileId)) notFound();
@@ -238,7 +245,7 @@ export default async function AnalyticsPage({ params, searchParams }: { params: 
             <ol className="m-0 grid list-none gap-4 p-0">
               {ranking.map((row) => {
                 const block = blocksById.get(row.blockId);
-                const name = block ? blockTitle(block) : ANALYTICS_COPY.blocks.removedType(blockTypeLabelForEvent(row.mainType));
+                const name = block ? blockTitle(block, BLOCKS_COPY) : ANALYTICS_COPY.blocks.removedType(blockTypeLabelForEvent(row.mainType, BLOCKS_COPY));
                 return (
                   <li key={row.blockId} className="grid gap-1">
                     <span className="flex flex-wrap items-baseline justify-between gap-x-4">
@@ -346,7 +353,7 @@ export default async function AnalyticsPage({ params, searchParams }: { params: 
           <dl className="m-0 grid gap-1">
             {countries.rows.map((row) => (
               <div key={row.key} className="flex flex-wrap justify-between gap-x-4">
-                <dt>{countryName(row.key)}</dt>
+                <dt>{countryName(row.key, ANALYTICS_COPY.countries.unknown, locale)}</dt>
                 <dd className="m-0"><b>{ANALYTICS_COPY.visits(row.count)}</b>{row.share !== null ? <span className="text-app-muted"> · {ANALYTICS_COPY.share(perHundred(row.share))}</span> : null}</dd>
               </div>
             ))}

@@ -1,4 +1,5 @@
-import { BLOCKS_COPY } from "@/content/pt-BR";
+import type { Copy } from "@/content/copy";
+import { BLOCKS_COPY as PORTUGUESE_BLOCKS_COPY } from "@/content/pt-BR";
 import { SOCIAL_NETWORK_IDS, SOCIAL_NETWORKS, type BlockInput } from "@/modules/blocks";
 
 const SUMMARY_MAX = 60;
@@ -9,7 +10,7 @@ function shorten(value: string): string {
 }
 
 /** One-line description of a block for the collapsed card in the editor list. */
-export function blockSummary(input: BlockInput): string {
+export function blockSummary(input: BlockInput, BLOCKS_COPY: Copy["BLOCKS_COPY"] = PORTUGUESE_BLOCKS_COPY): string {
   switch (input.type) {
     case "link": return shorten(input.title) || shorten(input.url) || BLOCKS_COPY.summary.emptyLink;
     case "text": return shorten(input.text) || BLOCKS_COPY.summary.emptyText;

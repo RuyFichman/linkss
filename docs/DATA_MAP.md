@@ -24,8 +24,8 @@ Todos no Postgres do Supabase (mesmo projeto por ambiente). Nenhum novo operador
 
 | Store / tabela | Dados pessoais | Finalidade | Base / owner | Retenção e exclusão |
 |---|---|---|---|---|
-| `auth.users` (Supabase Auth) | e-mail, hash de senha, `display_name` informado no cadastro, datas de confirmação/login, IP de sessões nos logs do Auth | autenticação, verificação e recuperação | execução do contrato / founder | vida da conta; exclusão de conta na Sprint 9 remove a linha (cascateia `user_accounts` e memberships) |
-| `public.user_accounts` | nome de exibição, locale | personalizar a interface | execução do contrato | vida da conta; `deleted_at` + `purge_after` (30 dias) antes da remoção definitiva |
+| `auth.users` (Supabase Auth) | e-mail, hash de senha, `display_name` e idioma (`locale`, ADR 0022) informados no cadastro, datas de confirmação/login, IP de sessões nos logs do Auth | autenticação, verificação e recuperação | execução do contrato / founder | vida da conta; exclusão de conta na Sprint 9 remove a linha (cascateia `user_accounts` e memberships) |
+| `public.user_accounts` | nome de exibição, idioma (`pt-BR` ou `es-ES`, escolhido no cadastro e alterável em *Meus dados*) | personalizar a interface e escrever os e-mails no idioma da pessoa | execução do contrato | vida da conta; `deleted_at` + `purge_after` (30 dias) antes da remoção definitiva |
 | `public.workspaces` | nome da conta (pode identificar a agência), `created_by` | tenancy e colaboração | execução do contrato | soft delete com `purge_after = deleted_at + 30 dias`; workspace pessoal termina junto com a conta |
 | `public.workspace_memberships` | vínculo pessoa ↔ workspace, papel, quem convidou, datas | autorização | execução do contrato | registro revogado mantido enquanto o workspace existir (histórico de acesso); removido com o workspace ou a conta |
 | `public.profiles` | rascunho: título, bio, avatar (chave de storage), redes sociais e links (URLs escolhidas pelo cliente, podem conter telefone/e-mail em `tel:`/`mailto:`) | página do cliente | execução do contrato | soft delete com `purge_after = deleted_at + 30 dias` |
@@ -165,6 +165,11 @@ O e-mail convidado é dado pessoal de **alguém que talvez nunca crie conta**. C
 ### Cookie `lnk_after_confirm`
 
 Definido só quando alguém se cadastra a partir de um link de convite: guarda o caminho do convite por 1 hora, `HttpOnly`, `SameSite=Lax`, restrito a `/auth`. Finalidade: voltar ao convite depois da confirmação de e-mail no mesmo aparelho. Não identifica a pessoa e não é lido por nenhuma outra rota.
+
+### Cookie `lnk_locale` e idioma da página (ADR 0022, adendo de 30/10/2026)
+
+- **Cookie `lnk_locale`.** Definido quando alguém abre `/app`, uma página de acesso ou `/auth` com `?idioma=`. Guarda só `pt-BR` ou `es-ES` por 1 ano, `HttpOnly`, `SameSite=Lax`. Finalidade: mostrar as páginas de acesso no idioma escolhido antes de existir uma conta. Não identifica a pessoa; depois de entrar vale o idioma da conta.
+- **`profiles.locale`.** É o idioma dos textos que o produto põe na página pública. Não é dado pessoal e entra na exportação da conta junto com a página.
 
 ### Outros
 

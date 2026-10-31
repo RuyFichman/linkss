@@ -1,7 +1,8 @@
-import { ANALYTICS_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { Skeleton } from "@/ui";
 
-export default function WorkspaceAnalyticsLoading() {
+export default async function WorkspaceAnalyticsLoading() {
+  const { ANALYTICS_COPY } = await getCopy();
   return (
     <div className="grid gap-4" role="status" aria-live="polite">
       <span className="sr-only">{ANALYTICS_COPY.loading}</span>

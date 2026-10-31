@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { PUBLIC_PAGE_COPY } from "@/content/public-page";
+import { PUBLIC_PAGE_COPY as PUBLIC_PAGE_COPY_BY_LOCALE } from "@/content/public-page-localized";
+import { useCopy } from "@/ui/locale-context";
 import { consentStorageKey, loadPixels, parseStoredConsent, serializeConsent, type ConsentChoice, type PixelHost } from "../loader";
 import type { PublicPixels } from "../model";
 
@@ -37,6 +38,7 @@ function storeChoice(slug: string, pixels: PublicPixels, choice: ConsentChoice):
  * after hydration, so it is never the largest paint.
  */
 export function PixelConsent({ slug, pixels }: { slug: string; pixels: PublicPixels }) {
+  const PUBLIC_PAGE_COPY = useCopy(PUBLIC_PAGE_COPY_BY_LOCALE);
   // "loading" on the server and during hydration, so the markup matches; the stored choice after.
   const stored = useSyncExternalStore<Stage>(subscribeToNothing, () => readChoice(slug, pixels) ?? "asking", () => "loading");
   const [chosen, setChosen] = useState<Stage | null>(null);

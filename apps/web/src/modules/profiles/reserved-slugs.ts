@@ -7,4 +7,6 @@ export const RESERVED_SLUGS = [
   "auth", "cadastro", "entrar", "sair", "confirmar-email", "recuperar-acesso", "redefinir-senha",
   // Likely platform pages
   "ajuda", "aceite", "denunciar", "cookies", "termos", "precos", "planos", "status", "seguranca", "contato", "conta", "contas", "configuracoes", "relatorio", "relatorios", "blog", "www",
+  // Marketing home in Spanish (ADR 0022)
+  "es",
 ] as const;

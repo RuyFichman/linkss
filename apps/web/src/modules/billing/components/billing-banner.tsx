@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BILLING_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { can, type WorkspaceRole } from "@/modules/identity/permissions";
 import { billingBannerSentence } from "../presentation";
 import { fetchWorkspaceBilling } from "../server";
@@ -12,11 +12,12 @@ import { billingViewState } from "../subscription";
  * A read that fails or a database without the migration shows no banner: it never blocks a page.
  */
 export async function BillingBanner({ workspaceId, role }: { workspaceId: string; role: WorkspaceRole }) {
+  const { BILLING_COPY } = await getCopy();
   if (!can(role, "billing.view")) return null;
   let sentence: string | null = null;
   try {
     const billing = await fetchWorkspaceBilling(workspaceId, false);
-    sentence = billingBannerSentence(billingViewState(billing.record, billing.planId, new Date()));
+    sentence = billingBannerSentence(billingViewState(billing.record, billing.planId, new Date()), BILLING_COPY);
   } catch {
     return null;
   }

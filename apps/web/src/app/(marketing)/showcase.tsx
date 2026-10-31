@@ -1,5 +1,8 @@
 import Image from "next/image";
 import type { ReactNode, CSSProperties } from "react";
+import { marketingCopy } from "@/content/marketing";
+import type { ShowcaseCopy } from "@/content/types";
+import { DEFAULT_LOCALE, SIGN_UP_PATH, type Locale } from "@/lib/locale";
 import { SocialIcon } from "@/modules/publishing/render/social-icon";
 import { THEME_FONT_FAMILY } from "@/modules/themes/fonts";
 import { ShowcaseGallery } from "./showcase-gallery";
@@ -277,23 +280,35 @@ function OutdoorsPage() {
   </div>;
 }
 
-/** Original editorial identities, not customer endorsements. Only existing block capabilities. */
-export function Showcase() {
-  return <ShowcaseGallery entries={[
-    { id: "photography", name: "Olivia Hart", category: "Fotografia", description: "Uma presença editorial com fotografia, portfólio e um convite para conversar.", page: <PhotographerPage /> },
-    { id: "cooking", name: "The Green Table", category: "Culinária & conteúdo", description: "Receitas em destaque, conteúdo visual e todos os caminhos para acompanhar uma marca.", page: <CookingPage /> },
-    { id: "coaching", name: "Maya Bennett", category: "Coaching & bem-estar", description: "Uma identidade marcante para apresentar serviços, compartilhar conteúdo e receber novos contatos.", page: <CoachPage /> },
-    { id: "farm", name: "Willow & Wild", category: "Marca & loja", description: "Produtos, história e visitas em uma página com a personalidade do negócio.", page: <FarmPage /> },
-    { id: "music", name: "Nova Reed", category: "Música & lançamentos", description: "Uma página para reunir lançamentos, canais de música e datas de apresentações.", page: <MusicPage /> },
-    { id: "ceramics", name: "Sable Studio", category: "Cerâmica & design", description: "Uma vitrine de peças autorais com fotografia de produto, coleção e um convite para conhecer o ateliê.", page: <CeramicsPage /> },
-    { id: "architecture", name: "Form & Field", category: "Arquitetura & interiores", description: "Um portfólio de interiores com presença editorial, projetos em destaque e contato para novas conversas.", page: <ArchitecturePage /> },
-    { id: "florist", name: "Petal Theory", category: "Flores & celebrações", description: "Arranjos sazonais e celebrações apresentados com uma identidade floral expressiva e caminhos claros para encomendar.", page: <FloristPage /> },
-    { id: "guesthouse", name: "The Salt House", category: "Hospedagem & experiências", description: "Uma pequena hospedagem reúne sua atmosfera, os quartos e o acesso à disponibilidade em uma página acolhedora.", page: <GuesthousePage /> },
-    { id: "coffeehouse", name: "Sunday Social", category: "Café & encontros", description: "Uma presença calorosa para um café de bairro, com cardápio, horários, localização e coleção de cafés.", page: <CoffeehousePage /> },
-    { id: "jewelry", name: "Lune & Line", category: "Joalheria & acessórios", description: "Uma coleção autoral com fotografia de detalhes, peças em destaque e um caminho para encomendas especiais.", page: <JewelryPage /> },
-    { id: "bakery", name: "Butter & Crumb", category: "Padaria & confeitaria", description: "Uma padaria artesanal apresenta seus produtos, o cardápio do dia e como chegar em uma página acolhedora.", page: <BakeryPage /> },
-    { id: "yoga", name: "Still Form", category: "Yoga & movimento", description: "Um espaço de prática reúne sua atmosfera, os horários das aulas e um convite para quem está começando.", page: <YogaPage /> },
-    { id: "bookshop", name: "Chapter House", category: "Livros & comunidade", description: "Uma livraria independente compartilha descobertas, novidades e encontros do seu clube de leitura.", page: <BookshopPage /> },
-    { id: "outdoors", name: "Northbound", category: "Trilhas & experiências", description: "Uma página para explorar roteiros, conhecer aventuras em pequenos grupos e acompanhar histórias das trilhas.", page: <OutdoorsPage /> },
-  ]} />;
+const PAGES = {
+  photography: { name: "Olivia Hart", page: <PhotographerPage /> },
+  cooking: { name: "The Green Table", page: <CookingPage /> },
+  coaching: { name: "Maya Bennett", page: <CoachPage /> },
+  farm: { name: "Willow & Wild", page: <FarmPage /> },
+  music: { name: "Nova Reed", page: <MusicPage /> },
+  ceramics: { name: "Sable Studio", page: <CeramicsPage /> },
+  architecture: { name: "Form & Field", page: <ArchitecturePage /> },
+  florist: { name: "Petal Theory", page: <FloristPage /> },
+  guesthouse: { name: "The Salt House", page: <GuesthousePage /> },
+  coffeehouse: { name: "Sunday Social", page: <CoffeehousePage /> },
+  jewelry: { name: "Lune & Line", page: <JewelryPage /> },
+  bakery: { name: "Butter & Crumb", page: <BakeryPage /> },
+  yoga: { name: "Still Form", page: <YogaPage /> },
+  bookshop: { name: "Chapter House", page: <BookshopPage /> },
+  outdoors: { name: "Northbound", page: <OutdoorsPage /> },
+} satisfies Record<keyof ShowcaseCopy["entries"], { name: string; page: ReactNode }>;
+
+/**
+ * Original editorial identities, not customer endorsements. Only existing block capabilities. The
+ * pages stay in English in every language; their category, description and the gallery's words
+ * follow the home (ADR 0022) and reach the client component as plain strings.
+ */
+export function Showcase({ locale = DEFAULT_LOCALE }: { locale?: Locale }) {
+  const copy = marketingCopy(locale).showcase;
+  const entries = (Object.keys(PAGES) as (keyof typeof PAGES)[]).map((id) => {
+    const { name, page } = PAGES[id];
+    const { category, description } = copy.entries[id];
+    return { id, name, category, description, page, openLabel: copy.openLabel(name, category), dialogTitle: copy.dialogTitle(name) };
+  });
+  return <ShowcaseGallery entries={entries} signUpHref={SIGN_UP_PATH[locale]} words={{ dragHint: copy.dragHint, pause: copy.pause, resume: copy.resume, explore: copy.explore, dialogFallback: copy.dialogFallback, close: copy.close, create: copy.create }} />;
 }

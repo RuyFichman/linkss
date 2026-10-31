@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { LEADS_COPY } from "@/content/pt-BR";
+import { LEADS_COPY as LEADS_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { IDLE_FORM_STATE, type FormState } from "@/lib/form-state";
 import { Button, Dialog, DialogActions, FormStatus } from "@/ui";
 
@@ -9,6 +10,7 @@ type DeleteAction = (previous: FormState) => Promise<FormState>;
 
 /** Deleting a lead cannot be undone, so it asks first (UX-026: confirm only irreversible losses). */
 export function DeleteLeadDialog({ action, name }: { action: DeleteAction; name: string }) {
+  const LEADS_COPY = useCopy(LEADS_COPY_BY_LOCALE);
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(action, IDLE_FORM_STATE);
   return (

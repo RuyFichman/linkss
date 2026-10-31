@@ -3,8 +3,11 @@
 import { Schibsted_Grotesk } from "next/font/google";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
-import { APP_COPY, BLOCKS_COPY, EDITOR_COPY, MEDIA_COPY, PUBLISHING_COPY, THEME_COPY } from "@/content/pt-BR";
+import { APP_COPY as APP_COPY_BY_LOCALE, BLOCKS_COPY as BLOCKS_COPY_BY_LOCALE, EDITOR_COPY as EDITOR_COPY_BY_LOCALE, MEDIA_COPY as MEDIA_COPY_BY_LOCALE, PUBLISHING_COPY as PUBLISHING_COPY_BY_LOCALE, THEME_COPY as THEME_COPY_BY_LOCALE } from "@/content/localized";
+import type { Copy } from "@/content/copy";
+import { useCopy, useLocale } from "@/ui/locale-context";
 import type { FormState } from "@/lib/form-state";
+import type { Locale } from "@/lib/locale";
 import { BLOCK_TYPES, MAX_BLOCKS, type BlockField, type BlockType, type DraftBlock } from "@/modules/blocks";
 import type { UploadedMedia } from "@/modules/media/service";
 import { avatarSources } from "@/modules/media/url";
@@ -48,6 +51,8 @@ export interface BlockEditorProps {
   canPublish: boolean;
   publishAction: PublishAction;
   showBadge: boolean;
+  /** The page's public language: the preview shows the product's words in it (ADR 0022). */
+  pageLocale?: Locale;
   /** Public address without the scheme, shown next to the title and on the preview frame. */
   address: string;
   nav: { backHref: string; backLabel: string; links: readonly StudioNavLink[] };
@@ -76,11 +81,13 @@ const STATUS_TONE = { saved: "success", dirty: "warning", invalid: "warning", sa
 const PUBLICATION_TONE = { never: "neutral", live_current: "success", live_outdated: "warning", offline: "warning" } as const;
 
 /** Identity of a derived draft, to skip autosave when an action changed nothing that is stored. */
+type EditorWords = Copy["EDITOR_COPY"];
+
 function serializeCheck(check: DraftCheck): string {
   return JSON.stringify(check.ok ? check.draft : null);
 }
 
-function failureMessage(failure: SaveFailure | null): string {
+function failureMessage(EDITOR_COPY: EditorWords, failure: SaveFailure | null): string {
   switch (failure) {
     case "validation": return EDITOR_COPY.saveErrors.validation;
     case "forbidden": return EDITOR_COPY.saveErrors.forbidden;
@@ -90,7 +97,7 @@ function failureMessage(failure: SaveFailure | null): string {
   }
 }
 
-function publishBlockedReason(status: AutosaveSnapshot["status"], uploading: boolean): string | null {
+function publishBlockedReason(EDITOR_COPY: EditorWords, status: AutosaveSnapshot["status"], uploading: boolean): string | null {
   // An image still being sent is not in the draft yet: publishing now would leave it out.
   if (uploading) return EDITOR_COPY.publish.blockedUploading;
   switch (status) {
@@ -111,8 +118,15 @@ function publishBlockedReason(status: AutosaveSnapshot["status"], uploading: boo
  * Switching to preview keeps the form mounted, including pending uploads and unfinished fields.
  * Wide screens keep the panel and framed preview side by side (UX-072).
  */
-export function BlockEditor({ profileId, initial, livePublicationId, publications, canPublish, publishAction, showBadge, address, nav, notices, settings, startOnSettings = false, plansHref = null }: BlockEditorProps) {
-  const [state, setState] = useState<EditorState>(() => editorStateFromDraft(initial));
+export function BlockEditor({ profileId, initial, livePublicationId, publications, canPublish, publishAction, showBadge, pageLocale, address, nav, notices, settings, startOnSettings = false, plansHref = null }: BlockEditorProps) {
+  const APP_COPY = useCopy(APP_COPY_BY_LOCALE);
+  const BLOCKS_COPY = useCopy(BLOCKS_COPY_BY_LOCALE);
+  const EDITOR_COPY = useCopy(EDITOR_COPY_BY_LOCALE);
+  const MEDIA_COPY = useCopy(MEDIA_COPY_BY_LOCALE);
+  const PUBLISHING_COPY = useCopy(PUBLISHING_COPY_BY_LOCALE);
+  const THEME_COPY = useCopy(THEME_COPY_BY_LOCALE);
+  const locale = useLocale();
+  const [state, setState] = useState<EditorState>(() => editorStateFromDraft(initial, locale));
   const stateRef = useRef(state);
   const { autosave, snapshot } = useAutosave(profileId, initial.revision);
   const lastNotified = useRef<string>(serializeCheck(checkDraft(state)));
@@ -143,7 +157,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
   const revealed = useRef<string | null>(null);
 
   const check = useMemo(() => checkDraft(state), [state]);
-  const preview = useMemo(() => documentFromDraft(previewDraft(state), EDITOR_COPY.preview.untitled), [state]);
+  const preview = useMemo(() => documentFromDraft(previewDraft(state), EDITOR_COPY.preview.untitled), [state, EDITOR_COPY.preview.untitled]);
 
   const announce = useCallback((text: string) => setAnnouncement((previous) => ({ text, n: previous.n + 1 })), []);
 
@@ -204,7 +218,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
       window.removeEventListener("beforeunload", onBeforeUnload);
       document.removeEventListener("click", onClick, true);
     };
-  }, [autosave]);
+  }, [autosave, EDITOR_COPY.leaveWarning, EDITOR_COPY.leaveWarningUpload]);
 
   // Undo window: the toast disappears after 10 s unless the person is using it.
   useEffect(() => {
@@ -457,11 +471,11 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
   }
 
   const publication = publicationState({ draftRevision: snapshot.revision, livePublicationId }, publications);
-  const blockedReason = publishBlockedReason(snapshot.status, uploading);
+  const blockedReason = publishBlockedReason(EDITOR_COPY, snapshot.status, uploading);
   const headerErrors = check.ok ? {} : check.header;
   const showHeaderError = (field: "title" | "bio") => touched.has(`${HEADER_FRESH_KEY}:${field}`) || state[field] !== initial[field];
 
-  const statusText = snapshot.status === "error" ? `${EDITOR_COPY.status.error} ${failureMessage(snapshot.failure)}` : EDITOR_COPY.status[snapshot.status];
+  const statusText = snapshot.status === "error" ? `${EDITOR_COPY.status.error} ${failureMessage(EDITOR_COPY, snapshot.failure)}` : EDITOR_COPY.status[snapshot.status];
 
   const openIndex = openId ? state.blocks.findIndex((block) => block.id === openId) : -1;
   const openedBlock = openIndex >= 0 ? state.blocks[openIndex] : undefined;
@@ -591,7 +605,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
             <p role="status" aria-live="polite" className="m-0 flex flex-wrap items-center gap-2">
               <span aria-hidden="true"><Badge tone={STATUS_TONE[snapshot.status]}>{EDITOR_COPY.status[snapshot.status]}</Badge></span>
               <span className="sr-only">{statusText}</span>
-              {snapshot.status === "error" ? <span className="studio-status-detail" aria-hidden="true">{failureMessage(snapshot.failure)}</span> : null}
+              {snapshot.status === "error" ? <span className="studio-status-detail" aria-hidden="true">{failureMessage(EDITOR_COPY, snapshot.failure)}</span> : null}
             </p>
             {/* On phones the publish button already says this; it stays when there is no button. */}
             <span className={canPublish ? "studio-publication" : undefined}><Badge tone={PUBLICATION_TONE[publication]}>{PUBLISHING_COPY.badge[publication]}</Badge></span>
@@ -601,7 +615,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
         {canPublish ? (
           <PublishForm action={publishAction} draftRevision={snapshot.revision} upToDate={publication === "live_current" && snapshot.status === "saved" && !uploading} hasPublished={publications.length > 0} blockedReason={blockedReason} />
         ) : null}
-        {snapshot.status === "error" ? <p className="studio-mobile-error">{failureMessage(snapshot.failure)}</p> : null}
+        {snapshot.status === "error" ? <p className="studio-mobile-error">{failureMessage(EDITOR_COPY, snapshot.failure)}</p> : null}
       </header>
 
       <section id="editor-panel" className="studio-panel" data-view={panelView} aria-label={EDITOR_COPY.studio.panel}>
@@ -706,7 +720,7 @@ export function BlockEditor({ profileId, initial, livePublicationId, publication
         <div className="studio-frame">
           <p className="studio-frame-bar m-0" aria-hidden="true">{addressHost}{addressPath.length > 0 ? <>/<b>{addressPath.join("/")}</b></> : null}</p>
           <div ref={previewRef} className="studio-frame-view" data-pick="" tabIndex={0} role="region" aria-label={EDITOR_COPY.preview.title} onClick={pickInPreview}>
-            <PublicPageView as="div" document={preview} showBadge={showBadge} interactive={false} />
+            <PublicPageView as="div" document={preview} showBadge={showBadge} interactive={false} locale={pageLocale} />
           </div>
         </div>
       </aside>

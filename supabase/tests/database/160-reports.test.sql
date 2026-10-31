@@ -411,8 +411,8 @@ select tests.clear_authentication();
 select is(current_setting('tests.r')::jsonb ->> 'status', 'ok', 'when the entitlement returns, the same link works again');
 select is(
   pg_temp.keys(current_setting('tests.r')::jsonb),
-  array['blocks', 'collecting_since', 'configured', 'days', 'ever_published', 'expires_at', 'first_event_day', 'from', 'last_final_day', 'page_slug', 'page_title', 'show_badge', 'sources', 'status', 'timezone', 'to', 'today', 'workspace_name'],
-  'the report has exactly the fields of ADR 0013');
+  array['blocks', 'collecting_since', 'configured', 'days', 'ever_published', 'expires_at', 'first_event_day', 'from', 'last_final_day', 'locale', 'page_slug', 'page_title', 'show_badge', 'sources', 'status', 'timezone', 'to', 'today', 'workspace_name'],
+  'the report has exactly the fields of ADR 0013 (and the page language of ADR 0022)');
 select is(
   (select array_agg(distinct k order by k) from jsonb_array_elements(current_setting('tests.r')::jsonb -> 'days') d, jsonb_object_keys(d) k),
   array['count', 'day', 'event_type'], 'each day row has exactly day, event_type and count');

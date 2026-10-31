@@ -3,7 +3,7 @@ import { upgradeHref } from "@/modules/billing/presentation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ANALYTICS_COPY, APP_COPY, EDITOR_COPY, LEADS_COPY, PUBLISHING_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { publicAddressLabel, publicPageUrl } from "@/lib/app-url";
 import { DomainSection } from "@/modules/domains/components/domain-section";
 import { BlockEditor } from "@/modules/editor/components/block-editor";
@@ -11,10 +11,11 @@ import { PixelsSection } from "@/modules/pixels/components/pixels-section";
 import { isUuid } from "@/modules/identity/guard";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { can } from "@/modules/identity/permissions";
-import { changeProfileSlugAction, deleteProfileAction } from "@/modules/profiles/actions";
+import { changeProfileSlugAction, deleteProfileAction, setPageLocaleAction } from "@/modules/profiles/actions";
 import { ArchiveControl } from "@/modules/profiles/components/archive-controls";
 import { ChangeSlugDialog } from "@/modules/profiles/components/change-slug-dialog";
 import { DeleteProfileDialog } from "@/modules/profiles/components/delete-profile-dialog";
+import { PageLocaleForm } from "@/modules/profiles/components/page-locale-form";
 import { ProfileAvatar } from "@/modules/profiles/components/profile-avatar";
 import { copyReviewKinds, needsCopyReview } from "@/modules/profiles/copy-review";
 import { fetchDuplicatedFrom } from "@/modules/profiles/page-list-server";
@@ -27,7 +28,9 @@ import { getPublishingRepository } from "@/modules/publishing/server";
 import { PUBLICATION_HISTORY_LIMIT } from "@/modules/publishing/service";
 import { Badge, Notice } from "@/ui";
 
-export const metadata: Metadata = { title: "Editar página" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.editPage };
+}
 
 const STATUS_TONE = { draft: "neutral", published: "success", archived: "warning" } as const;
 
@@ -38,6 +41,7 @@ const STATUS_TONE = { draft: "neutral", published: "success", archived: "warning
  * re-authorizes on the server; this page only decides what to show for the caller's role.
  */
 export default async function ProfileEditorPage({ params, searchParams }: { params: Promise<{ workspaceId: string; profileId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { ANALYTICS_COPY, APP_COPY, EDITOR_COPY, LEADS_COPY, PUBLISHING_COPY } = await getCopy();
   const { workspaceId, profileId } = await params;
   const query = await searchParams;
   const justDuplicated = typeof query.duplicada === "string";
@@ -48,10 +52,11 @@ export default async function ProfileEditorPage({ params, searchParams }: { para
   const profiles = await getProfileRepository();
   const profile = await profiles.findById(profileId);
   if (!profile || profile.workspaceId !== workspaceId) notFound();
-  const [publications, entitlements, duplicatedFrom] = await Promise.all([
+  const [publications, entitlements, duplicatedFrom, pageLocale] = await Promise.all([
     (await getPublishingRepository()).listPublications(profile.id, PUBLICATION_HISTORY_LIMIT),
     profiles.entitlements(workspaceId),
     fetchDuplicatedFrom(profile.id),
+    profiles.locale(profile.id),
   ]);
 
   // An archived page is frozen (ADR 0012): no editor and no publishing until it is unarchived.
@@ -110,6 +115,12 @@ export default async function ProfileEditorPage({ params, searchParams }: { para
         {canChangeSlug ? <div><ChangeSlugDialog action={changeProfileSlugAction.bind(null, profile.id)} currentSlug={profile.slug} workspaceId={workspaceId} /></div> : <p className="m-0 text-app-muted">{APP_COPY.slugChange.forbidden}</p>}
       </section>
 
+      <section className="surface-card grid gap-3 p-5 sm:p-8" aria-labelledby="page-locale-title">
+        <h2 id="page-locale-title" className="text-xl font-bold">{APP_COPY.pageLocale.title}</h2>
+        <p className="m-0 text-app-muted">{APP_COPY.pageLocale.lead}</p>
+        {canEdit ? <PageLocaleForm action={setPageLocaleAction.bind(null, profile.id)} current={pageLocale} /> : <p className="m-0">{APP_COPY.pageLocale.viewOnly(APP_COPY.pageLocale.options[pageLocale])}</p>}
+      </section>
+
       <DomainSection workspaceId={workspaceId} profileId={profile.id} role={access.role} inPlan={entitlements.features.custom_domain} />
       <PixelsSection workspaceId={workspaceId} profileId={profile.id} role={access.role} inPlan={entitlements.features.tracking_pixels} />
 
@@ -144,6 +155,7 @@ export default async function ProfileEditorPage({ params, searchParams }: { para
         canPublish={canPublish}
         publishAction={publishProfileAction.bind(null, profile.id)}
         showBadge={showBadge}
+        pageLocale={pageLocale}
         plansHref={upgradeHref(resolveBillingMode().mode, access.role, workspaceId)}
         address={publicAddressLabel(profile.slug)}
         nav={{
@@ -198,7 +210,7 @@ export default async function ProfileEditorPage({ params, searchParams }: { para
       <section className="grid gap-3" aria-label={EDITOR_COPY.preview.title}>
         {archived ? null : <p className="m-0 text-app-muted">{EDITOR_COPY.readOnly}</p>}
         <div className="page-canvas overflow-hidden rounded-2xl border border-app-border">
-          <PublicPageView as="div" document={documentFromDraft(profile)} showBadge={showBadge} interactive={false} />
+          <PublicPageView as="div" document={documentFromDraft(profile)} showBadge={showBadge} interactive={false} locale={pageLocale} />
         </div>
       </section>
 

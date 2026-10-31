@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useRef } from "react";
-import { PIXELS_COPY } from "@/content/pt-BR";
+import { PIXELS_COPY as PIXELS_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { Button, FormStatus, TextField } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
 import type { PixelsFormState } from "../actions";
@@ -10,6 +11,7 @@ const IDLE: PixelsFormState = { status: "idle" };
 
 /** Two identifiers, nothing else: there is no field that takes a script. Empty turns one off. */
 export function PixelsForm({ action, initial }: { action: (previous: PixelsFormState, formData: FormData) => Promise<PixelsFormState>; initial: { meta: string; ga: string } }) {
+  const PIXELS_COPY = useCopy(PIXELS_COPY_BY_LOCALE);
   const [state, formAction, pending] = useActionState(action, IDLE);
   const formRef = useRef<HTMLFormElement>(null);
   useFocusFirstError(formRef, state);

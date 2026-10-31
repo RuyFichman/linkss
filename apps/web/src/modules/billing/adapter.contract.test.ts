@@ -249,7 +249,7 @@ describe("Stripe adapter specifics", () => {
     const checkout = seen.find((call) => call.url.endsWith("/v1/checkout/sessions"));
     const form = new URLSearchParams(checkout?.body);
     expect(Object.fromEntries(form)).toEqual({
-      mode: "subscription", customer: customerId, client_reference_id: WORKSPACE, locale: "pt-BR",
+      mode: "subscription", customer: customerId, client_reference_id: WORKSPACE, locale: "auto",
       success_url: "https://app.example.test/ok", cancel_url: "https://app.example.test/voltar",
       "line_items[0][quantity]": "1", "line_items[0][price_data][currency]": "brl", "line_items[0][price_data][product]": "lnk_plan_pro",
       "line_items[0][price_data][unit_amount]": "1490", "line_items[0][price_data][recurring][interval]": "month",

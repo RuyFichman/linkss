@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { STATUS_COPY } from "@/content/pt-BR";
+import { HELP_PATH } from "@/lib/locale";
+import { getCopy, getRequestLocale } from "@/modules/identity/locale";
 import { formatDateTime } from "@/lib/format-date";
 import { PRODUCT } from "@/lib/product";
 import { probePublicStatus } from "@/modules/ops/public-status-server";
 import { Badge } from "@/ui";
 import { BRAND_CLASS } from "@/ui/brand-font";
 
-export const metadata: Metadata = { title: `${STATUS_COPY.title} | ${PRODUCT.name}`, robots: { index: false, follow: true } };
+export async function generateMetadata(): Promise<Metadata> {
+  const { STATUS_COPY } = await getCopy();
+  return { title: `${STATUS_COPY.title} | ${PRODUCT.name}`, robots: { index: false, follow: true } };
+}
 
 // Rendered per request: the probe behind it answers from memory for thirty seconds, which bounds
 // the database cost without ever showing a state older than that.
@@ -19,6 +23,8 @@ export const dynamic = "force-dynamic";
  * the application it reports on.
  */
 export default async function StatusPage() {
+  const { STATUS_COPY } = await getCopy();
+  const helpPath = HELP_PATH[await getRequestLocale()];
   const copy = STATUS_COPY;
   const status = await probePublicStatus();
   const ok = status.overall === "operational";
@@ -55,7 +61,7 @@ export default async function StatusPage() {
         </div>
 
         <p className="m-0 flex flex-wrap gap-3">
-          <Link className="ui-button ui-button-secondary" href="/ajuda">{copy.helpLink}</Link>
+          <Link className="ui-button ui-button-secondary" href={helpPath}>{copy.helpLink}</Link>
           <Link className="ui-button ui-button-secondary" href="/">{copy.back}</Link>
         </p>
       </div>

@@ -364,3 +364,34 @@ Checklist ao comprar o domínio:
 **Rollback da aplicação depois da migração:** suportado; o código antigo não lê a fila (as mensagens vencem) e a função `get_ops_status` só ganhou uma chave.
 
 **Variáveis novas:** `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_REPLY_TO` (servidor). Estão em `.env.example`.
+
+## Passos de deploy da home em espanhol (30/10/2026)
+
+**Nada disto foi aplicado em produção.** Verificado só no stack local. Decisão: ADR 0022. **Os preços em euro só aparecem na home: o checkout continua cobrando em reais.** Não comece campanhas para `/es` antes da cobrança em euro.
+
+| # | Passo | Depois dele |
+|---|---|---|
+| 1 | **Merge do PR** | `https://linkfav.com/es` mostra a home em espanhol com os preços em euro; `/cadastro?idioma=es` mostra o cadastro em espanhol. Sem a migração, a conta criada por ele fica em `pt-BR` (a função antiga ignora o idioma); nada quebra |
+| 2 | **Backup conferido** e `npx supabase db push`. Deve listar `202610300001_account_locale`. Acrescenta uma regra (`check`) a `user_accounts.locale` (todas as linhas atuais são `pt-BR`), troca `ensure_personal_workspace` pela mesma função lendo o idioma do cadastro e reserva o endereço `es` | contas criadas pelo cadastro em espanhol ficam com `es-ES` |
+| 3 | Conferir: abrir `/es` e `/` (link "Español" e "Português" no rodapé); criar uma conta de teste por `/cadastro?idioma=es` | — |
+
+**Rollback da aplicação depois da migração:** suportado. O código antigo não manda o idioma, e a função cria a conta em `pt-BR` como antes.
+
+**Sem variável nova.**
+
+## Passos de deploy do app e dos e-mails em espanhol e do idioma por página (30/10/2026)
+
+**Nada disto foi aplicado em produção.** Verificado só no stack local. Decisão: adendo de 30/10/2026 na ADR 0022. Depende dos passos da home em espanhol (migração `202610300001`).
+
+| # | Passo | Depois dele |
+|---|---|---|
+| 1 | **Backup conferido** e `npx supabase db push`. Deve listar `202610300002_page_locale` e `202610300003_mail_locale`. Acrescenta `profiles.locale` (todas as páginas atuais ficam `pt-BR`) e um gatilho que dá a uma página nova o idioma de quem a cria; recria `get_public_page`, `get_public_page_by_domain` e `claim_mail_outbox` com uma coluna a mais; `get_shared_report` ganha a chave `locale` | o banco aceita o código novo e o antigo |
+| 2 | **Merge do PR** | contas em `es-ES` veem a conta em espanhol; o editor ganha "Idioma da página" na aba Página; `/es/ajuda` existe |
+| 3 | No painel do Supabase (Authentication → Emails): colar os modelos de `supabase/templates/confirmation.html`, `recovery.html` e `email_change.html` e os assuntos bilíngues de `supabase/config.toml` | e-mails de confirmação, recuperação e troca de e-mail em espanhol para contas `es-ES` |
+| 4 | Conferir: criar uma conta por `/cadastro?idioma=es`, publicar uma página e abri-la numa janela anônima (rodapé "Creado con"); trocar o idioma da página e da conta | — |
+
+**Ordem:** a migração antes do merge. Sem ela, o código novo lê `profiles.locale` e `claim_mail_outbox` sem a coluna nova: as páginas públicas e os e-mails caem para português, mas o editor não consegue salvar o idioma da página.
+
+**Rollback da aplicação depois da migração:** suportado. O código antigo lê as funções pelo nome das colunas e ignora a coluna e a chave novas.
+
+**Sem variável nova.** O cookie `lnk_locale` guarda só o idioma escolhido por `?idioma=` em quem ainda não entrou.

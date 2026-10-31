@@ -1,4 +1,8 @@
-import { AUTH_COPY } from "@/content/pt-BR";
+import { AUTH_COPY as PORTUGUESE_AUTH_COPY } from "@/content/pt-BR";
+import type { SignUpCopy } from "@/content/types";
+
+/** Validation messages in one language (ADR 0022); Portuguese by default. */
+type Messages = SignUpCopy["validation"];
 
 export const PASSWORD_MIN_LENGTH = 8;
 // bcrypt ignores input beyond 72 bytes; reject instead of silently truncating.
@@ -13,16 +17,16 @@ function field(formData: FormData, name: string): string {
   return typeof entry === "string" ? entry : "";
 }
 
-export function emailError(email: string): string | undefined {
-  if (!EMAIL_PATTERN.test(email) || email.length > 254) return AUTH_COPY.validation.email;
+export function emailError(email: string, messages: Messages = PORTUGUESE_AUTH_COPY.validation): string | undefined {
+  if (!EMAIL_PATTERN.test(email) || email.length > 254) return messages.email;
   return undefined;
 }
 
 /** Mirrors supabase/config.toml: minimum_password_length = 8, password_requirements = letters_digits. */
-export function passwordError(password: string): string | undefined {
-  if (password.length < PASSWORD_MIN_LENGTH) return AUTH_COPY.validation.passwordTooShort;
-  if (new TextEncoder().encode(password).length > PASSWORD_MAX_LENGTH) return AUTH_COPY.validation.passwordTooLong;
-  if (!/\p{L}/u.test(password) || !/\d/.test(password)) return AUTH_COPY.validation.passwordLettersDigits;
+export function passwordError(password: string, messages: Messages = PORTUGUESE_AUTH_COPY.validation): string | undefined {
+  if (password.length < PASSWORD_MIN_LENGTH) return messages.passwordTooShort;
+  if (new TextEncoder().encode(password).length > PASSWORD_MAX_LENGTH) return messages.passwordTooLong;
+  if (!/\p{L}/u.test(password) || !/\d/.test(password)) return messages.passwordLettersDigits;
   return undefined;
 }
 
@@ -31,40 +35,40 @@ function done<Value, Field extends string>(value: Value, errors: FieldErrors<Fie
 }
 
 export type SignUpField = "name" | "email" | "password";
-export function validateSignUp(formData: FormData): Validation<{ name: string; email: string; password: string }, SignUpField> {
+export function validateSignUp(formData: FormData, messages: Messages = PORTUGUESE_AUTH_COPY.validation): Validation<{ name: string; email: string; password: string }, SignUpField> {
   const name = field(formData, "name").trim().replace(/\s+/g, " ");
   const email = field(formData, "email").trim().toLowerCase();
   const password = field(formData, "password");
   return done({ name, email, password }, {
-    name: name.length < 2 || name.length > 80 ? AUTH_COPY.validation.name : undefined,
-    email: emailError(email),
-    password: passwordError(password),
+    name: name.length < 2 || name.length > 80 ? messages.name : undefined,
+    email: emailError(email, messages),
+    password: passwordError(password, messages),
   });
 }
 
 export type SignInField = "email" | "password";
-export function validateSignIn(formData: FormData): Validation<{ email: string; password: string }, SignInField> {
+export function validateSignIn(formData: FormData, messages: Messages = PORTUGUESE_AUTH_COPY.validation): Validation<{ email: string; password: string }, SignInField> {
   const email = field(formData, "email").trim().toLowerCase();
   const password = field(formData, "password");
   return done({ email, password }, {
-    email: emailError(email),
-    password: password ? undefined : AUTH_COPY.validation.passwordRequired,
+    email: emailError(email, messages),
+    password: password ? undefined : messages.passwordRequired,
   });
 }
 
 export type EmailOnlyField = "email";
-export function validateEmailOnly(formData: FormData): Validation<{ email: string }, EmailOnlyField> {
+export function validateEmailOnly(formData: FormData, messages: Messages = PORTUGUESE_AUTH_COPY.validation): Validation<{ email: string }, EmailOnlyField> {
   const email = field(formData, "email").trim().toLowerCase();
-  return done({ email }, { email: emailError(email) });
+  return done({ email }, { email: emailError(email, messages) });
 }
 
 export type NewPasswordField = "password" | "confirmation";
-export function validateNewPassword(formData: FormData): Validation<{ password: string }, NewPasswordField> {
+export function validateNewPassword(formData: FormData, messages: Messages = PORTUGUESE_AUTH_COPY.validation): Validation<{ password: string }, NewPasswordField> {
   const password = field(formData, "password");
   const confirmation = field(formData, "confirmation");
-  const passwordProblem = passwordError(password);
+  const passwordProblem = passwordError(password, messages);
   return done({ password }, {
     password: passwordProblem,
-    confirmation: !passwordProblem && password !== confirmation ? AUTH_COPY.validation.passwordMismatch : undefined,
+    confirmation: !passwordProblem && password !== confirmation ? messages.passwordMismatch : undefined,
   });
 }

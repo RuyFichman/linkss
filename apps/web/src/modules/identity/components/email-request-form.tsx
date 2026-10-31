@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useRef } from "react";
-import { AUTH_COPY } from "@/content/pt-BR";
+import { AUTH_COPY as AUTH_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { IDLE_FORM_STATE, type FormState } from "@/lib/form-state";
 import { Button, FormStatus, TextField } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
@@ -13,6 +14,7 @@ const ACTIONS: Record<"recovery" | "confirmation", EmailAction> = { recovery: re
 
 /** Single-email forms with neutral answers: password recovery and confirmation resend. */
 export function EmailRequestForm({ purpose, submitLabel }: { purpose: "recovery" | "confirmation"; submitLabel: string }) {
+  const AUTH_COPY = useCopy(AUTH_COPY_BY_LOCALE);
   const [state, action, pending] = useActionState(ACTIONS[purpose], IDLE_FORM_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   useFocusFirstError(formRef, state);

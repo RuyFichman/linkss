@@ -1,7 +1,7 @@
 import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { APP_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { limitUsage } from "@/modules/entitlements";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
 import { createProfileAction } from "@/modules/profiles/actions";
@@ -9,9 +9,12 @@ import { CreateProfileForm } from "@/modules/profiles/components/create-profile-
 import { getProfileRepository } from "@/modules/profiles/server";
 import { Notice } from "@/ui";
 
-export const metadata: Metadata = { title: "Nova página" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.newPage };
+}
 
 export default async function NewProfilePage({ params }: { params: Promise<{ workspaceId: string }> }) {
+  const { APP_COPY } = await getCopy();
   const { workspaceId } = await params;
   const back = <p className="mt-6"><Link className="inline-flex min-h-11 items-center font-bold text-app-accent underline" href={`/app/w/${workspaceId}`}>← {APP_COPY.pages.listTitle}</Link></p>;
   const access = await authorizeWorkspacePage(workspaceId, "profile.create");

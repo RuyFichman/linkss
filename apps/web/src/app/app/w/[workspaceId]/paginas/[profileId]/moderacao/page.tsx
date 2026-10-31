@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MODERATION_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { formatDateTime } from "@/lib/format-date";
 import { isUuid } from "@/modules/identity/guard";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
@@ -11,7 +11,9 @@ import { readPageModeration } from "@/modules/moderation/appeals-server";
 import { AppealForm } from "@/modules/moderation/components/appeal-form";
 import { Badge, EmptyState, Notice } from "@/ui";
 
-export const metadata: Metadata = { title: "Suspensão da página" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.moderation };
+}
 export const dynamic = "force-dynamic";
 
 /**
@@ -19,6 +21,7 @@ export const dynamic = "force-dynamic";
  * workspace reads it; owners and admins appeal. The database answers "not found" to anyone else.
  */
 export default async function PageModerationScreen({ params }: { params: Promise<{ workspaceId: string; profileId: string }> }) {
+  const { MODERATION_COPY } = await getCopy();
   const { workspaceId, profileId } = await params;
   const access = await authorizeWorkspacePage(workspaceId, "moderation.view");
   if (!access || !isUuid(profileId)) notFound();

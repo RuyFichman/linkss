@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PUBLIC_PAGE_COPY } from "@/content/public-page";
+import { PUBLIC_PAGE_COPY as PUBLIC_PAGE_COPY_BY_LOCALE } from "@/content/public-page-localized";
+import { useCopy } from "@/ui/locale-context";
 import { EMBED_FRAME_ATTRIBUTES, EMBED_PROVIDERS, embedFrameSrc, embedLayout, embedPageUrl, type EmbedProvider } from "@/modules/blocks/embed";
 
 const USER_LINK_REL = "ugc nofollow noopener noreferrer";
@@ -24,6 +25,7 @@ function PlayIcon() {
  * The box has the player's final size, so loading it never shifts the layout.
  */
 export function EmbedFacade({ blockId, provider, embedRef, title, interactive }: { blockId: string; provider: EmbedProvider; embedRef: string; title: string; interactive: boolean }) {
+  const PUBLIC_PAGE_COPY = useCopy(PUBLIC_PAGE_COPY_BY_LOCALE);
   const [loaded, setLoaded] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
   const layout = embedLayout(provider, embedRef);

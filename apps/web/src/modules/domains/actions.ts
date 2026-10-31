@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { headers } from "next/headers";
-import { DOMAINS_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { revalidatePublicPage } from "@/modules/publishing/cache";
@@ -21,7 +21,8 @@ async function logCommand(event: string, outcome: string, extra: Record<string, 
   logEvent(level, event, { correlationId, outcome, ...extra });
 }
 
-function errorMessage(error: DomainCommandError): string {
+async function errorMessage(error: DomainCommandError): Promise<string> {
+  const { DOMAINS_COPY } = await getCopy();
   return DOMAINS_COPY.errors[error];
 }
 
@@ -29,22 +30,24 @@ export type DomainFormState = FormState<"hostname">;
 
 /** `profileId` arrives bound from the page but is client-controlled: the service and the database re-authorize it. */
 export async function claimDomainAction(profileId: string, _previous: DomainFormState, formData: FormData): Promise<DomainFormState> {
+  const { DOMAINS_COPY } = await getCopy();
   const hostname = stringField(formData, "hostname");
   const result = await (await getDomainsService()).claim(profileId, hostname);
   await logCommand("domains.claim", result.ok ? "ok" : result.error);
   if (!result.ok) {
     const field = result.error === "empty" || result.error === "invalid" || result.error === "blocked";
-    return { status: "error", message: errorMessage(result.error), values: { hostname }, code: result.error, ...(field ? { fieldErrors: { hostname: errorMessage(result.error) } } : {}) };
+    return { status: "error", message: await errorMessage(result.error), values: { hostname }, code: result.error, ...(field ? { fieldErrors: { hostname: await errorMessage(result.error) } } : {}) };
   }
   refresh();
   return { status: "success", message: DOMAINS_COPY.claim.done };
 }
 
 export async function verifyDomainAction(domainId: string): Promise<FormState> {
+  const { DOMAINS_COPY } = await getCopy();
   const result = await (await getDomainsService()).verify(domainId);
   if (!result.ok) {
     await logCommand("domains.verify", result.error);
-    return { status: "error", message: errorMessage(result.error), code: result.error };
+    return { status: "error", message: await errorMessage(result.error), code: result.error };
   }
   const { status, slugs, routing, providerFailed } = result.value;
   await logCommand("domains.verify", "ok", { status, routing: routing?.state ?? "none", providerFailed });
@@ -61,10 +64,11 @@ export async function verifyDomainAction(domainId: string): Promise<FormState> {
 }
 
 export async function removeDomainAction(domainId: string): Promise<FormState> {
+  const { DOMAINS_COPY } = await getCopy();
   const result = await (await getDomainsService()).remove(domainId);
   if (!result.ok) {
     await logCommand("domains.remove", result.error);
-    return { status: "error", message: errorMessage(result.error), code: result.error };
+    return { status: "error", message: await errorMessage(result.error), code: result.error };
   }
   // `detached: false` with a provider configured leaves the hostname attached there: harmless (no row, no page), but worth cleaning up.
   await logCommand("domains.remove", "ok", { wasActive: result.value.wasActive, detached: result.value.detached });

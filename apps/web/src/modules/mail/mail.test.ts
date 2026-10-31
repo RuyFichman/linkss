@@ -18,6 +18,7 @@ const context: MailContext = {
   recipientName: "Ana",
   replyReachesSomeone: true,
   billingIsTest: false,
+  locale: "pt-BR",
 };
 
 const payloads: Record<(typeof MAIL_KINDS)[number], Record<string, unknown>> = {
@@ -94,6 +95,18 @@ describe("the e-mails", () => {
     }
   });
 
+  it("writes in the recipient's language (ADR 0022)", () => {
+    const spanish = { ...context, locale: "es-ES" as const };
+    for (const kind of MAIL_KINDS) {
+      const mail = renderMail(kind, WORKSPACE, payloads[kind], spanish);
+      expect(mail?.text.startsWith("Hola, Ana:")).toBe(true);
+      expect(mail?.html).toContain('<html lang="es">');
+    }
+    expect(renderMail("new_lead", WORKSPACE, payloads.new_lead, spanish)?.subject).toBe("Nuevo contacto en la página Café <b>Central</b>");
+    expect(renderMail("page_suspended", WORKSPACE, payloads.page_suspended, spanish)?.text).toContain("Motivo: Sospecha de suplantación de otra persona o marca.");
+    expect(renderMail("new_lead", WORKSPACE, payloads.new_lead, context)?.html).toContain('<html lang="pt-BR">');
+  });
+
   it("escapes what people wrote in the HTML and keeps it readable in the text", () => {
     const lead = renderMail("new_lead", WORKSPACE, payloads.new_lead, context);
     expect(lead?.subject).toBe("Novo contato na página Café <b>Central</b>");
@@ -154,7 +167,7 @@ describe("draining the outbox", () => {
     const render = (mail: ClaimedMail) => renderMail(mail.kind, mail.workspaceId, mail.payload, context);
     return { outbox, adapter, render, completions };
   }
-  const message = (id: string, overrides: Partial<ClaimedMail> = {}): ClaimedMail => ({ id, kind: "new_lead", workspaceId: WORKSPACE, payload: payloads.new_lead, attempts: 1, email: "ana@example.test", displayName: "Ana", ...overrides });
+  const message = (id: string, overrides: Partial<ClaimedMail> = {}): ClaimedMail => ({ id, kind: "new_lead", workspaceId: WORKSPACE, payload: payloads.new_lead, attempts: 1, email: "ana@example.test", displayName: "Ana", locale: "pt-BR", ...overrides });
 
   it("claims nothing with mail off, so no attempt is spent", async () => {
     const w = world([message("m1")], async () => ({ id: "x" }));

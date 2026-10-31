@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { APP_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import type { FormState } from "@/lib/form-state";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { revalidatePublicPage } from "@/modules/publishing/cache";
@@ -65,6 +65,7 @@ function saveError(result: Extract<CommandResult<unknown>, { ok: false }>): Extr
  * block content or phone numbers.
  */
 export async function saveDraftAction(profileId: string, payload: unknown): Promise<SaveDraftResult> {
+  const { APP_COPY } = await getCopy();
   const startedAt = performance.now();
   const correlationId = correlationIdFrom((await headers()).get(CORRELATION_HEADER));
   let result: CommandResult<{ revision: number }>;
@@ -82,6 +83,7 @@ export type LoadDraftResult = { ok: true; draft: DraftSnapshot } | { ok: false }
 
 /** Latest saved draft, for "Carregar a versão mais recente" and "Manter as minhas alterações". */
 export async function loadDraftAction(profileId: string): Promise<LoadDraftResult> {
+  const { APP_COPY } = await getCopy();
   let result: CommandResult<DraftSnapshot>;
   try {
     result = await (await getProfileService()).loadDraft(profileId);
@@ -92,7 +94,20 @@ export async function loadDraftAction(profileId: string): Promise<LoadDraftResul
   return result.ok ? { ok: true, draft: result.value } : { ok: false };
 }
 
+/** The page's public language (ADR 0022). The published page reads it on every render: drop its cache. */
+export async function setPageLocaleAction(profileId: string, _previous: FormState, formData: FormData): Promise<FormState> {
+  const { APP_COPY } = await getCopy();
+  const service = await getProfileService();
+  const result = await service.setLocale(profileId, formData.get("locale"));
+  await logCommand("profile.set_locale", result);
+  if (!result.ok) return { status: "error", message: result.message, code: result.error };
+  revalidatePublicPage(result.value);
+  refresh();
+  return { status: "success", message: APP_COPY.pageLocale.saved };
+}
+
 export async function changeProfileSlugAction(profileId: string, _previous: FormState, formData: FormData): Promise<FormState<ProfileField>> {
+  const { APP_COPY } = await getCopy();
   const values = { slug: stringField(formData, "slug") };
   const service = await getProfileService();
   const previousSlug = await service.currentSlug(profileId);
@@ -116,6 +131,7 @@ export async function deleteProfileAction(profileId: string): Promise<FormState<
 
 /** Takes the page off the air (if it was on) and freezes it. Owners and admins; re-authorized in the service. */
 export async function archiveProfileAction(profileId: string): Promise<FormState<ProfileField>> {
+  const { APP_COPY } = await getCopy();
   const result = await (await getProfileService()).archive(profileId);
   await logCommand("profile.archive", result);
   if (!result.ok) return toFormState(result, {});
@@ -126,6 +142,7 @@ export async function archiveProfileAction(profileId: string): Promise<FormState
 }
 
 export async function unarchiveProfileAction(profileId: string): Promise<FormState<ProfileField>> {
+  const { APP_COPY } = await getCopy();
   const result = await (await getProfileService()).unarchive(profileId);
   await logCommand("profile.unarchive", result);
   if (!result.ok) return toFormState(result, {});
@@ -135,6 +152,7 @@ export async function unarchiveProfileAction(profileId: string): Promise<FormSta
 
 /** Deep copy into a new draft of the same workspace; lands on the new page with the review notice. */
 export async function duplicateProfileAction(profileId: string, _previous: FormState, formData: FormData): Promise<FormState<ProfileField>> {
+  const { APP_COPY } = await getCopy();
   const values = { title: stringField(formData, "title"), slug: stringField(formData, "slug") };
   const result = await (await getProfileService()).duplicate(profileId, values);
   await logCommand("profile.duplicate", result);

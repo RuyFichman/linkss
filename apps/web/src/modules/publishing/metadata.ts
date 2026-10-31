@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { PUBLIC_PAGE_COPY } from "@/content/pt-BR";
+import { PUBLIC_PAGE_COPY as PUBLIC_PAGE_COPY_BY_LOCALE } from "@/content/public-page-localized";
+import { pickCopy } from "@/lib/locale";
 import { appUrl, publicPageUrl } from "@/lib/app-url";
 import { customDomainUrl } from "@/modules/domains/hostname";
 import { PRODUCT } from "@/lib/product";
@@ -24,8 +25,10 @@ const NOT_INDEXED: Metadata["robots"] = { index: false, follow: false };
  * image file of its own, so the image of the product address is named explicitly.
  */
 export function buildPublicPageMetadata(result: PublicPageResult, options: { viaCustomDomain?: boolean } = {}): Metadata {
-  if (result.state === "suspended") return { title: { absolute: PUBLIC_PAGE_COPY.suspendedTitle }, robots: NOT_INDEXED };
-  if (result.state !== "published") return { title: { absolute: PUBLIC_PAGE_COPY.notFoundTitle }, robots: NOT_INDEXED };
+  // In the page's language (ADR 0022); an address with no page has none, so it is Portuguese.
+  if (result.state === "suspended") return { title: { absolute: pickCopy(PUBLIC_PAGE_COPY_BY_LOCALE, result.locale).suspendedTitle }, robots: NOT_INDEXED };
+  if (result.state !== "published") return { title: { absolute: PUBLIC_PAGE_COPY_BY_LOCALE["pt-BR"].notFoundTitle }, robots: NOT_INDEXED };
+  const PUBLIC_PAGE_COPY = pickCopy(PUBLIC_PAGE_COPY_BY_LOCALE, result.locale);
 
   const { document } = result;
   const url = result.customDomain ? customDomainUrl(result.customDomain) : publicPageUrl(result.slug);
@@ -35,7 +38,7 @@ export function buildPublicPageMetadata(result: PublicPageResult, options: { via
     title: { absolute: title },
     description,
     alternates: { canonical: url },
-    openGraph: { type: "profile", url, title, description, siteName: PRODUCT.name, locale: "pt_BR", ...(options.viaCustomDomain ? { images: [{ url: appUrl(`/${result.slug}/opengraph-image`), width: 1200, height: 630 }] } : {}) },
+    openGraph: { type: "profile", url, title, description, siteName: PRODUCT.name, locale: result.locale === "es-ES" ? "es_ES" : "pt_BR", ...(options.viaCustomDomain ? { images: [{ url: appUrl(`/${result.slug}/opengraph-image`), width: 1200, height: 630 }] } : {}) },
     twitter: { card: "summary_large_image", title, description },
     robots: { index: true, follow: true },
   };

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef } from "react";
-import { APP_COPY } from "@/content/pt-BR";
+import { APP_COPY as APP_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { workspaceLabel } from "../workspace-label";
 import type { WorkspaceKind, WorkspaceRole } from "../permissions";
 
@@ -19,6 +20,7 @@ export interface SwitcherWorkspace {
  * server, so choosing a workspace never grants anything by itself.
  */
 export function WorkspaceSwitcher({ workspaces }: { workspaces: SwitcherWorkspace[] }) {
+  const APP_COPY = useCopy(APP_COPY_BY_LOCALE);
   const pathname = usePathname();
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const currentId = /^\/app\/w\/([^/]+)/.exec(pathname)?.[1];
@@ -31,7 +33,7 @@ export function WorkspaceSwitcher({ workspaces }: { workspaces: SwitcherWorkspac
     <details ref={detailsRef} className="relative min-w-0">
       <summary className="ui-button ui-button-secondary max-w-full cursor-pointer sm:max-w-xs list-none [&::-webkit-details-marker]:hidden">
         <span className="sr-only">{APP_COPY.workspace.switcherLabel}: </span>
-        <span className="truncate">{current ? workspaceLabel(current) : APP_COPY.workspace.switcherLabel}</span>
+        <span className="truncate">{current ? workspaceLabel(current, APP_COPY) : APP_COPY.workspace.switcherLabel}</span>
         <span aria-hidden="true">▾</span>
       </summary>
       <div className="absolute left-0 z-40 mt-2 grid w-72 max-w-[calc(100vw-2rem)] gap-1 rounded-2xl border border-app-border bg-app-surface p-2 shadow-raised">
@@ -39,7 +41,7 @@ export function WorkspaceSwitcher({ workspaces }: { workspaces: SwitcherWorkspac
           {workspaces.map((workspace) => (
             <li key={workspace.id}>
               <Link href={`/app/w/${workspace.id}`} onClick={close} aria-current={workspace.id === currentId ? "page" : undefined} className="flex min-h-11 items-center justify-between gap-3 rounded-xl px-3 py-2 hover:bg-app-surface-soft aria-[current=page]:bg-app-accent/10 aria-[current=page]:font-bold">
-                <span className="truncate">{workspaceLabel(workspace)}</span>
+                <span className="truncate">{workspaceLabel(workspace, APP_COPY)}</span>
                 {workspace.kind === "agency" ? <span className="text-xs text-app-muted">{APP_COPY.roles[workspace.role]}</span> : null}
               </Link>
             </li>

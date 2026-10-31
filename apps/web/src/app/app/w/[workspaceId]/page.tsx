@@ -1,7 +1,8 @@
 import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { APP_COPY, ONBOARDING_COPY, TEAM_COPY, WORKSPACE_ANALYTICS_COPY } from "@/content/pt-BR";
+import { HELP_PATH } from "@/lib/locale";
+import { getCopy, getRequestLocale } from "@/modules/identity/locale";
 import { publicAddressLabel, publicPageUrl } from "@/lib/app-url";
 import { limitUsage } from "@/modules/entitlements";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
@@ -15,7 +16,9 @@ import { fetchPageList } from "@/modules/profiles/page-list-server";
 import { getProfileRepository } from "@/modules/profiles/server";
 import { Badge, EmptyState, Notice } from "@/ui";
 
-export const metadata: Metadata = { title: "Páginas" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.pages };
+}
 
 const STATUS_TONE = { draft: "neutral", published: "success", archived: "warning" } as const;
 const FILTERS = [null, "draft", "published", "archived"] as const;
@@ -35,6 +38,8 @@ function single(value: string | string[] | undefined): string | undefined {
  * number of pages (the list and the plan's entitlements).
  */
 export default async function WorkspaceHomePage({ params, searchParams }: { params: Promise<{ workspaceId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { APP_COPY, ONBOARDING_COPY, TEAM_COPY, WORKSPACE_ANALYTICS_COPY } = await getCopy();
+  const helpPath = HELP_PATH[await getRequestLocale()];
   const { workspaceId } = await params;
   const query = await searchParams;
   const access = await authorizeWorkspacePage(workspaceId, "profile.view");
@@ -95,7 +100,7 @@ export default async function WorkspaceHomePage({ params, searchParams }: { para
               </li>
             ))}
           </ol>
-          <p className="m-0"><Link className="inline-flex min-h-11 items-center text-sm font-bold text-app-accent underline" href="/ajuda">{ONBOARDING_COPY.actions.help}</Link></p>
+          <p className="m-0"><Link className="inline-flex min-h-11 items-center text-sm font-bold text-app-accent underline" href={helpPath}>{ONBOARDING_COPY.actions.help}</Link></p>
         </section>
       ) : null}
 

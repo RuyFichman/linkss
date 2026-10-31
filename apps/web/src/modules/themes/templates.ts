@@ -1,4 +1,5 @@
-import { TEMPLATES_COPY } from "@/content/pt-BR";
+import type { Copy } from "@/content/copy";
+import { TEMPLATES_COPY as PORTUGUESE_TEMPLATES } from "@/content/pt-BR";
 import type { BlockInput } from "@/modules/blocks";
 import type { ThemeTokens } from "./tokens";
 
@@ -6,7 +7,7 @@ import type { ThemeTokens } from "./tokens";
  * The five Sprint 1 templates as production data (ADR 0010). A template is a theme plus example
  * blocks. Examples are editor inputs, not stored blocks: anything that would need real contact
  * data (a phone, a Pix key, an address) is left empty, so no placeholder can be published by
- * accident. Names and texts live in content/pt-BR.ts.
+ * accident. Names and texts live in the copy files, in the editor's language (ADR 0022).
  */
 export const TEMPLATE_IDS = ["negocio-local", "criador", "profissional", "loja", "evento"] as const;
 export type TemplateId = (typeof TEMPLATE_IDS)[number];
@@ -19,9 +20,12 @@ export interface TemplateDefinition {
   examples: readonly BlockInput[];
 }
 
-const copy = TEMPLATES_COPY.items;
+export type TemplatesWords = Copy["TEMPLATES_COPY"];
 
-export const TEMPLATES: readonly TemplateDefinition[] = [
+/** The templates with names, descriptions and example texts in one language. */
+export function templatesFor(TEMPLATES_COPY: TemplatesWords): readonly TemplateDefinition[] {
+  const copy = TEMPLATES_COPY.items;
+  return [
   {
     id: "negocio-local", ...copy["negocio-local"].card,
     theme: { background: "#f5efe5", button: "#1f5b49", buttonStyle: "filled", corners: "rounded", spacing: "regular", font: "serif" },
@@ -68,8 +72,12 @@ export const TEMPLATES: readonly TemplateDefinition[] = [
       { type: "social", items: {} },
     ],
   },
-];
+  ];
+}
 
-export function findTemplate(id: unknown): TemplateDefinition | undefined {
-  return TEMPLATES.find((template) => template.id === id);
+/** The templates in Portuguese. */
+export const TEMPLATES: readonly TemplateDefinition[] = templatesFor(PORTUGUESE_TEMPLATES);
+
+export function findTemplate(id: unknown, words: TemplatesWords = PORTUGUESE_TEMPLATES): TemplateDefinition | undefined {
+  return templatesFor(words).find((template) => template.id === id);
 }

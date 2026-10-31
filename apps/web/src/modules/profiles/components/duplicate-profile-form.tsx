@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useRef } from "react";
-import { APP_COPY } from "@/content/pt-BR";
+import { APP_COPY as APP_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { IDLE_FORM_STATE, type FormState } from "@/lib/form-state";
 import { Button, FormStatus, TextField } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
@@ -13,6 +14,7 @@ type DuplicateAction = (previous: FormState, formData: FormData) => Promise<Form
 
 /** Name and address of the copy, prefilled with suggestions the person can change. */
 export function DuplicateProfileForm({ action, workspaceId, suggestedTitle, suggestedSlug }: { action: DuplicateAction; workspaceId: string; suggestedTitle: string; suggestedSlug: string }) {
+  const APP_COPY = useCopy(APP_COPY_BY_LOCALE);
   const [state, formAction, pending] = useActionState(action, IDLE_FORM_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   useFocusFirstError(formRef, state);

@@ -1,6 +1,7 @@
 "use client";
 
-import { BLOCKS_COPY, EDITOR_COPY } from "@/content/pt-BR";
+import { BLOCKS_COPY as BLOCKS_COPY_BY_LOCALE, EDITOR_COPY as EDITOR_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import type { BlockField, BlockInput, SocialNetwork } from "@/modules/blocks";
 import type { UploadedMedia } from "@/modules/media/service";
 import { Badge, Button } from "@/ui";
@@ -24,6 +25,8 @@ export interface BlockCardProps {
  * `${block.id}-<action>` so the editor can restore focus.
  */
 export function BlockCard({ block, position, total, check, onOpen, onMove }: BlockCardProps) {
+  const BLOCKS_COPY = useCopy(BLOCKS_COPY_BY_LOCALE);
+  const EDITOR_COPY = useCopy(EDITOR_COPY_BY_LOCALE);
   const typeLabel = BLOCKS_COPY.types[block.input.type].label;
   const name = EDITOR_COPY.blockName(typeLabel, position);
   const invalid = check !== undefined && !check.valid;
@@ -35,7 +38,7 @@ export function BlockCard({ block, position, total, check, onOpen, onMove }: Blo
         <span className="studio-row-text">
           {/* The visible text stays part of the accessible name (WCAG 2.5.3 label in name). */}
           <span className="sr-only">{EDITOR_COPY.actions.editPrefix} </span>
-          <span className="studio-row-label">{blockSummary(block.input)}</span>
+          <span className="studio-row-label">{blockSummary(block.input, BLOCKS_COPY)}</span>
           <span className="studio-row-note flex flex-wrap items-center gap-x-2 gap-y-1">
             <span>{position}. {typeLabel}</span>
             {!block.visible ? <Badge tone="neutral">{EDITOR_COPY.hiddenBadge}</Badge> : null}
@@ -78,6 +81,8 @@ export interface BlockEditViewProps {
 
 /** The form of the open block plus duplicate, hide/show, move to top/bottom and add after. */
 export function BlockEditView(props: BlockEditViewProps) {
+  const BLOCKS_COPY = useCopy(BLOCKS_COPY_BY_LOCALE);
+  const EDITOR_COPY = useCopy(EDITOR_COPY_BY_LOCALE);
   const { block, position, total, check } = props;
   const name = EDITOR_COPY.blockName(BLOCKS_COPY.types[block.input.type].label, position);
   const invalid = check !== undefined && !check.valid;

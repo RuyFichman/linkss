@@ -2,7 +2,7 @@ import { UpgradeLink } from "@/modules/billing/components/upgrade-link";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { APP_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import { limitUsage } from "@/modules/entitlements";
 import { isUuid } from "@/modules/identity/guard";
 import { authorizeWorkspacePage } from "@/modules/identity/page-guard";
@@ -14,7 +14,9 @@ import { fetchWorkspaceSlugs } from "@/modules/profiles/page-list-server";
 import { getProfileRepository } from "@/modules/profiles/server";
 import { Notice } from "@/ui";
 
-export const metadata: Metadata = { title: "Duplicar página" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getCopy()).PAGE_TITLES.duplicatePage };
+}
 
 /**
  * Duplication form: what is and is not copied, and the name and address of the new page. The
@@ -22,6 +24,7 @@ export const metadata: Metadata = { title: "Duplicar página" };
  * entitlements, count, addresses) whatever the size of the workspace.
  */
 export default async function DuplicateProfilePage({ params }: { params: Promise<{ workspaceId: string; profileId: string }> }) {
+  const { APP_COPY } = await getCopy();
   const { workspaceId, profileId } = await params;
   const access = await authorizeWorkspacePage(workspaceId, "profile.view");
   if (!access || !isUuid(profileId)) notFound();

@@ -1,4 +1,5 @@
-import { APP_COPY } from "@/content/pt-BR";
+import type { Copy } from "@/content/copy";
+import { APP_COPY as PORTUGUESE_APP_COPY } from "@/content/pt-BR";
 
 export const TITLE_MAX_LENGTH = 80;
 export const BIO_MAX_LENGTH = 280;
@@ -9,7 +10,7 @@ export type ProfileContentValidation =
   | { ok: false; errors: Partial<Record<ProfileContentField, string>> };
 
 /** Mirrors the profiles table checks (title 1–80 after trim, bio ≤ 280). */
-export function validateProfileContent(input: { title: unknown; bio: unknown }): ProfileContentValidation {
+export function validateProfileContent(input: { title: unknown; bio: unknown }, APP_COPY: Copy["APP_COPY"] = PORTUGUESE_APP_COPY): ProfileContentValidation {
   const title = typeof input.title === "string" ? input.title.trim().replace(/\s+/g, " ") : "";
   const bio = typeof input.bio === "string" ? input.bio.trim().replace(/\r\n/g, "\n") : "";
   const errors: Partial<Record<ProfileContentField, string>> = {};

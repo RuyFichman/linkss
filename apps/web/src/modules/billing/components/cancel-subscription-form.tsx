@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { BILLING_COPY } from "@/content/pt-BR";
+import { BILLING_COPY as BILLING_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { IDLE_FORM_STATE, type FormState } from "@/lib/form-state";
 import { Button } from "@/ui";
 import { FormStatus } from "@/ui/form-status";
@@ -17,6 +18,7 @@ export function CancelSubscriptionForm({ action, backHref }: {
   action: (previous: FormState, formData: FormData) => Promise<FormState>;
   backHref: string;
 }) {
+  const BILLING_COPY = useCopy(BILLING_COPY_BY_LOCALE);
   const [state, formAction, pending] = useActionState(action, IDLE_FORM_STATE);
   const copy = BILLING_COPY;
   return (

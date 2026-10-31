@@ -1,6 +1,6 @@
 "use server";
 
-import { MAIL_PREFERENCES_COPY } from "@/content/pt-BR";
+import { getCopy } from "@/modules/identity/locale";
 import type { FormState } from "@/lib/form-state";
 import { logEvent } from "@/lib/observability/logger";
 import { getCurrentUserId, getSupabase } from "@/modules/identity/session";
@@ -11,6 +11,7 @@ import { getCurrentUserId, getSupabase } from "@/modules/identity/session";
  * lets them change only this field and their name.
  */
 export async function setNewLeadNoticesAction(_previous: FormState, formData: FormData): Promise<FormState> {
+  const { MAIL_PREFERENCES_COPY } = await getCopy();
   const userId = await getCurrentUserId();
   if (!userId) return { status: "error", message: MAIL_PREFERENCES_COPY.error, code: "unauthenticated" };
   const enabled = formData.get("newLeads") === "on";

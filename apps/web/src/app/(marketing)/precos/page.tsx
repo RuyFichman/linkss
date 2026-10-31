@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BILLING_COPY, PRICING_COPY } from "@/content/pt-BR";
+import { copyFor } from "@/content/copy";
 import { PRODUCT } from "@/lib/product";
 import { PLAN_IDS, formatMoney, isPaidPlan, planPrice, yearlySavingCents } from "@/modules/billing/catalog";
 import { planFeatureLines } from "@/modules/billing/presentation";
@@ -8,7 +8,7 @@ import { domainsSignerFromEnv } from "@/modules/domains/config";
 import { Badge } from "@/ui";
 import { BRAND_CLASS } from "@/ui/brand-font";
 
-export const metadata: Metadata = { title: `${PRICING_COPY.title} | ${PRODUCT.name}`, description: PRICING_COPY.lead };
+export const metadata: Metadata = { title: `${copyFor("pt-BR").PRICING_COPY.title} | ${PRODUCT.name}`, description: copyFor("pt-BR").PRICING_COPY.lead };
 
 const SIGN_UP_PATH = "/cadastro";
 
@@ -19,6 +19,7 @@ const SIGN_UP_PATH = "/cadastro";
  * (founder decision, 2026-10-29). Static: the domains configuration is read at build time.
  */
 export default function PricingPage() {
+  const { BILLING_COPY, PRICING_COPY } = copyFor("pt-BR");
   const copy = PRICING_COPY;
   const customDomains = domainsSignerFromEnv() !== null;
   return (
@@ -58,7 +59,7 @@ export default function PricingPage() {
                 <div className="grid gap-2">
                   <h3 className="text-sm font-bold">{copy.includes(name)}</h3>
                   <ul className="m-0 grid list-disc gap-1 pl-5 text-sm">
-                    {planFeatureLines(planId, { customDomains }).map((line) => <li key={line}>{line}</li>)}
+                    {planFeatureLines(planId, { customDomains }, BILLING_COPY).map((line) => <li key={line}>{line}</li>)}
                   </ul>
                 </div>
                 {!paid ? <Link className="ui-button ui-button-primary" href={SIGN_UP_PATH}>{copy.cta.free}</Link> : <Link className="ui-button ui-button-secondary" href={SIGN_UP_PATH}>{copy.cta.paid}</Link>}

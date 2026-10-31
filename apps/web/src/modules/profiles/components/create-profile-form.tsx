@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { APP_COPY } from "@/content/pt-BR";
+import { APP_COPY as APP_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { IDLE_FORM_STATE, type FormState } from "@/lib/form-state";
 import { Button, FormStatus, TextAreaField, TextField } from "@/ui";
 import { useFocusFirstError } from "@/ui/use-focus-first-error";
@@ -12,7 +13,8 @@ import { SlugField } from "./slug-field";
 
 type ProfileAction = (previous: FormState, formData: FormData) => Promise<FormState<ProfileField>>;
 
-export function CreateProfileForm({ action, workspaceId, submitLabel = APP_COPY.onboarding.submit }: { action: ProfileAction; workspaceId: string; submitLabel?: string }) {
+export function CreateProfileForm({ action, workspaceId, submitLabel }: { action: ProfileAction; workspaceId: string; submitLabel?: string }) {
+  const APP_COPY = useCopy(APP_COPY_BY_LOCALE);
   const [state, formAction, pending] = useActionState(action, IDLE_FORM_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   useFocusFirstError(formRef, state);
@@ -32,7 +34,7 @@ export function CreateProfileForm({ action, workspaceId, submitLabel = APP_COPY.
         </div>
       </fieldset>
       <FormStatus id="create-profile-status" state={state} />
-      <Button type="submit" loading={pending} className="w-full sm:w-fit">{submitLabel}</Button>
+      <Button type="submit" loading={pending} className="w-full sm:w-fit">{submitLabel ?? APP_COPY.onboarding.submit}</Button>
     </form>
   );
 }

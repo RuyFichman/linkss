@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { CORRELATION_HEADER, correlationIdFrom, logEvent } from "@/lib/observability/logger";
 import { refreshSession } from "@/lib/supabase/proxy";
 import { safeNextPath } from "@/modules/identity/redirects";
+import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE_SECONDS, LOCALE_HEADER, localeFromCode } from "@/lib/locale";
 import { resolveRouteSlug } from "@/modules/publishing/route-slug";
 
 const SIGN_IN_PATH = "/entrar";
@@ -39,6 +40,11 @@ export async function proxy(request: NextRequest) {
     if (route.kind === "invalid") return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
+  // `?idioma=es` on an auth page (links from the Spanish home and the e-mails) chooses the language
+  // of this request and is remembered for the next ones, until an account language takes over.
+  const chosenLocale = request.nextUrl.searchParams.has("idioma") ? localeFromCode(request.nextUrl.searchParams.get("idioma")) : null;
+  if (chosenLocale) requestHeaders.set(LOCALE_HEADER, chosenLocale);
+
   let session: Awaited<ReturnType<typeof refreshSession>>;
   try {
     session = await refreshSession(request, requestHeaders);
@@ -61,6 +67,7 @@ export async function proxy(request: NextRequest) {
     return redirectKeepingCookies(url, session.response, correlationId);
   }
 
+  if (chosenLocale) session.response.cookies.set(LOCALE_COOKIE, chosenLocale, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: LOCALE_COOKIE_MAX_AGE_SECONDS });
   session.response.headers.set(CORRELATION_HEADER, correlationId);
   return session.response;
 }

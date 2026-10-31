@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { APP_COPY } from "@/content/pt-BR";
+import { APP_COPY as APP_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { IDLE_FORM_STATE, type FormState } from "@/lib/form-state";
 import { Button, Dialog, DialogActions, FormStatus } from "@/ui";
 import type { ProfileField } from "../service";
@@ -9,6 +10,7 @@ import type { ProfileField } from "../service";
 type DeleteAction = (previous: FormState) => Promise<FormState<ProfileField>>;
 
 export function DeleteProfileDialog({ action, title }: { action: DeleteAction; title: string }) {
+  const APP_COPY = useCopy(APP_COPY_BY_LOCALE);
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(action, IDLE_FORM_STATE);
   return (

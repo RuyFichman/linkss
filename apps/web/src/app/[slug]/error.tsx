@@ -1,10 +1,11 @@
 "use client";
 
-import { PUBLIC_PAGE_COPY } from "@/content/pt-BR";
+import { PUBLIC_PAGE_COPY } from "@/content/public-page";
 
 /**
  * Only reached when a page has never rendered successfully: once cached, ISR keeps serving the last
- * good version while regeneration fails. The server error is logged by instrumentation.ts.
+ * good version while regeneration fails. The server error is logged by instrumentation.ts. The page
+ * (and so its language) is unknown here, so this screen stays in Portuguese (ADR 0022).
  */
 export default function PublicPageError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (

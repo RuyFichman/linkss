@@ -11,6 +11,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("next/cache", () => ({ refresh: mocks.refresh }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+// The language of the request (ADR 0022) would read the session; these actions answer in Portuguese.
+vi.mock("@/modules/identity/locale", async () => {
+  const { copyFor } = await import("@/content/copy");
+  return { getCopy: async () => copyFor("pt-BR"), getRequestLocale: async () => "pt-BR" };
+});
 vi.mock("./server", () => ({ getReportLinksService: async () => mocks.service }));
 
 const { createReportLinkAction, revokeReportLinkAction } = await import("./actions");

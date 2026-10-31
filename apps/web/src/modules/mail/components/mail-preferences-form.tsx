@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { MAIL_PREFERENCES_COPY } from "@/content/pt-BR";
+import { MAIL_PREFERENCES_COPY as MAIL_PREFERENCES_COPY_BY_LOCALE } from "@/content/localized";
+import { useCopy } from "@/ui/locale-context";
 import { IDLE_FORM_STATE } from "@/lib/form-state";
 import { Button } from "@/ui";
 import { FormStatus } from "@/ui/form-status";
@@ -9,6 +10,7 @@ import { setNewLeadNoticesAction } from "../preferences";
 
 /** The new-contact notice switch on "Meus dados". A plain checkbox and a button: works without JavaScript. */
 export function MailPreferencesForm({ newLeads }: { newLeads: boolean }) {
+  const MAIL_PREFERENCES_COPY = useCopy(MAIL_PREFERENCES_COPY_BY_LOCALE);
   const [state, formAction, pending] = useActionState(setNewLeadNoticesAction, IDLE_FORM_STATE);
   const copy = MAIL_PREFERENCES_COPY;
   return (
